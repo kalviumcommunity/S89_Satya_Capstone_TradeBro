@@ -25,4 +25,4 @@
 | APIs        | Yahoo Finance / FMP / Alpha Vantage|
 | Charts      | Recharts or TradingView Widget     |
 
----
+
