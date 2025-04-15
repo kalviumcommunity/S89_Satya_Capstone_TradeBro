@@ -14,7 +14,7 @@ router.get("/stocks/price/:symbol", async (req, res) => {
     );
     res.json(response.data);
   } catch (err) {
-    res.status(500).json({ error: "Failed to fetch stock price" });
+    res.status(500).json({ error: "Failed to fetch stock price",err });
   }
 });
 
@@ -27,7 +27,7 @@ router.get("/stocks/history/:symbol", async (req, res) => {
     );
     res.json(response.data);
   } catch (err) {
-    res.status(500).json({ error: "Failed to fetch history" });
+    res.status(500).json({ error: "Failed to fetch history",err });
   }
 });
 
@@ -40,7 +40,7 @@ router.get("/search/name/:query", async (req, res) => {
     );
     res.json(response.data);
   } catch (err) {
-    res.status(500).json({ error: "Failed to search by name" });
+    res.status(500).json({ error: "Failed to search by name", err });
   }
 });
 
@@ -53,7 +53,7 @@ router.get("/search/symbol/:query", async (req, res) => {
     );
     res.json(response.data);
   } catch (err) {
-    res.status(500).json({ error: "Failed to search by symbol" });
+    res.status(500).json({ error: "Failed to search by symbol",err });
   }
 });
 
@@ -65,7 +65,7 @@ router.get("/screener", async (req, res) => {
     );
     res.json(response.data);
   } catch (err) {
-    res.status(500).json({ error: "Failed to fetch screener data" });
+    res.status(500).json({ error: "Failed to fetch screener data",err });
   }
 });
 
@@ -78,7 +78,7 @@ router.get("/ratings/:symbol", async (req, res) => {
     );
     res.json(response.data);
   } catch (err) {
-    res.status(500).json({ error: "Failed to fetch ratings" });
+    res.status(500).json({ error: "Failed to fetch ratings",err });
   }
 });
 
@@ -91,7 +91,7 @@ router.get("/ratings-history/:symbol", async (req, res) => {
     );
     res.json(response.data);
   } catch (err) {
-    res.status(500).json({ error: "Failed to fetch historical ratings" });
+    res.status(500).json({ error: "Failed to fetch historical ratings",err });
   }
 });
 
@@ -103,7 +103,7 @@ router.get("/news", async (req, res) => {
     );
     res.json(response.data);
   } catch (err) {
-    res.status(500).json({ error: "Failed to fetch news" });
+    res.status(500).json({ error: "Failed to fetch news",err });
   }
 });
 
@@ -115,7 +115,7 @@ router.get("/ipos", async (req, res) => {
     );
     res.json(response.data);
   } catch (err) {
-    res.status(500).json({ error: "Failed to fetch IPOs" });
+    res.status(500).json({ error: "Failed to fetch IPOs",err });
   }
 });
 
@@ -128,7 +128,7 @@ router.get("/exchange/:symbol", async (req, res) => {
     );
     res.json(response.data);
   } catch (err) {
-    res.status(500).json({ error: "Failed to fetch exchange variants" });
+    res.status(500).json({ error: "Failed to fetch exchange variants",err });
   }
 });
 
