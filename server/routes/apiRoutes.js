@@ -132,55 +132,8 @@ router.get("/exchange/:symbol", async (req, res) => {
   }
 });
 
-// 11. CIK search
-router.get("/cik/:cik", async (req, res) => {
-  const { cik } = req.params;
-  try {
-    const response = await axios.get(
-      `https://financialmodelingprep.com/stable/search-cik?cik=${cik}&apikey=${FMP_API}`
-    );
-    res.json(response.data);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to search by CIK" });
-  }
-});
 
-// 12. CUSIP search
-router.get("/cusip/:cusip", async (req, res) => {
-  const { cusip } = req.params;
-  try {
-    const response = await axios.get(
-      `https://financialmodelingprep.com/stable/search-cusip?cusip=${cusip}&apikey=${FMP_API}`
-    );
-    res.json(response.data);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to search by CUSIP" });
-  }
-});
 
-// 13. ISIN search
-router.get("/isin/:isin", async (req, res) => {
-  const { isin } = req.params;
-  try {
-    const response = await axios.get(
-      `https://financialmodelingprep.com/stable/search-isin?isin=${isin}&apikey=${FMP_API}`
-    );
-    res.json(response.data);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to search by ISIN" });
-  }
-});
 
-// 14. Commitment of Traders
-router.get("/cot", async (req, res) => {
-  try {
-    const response = await axios.get(
-      `https://financialmodelingprep.com/stable/commitment-of-traders-analysis?apikey=${FMP_API}`
-    );
-    res.json(response.data);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to fetch COT data" });
-  }
-});
 
 module.exports = router;
