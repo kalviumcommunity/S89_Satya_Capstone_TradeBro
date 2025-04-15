@@ -4,6 +4,8 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 require("dotenv").config();
 
+const userSchema = require("./models/User");
+
 const app = express();
 app.use("/api", apiRoutes);
 
