@@ -4,7 +4,7 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/User"); // Mongoose schema
 const router = express.Router();
 
-const JWT_SECRET = process.env.JWT_SECRET || "yoursecretkey";
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // Signup Route
 router.post("/signup", async (req, res) => {
@@ -31,7 +31,8 @@ router.post("/signup", async (req, res) => {
 
     res.status(201).json({ message: "Signup successful", token });
   } catch (err) {
-    res.status(500).json({ error: "Signup failed", details: err.message });
+    console.log(err);
+    res.status(500).json({ error: "Signup failed"});
   }
 });
 
@@ -53,7 +54,8 @@ router.post("/login", async (req, res) => {
 
     res.status(200).json({ message: "Login successful", token });
   } catch (err) {
-    res.status(500).json({ error: "Login failed", details: err.message });
+    console.log(err);
+    res.status(500).json({ error: "Login failed"});
   }
 });
 
