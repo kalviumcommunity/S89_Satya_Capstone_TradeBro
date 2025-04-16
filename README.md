@@ -33,7 +33,6 @@ The platform includes features such as:
 - **APIs:** Financial Modeling Prep / Yahoo Finance API
 - **Hosting:** Vercel (Frontend), Render (Backend), Firebase (DB)
 
-<<<<<<< HEAD
 ---
 
 ## 📅 25-Day Development Plan
