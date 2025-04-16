@@ -1,8 +1,9 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const User = require("../models/User"); // Mongoose schema
+const User = require("../models/User");
 const router = express.Router();
+require("dotenv").config();
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -32,7 +33,7 @@ router.post("/signup", async (req, res) => {
     res.status(201).json({ message: "Signup successful", token });
   } catch (err) {
     console.log(err);
-    res.status(500).json({ error: "Signup failed"});
+    res.status(500).json({ error: "Signup failed", err});
   }
 });
 
