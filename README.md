@@ -28,7 +28,7 @@ The platform includes features such as:
 
 - **Frontend:** React.js, Tailwind CSS, Recharts
 - **Backend:** Node.js, Express
-- **Database:** Firebase or PostgreSQL
+- **Database:** MONGODB
 - **Authentication:** Firebase Auth or JWT
 - **APIs:** Financial Modeling Prep / Yahoo Finance API
 - **Hosting:** Vercel (Frontend), Render (Backend), Firebase (DB)
@@ -44,7 +44,7 @@ The platform includes features such as:
 | Day 3   | Initialize frontend with React + Tailwind                                         |
 | Day 4   | Set up backend server with Express.js                                             |
 | Day 5   | Add Firebase/JWT user authentication                                              |
-| Day 6   | Connect and configure database (Firebase or PostgreSQL)                          |
+| Day 6   | Connect and configure database (MONGO DB)                          |
 | Day 7   | Integrate stock data API and fetch stock quotes                                  |
 | Day 8   | Build stock search component and show real-time data                             |
 | Day 9   | Implement virtual trading (buy/sell) logic                                        |

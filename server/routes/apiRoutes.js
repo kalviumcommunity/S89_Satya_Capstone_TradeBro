@@ -132,8 +132,4 @@ router.get("/exchange/:symbol", async (req, res) => {
   }
 });
 
-
-
-
-
 module.exports = router;
