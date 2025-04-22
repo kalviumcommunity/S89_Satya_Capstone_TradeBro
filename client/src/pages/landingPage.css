@@ -1,0 +1,139 @@
+body, html {
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f4f4f4;
+  color: #222;
+}
+
+.landing-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.hero {
+  position: relative;
+  background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
+  color: white;
+  text-align: center;
+  padding: 100px 20px;
+  overflow: hidden;
+}
+
+.hero-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  opacity: 0.4;
+  background: url('https://images.unsplash.com/photo-1565379391275-5c3a1fa967ae?ixlib=rb-4.0.3&auto=format&fit=crop&w=1950&q=80') center/cover no-repeat;
+  z-index: 0;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 1;
+  max-width: 700px;
+  margin: auto;
+}
+
+.hero h1 {
+  font-size: 3rem;
+  margin-bottom: 20px;
+}
+
+.brand-name {
+  color: #4fd1c5;
+  font-weight: 700;
+}
+
+.hero p {
+  font-size: 1.25rem;
+  margin-bottom: 30px;
+}
+
+.get-started-btn {
+  padding: 14px 28px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 30px;
+  background: #4fd1c5;
+  color: #fff;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+.get-started-btn:hover {
+  background: #38b2ac;
+}
+
+.ticker-section {
+  background-color: #1a202c;
+  color: #ffffff;
+  padding: 10px 0;
+}
+
+.ticker-container {
+  width: 100%;
+  overflow: hidden;
+}
+
+.ticker {
+  white-space: nowrap;
+  font-size: 1rem;
+  animation: tickerScroll 30s linear infinite;
+}
+
+@keyframes tickerScroll {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+.features {
+  display: flex;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  padding: 60px 20px;
+  background-color: #ffffff;
+}
+
+.feature {
+  background: #f7fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 30px;
+  margin: 10px;
+  flex: 1 1 280px;
+  max-width: 350px;
+  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.feature:hover {
+  transform: translateY(-5px);
+  box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+.feature h3 {
+  color: #2d3748;
+  margin-bottom: 15px;
+}
+
+.feature p {
+  color: #4a5568;
+  font-size: 0.95rem;
+}
+
+footer {
+  background: #2d3748;
+  color: #e2e8f0;
+  padding: 20px;
+  text-align: center;
+}
+

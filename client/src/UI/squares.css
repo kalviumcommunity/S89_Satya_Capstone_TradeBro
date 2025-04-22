@@ -1,0 +1,13 @@
+.squares-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 0;
+    opacity: 0.3; /* Make the grid light and subtle */
+    filter: brightness(1.2); /* Slightly brighten the grid */
+    background-color: transparent; /* Ensure transparency */
+  }
+  
