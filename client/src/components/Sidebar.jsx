@@ -1,52 +1,66 @@
-import React from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faChartLine, faWallet, faFileAlt, faHistory, faCog, faCommentDots } from "@fortawesome/free-solid-svg-icons";
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import axios from "axios";
+import "./Sidebar.css";
 
-const Sidebar = ({ user }) => {
-    return (
-        <div className="w-64 bg-white shadow-lg p-6">
-            {/* User Profile */}
-            <div className="flex items-center mb-8">
-                <img
-                    src={user.profilePicture || "https://via.placeholder.com/40"}
-                    alt="Profile Picture"
-                    className="w-10 h-10 rounded-full mr-4"
-                />
-                <div>
-                    <h3 className="text-lg font-semibold text-gray-800">{user.name}</h3>
-                    <p className="text-sm text-gray-500">{user.email}</p>
-                </div>
+const Sidebar = () => {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    // Fetch user details when the component mounts
+    const fetchUserDetails = async () => {
+      try {
+        const res = await axios.get("http://localhost:5000/api/user", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+        setUser(res.data); // Assuming the API returns user data
+      } catch (err) {
+        console.error("Error fetching user details:", err);
+      }
+    };
+
+    fetchUserDetails();
+  }, []);
+
+  return (
+    <div className="sidebar">
+      <div className="navbar-logo">🚀 TradeBro</div>
+      
+      {/* User details section */}
+      <div className="user-details">
+        {user ? (
+          <>
+            <div className="user-profile-pic">
+              <img
+                src={user.profilePicture || "default-avatar.png"} // Use default if no picture
+                alt="User Profile"
+                className="profile-pic"
+              />
             </div>
+            <div className="user-info">
+              <p className="username">{user.username}</p>
+              <p className="email">{user.email}</p>
+            </div>
+          </>
+        ) : (
+          <p>Loading...</p>
+        )}
+      </div>
 
-            {/* Navigation Links */}
-            <ul className="space-y-4">
-                <li className="flex items-center text-gray-700 hover:text-blue-500 cursor-pointer">
-                    <FontAwesomeIcon icon={faChartLine} className="mr-3 text-lg" />
-                    Watchlist
-                </li>
-                <li className="flex items-center text-gray-700 hover:text-blue-500 cursor-pointer">
-                    <FontAwesomeIcon icon={faWallet} className="mr-3 text-lg" />
-                    Portfolio
-                </li>
-                <li className="flex items-center text-gray-700 hover:text-blue-500 cursor-pointer">
-                    <FontAwesomeIcon icon={faFileAlt} className="mr-3 text-lg" />
-                    Orders
-                </li>
-                <li className="flex items-center text-gray-700 hover:text-blue-500 cursor-pointer">
-                    <FontAwesomeIcon icon={faHistory} className="mr-3 text-lg" />
-                    History
-                </li>
-                <li className="flex items-center text-gray-700 hover:text-blue-500 cursor-pointer">
-                    <FontAwesomeIcon icon={faCog} className="mr-3 text-lg" />
-                    Settings
-                </li>
-                <li className="flex items-center text-gray-700 hover:text-blue-500 cursor-pointer">
-                    <FontAwesomeIcon icon={faCommentDots} className="mr-3 text-lg" />
-                    Trading Assistant
-                </li>
-            </ul>
-        </div>
-    );
+      {/* Navigation links */}
+      <ul>
+        <li><Link to="/">🏠 Dashboard</Link></li>
+        <li><Link to="/watchlist">📈 Watchlist</Link></li>
+        <li><Link to="/portfolio">💼 Portfolio</Link></li>
+        <li><Link to="/orders">🧾 Orders</Link></li>
+        <li><Link to="/history">📜 History</Link></li>
+        <li><Link to="/settings">⚙️ Settings</Link></li>
+        <li><Link to="/assistant">🤖 Trading Assistant</Link></li>
+      </ul>
+    </div>
+  );
 };
 
 export default Sidebar;
