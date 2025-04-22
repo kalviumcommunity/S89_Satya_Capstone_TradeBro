@@ -1,9 +1,9 @@
 import React from 'react'
 
-const settins = () => {
+const settings = () => {
   return (
     <div>settings Page</div>
   )
 }
 
-export default settins
+export default settings

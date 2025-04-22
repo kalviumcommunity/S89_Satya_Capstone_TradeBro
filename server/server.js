@@ -3,6 +3,8 @@ const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const authRoutes = require("./routes/authRoutes");
+const apiRoutes = require("./routes/apiRoutes");
+const ReasetPassword = require("./routes/auth");
 
 dotenv.config();
 
@@ -15,10 +17,7 @@ const corsOptions = {
   allowedHeaders: ["Content-Type", "Authorization"],
 };
 
-app.use(cors(corsOptions)); // Use CORS with specified options
-
-// Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // MongoDB connection

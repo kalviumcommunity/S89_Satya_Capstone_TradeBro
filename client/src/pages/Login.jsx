@@ -55,6 +55,10 @@ const Login = () => {
         <p className="auth-option">
           Don't have an account? <Link to="/signup">Sign Up</Link>
         </p>
+        <p className="auth-option">
+          <Link to="/reset-password" className="auth-link">Reset Password</Link> or{" "}
+          <Link to="/forgot-password" className="auth-link">Forgot Password?</Link>
+        </p>
       </div>
     </div>
   );
