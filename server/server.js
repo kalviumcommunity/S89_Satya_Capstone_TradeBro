@@ -3,6 +3,9 @@ const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const authRoutes = require("./routes/authRoutes");
+const dataRoutes = require("./routes/apiRoutes");
+const session = require("express-session");
+const passport = require("passport");
 
 dotenv.config();
 
@@ -15,9 +18,6 @@ const corsOptions = {
   allowedHeaders: ["Content-Type", "Authorization"],
 };
 
-app.use(cors(corsOptions)); // Use CORS with specified options
-
-// Middleware
 app.use(cors());
 app.use(express.json());
 
@@ -32,6 +32,18 @@ mongoose
 
 // Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/data", dataRoutes);
+
+
+app.use(session({
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
+
 
 // Root test route
 app.get("/", (req, res) => {

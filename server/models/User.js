@@ -15,6 +15,12 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  googleId: {
+    type: String,
+    unique: true,
+    sparse: true
+  },
+  
 });
 
 module.exports = mongoose.model("User", userSchema);
