@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import "./Signup.css";
+import "./AuthPages.css";
+import { GoogleLogin } from "@react-oauth/google";
+import { jwtDecode } from "jwt-decode";
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -36,6 +38,24 @@ const Signup = () => {
     } catch (err) {
       console.error("Signup error:", err);
       alert("Signup failed. Please try again.");
+    }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      const decoded = jwtDecode(credentialResponse.credential);
+      const res = await axios.post("http://localhost:5000/api/auth/google-signup", {
+        email: decoded.email,
+        name: decoded.name,
+        googleId: decoded.sub,
+      });
+
+      localStorage.setItem("token", res.data.token);
+      alert("Google signup successful!");
+      navigate("/landingPage");
+    } catch (error) {
+      console.error("Google signup error:", error);
+      alert("Google signup failed.");
     }
   };
 
@@ -85,6 +105,9 @@ const Signup = () => {
         <p className="auth-option">
           Already have an account? <Link to="/login">Log In</Link>
         </p>
+        <div className="google-login">
+          <GoogleLogin onSuccess={handleGoogleSuccess} onError={() => alert("Google signup error")} />
+        </div>
       </div>
     </div>
   );

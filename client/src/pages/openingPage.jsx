@@ -2,6 +2,9 @@ import React from "react";
 import "./openingPage.css";
 import { useNavigate } from "react-router-dom";
 import Squares from "../UI/squares";
+import TrueFocus from "../UI/TrueFocus";
+import Magnet from '../UI/Magnet'
+
 
 const OpeningPage = () => {
   const navigate = useNavigate();
@@ -17,9 +20,22 @@ const OpeningPage = () => {
         className="animated-bg"
       />
       <div className="intro-text">
-        <h1 className="title">Welcome to TradeBro</h1>
+        {/* Use the TrueFocus component */}
+        <TrueFocus 
+          sentence="TRADE BRO"
+          manualMode={false}
+          blurAmount={5}
+          borderColor="red"
+          animationDuration={2}
+          pauseBetweenAnimations={1}
+        />
+        {/* <h1 className="title">Welcome to TradeBro</h1> */}
         <p className="subtitle">Your personal AI-powered trading companion</p>
-        <button onClick={() => navigate("/signup")}>Get Started</button>
+        <button onClick={() => navigate("/signup")}>
+          <Magnet padding={80} disabled={false} magnetStrength={100}>
+            Get Started
+          </Magnet>
+        </button>
       </div>
     </div>
   );
