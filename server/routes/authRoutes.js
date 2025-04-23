@@ -62,69 +62,73 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// Forgot Password Route
-router.post("/forgotpassword", async (req, res) => {
+const otpStore = {};
+
+// FORGOT PASSWORD: Request OTP via email 
+router.put("/forgot-password", async (req, res) => {
   const { email } = req.body;
+
+  if (!email) return res.status(400).json({ message: "Email is required." });
 
   try {
     const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: "User not found" });
+    if (!user) return res.status(404).json({ message: "User not found." });
 
-    const code = Math.floor(100000 + Math.random() * 900000); // Generate 6-digit code
-    const hashedCode = await bcrypt.hash(code.toString(), 10);
-
-    user.code = hashedCode;
-    user.codeExpires = Date.now() + 10 * 60 * 1000; // Code valid for 10 minutes
-    await user.save();
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 10 * 60 * 1000;
+    otpStore[email] = { otp, expiresAt };
 
     const transporter = nodemailer.createTransport({
-      service: "Gmail",
+      service: "gmail",
       auth: {
-        user: process.env.EMAIL_NODEMAILER,
-        pass: process.env.PASSWORD_NODEMAILER,
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
       },
     });
 
     await transporter.sendMail({
-      from: process.env.EMAIL_NODEMAILER,
-      to: user.email,
-      subject: "Password Reset Code",
-      text: `Your password reset code is: ${code}`,
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Your OTP for Password Reset",
+      text: `Your OTP is ${otp}. It expires in 10 minutes.`,
     });
 
-    res.status(200).json({ message: "Verification code sent successfully" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to send verification code" });
+    res.status(200).json({ message: "OTP sent to email." });
+  } catch (error) {
+    console.error("Error sending OTP:", error);
+    res.status(500).json({ message: "Failed to send OTP." });
   }
 });
 
-// Reset Password Route
-router.post("/resetpassword", async (req, res) => {
-  const { email, code, newpassword } = req.body;
+// RESET PASSWORD: Verify OTP and reset password
+router.put("/reset-password", async (req, res) => {
+  const { email, otp, newPassword } = req.body;
 
-  if (!email || !code || !newpassword)
-    return res.status(400).json({ message: "All fields are required" });
+  if (!email || !otp || !newPassword)
+    return res.status(400).json({ message: "All fields are required." });
+
+  const record = otpStore[email];
+
+  if (!record || record.otp !== otp)
+    return res.status(400).json({ message: "Invalid or expired OTP." });
+
+  if (Date.now() > record.expiresAt)
+    return res.status(400).json({ message: "OTP has expired." });
 
   try {
     const user = await User.findOne({ email });
-    if (!user || !user.codeExpires || Date.now() > user.codeExpires)
-      return res.status(400).json({ message: "Code expired or user not found" });
+    if (!user) return res.status(404).json({ message: "User not found." });
 
-    const isCodeValid = await bcrypt.compare(code, user.code);
-    if (!isCodeValid)
-      return res.status(400).json({ message: "Invalid verification code" });
-
-    const hashedPassword = await bcrypt.hash(newpassword, 10);
-    user.password = hashedPassword;
-    user.code = undefined; // Clear the code
-    user.codeExpires = undefined; // Clear the expiration
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
     await user.save();
 
-    res.status(200).json({ message: "Password reset successful" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to reset password" });
+    delete otpStore[email];
+
+    res.json({ message: "Password reset successful." });
+  } catch (error) {
+    console.error("Error resetting password:", error);
+    res.status(500).json({ message: "Failed to reset password." });
   }
 });
 

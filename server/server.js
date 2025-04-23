@@ -3,7 +3,6 @@ const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const authRoutes = require("./routes/authRoutes");
-const auth = require("./routes/auth");
 const dataRoutes = require("./routes/apiRoutes");
 const session = require("express-session");
 const passport = require("passport");
@@ -33,7 +32,6 @@ mongoose
 
 // Routes
 app.use("/api/auth", authRoutes);
-app.use("/api/user", auth);
 app.use("/api/data", dataRoutes);
 
 
