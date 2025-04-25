@@ -2,8 +2,6 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import "./AuthPages.css";
-import { GoogleLogin } from "@react-oauth/google";
-import { jwtDecode } from "jwt-decode";
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -27,36 +25,26 @@ const Signup = () => {
     }
 
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/signup", {
-        username: form.username,
-        email: form.email,
-        password: form.password,
-      });
+      const res = await axios.post(
+        "http://localhost:5000/api/auth/signup",
+        {
+          username: form.username,
+          email: form.email,
+          password: form.password,
+        },
+        { withCredentials: true } // Allow credentials for session storage
+      );
       alert("Signup successful!");
       console.log("Signup response:", res.data);
-      navigate("/landingPage");
+      navigate("/dashboard");
     } catch (err) {
       console.error("Signup error:", err);
       alert("Signup failed. Please try again.");
     }
   };
 
-  const handleGoogleSuccess = async (credentialResponse) => {
-    try {
-      const decoded = jwtDecode(credentialResponse.credential);
-      const res = await axios.post("http://localhost:5000/api/auth/google-signup", {
-        email: decoded.email,
-        name: decoded.name,
-        googleId: decoded.sub,
-      });
-
-      localStorage.setItem("token", res.data.token);
-      alert("Google signup successful!");
-      navigate("/landingPage");
-    } catch (error) {
-      console.error("Google signup error:", error);
-      alert("Google signup failed.");
-    }
+  const handleGoogleSignup = () => {
+    window.location.href = "http://localhost:5000/api/auth/auth/google"; // Redirect to Google OAuth
   };
 
   return (
@@ -100,13 +88,16 @@ const Signup = () => {
             className="auth-input"
             required
           />
-          <button type="submit" className="auth-btn">Create Account</button>
+          <button type="submit" className="auth-btn">Sign Up</button>
         </form>
         <p className="auth-option">
           Already have an account? <Link to="/login">Log In</Link>
         </p>
-        <div className="google-login">
-          <GoogleLogin onSuccess={handleGoogleSuccess} onError={() => alert("Google signup error")} />
+        <div className="google-signup">
+          <p>Or</p>
+          <button className="google-button" onClick={handleGoogleSignup}>
+            Sign Up with Google
+          </button>
         </div>
       </div>
     </div>

@@ -1,86 +1,77 @@
 import React, { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import "./AuthPages.css";
-import { useNavigate, Link } from "react-router-dom";
-import { GoogleLogin } from "@react-oauth/google";
-import { jwtDecode } from "jwt-decode";
-import Magnet from "../UI/Magnet";
 
 const Login = () => {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [form, setForm] = useState({
+    email: "",
+    password: "",
+  });
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/login", {
-        email,
-        password,
-      });
+      const res = await axios.post(
+        "http://localhost:5000/api/auth/login",
+        {
+          email: form.email,
+          password: form.password,
+        },
+        { withCredentials: true } // Allow credentials for session storage
+      );
       alert("Login successful!");
-      localStorage.setItem("token", res.data.token);
-      navigate("/landingPage");
+      console.log("Login response:", res.data);
+      navigate("/dashboard");
     } catch (err) {
-      console.error("Login error:", err.response?.data || err.message);
-      alert(err.response?.data?.message || "Login failed.");
+      console.error("Login error:", err);
+      alert("Login failed. Please try again.");
     }
   };
 
-  const handleGoogleSuccess = async (credentialResponse) => {
-    try {
-      const decoded = jwtDecode(credentialResponse.credential);
-      const res = await axios.post("http://localhost:5000/api/auth/google-login", {
-        email: decoded.email,
-        name: decoded.name,
-        googleId: decoded.sub,
-      });
-
-      localStorage.setItem("token", res.data.token);
-      alert("Google login successful!");
-      navigate("/landingPage");
-    } catch (error) {
-      console.error("Google login error:", error);
-      alert("Google login failed.");
-    }
+  const handleGoogleLogin = () => {
+    window.location.href = "http://localhost:5000/api/auth/auth/google"; // Redirect to Google OAuth
   };
 
   return (
     <div className="auth-container">
       <div className="auth-box">
-        <h2 className="auth-title">Login</h2>
+        <h2 className="auth-title">Log In</h2>
         <form onSubmit={handleSubmit} className="auth-form">
           <input
             type="email"
+            name="email"
             placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={form.email}
+            onChange={handleChange}
             className="auth-input"
             required
           />
           <input
             type="password"
+            name="password"
             placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            value={form.password}
+            onChange={handleChange}
             className="auth-input"
             required
           />
-          <button type="submit" className="auth-btn">Login</button>
+          <button type="submit" className="auth-btn">Log In</button>
         </form>
-
         <p className="auth-option">
           Don't have an account? <Link to="/signup">Sign Up</Link>
         </p>
-        <p className="auth-option">
-          <Link to="/reset-password" className="auth-link">Reset Password</Link> or{" "}
-          <Link to="/forgot-password" className="auth-link">Forgot Password?</Link>
-        </p>
-
-        <div className="google-login">
-        <Magnet padding={50} disabled={false} magnetStrength={50}>
-          <GoogleLogin onSuccess={handleGoogleSuccess} onError={() => alert("Google login error")} />
-        </Magnet>
+        <div className="google-signup">
+          <p>Or</p>
+          <button className="google-button" onClick={handleGoogleLogin}>
+            Log In with Google
+          </button>
         </div>
       </div>
     </div>
