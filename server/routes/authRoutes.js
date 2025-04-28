@@ -59,6 +59,7 @@ router.post('/signup', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
+    
     if (!email || !password) {
       return res.status(400).json({ message: 'Please fill all fields' });
     }
@@ -79,6 +80,7 @@ router.post('/login', async (req, res) => {
       sameSite: 'strict',
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
+    
     res.status(200).json({ message: 'Login successful', token });
   } catch (error) {
     console.error(error);
@@ -103,7 +105,8 @@ router.post('/forgotpassword', async (req, res) => {
     await user.save();
 
     const transporter = nodemailer.createTransport({
-      service: "Gmail",
+      host: 'smtp.gmail.com',
+      port: 587,
       auth: {
         user: process.env.email_nodemailer,
         pass: process.env.password_nodemailer
@@ -111,7 +114,7 @@ router.post('/forgotpassword', async (req, res) => {
     });
 
     await transporter.sendMail({
-      from: "kakihari03@gmail.com",
+      from: "tradebro2025@gmail.com",
       to: user.email,
       subject: "Your Password Reset Code",
       text: `Your code is: ${code}`
@@ -159,8 +162,8 @@ router.get('/user', verifyToken, (req, res) => {
 // Google OAuth Login Route
 router.get('/auth/google',
   passport.authenticate('google', { 
-    scope: ['profile', 'email'],
-    prompt: 'select_account' // Force account selection
+    scope: ['profile', 'email'], // Ensure this is included
+    prompt: 'select_account' // Optional: Forces account selection
   })
 );
 

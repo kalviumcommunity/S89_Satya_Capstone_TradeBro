@@ -10,6 +10,7 @@ passport.use(
       clientSecret: process.env.GOOGLE_CLIENT_SECRET, // Replace with your Google Client Secret
       callbackURL: "http://localhost:5000/api/auth/auth/google/callback", // Adjust for production
     },
+
     async (accessToken, refreshToken, profile, done) => {
       try {
         console.log("Google Profile:", profile); // Debugging - Log the Google profile

@@ -13,7 +13,6 @@ dotenv.config();
 
 const app = express();
 
-// Initialize session middleware BEFORE passport.session()
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "keyboard cat", // Use a secure secret
@@ -38,7 +37,7 @@ app.use(passport.session());
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors({ credentials: true, origin: "http://localhost:3000" })); // Allow credentials for frontend
+app.use(cors({ credentials: true, origin: "http://localhost:5173" })); // Allow credentials for frontend
 app.use(express.json());
 
 app.use("/api/auth", authRoutes);
