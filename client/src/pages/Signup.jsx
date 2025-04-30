@@ -32,23 +32,22 @@ const Signup = () => {
           email: form.email,
           password: form.password,
         },
-        { withCredentials: true } // Allow credentials for session storage
+        { withCredentials: true }
       );
       alert("Signup successful!");
-      console.log("Signup response:", res.data);
       navigate("/dashboard");
     } catch (err) {
-      console.error("Signup error:", err);
+      console.error("Signup error:", err.response?.data || err.message);
       alert("Signup failed. Please try again.");
     }
   };
 
   const handleGoogleSignup = () => {
-    window.location.href = "http://localhost:5000/api/auth/auth/google"; // Redirect to Google OAuth
+    window.location.href = "http://localhost:5000/api/auth/auth/google";
   };
 
   return (
-    <div className="auth-container">
+    <div className="auth-full-bg">
       <div className="auth-box">
         <h2 className="auth-title">Sign Up</h2>
         <form onSubmit={handleSubmit} className="auth-form">

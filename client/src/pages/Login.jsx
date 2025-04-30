@@ -5,42 +5,39 @@ import "./AuthPages.css";
 
 const Login = () => {
   const navigate = useNavigate();
-  const [form, setForm] = useState({
-    email: "",
-    password: "",
-  });
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    if (name === "email") setEmail(value);
+    else if (name === "password") setPassword(value);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!email || !password) return alert("Email and password are required");
 
     try {
-      const res = await axios.post(
-        "http://localhost:5000/api/auth/login",
-        {
-          email: form.email,
-          password: form.password,
-        },
-        { withCredentials: true } // Allow credentials for session storage
-      );
+      const response = await axios.post("http://localhost:5000/api/auth/login", {
+        email,
+        password,
+      });
+      console.log("Login successful:", response.data);
       alert("Login successful!");
-      console.log("Login response:", res.data);
-      navigate("/dashboard");
-    } catch (err) {
-      console.error("Login error:", err);
+      navigate("/Landingpage");
+    } catch (error) {
+      console.error("Login error:", error.response?.data || error.message);
       alert("Login failed. Please try again.");
     }
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:5000/api/auth/auth/google"; // Redirect to Google OAuth
+    window.location.href = "http://localhost:5000/api/auth/auth/google";
   };
 
   return (
-    <div className="auth-container">
+    <div className="auth-full-bg">
       <div className="auth-box">
         <h2 className="auth-title">Log In</h2>
         <form onSubmit={handleSubmit} className="auth-form">
@@ -48,7 +45,7 @@ const Login = () => {
             type="email"
             name="email"
             placeholder="Email"
-            value={form.email}
+            value={email}
             onChange={handleChange}
             className="auth-input"
             required
@@ -57,7 +54,7 @@ const Login = () => {
             type="password"
             name="password"
             placeholder="Password"
-            value={form.password}
+            value={password}
             onChange={handleChange}
             className="auth-input"
             required
@@ -67,9 +64,16 @@ const Login = () => {
         <p className="auth-option">
           Don't have an account? <Link to="/signup">Sign Up</Link>
         </p>
+        <p className="auth-forgot">
+          <Link to="/forgotpassword">Forgot Password?</Link>
+        </p>
         <div className="google-signup">
           <p>Or</p>
           <button className="google-button" onClick={handleGoogleLogin}>
+          <img
+            src="/Google.jpg"
+            alt="Google logo"
+          />
             Log In with Google
           </button>
         </div>

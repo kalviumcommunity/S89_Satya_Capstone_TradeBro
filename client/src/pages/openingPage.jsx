@@ -1,41 +1,25 @@
 import React from "react";
-import "./openingPage.css";
-import { useNavigate } from "react-router-dom";
-import Squares from "../UI/squares";
-import TrueFocus from "../UI/TrueFocus";
-import Magnet from '../UI/Magnet'
-
+import "./OpeningPage.css";
 
 const OpeningPage = () => {
-  const navigate = useNavigate();
-
   return (
     <div className="opening-page">
-      <Squares 
-        speed={0.5}
-        squareSize={40}
-        direction="diagonal"
-        borderColor="#fff"
-        hoverFillColor="#222"
-        className="animated-bg"
-      />
-      <div className="intro-text">
-        {/* Use the TrueFocus component */}
-        <TrueFocus 
-          sentence="TRADE BRO"
-          manualMode={false}
-          blurAmount={5}
-          borderColor="red"
-          animationDuration={2}
-          pauseBetweenAnimations={1}
-        />
-        {/* <h1 className="title">Welcome to TradeBro</h1> */}
-        <p className="subtitle">Your personal AI-powered trading companion</p>
-        <button onClick={() => navigate("/signup")}>
-          <Magnet padding={80} disabled={false} magnetStrength={100}>
-            Get Started
-          </Magnet>
+      <div className="overlay" />
+      <div className="card">
+        <img src="/Trade_Bro_Logo.jpg" alt="Logo" className="logo" />
+        <p className="description">
+           Unlock your potential and become a savvy investor with <strong>TradeBro</strong>'s stock insights and smart portfolio tools. 
+        </p>
+        <button className="google-button" onClick={() => window.location.href = "http://localhost:5000/api/auth/auth/google"}>
+          <img
+            src="/Google.jpg"
+            alt="Google logo"
+          />
+          Continue with Google
         </button>
+        <a href="/about" className="about-link">
+           Know More About TradeBro
+        </a>
       </div>
     </div>
   );

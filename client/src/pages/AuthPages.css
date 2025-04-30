@@ -1,60 +1,119 @@
-.auth-container {
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: #0e0e0e;
-    padding: 2rem;
-  }
-  
-  .auth-box {
-    background: #1f1f1f;
-    padding: 3rem 2rem;
-    border-radius: 16px;
-    width: 100%;
-    max-width: 400px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-    text-align: center;
-    color: white;
-  }
-  
-  .auth-box h2 {
-    margin-bottom: 1rem;
-    font-size: 2rem;
-  }
-  
-  .auth-box p {
-    margin-bottom: 1.5rem;
-    color: #ccc;
-  }
-  
-  .auth-box form {
-    display: flex;
-    flex-direction: column;
-  }
-  
-  .auth-box input {
-    padding: 0.75rem 1rem;
-    margin-bottom: 1rem;
-    background: #333;
-    border: none;
-    border-radius: 8px;
-    color: white;
-    font-size: 1rem;
-  }
-  
-  .auth-box button {
-    padding: 0.75rem 1rem;
-    background: #00d4ff;
-    color: black;
-    border: none;
-    border-radius: 10px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background 0.3s ease;
-  }
-  
-  .auth-box button:hover {
-    background: #00b0cc;
-  }
-  
+.auth-full-bg {
+  background-image: url("https://4kwallpapers.com/images/wallpapers/bull-bear-trading-3840x2160-13849.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Segoe UI', sans-serif;
+  position: relative;
+}
+
+.auth-full-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.4); /* darker overlay for readability */
+  backdrop-filter: brightness(1.1); /* slight brightness to pop */
+  z-index: 1;
+}
+
+.auth-box {
+  position: relative;
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.15); /* translucent white */
+  padding: 40px;
+  max-width: 420px;
+  width: 100%;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.auth-title {
+  font-size: 30px;
+  margin-bottom: 24px;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.auth-input {
+  margin-bottom: 18px;
+  padding: 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  font-size: 16px;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.auth-input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.auth-input:focus {
+  border-color: #66b2ff;
+  outline: none;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.auth-btn {
+  background: #f38484;
+  color: white;
+  padding: 14px;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background 0.3s ease;
+}
+
+.auth-btn:hover {
+  background: #f1baba;
+}
+
+.auth-option,
+.auth-forgot {
+  margin-top: 12px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.auth-option a,
+.auth-forgot a {
+  color: #8ce4ec;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.google-signup {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.google-button {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: rgb(119, 194, 224);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+.google-button:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}

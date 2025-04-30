@@ -1,71 +1,79 @@
 .opening-page {
   height: 100vh;
-  background-color: #000;
-  color: white;
+  background-image: url('https://creativevip.net/resource-images/15-stock-market-trading-icons-1.png');
+  background-repeat: repeat;
+  background-size: 240px;
+  background-color: #ffffff;
   display: flex;
   justify-content: center;
   align-items: center;
   position: relative;
-  overflow: hidden;
-  font-family: 'Helvetica Neue', sans-serif;
+  font-family: 'Segoe UI', sans-serif;
 }
 
-.opening-grid {
+.overlay {
   position: absolute;
-  top: 0;
-  left: 0;
   width: 100%;
   height: 100%;
-  background-image: 
-    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-  background-size: 40px 40px;
+  background-color: rgba(255, 255, 255, 0.88);
+  z-index: 0;
+}
+
+.card {
+  position: relative;
   z-index: 1;
-}
-
-.intro-text {
+  background: #fff;
+  border: 2px solid #e0e0e0;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  padding: 40px;
+  max-width: 400px;
   text-align: center;
-  z-index: 2;
-  animation: fadeIn 2s ease-in-out;
+  border-radius: 12px;
 }
 
-.title {
-  font-size: 3rem;
-  margin: 0;
+.logo {
+  height: 40px;
+  margin-bottom: 20px;
 }
 
-.subtitle {
-  font-size: 1.25rem;
-  margin-top: 1rem;
-  color: #aaa;
+.description {
+  font-size: 16px;
+  color: #333;
+  margin-bottom: 30px;
+  line-height: 1.5;
 }
 
-.intro-text button {
-  margin-top: 2rem;
-  padding: 0.75rem 2rem;
-  font-size: 1.1rem;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: white;
+.google-button {
+  background-color: #fff;
+  border: 2px solid #ddd;
+  padding: 10px 20px;
   border-radius: 8px;
-  backdrop-filter: blur(6px);
-  transition: all 0.3s ease;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
   cursor: pointer;
+  width: 100%;
+  transition: all 0.3s ease;
 }
 
-.intro-text button:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.3);
-  transform: translateY(-2px);
+.google-button:hover {
+  background-color: #f8f8f8;
+  border-color: #aaa;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(15px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.google-button img {
+  width: 20px;
+  height: 20px;
+  margin-right: 10px; 
+}
+
+.about-link {
+  display: inline-block;
+  margin-top: 20px;
+  font-weight: bold;
+  font-size: 14px;
+  color: #444;
+  text-decoration: underline;
 }

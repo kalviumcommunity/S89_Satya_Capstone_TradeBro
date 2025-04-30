@@ -38,7 +38,8 @@ router.post('/signup', async (req, res) => {
       return res.status(400).json({ message: 'Email already exists' });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 13);
+    const hashedPassword = await bcrypt.hash(password, 10);
+    console.log("Hashed password:", hashedPassword);
     const user = new User({ username, email, password: hashedPassword });
     const savedUser = await user.save();
     const token = jwt.sign({ id: savedUser._id, email: savedUser.email }, JWT_SECRET, { expiresIn: '7d' });
@@ -59,20 +60,39 @@ router.post('/signup', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    
+
+    console.log("Login request body:", req.body);
+
     if (!email || !password) {
+      console.log("Missing email or password");
       return res.status(400).json({ message: 'Please fill all fields' });
     }
 
     const user = await User.findOne({ email });
     if (!user) {
+      console.log("User not found for email:", email);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
+    if (!user.password) {
+      console.error("Password not set for user:", user.email);
+      return res.status(400).json({ message: 'Password not set for this user' });
+    }
+
+    console.log("User found:", user);
+
+    console.log("Plain text password:", password);
+    console.log("Hashed password from database:", user.password);
+
     const isPasswordCorrect = await bcrypt.compare(password, user.password);
+    console.log("Password comparison result:", isPasswordCorrect);
     if (!isPasswordCorrect) {
+      console.log("Incorrect password for user:", email);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
+
+    console.log("Password is correct for user:", email);
+
     const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
     res.cookie('authToken', token, {
       httpOnly: true,
@@ -80,10 +100,10 @@ router.post('/login', async (req, res) => {
       sameSite: 'strict',
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
-    
+
     res.status(200).json({ message: 'Login successful', token });
   } catch (error) {
-    console.error(error);
+    console.error("Error in login route:", error);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -128,29 +148,33 @@ router.post('/forgotpassword', async (req, res) => {
 
 // Reset Password Route
 router.put('/resetpassword', async (req, res) => {
+  const { otp, newPassword } = req.body;
+
+  if (!otp || !newPassword) {
+    return res.status(400).json({ message: 'OTP and new password are required' });
+  }
+
   try {
-    const { email, code, newpassword } = req.body;
-    if (!email || !code || !newpassword) {
-      return res.status(400).send({ msg: "Enter all fields" });
+    const user = await User.findOne({ codeExpires: { $gt: Date.now() } }); // Ensure OTP is not expired
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired OTP' });
     }
 
-    const user = await User.findOne({ email });
-    if (!user || !user.codeExpires || Date.now() > user.codeExpires) {
-      return res.status(400).send({ msg: "Code expired or user does not exist" });
+    const isOtpValid = await bcrypt.compare(otp, user.code);
+    if (!isOtpValid) {
+      return res.status(400).json({ message: 'Invalid OTP' });
     }
 
-    const isCodeValid = await bcrypt.compare(code, user.code);
-    if (!isCodeValid) {
-      return res.status(400).send({ msg: "Invalid verification code" });
-    }
-
-    const newHashedPassword = await bcrypt.hash(newpassword, 13);
-    user.password = newHashedPassword;
+    const hashedPassword = await bcrypt.hash(newPassword, 13);
+    user.password = hashedPassword;
+    user.code = null; // Clear OTP
+    user.codeExpires = null; // Clear OTP expiration
     await user.save();
 
-    return res.status(200).send({ msg: "Password changed successfully" });
+    res.status(200).json({ message: 'Password reset successfully. Redirecting to login page...' });
   } catch (error) {
-    res.status(500).send({ msg: "Something went wrong", error });
+    console.error('Error in resetpassword route:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -211,5 +235,6 @@ router.get('/logout', (req, res) => {
     res.status(200).json({ message: "Logout successful" });
   });
 });
+
 
 module.exports = router;
