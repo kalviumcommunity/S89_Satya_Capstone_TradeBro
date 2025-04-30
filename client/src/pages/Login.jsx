@@ -71,8 +71,14 @@ const Login = () => {
           <p>Or</p>
           <button className="google-button" onClick={handleGoogleLogin}>
           <img
-            src="/Google.jpg"
-            alt="Google logo"
+            src="/Google.png"
+            style={{
+              width:"20px",
+              borderRadius:"50%",
+              height:"20px",
+              marginRight: "10px",
+              verticalAlign: "middle",
+            }}
           />
             Log In with Google
           </button>

@@ -35,7 +35,7 @@ const Signup = () => {
         { withCredentials: true }
       );
       alert("Signup successful!");
-      navigate("/dashboard");
+      navigate("/Landingpage");
     } catch (err) {
       console.error("Signup error:", err.response?.data || err.message);
       alert("Signup failed. Please try again.");
@@ -95,6 +95,15 @@ const Signup = () => {
         <div className="google-signup">
           <p>Or</p>
           <button className="google-button" onClick={handleGoogleSignup}>
+            <img src="/Google.png"
+              style={{
+                width:"20px",
+                height:"20px",
+                borderRadius: "50%",
+                marginRight: "10px",
+                verticalAlign: "middle",
+              }}
+            />
             Sign Up with Google
           </button>
         </div>

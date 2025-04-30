@@ -39,7 +39,6 @@ router.post('/signup', async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    console.log("Hashed password:", hashedPassword);
     const user = new User({ username, email, password: hashedPassword });
     const savedUser = await user.save();
     const token = jwt.sign({ id: savedUser._id, email: savedUser.email }, JWT_SECRET, { expiresIn: '7d' });
@@ -81,11 +80,7 @@ router.post('/login', async (req, res) => {
 
     console.log("User found:", user);
 
-    console.log("Plain text password:", password);
-    console.log("Hashed password from database:", user.password);
-
     const isPasswordCorrect = await bcrypt.compare(password, user.password);
-    console.log("Password comparison result:", isPasswordCorrect);
     if (!isPasswordCorrect) {
       console.log("Incorrect password for user:", email);
       return res.status(400).json({ message: 'Invalid credentials' });
@@ -165,7 +160,7 @@ router.put('/resetpassword', async (req, res) => {
       return res.status(400).json({ message: 'Invalid OTP' });
     }
 
-    const hashedPassword = await bcrypt.hash(newPassword, 13);
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
     user.password = hashedPassword;
     user.code = null; // Clear OTP
     user.codeExpires = null; // Clear OTP expiration
@@ -215,7 +210,7 @@ router.get('/auth/google/callback',
       });
       
       // Redirect to frontend with success message and user data
-      res.redirect(`http://localhost:5173/landingPage?success=true&token=${token}`);
+      res.redirect(`http://localhost:5173/portfolio?success=true&token=${token}`);
     } catch (error) {
       console.error('Error in Google callback:', error);
       res.redirect(`http://localhost:5173/login?error=authentication_failed`);

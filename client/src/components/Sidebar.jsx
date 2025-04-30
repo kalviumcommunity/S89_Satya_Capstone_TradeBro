@@ -1,64 +1,69 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import axios from "axios";
+import {
+  FiHome,
+  FiTrendingUp,
+  FiBookOpen,
+  FiClock,
+  FiBriefcase,
+  FiSettings,
+  FiMenu,
+} from "react-icons/fi";
 import "./Sidebar.css";
 
 const Sidebar = () => {
-  const [user, setUser] = useState(null);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
-  useEffect(() => {
-    // Fetch user details when the component mounts
-    const fetchUserDetails = async () => {
-      try {
-        const res = await axios.get("http://localhost:5000/api/user", {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        });
-        setUser(res.data); // Assuming the API returns user data
-      } catch (err) {
-        console.error("Error fetching user details:", err);
-      }
-    };
-
-    fetchUserDetails();
-  }, []);
+  const toggleSidebar = () => setIsCollapsed(!isCollapsed);
 
   return (
-    <div className="sidebar">
-      <div className="navbar-logo">🚀 TradeBro</div>
-      
-      {/* User details section */}
-      <div className="user-details">
-        {user ? (
-          <>
-            <div className="user-profile-pic">
-              <img
-                src={user.profilePicture || "default-avatar.png"} // Use default if no picture
-                alt="User Profile"
-                className="profile-pic"
-              />
-            </div>
-            <div className="user-info">
-              <p className="username">{user.username}</p>
-              <p className="email">{user.email}</p>
-            </div>
-          </>
-        ) : (
-          <p>Loading...</p>
-        )}
+    <div className={`sidebar ${isCollapsed ? "collapsed" : ""}`}>
+      <div className="top-section">
+        <button className="toggle-btn" onClick={toggleSidebar}>
+          <FiMenu />
+        </button>
+        {!isCollapsed && <h1 className="logo">🚀 TradeBro</h1>}
       </div>
 
-      {/* Navigation links */}
-      <ul>
-        <li><Link to="/">🏠 Dashboard</Link></li>
-        <li><Link to="/watchlist">📈 Watchlist</Link></li>
-        <li><Link to="/portfolio">💼 Portfolio</Link></li>
-        <li><Link to="/orders">🧾 Orders</Link></li>
-        <li><Link to="/history">📜 History</Link></li>
-        <li><Link to="/settings">⚙️ Settings</Link></li>
-        <li><Link to="/assistant">🤖 Trading Assistant</Link></li>
+      <ul className="sidebar-links">
+        <li>
+          <Link to="/" className="sidebar-link">
+            <FiHome />
+            {!isCollapsed && <span>Dashboard</span>}
+          </Link>
+        </li>
+        <li>
+          <Link to="/watchlist" className="sidebar-link">
+            <FiTrendingUp />
+            {!isCollapsed && <span>Watchlist</span>}
+          </Link>
+        </li>
+        <li>
+          <Link to="/orders" className="sidebar-link">
+            <FiBookOpen />
+            {!isCollapsed && <span>Orders</span>}
+          </Link>
+        </li>
+        <li>
+          <Link to="/history" className="sidebar-link">
+            <FiClock />
+            {!isCollapsed && <span>History</span>}
+          </Link>
+        </li>
+        <li>
+          <Link to="/portfolio" className="sidebar-link">
+            <FiBriefcase />
+            {!isCollapsed && <span>Portfolio</span>}
+          </Link>
+        </li>
       </ul>
+
+      <div className="sidebar-bottom">
+        <Link to="/settings" className="sidebar-link">
+          <FiSettings />
+          {!isCollapsed && <span>Settings</span>}
+        </Link>
+      </div>
     </div>
   );
 };
