@@ -1,11 +1,15 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "./Settings.css";
 import "./AuthPages.css";
 import Sidebar from "../components/Sidebar";
 import Squares from "../UI/squares";
+import { useToast } from "../context/ToastContext";
 
 const SettingsPage = () => {
+  const navigate = useNavigate();
+  const toast = useToast();
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -15,6 +19,7 @@ const SettingsPage = () => {
   const [profileImage, setProfileImage] = useState(null);
   const [notifications, setNotifications] = useState(true); // New state for notifications
   const [successMessage, setSuccessMessage] = useState("");
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -72,6 +77,29 @@ const SettingsPage = () => {
     } catch (error) {
       console.error("Error deleting settings:", error);
       alert("Failed to delete settings.");
+    }
+  };
+
+  const handleSignOut = async () => {
+    setIsSigningOut(true);
+    try {
+      // Call the logout endpoint
+      await axios.get("http://localhost:5000/api/auth/logout");
+
+      // Clear any local storage items related to authentication
+      localStorage.removeItem("authToken");
+
+      // Show success message
+      toast.success("Successfully signed out");
+
+      // Redirect to login page after a short delay
+      setTimeout(() => {
+        navigate("/login");
+      }, 1500);
+    } catch (error) {
+      console.error("Error signing out:", error);
+      toast.error("Failed to sign out. Please try again.");
+      setIsSigningOut(false);
     }
   };
 
@@ -141,6 +169,18 @@ const SettingsPage = () => {
             </button>
             <button className="delete-btn" onClick={handleDelete}>
               Delete Settings
+            </button>
+          </div>
+
+          <div className="settings-card account-actions">
+            <h3>🔐 Account Actions</h3>
+            <p>Sign out from your account or manage other account-related actions.</p>
+            <button
+              className="signout-btn"
+              onClick={handleSignOut}
+              disabled={isSigningOut}
+            >
+              {isSigningOut ? "Signing Out..." : "Sign Out"}
             </button>
           </div>
           {successMessage && <p className="success-message">{successMessage}</p>}

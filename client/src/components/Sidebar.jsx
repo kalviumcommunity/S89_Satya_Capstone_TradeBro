@@ -39,7 +39,7 @@ const Sidebar = () => {
         <button className="toggle-btn" onClick={toggleSidebar}>
           <FiMenu />
         </button>
-        {(!isCollapsed || !isMobile) && <h1 className="logo">🚀 TradeBro</h1>}
+        {!isCollapsed && <h1 className="logo">🚀 TradeBro</h1>}
       </div>
 
       <ul className="sidebar-links">

@@ -209,6 +209,54 @@
   background: #a71d2a;
 }
 
+/* Sign out button styling */
+.signout-btn {
+  background: #6c757d;
+  color: #fff;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 15px;
+  font-weight: 500;
+  width: 100%;
+  max-width: 200px;
+}
+
+.signout-btn:hover {
+  background: #5a6268;
+  transform: translateY(-2px);
+}
+
+.signout-btn:disabled {
+  background: #adb5bd;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Account actions card styling */
+.account-actions {
+  margin-top: 30px;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  padding-top: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.account-actions h3 {
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.account-actions p {
+  margin-bottom: 20px;
+  color: #666;
+  text-align: center;
+  font-size: 0.95rem;
+}
+
 /* Success message styling */
 .success-message {
   margin-top: 20px;

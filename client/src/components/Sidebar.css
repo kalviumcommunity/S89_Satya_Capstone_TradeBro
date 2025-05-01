@@ -40,6 +40,21 @@
     height: 60px;
     overflow: hidden;
   }
+
+  .sidebar.collapsed .top-section {
+    justify-content: center;
+    margin-bottom: 0;
+    height: 60px;
+  }
+
+  .sidebar.mobile .toggle-btn {
+    position: absolute;
+    left: 20px;
+  }
+
+  .sidebar.mobile.collapsed .toggle-btn {
+    position: static;
+  }
 }
 
 .top-section {
@@ -47,6 +62,12 @@
   align-items: center;
   gap: 10px;
   margin-bottom: 40px;
+  width: 100%;
+}
+
+.sidebar.collapsed .top-section {
+  justify-content: center;
+  margin-bottom: 30px;
 }
 
 .toggle-btn {
@@ -55,12 +76,25 @@
   color: #333;
   font-size: 1.5rem;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
 }
 
 .logo {
   font-size: 1.3rem;
   font-weight: bold;
   color: #4F946B;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+@media (max-width: 768px) {
+  .logo {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+  }
 }
 
 .sidebar-links {

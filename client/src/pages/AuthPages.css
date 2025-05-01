@@ -307,8 +307,7 @@
   position: fixed;
   top: 20px;
   right: 20px;
-  background-color: var(--success-color);
-  color: white;
+  color: black;
   padding: var(--spacing-md) var(--spacing-lg);
   border-radius: var(--border-radius-md);
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
