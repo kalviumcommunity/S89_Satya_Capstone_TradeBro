@@ -36,7 +36,6 @@ router.put("/", upload.single("profileImage"), async (req, res) => {
 
     res.status(200).json({ message: "Settings updated successfully!", userSettings });
   } catch (error) {
-    console.error("Error updating settings:", error);
     res.status(500).json({ message: "Failed to update settings." });
   }
 });
@@ -57,7 +56,6 @@ router.delete("/", async (req, res) => {
 
     res.status(200).json({ message: "User settings deleted successfully!" });
   } catch (error) {
-    console.error("Error deleting settings:", error);
     res.status(500).json({ message: "Failed to delete settings." });
   }
 });
