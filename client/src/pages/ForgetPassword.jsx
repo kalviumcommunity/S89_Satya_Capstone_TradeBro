@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FiMail, FiSend } from "react-icons/fi";
+import Squares from "../UI/squares";
 import './AuthPages.css';
 
 const ForgetPassword = () => {
   const [email, setEmail] = useState('');
   const navigate = useNavigate();
+  const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,8 +24,13 @@ const ForgetPassword = () => {
       });
 
       if (response.ok) {
-        alert('OTP sent successfully!');
-        navigate('/resetpassword'); // Redirect to the reset password page
+        await setSuccess(true);
+        setTimeout(() => {
+          setSuccess(false);
+        }, 2000);
+        setTimeout(() => {
+          navigate('/resetpassword');
+        }, 1000);
       } else {
         const errorData = await response.json();
         alert(errorData.message || 'Failed to send OTP. Please try again.');
@@ -35,6 +43,16 @@ const ForgetPassword = () => {
 
   return (
     <div className="auth-full-bg">
+      {/* Squares Background */}
+      <Squares
+        speed={0.5}
+        squareSize={40}
+        direction="diagonal"
+        borderColor="#cccccc"
+        hoverFillColor="#ffffff"
+        backgroundColor="#f0f8ff"
+      />
+
       <div className="auth-box">
         <h2 className="auth-title">Forgot Password</h2>
         <p className="auth-desc">Enter your email to receive an OTP for password reset.</p>
@@ -53,6 +71,9 @@ const ForgetPassword = () => {
           Remembered your password? <a href="/login">Log In</a>
         </p>
       </div>
+      {success &&
+        <div className="success-message">OTP Sent successfully!</div>
+      }
     </div>
   );
 };

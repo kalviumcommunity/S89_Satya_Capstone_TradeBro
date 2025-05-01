@@ -162,8 +162,8 @@ router.put('/resetpassword', async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     user.password = hashedPassword;
-    user.code = null; // Clear OTP
-    user.codeExpires = null; // Clear OTP expiration
+    user.code = null;
+    user.codeExpires = null; 
     await user.save();
 
     res.status(200).json({ message: 'Password reset successfully. Redirecting to login page...' });

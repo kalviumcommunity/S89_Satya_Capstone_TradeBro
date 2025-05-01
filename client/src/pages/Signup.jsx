@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
+import { FiUser, FiMail, FiLock, FiUserPlus } from "react-icons/fi";
 import "./AuthPages.css";
+import Squares from "../UI/squares";
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -11,6 +13,8 @@ const Signup = () => {
     password: "",
     confirmPassword: "",
   });
+  const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -24,6 +28,7 @@ const Signup = () => {
       return;
     }
 
+    setLoading(true);
     try {
       const res = await axios.post(
         "http://localhost:5000/api/auth/signup",
@@ -34,11 +39,14 @@ const Signup = () => {
         },
         { withCredentials: true }
       );
-      alert("Signup successful!");
-      navigate("/Landingpage");
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 2000);
+      setTimeout(() => navigate("/portfolio"), 1000);
     } catch (err) {
       console.error("Signup error:", err.response?.data || err.message);
       alert("Signup failed. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -48,46 +56,76 @@ const Signup = () => {
 
   return (
     <div className="auth-full-bg">
+      <Squares
+        speed={0.5}
+        squareSize={40}
+        direction="diagonal"
+        borderColor="#cccccc"
+        hoverFillColor="#ffffff"
+        backgroundColor="#f0f8ff"
+      />
       <div className="auth-box">
         <h2 className="auth-title">Sign Up</h2>
         <form onSubmit={handleSubmit} className="auth-form">
-          <input
-            type="text"
-            name="username"
-            placeholder="Username"
-            value={form.username}
-            onChange={handleChange}
-            className="auth-input"
-            required
-          />
-          <input
-            type="email"
-            name="email"
-            placeholder="Email"
-            value={form.email}
-            onChange={handleChange}
-            className="auth-input"
-            required
-          />
-          <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            value={form.password}
-            onChange={handleChange}
-            className="auth-input"
-            required
-          />
-          <input
-            type="password"
-            name="confirmPassword"
-            placeholder="Confirm Password"
-            value={form.confirmPassword}
-            onChange={handleChange}
-            className="auth-input"
-            required
-          />
-          <button type="submit" className="auth-btn">Sign Up</button>
+          <div className="input-group">
+            <div className="input-icon">
+              <FiUser />
+            </div>
+            <input
+              type="text"
+              name="username"
+              placeholder="Username"
+              value={form.username}
+              onChange={handleChange}
+              className="auth-input"
+              required
+            />
+          </div>
+          <div className="input-group">
+            <div className="input-icon">
+              <FiMail />
+            </div>
+            <input
+              type="email"
+              name="email"
+              placeholder="Email"
+              value={form.email}
+              onChange={handleChange}
+              className="auth-input"
+              required
+            />
+          </div>
+          <div className="input-group">
+            <div className="input-icon">
+              <FiLock />
+            </div>
+            <input
+              type="password"
+              name="password"
+              placeholder="Password"
+              value={form.password}
+              onChange={handleChange}
+              className="auth-input"
+              required
+            />
+          </div>
+          <div className="input-group">
+            <div className="input-icon">
+              <FiLock />
+            </div>
+            <input
+              type="password"
+              name="confirmPassword"
+              placeholder="Confirm Password"
+              value={form.confirmPassword}
+              onChange={handleChange}
+              className="auth-input"
+              required
+            />
+          </div>
+          <button type="submit" className="auth-btn" disabled={loading}>
+            {loading ? "Processing..." : <><FiUserPlus style={{ marginRight: '8px' }} /> Sign Up</>}
+          </button>
         </form>
         <p className="auth-option">
           Already have an account? <Link to="/login">Log In</Link>
@@ -95,10 +133,11 @@ const Signup = () => {
         <div className="google-signup">
           <p>Or</p>
           <button className="google-button" onClick={handleGoogleSignup}>
-            <img src="/Google.png"
+            <img
+              src="/Google.png"
               style={{
-                width:"20px",
-                height:"20px",
+                width: "20px",
+                height: "20px",
                 borderRadius: "50%",
                 marginRight: "10px",
                 verticalAlign: "middle",
@@ -108,6 +147,9 @@ const Signup = () => {
           </button>
         </div>
       </div>
+      {success &&
+        <div className="success-message">Signup successful!</div>
+      }
     </div>
   );
 };

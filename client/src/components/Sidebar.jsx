@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   FiHome,
@@ -13,16 +13,33 @@ import "./Sidebar.css";
 
 const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Check if screen is mobile size
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    // Initial check
+    checkIfMobile();
+
+    // Add event listener for window resize
+    window.addEventListener('resize', checkIfMobile);
+
+    // Cleanup
+    return () => window.removeEventListener('resize', checkIfMobile);
+  }, []);
 
   const toggleSidebar = () => setIsCollapsed(!isCollapsed);
 
   return (
-    <div className={`sidebar ${isCollapsed ? "collapsed" : ""}`}>
+    <div className={`sidebar ${isCollapsed ? "collapsed" : ""} ${isMobile ? "mobile" : ""}`}>
       <div className="top-section">
         <button className="toggle-btn" onClick={toggleSidebar}>
           <FiMenu />
         </button>
-        {!isCollapsed && <h1 className="logo">🚀 TradeBro</h1>}
+        {(!isCollapsed || !isMobile) && <h1 className="logo">🚀 TradeBro</h1>}
       </div>
 
       <ul className="sidebar-links">

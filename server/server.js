@@ -4,6 +4,7 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const authRoutes = require("./routes/authRoutes");
 const dataRoutes = require("./routes/apiRoutes");
+const settingsRoutes = require("./routes/settings");
 const passport = require("passport");
 const session = require("express-session");
 const MongoStore = require("connect-mongo"); 
@@ -39,9 +40,11 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(cors({ credentials: true, origin: "http://localhost:5173" })); // Allow credentials for frontend
 app.use(express.json());
+app.use("/uploads", express.static("uploads")); // Serve uploaded files
 
 app.use("/api/auth", authRoutes);
 app.use("/api/data", dataRoutes);
+app.use("/api/settings", settingsRoutes);
 
 // MongoDB connection
 mongoose
