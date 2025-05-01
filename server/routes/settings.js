@@ -1,7 +1,14 @@
 const express = require("express");
 const multer = require("multer");
 const path = require("path");
+const fs = require("fs");
+const validator = require("validator");
 const router = express.Router();
+
+// Ensure the uploads directory exists
+if (!fs.existsSync("uploads")) {
+  fs.mkdirSync("uploads");
+}
 
 // Multer setup for file uploads
 const storage = multer.diskStorage({
@@ -12,7 +19,17 @@ const storage = multer.diskStorage({
     cb(null, Date.now() + path.extname(file.originalname));
   },
 });
-const upload = multer({ storage });
+const upload = multer({
+  storage,
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ["image/jpeg", "image/png", "image/gif"];
+    if (!allowedTypes.includes(file.mimetype)) {
+      return cb(new Error("Only JPEG, PNG, and GIF files are allowed."));
+    }
+    cb(null, true);
+  },
+  limits: { fileSize: 2 * 1024 * 1024 }, // Limit file size to 2MB
+});
 
 // Mock database (replace with actual database logic)
 let userSettings = {
@@ -26,7 +43,10 @@ let userSettings = {
 // Update user settings
 router.put("/", upload.single("profileImage"), async (req, res) => {
   try {
-    const { fullName, email, phoneNumber, language } = req.body;
+    const fullName = validator.escape(req.body.fullName || "");
+    const email = validator.isEmail(req.body.email) ? req.body.email : "";
+    const phoneNumber = validator.escape(req.body.phoneNumber || "");
+    const language = validator.escape(req.body.language || "English");
     const profileImage = req.file ? req.file.filename : userSettings.profileImage;
 
     // Update the mock database
@@ -36,7 +56,8 @@ router.put("/", upload.single("profileImage"), async (req, res) => {
 
     res.status(200).json({ message: "Settings updated successfully!", userSettings });
   } catch (error) {
-    res.status(500).json({ message: "Failed to update settings." });
+    console.error("Error updating settings:", error.message);
+    res.status(500).json({ message: `Failed to update settings: ${error.message}` });
   }
 });
 
@@ -56,7 +77,8 @@ router.delete("/", async (req, res) => {
 
     res.status(200).json({ message: "User settings deleted successfully!" });
   } catch (error) {
-    res.status(500).json({ message: "Failed to delete settings." });
+    console.error("Error deleting settings:", error.message);
+    res.status(500).json({ message: `Failed to delete settings: ${error.message}` });
   }
 });
 
