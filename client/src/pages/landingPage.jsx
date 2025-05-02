@@ -1,147 +1,151 @@
-import React, { useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import AOS from "aos";
-import "aos/dist/aos.css";
+import { FiMenu, FiX, FiBarChart2, FiPieChart, FiTrendingUp, FiArrowRight } from "react-icons/fi";
 import "./LandingPage.css";
 
 const LandingPage = () => {
   const navigate = useNavigate();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  useEffect(() => {
-    AOS.init({
-      duration: 1200,
-      easing: "ease-in-out",
-      once: false,
-    });
-  }, []);
+  const handleGetStarted = () => navigate("/signup");
 
-  const handleGetStarted = () => {
-    navigate("/signup");
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
   };
 
   return (
     <div className="landing-container">
-      <header className="navbar" data-aos="fade-down">
+      <header className="navbar">
         <div className="logo">TradeBro</div>
-        <nav className="nav-links">
-          <a href="#features">Features</a>
-          <a href="#about">About</a>
-          <a href="#contact">Contact</a>
+        <button className="mobile-menu-btn" onClick={toggleMobileMenu}>
+          {mobileMenuOpen ? <FiX /> : <FiMenu />}
+        </button>
+        <nav className={`nav-links ${mobileMenuOpen ? 'mobile-active' : ''}`}>
+          <a href="#features" onClick={() => setMobileMenuOpen(false)}>Features</a>
+          <a href="#about" onClick={() => setMobileMenuOpen(false)}>About</a>
+          <a href="#contact" onClick={() => setMobileMenuOpen(false)}>Contact</a>
           <button className="cta-button" onClick={handleGetStarted}>
             Get Started
           </button>
         </nav>
       </header>
 
-      <section className="hero-section" data-aos="fade-up">
+      <section className="hero-section">
         <div className="hero-content">
-          <h1>Analyze Stock Market Trends</h1>
+          <h1>Master the Markets with Confidence</h1>
           <p>
-            Visualize live data, build portfolios, and make informed investment
-            decisions in real-time.
+            TradeBro is your personal stock market companion — track live data, simulate portfolios, and unlock insights with AI-powered tools.
           </p>
           <div className="hero-buttons">
-            <button className="primary-btn" onClick={handleGetStarted}>
-              Get Started
-            </button>
+            <button className="primary-btn" onClick={handleGetStarted}>Get Started <FiArrowRight style={{ marginLeft: '8px', verticalAlign: 'middle' }} /></button>
             <button className="secondary-btn">View Demo</button>
           </div>
         </div>
-
-        <div className="hero-visual" data-aos="zoom-in">
-          <img src="/Landingpage.png" alt="Stock Market Analysis" />
+        <div className="hero-visual">
+          <img src="https://i.pinimg.com/736x/51/bd/0f/51bd0f73220b38ec9066cab7b1df517c.jpg" alt="Stock Market Dashboard" />
         </div>
       </section>
 
       <section className="features-section" id="features">
-        <h2 className="section-title" data-aos="fade-up">
-          Features
-        </h2>
-        <div className="feature" data-aos="fade-right">
-          <h3>Live NSE/BSE Data</h3>
-          <p>Access real-time stock market data and trends to stay ahead.</p>
-        </div>
-        <div className="feature" data-aos="fade-left">
-          <h3>Demo Portfolio</h3>
-          <p>
-            Create and manage a virtual stock portfolio to practice investing
-            without risks.
-          </p>
-        </div>
-        <div className="feature" data-aos="fade-up">
-          <h3>AI-Powered Assistant</h3>
-          <p>
-            Chat with an AI bot to get instant insights, analysis, and
-            recommendations.
-          </p>
+        <h2 className="section-title">Key Features</h2>
+        <div className="features-grid">
+          <div className="feature">
+            <span className="feature-highlight"></span>
+            <div className="feature-icon-wrapper">
+              <FiBarChart2 className="feature-icon" />
+            </div>
+            <h3>Live NSE/BSE Data</h3>
+            <p>Stream real-time stock prices, volumes, and technical indicators from Indian and global markets.</p>
+          </div>
+          <div className="feature">
+            <span className="feature-highlight"></span>
+            <div className="feature-icon-wrapper">
+              <FiPieChart className="feature-icon" />
+            </div>
+            <h3>Interactive Demo Portfolio</h3>
+            <p>Test your investment strategies risk-free. Simulate trades, monitor profits, and learn by doing.</p>
+          </div>
+          <div className="feature">
+            <span className="feature-highlight"></span>
+            <div className="feature-icon-wrapper">
+              <FiTrendingUp className="feature-icon" />
+            </div>
+            <h3>AI-Powered Chat Assistant</h3>
+            <p>Ask anything about stocks, trends, or financial terms — our AI assistant delivers instant answers and analysis.</p>
+          </div>
         </div>
       </section>
 
-      <section className="about-section" id="about" data-aos="fade-up">
+      <section className="about-section" id="about">
         <h2>About TradeBro</h2>
         <p>
-          TradeBro is your one-stop solution for analyzing stock market trends,
-          building portfolios, and making informed investment decisions. Our
-          platform is designed to empower both beginners and experienced
-          investors with cutting-edge tools and insights.
+          Built for new investors and seasoned traders alike, TradeBro offers a modern platform for learning, testing, and mastering the stock market.
         </p>
         <p>
-          Whether you're looking to track live market data, simulate trades, or
-          get AI-powered assistance, TradeBro has you covered.
+          From real-time market feeds to intelligent chat assistance and demo trading, we help you trade smarter — with confidence and clarity.
         </p>
       </section>
 
-      <section className="testimonials-section" data-aos="fade-up">
-        <h2>What Our Users Say</h2>
-        <div className="testimonials">
-          <div className="testimonial" data-aos="fade-right">
-            <p>
-              "TradeBro has completely transformed the way I invest. The
-              real-time data and AI assistant are game-changers!"
-            </p>
-            <h4>- John Doe</h4>
+      <section className="gallery-section">
+        <h2>Platform Showcase</h2>
+        <div className="gallery-grid">
+          <div className="gallery-item">
+            <img src="https://i.pinimg.com/736x/41/35/46/4135461de8f243948c5f35de57c91456.jpg" alt="Trading Screen" />
+            <div className="gallery-caption">
+              <h4>Advanced Trading Interface</h4>
+            </div>
           </div>
-          <div className="testimonial" data-aos="fade-left">
-            <p>
-              "I love the demo portfolio feature. It helped me practice trading
-              without any risk!"
-            </p>
-            <h4>- Jane Smith</h4>
+          <div className="gallery-item">
+            <img src="https://i.pinimg.com/736x/a8/39/d3/a839d32b1fd0e47a94bb88fa6994b83d.jpg" alt="Portfolio Analysis" />
+            <div className="gallery-caption">
+              <h4>Portfolio Performance Analytics</h4>
+            </div>
+          </div>
+          <div className="gallery-item">
+            <img src="https://i.pinimg.com/736x/69/6b/b3/696bb3f36d24d8f75c3fd9aec18c3a16.jpg" alt="Mobile App" />
+            <div className="gallery-caption">
+              <h4>Mobile Trading Experience</h4>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="contact-section" id="contact" data-aos="fade-up">
+      <section className="testimonials-section">
+        <h2>What Our Users Say</h2>
+        <div className="testimonials">
+          <div className="testimonial">
+            <p>
+              “TradeBro helped me understand the stock market without risking real money. The demo feature is incredibly useful.”
+            </p>
+            <h4>- Ramesh P., Beginner Investor</h4>
+          </div>
+          <div className="testimonial">
+            <p>
+              “I love how intuitive the screener and AI bot are. It’s like having a financial expert with me 24/7.”
+            </p>
+            <h4>- Sneha M., Technical Analyst</h4>
+          </div>
+        </div>
+      </section>
+
+      <section className="contact-section" id="contact">
         <h2>Contact Us</h2>
-        <p>
-          Have questions or need support? Reach out to us, and we'll be happy
-          to assist you.
-        </p>
+        <p>Have a question or suggestion? We'd love to hear from you.</p>
         <form className="contact-form">
           <input type="text" placeholder="Your Name" required />
           <input type="email" placeholder="Your Email" required />
           <textarea placeholder="Your Message" required></textarea>
-          <button type="submit" className="primary-btn">
-            Send Message
-          </button>
+          <button type="submit" className="primary-btn">Send Message</button>
         </form>
       </section>
 
-      <footer className="footer" data-aos="fade-up">
+      <footer className="footer">
         <p>© 2025 TradeBro. All rights reserved.</p>
         <p>
-          Follow us on:
-          <a href="https://twitter.com" target="_blank" rel="noopener noreferrer">
-            Twitter
-          </a>
-          |
-          <a href="https://facebook.com" target="_blank" rel="noopener noreferrer">
-            Facebook
-          </a>
-          |
-          <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer">
-            LinkedIn
-          </a>
+          Follow us:
+          <a href="https://twitter.com" target="_blank" rel="noopener noreferrer"> Twitter </a>|
+          <a href="https://facebook.com" target="_blank" rel="noopener noreferrer"> Facebook </a>|
+          <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer"> LinkedIn </a>
         </p>
       </footer>
     </div>
