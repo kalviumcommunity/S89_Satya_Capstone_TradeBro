@@ -5,9 +5,11 @@ const cors = require("cors");
 const authRoutes = require("./routes/authRoutes");
 const dataRoutes = require("./routes/apiRoutes");
 const settingsRoutes = require("./routes/settings");
+const chatbotRoutes = require("./chatbot");
+const virtualMoneyRoutes = require("./routes/virtualMoneyRoutes");
 const passport = require("passport");
 const session = require("express-session");
-const MongoStore = require("connect-mongo"); 
+const MongoStore = require("connect-mongo");
 require("./passport.config");
 
 dotenv.config();
@@ -16,37 +18,37 @@ const app = express();
 
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "keyboard cat", // Use a secure secret
+    secret: process.env.SESSION_SECRET ,
     resave: false,
     saveUninitialized: false,
     store: MongoStore.create({
-      mongoUrl: process.env.MONGO_URI, // Store sessions in MongoDB
+      mongoUrl: process.env.MONGO_URI,
       collectionName: "sessions",
     }),
     cookie: {
-      maxAge: 1000 * 60 * 60 * 24, // 1 day
-      secure: process.env.NODE_ENV === "production", // Use secure cookies in production
+      maxAge: 1000 * 60 * 60 * 24,
+      secure: process.env.NODE_ENV === "production",
       httpOnly: true,
     },
   })
 );
 
-// Initialize Passport middleware
 app.use(passport.initialize());
 app.use(passport.session());
 
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors({ credentials: true, origin: "http://localhost:5173" })); // Allow credentials for frontend
+app.use(cors({ credentials: true, origin: "http://localhost:5173" }));
 app.use(express.json());
-app.use("/uploads", express.static("uploads")); // Serve uploaded files
+app.use("/uploads", express.static("uploads"));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/data", dataRoutes);
 app.use("/api/settings", settingsRoutes);
+app.use("/api/chatbot", chatbotRoutes);
+app.use("/api/virtual-money", virtualMoneyRoutes);
 
-// MongoDB connection
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {

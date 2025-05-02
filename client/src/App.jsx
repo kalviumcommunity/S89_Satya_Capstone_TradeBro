@@ -4,8 +4,9 @@ import { BrowserRouter as Router } from "react-router-dom";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { ThemeProvider } from "./context/ThemeContext";
 import { ToastProvider } from "./context/ToastContext";
+import { SidebarProvider } from "./context/SidebarContext";
+import { AuthProvider } from "./context/AuthContext";
 import AppRoutes from "./approutes";
-import ThemeToggle from "./components/ThemeToggle";
 import "./styles/theme.css";
 import "./App.css";
 
@@ -16,12 +17,15 @@ const App = () => {
     <GoogleOAuthProvider clientId={clientId}>
       <ThemeProvider>
         <ToastProvider>
-          <Router>
-            <div className="app-wrapper">
-              <AppRoutes />
-              <ThemeToggle />
-            </div>
-          </Router>
+          <SidebarProvider>
+            <AuthProvider>
+              <Router>
+                <div className="app-wrapper">
+                  <AppRoutes />
+                </div>
+              </Router>
+            </AuthProvider>
+          </SidebarProvider>
         </ToastProvider>
       </ThemeProvider>
     </GoogleOAuthProvider>

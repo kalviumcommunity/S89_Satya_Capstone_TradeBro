@@ -4,6 +4,7 @@ import axios from "axios";
 import { motion } from "framer-motion";
 import { FiMail, FiLock, FiLogIn } from "react-icons/fi";
 import { useToast } from "../context/ToastContext";
+import { useAuth } from "../context/AuthContext";
 import Loading from "../components/Loading";
 import "./AuthPages.css";
 import Squares from "../UI/squares";
@@ -11,6 +12,7 @@ import Squares from "../UI/squares";
 const Login = () => {
   const navigate = useNavigate();
   const toast = useToast();
+  const { login: authLogin } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState({});
@@ -64,6 +66,12 @@ const Login = () => {
         password,
       });
       console.log("Login successful:", response.data);
+
+      // Store the token in AuthContext and localStorage
+      if (response.data.token) {
+        authLogin(response.data.token);
+      }
+
       setSuccess(true);
 
       // Clear form

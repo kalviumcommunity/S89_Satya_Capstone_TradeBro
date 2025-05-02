@@ -1,9 +1,13 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiPlusCircle, FiRefreshCw, FiTrendingUp, FiTrendingDown, FiDollarSign, FiBarChart2 } from "react-icons/fi";
+import {
+  FiPlusCircle, FiRefreshCw, FiTrendingUp, FiTrendingDown,
+  FiDollarSign, FiBarChart2, FiCreditCard, FiShoppingCart, FiGift
+} from "react-icons/fi";
 import { useToast } from "../context/ToastContext";
-import Sidebar from "../components/Sidebar";
+import PageLayout from "../components/PageLayout";
 import Loading from "../components/Loading";
+import axios from "axios";
 import "./portfolio.css";
 
 const mockPortfolio = [
@@ -28,6 +32,11 @@ const PortfolioPage = () => {
   const [portfolio, setPortfolio] = useState(mockPortfolio);
   const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [virtualMoney, setVirtualMoney] = useState({
+    balance: 10000,
+    lastLoginReward: null
+  });
+  const [showRewardAnimation, setShowRewardAnimation] = useState(false);
   const [newStock, setNewStock] = useState({
     symbol: "",
     company: "",
@@ -36,6 +45,105 @@ const PortfolioPage = () => {
     currentPrice: "",
   });
   const [errors, setErrors] = useState({});
+
+  // Fetch virtual money data
+  useEffect(() => {
+    const fetchVirtualMoney = async () => {
+      try {
+        // Try to call the API to get virtual money data
+        try {
+          const response = await axios.get("http://localhost:5000/api/virtual-money/account", { timeout: 3000 });
+          if (response.data.success) {
+            setVirtualMoney(response.data.data);
+            console.log("Successfully fetched virtual money data from API");
+          }
+        } catch (apiError) {
+          console.log("Backend API not available, using local storage data");
+
+          // Try to get data from local storage
+          const storedData = localStorage.getItem('virtualMoney');
+          if (storedData) {
+            const parsedData = JSON.parse(storedData);
+            setVirtualMoney(parsedData);
+            console.log("Using data from local storage");
+          }
+        }
+
+        // Check if user can claim daily reward
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (!virtualMoney.lastLoginReward || new Date(virtualMoney.lastLoginReward) < today) {
+          // Show claim reward button is handled by the button's disabled state
+        }
+      } catch (err) {
+        console.error("Error in virtual money handling:", err);
+        // Continue with default mock data
+      }
+    };
+
+    fetchVirtualMoney();
+  }, []);
+
+  // Function to claim daily login reward
+  const claimDailyReward = async () => {
+    try {
+      let rewardClaimed = false;
+      let rewardAmount = 1; // Default reward amount
+
+      // Try to call the API to claim daily reward
+      try {
+        const response = await axios.post("http://localhost:5000/api/virtual-money/claim-reward", { timeout: 3000 });
+        if (response.data.success) {
+          rewardAmount = response.data.data.rewardAmount;
+          rewardClaimed = true;
+          console.log("Successfully claimed reward from API");
+        }
+      } catch (apiError) {
+        console.log("Backend API not available, using local implementation");
+
+        // Local implementation for claiming reward
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (!virtualMoney.lastLoginReward || new Date(virtualMoney.lastLoginReward) < today) {
+          rewardClaimed = true;
+        } else {
+          toast.info("You've already claimed your daily reward today");
+          return false;
+        }
+      }
+
+      if (rewardClaimed) {
+        // Update virtual money state
+        const updatedVirtualMoney = {
+          ...virtualMoney,
+          balance: virtualMoney.balance + rewardAmount,
+          lastLoginReward: new Date()
+        };
+
+        setVirtualMoney(updatedVirtualMoney);
+
+        // Save to local storage for offline use
+        localStorage.setItem('virtualMoney', JSON.stringify(updatedVirtualMoney));
+
+        // Show animation and toast
+        setShowRewardAnimation(true);
+        setTimeout(() => {
+          setShowRewardAnimation(false);
+        }, 3000);
+
+        toast.success(`Daily reward claimed: +${rewardAmount} coin!`);
+        return true;
+      }
+
+      return false;
+    } catch (err) {
+      console.error("Error claiming daily reward:", err);
+      toast.error("Failed to claim daily reward");
+      return false;
+    }
+  };
 
   const totalInvestment = portfolio.reduce(
     (acc, stock) => acc + stock.buyPrice * stock.quantity,
@@ -103,10 +211,20 @@ const PortfolioPage = () => {
 
     const { symbol, company, quantity, buyPrice, currentPrice } = newStock;
 
+    // Calculate total cost
+    const totalCost = parseInt(quantity) * parseFloat(buyPrice);
+
+    // Check if user has enough virtual money
+    if (totalCost > virtualMoney.balance) {
+      toast.error(`Insufficient funds. You need ${totalCost} coins but have ${virtualMoney.balance} coins.`);
+      return;
+    }
+
     setIsLoading(true);
 
-    // Simulate API call
+    // Simulate API call to buy stock with virtual money
     setTimeout(() => {
+      // Add stock to portfolio
       setPortfolio([
         ...portfolio,
         {
@@ -118,6 +236,13 @@ const PortfolioPage = () => {
         },
       ]);
 
+      // Deduct virtual money
+      setVirtualMoney(prev => ({
+        ...prev,
+        balance: prev.balance - totalCost
+      }));
+
+      // Reset form
       setNewStock({
         symbol: "",
         company: "",
@@ -128,7 +253,27 @@ const PortfolioPage = () => {
 
       setShowModal(false);
       setIsLoading(false);
-      toast.success(`${symbol.toUpperCase()} added to portfolio!`);
+      toast.success(`${symbol.toUpperCase()} added to portfolio! Spent ${totalCost} coins.`);
+
+      // In a real app, this would call the API
+      // const buyStockAPI = async () => {
+      //   try {
+      //     const response = await axios.post("http://localhost:5000/api/virtual-money/buy", {
+      //       stockSymbol: symbol.toUpperCase(),
+      //       quantity: parseInt(quantity),
+      //       price: parseFloat(buyPrice)
+      //     });
+      //
+      //     if (response.data.success) {
+      //       // Update virtual money balance
+      //       setVirtualMoney(response.data.data);
+      //     }
+      //   } catch (err) {
+      //     console.error("Error buying stock:", err);
+      //   }
+      // };
+      //
+      // buyStockAPI();
     }, 800);
   };
 
@@ -145,14 +290,13 @@ const PortfolioPage = () => {
   };
 
   return (
-    <motion.div
-      className="portfolio-layout"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-    >
-      <Sidebar />
-      <div className="portfolio-content">
+    <PageLayout>
+      <motion.div
+        className="portfolio-container"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      >
         <motion.h1
           className="portfolio-title"
           initial={{ y: -20, opacity: 0 }}
@@ -168,6 +312,30 @@ const PortfolioPage = () => {
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.2 }}
         >
+          <motion.div
+            className="summary-card glass virtual-money-card"
+            whileHover={{ y: -10, boxShadow: "0 15px 30px rgba(0, 0, 0, 0.1)" }}
+          >
+            <FiCreditCard className="card-icon" />
+            <p>Virtual Money</p>
+            <motion.h2
+              key={virtualMoney.balance}
+              initial={{ scale: 1 }}
+              animate={{ scale: [1, 1.1, 1] }}
+              transition={{ duration: 0.5 }}
+            >
+              ${virtualMoney.balance.toLocaleString()}
+            </motion.h2>
+            <div className="reward-button-container">
+              <button
+                className={`claim-reward-btn ${virtualMoney.lastLoginReward && new Date(virtualMoney.lastLoginReward).setHours(0,0,0,0) === new Date().setHours(0,0,0,0) ? 'claimed' : ''}`}
+                onClick={claimDailyReward}
+                disabled={virtualMoney.lastLoginReward && new Date(virtualMoney.lastLoginReward).setHours(0,0,0,0) === new Date().setHours(0,0,0,0)}
+              >
+                <FiGift /> {virtualMoney.lastLoginReward && new Date(virtualMoney.lastLoginReward).setHours(0,0,0,0) === new Date().setHours(0,0,0,0) ? 'Reward Claimed' : 'Claim Daily Reward'}
+              </button>
+            </div>
+          </motion.div>
           <motion.div
             className="summary-card glass"
             whileHover={{ y: -10, boxShadow: "0 15px 30px rgba(0, 0, 0, 0.1)" }}
@@ -204,6 +372,20 @@ const PortfolioPage = () => {
             </p>
           </motion.div>
         </motion.div>
+
+        <AnimatePresence>
+          {showRewardAnimation && (
+            <motion.div
+              className="reward-animation"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+            >
+              <FiGift className="reward-icon" />
+              <span>+1 coin!</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <motion.div
           className="table-container glass"
@@ -274,7 +456,7 @@ const PortfolioPage = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            <FiPlusCircle /> Add Stock
+            <FiShoppingCart /> Buy Stock with Coins
           </motion.button>
           <motion.button
             className="reset-btn"
@@ -302,7 +484,8 @@ const PortfolioPage = () => {
                 exit={{ scale: 0.8, opacity: 0 }}
                 transition={{ type: "spring", stiffness: 300, damping: 25 }}
               >
-                <h2>Add New Stock</h2>
+                <h2>Buy Stock with Virtual Money</h2>
+                <p className="modal-subtitle">Available Balance: ${virtualMoney.balance.toLocaleString()} coins</p>
                 <form onSubmit={addStock}>
                   <div className="form-group">
                     <input
@@ -372,7 +555,7 @@ const PortfolioPage = () => {
                       whileTap={{ scale: 0.95 }}
                       disabled={isLoading}
                     >
-                      {isLoading ? <Loading size="small" text="" /> : "Add Stock"}
+                      {isLoading ? <Loading size="small" text="" /> : "Buy Stock"}
                     </motion.button>
                     <motion.button
                       type="button"
@@ -390,8 +573,8 @@ const PortfolioPage = () => {
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
-    </motion.div>
+      </motion.div>
+    </PageLayout>
   );
 };
 

@@ -3,91 +3,38 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "./Settings.css";
 import "./AuthPages.css";
-import Sidebar from "../components/Sidebar";
+import PageLayout from "../components/PageLayout";
 import Squares from "../UI/squares";
 import { useToast } from "../context/ToastContext";
+import { useAuth } from "../context/AuthContext";
 
 const SettingsPage = () => {
   const navigate = useNavigate();
   const toast = useToast();
-  const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
-    phoneNumber: "",
-    language: "English",
-  });
-  const [profileImage, setProfileImage] = useState(null);
-  const [notifications, setNotifications] = useState(true); // New state for notifications
+  const { logout } = useAuth();
+  const [notifications, setNotifications] = useState(true); // Notifications setting
   const [successMessage, setSuccessMessage] = useState("");
   const [isSigningOut, setIsSigningOut] = useState(false);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
-
-  const handleImageChange = (e) => {
-    setProfileImage(e.target.files[0]);
-  };
-
-  const handleSave = async () => {
-    const data = new FormData();
-    data.append("fullName", formData.fullName);
-    data.append("email", formData.email);
-    data.append("phoneNumber", formData.phoneNumber);
-    data.append("language", formData.language);
-    data.append("notifications", notifications); // Include notifications in the request
-    if (profileImage) {
-      data.append("profileImage", profileImage);
-    }
-
+  const handleSaveNotifications = async () => {
     try {
-      const response = await axios.put("http://localhost:5000/api/settings", data, {
-        headers: { "Content-Type": "multipart/form-data" },
+      const response = await axios.put("http://localhost:5000/api/settings/notifications", {
+        notifications
       });
 
-      setSuccessMessage(response.data.message);
-
-      setFormData({
-        fullName: "",
-        email: "",
-        phoneNumber: "",
-        language: "English",
-      });
-      setProfileImage(null);
-      setNotifications(true);
+      setSuccessMessage(response.data.message || "Notification settings updated successfully");
+      toast.success("Settings saved successfully");
     } catch (error) {
-      console.error("Error updating settings:", error);
-      alert("Failed to update settings.");
-    }
-  };
-
-  const handleDelete = async () => {
-    try {
-      const response = await axios.delete("http://localhost:5000/api/settings");
-      setSuccessMessage(response.data.message);
-      setFormData({
-        fullName: "",
-        email: "",
-        phoneNumber: "",
-        language: "English",
-      });
-      setProfileImage(null);
-      setNotifications(true);
-    } catch (error) {
-      console.error("Error deleting settings:", error);
-      alert("Failed to delete settings.");
+      console.error("Error updating notification settings:", error);
+      toast.error("Failed to update settings");
     }
   };
 
   const handleSignOut = async () => {
     setIsSigningOut(true);
     try {
-      // Call the logout endpoint
-      await axios.get("http://localhost:5000/api/auth/logout");
-
-      // Clear any local storage items related to authentication
-      localStorage.removeItem("authToken");
+      // Use the logout function from AuthContext
+      await logout();
 
       // Show success message
       toast.success("Successfully signed out");
@@ -113,45 +60,10 @@ const SettingsPage = () => {
         hoverFillColor="#ffffff"
         backgroundColor="#f0f8ff"
       />
-      <Sidebar />
-      <div className="settings-layout">
+      <PageLayout>
+        <div className="settings-container-wrapper">
         <div className="settings-container">
-          <h1 className="settings-header">⚙️ Account Settings</h1>
-          <div className="settings-card">
-            <label>Full Name</label>
-            <input
-              type="text"
-              name="fullName"
-              value={formData.fullName}
-              onChange={handleInputChange}
-            />
-            <label>Email</label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleInputChange}
-            />
-            <label>Phone Number</label>
-            <input
-              type="text"
-              name="phoneNumber"
-              value={formData.phoneNumber}
-              onChange={handleInputChange}
-            />
-            <label>Language</label>
-            <select
-              name="language"
-              value={formData.language}
-              onChange={handleInputChange}
-            >
-              <option value="English">English</option>
-              <option value="Spanish">Spanish</option>
-              <option value="French">French</option>
-            </select>
-            <label>Profile Image</label>
-            <input type="file" onChange={handleImageChange} />
-          </div>
+          <h1 className="settings-header">⚙️ Application Settings</h1>
           <div className="settings-card">
             <h3>🔔 Notifications</h3>
             <div className="toggle-switch">
@@ -162,13 +74,13 @@ const SettingsPage = () => {
                 onChange={() => setNotifications(!notifications)}
               />
             </div>
+            <p className="setting-description">
+              Receive notifications about market updates, price alerts, and important news.
+            </p>
           </div>
           <div className="settings-buttons">
-            <button className="save-btn" onClick={handleSave}>
+            <button className="save-btn" onClick={handleSaveNotifications}>
               Save Changes
-            </button>
-            <button className="delete-btn" onClick={handleDelete}>
-              Delete Settings
             </button>
           </div>
 
@@ -185,7 +97,8 @@ const SettingsPage = () => {
           </div>
           {successMessage && <p className="success-message">{successMessage}</p>}
         </div>
-      </div>
+        </div>
+      </PageLayout>
     </div>
   );
 };

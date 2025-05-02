@@ -96,7 +96,7 @@ const LandingPage = () => {
             </div>
           </div>
           <div className="gallery-item">
-            <img src="https://i.pinimg.com/736x/bd/20/79/bd20793555d3730fd2fcb08789c7340c.jpg" alt="Portfolio Analysis" />
+            <img src="https://i.pinimg.com/736x/a8/39/d3/a839d32b1fd0e47a94bb88fa6994b83d.jpg" alt="Portfolio Analysis" />
             <div className="gallery-caption">
               <h4>Portfolio Performance Analytics</h4>
             </div>

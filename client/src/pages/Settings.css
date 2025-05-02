@@ -8,22 +8,19 @@
 }
 
 /* Layout for the settings page */
-.settings-layout {
+.settings-container-wrapper {
   display: flex;
   color: #222;
   position: relative;
   z-index: 2;
   width: 90%;
   max-width: 1200px;
-  padding-left: 250px; /* Space for the fixed sidebar */
 }
 
 /* Responsive layout for mobile devices */
 @media (max-width: 768px) {
-  .settings-layout {
-    flex-direction: column;
-    padding-left: 0; /* No left padding on mobile */
-    padding-top: 60px; /* Space for collapsed mobile sidebar */
+  .settings-container-wrapper {
+    width: 100%;
   }
 }
 
@@ -160,6 +157,13 @@
 
 .toggle-switch input[type="checkbox"]:checked::before {
   transform: translateX(20px);
+}
+
+.setting-description {
+  font-size: 0.9rem;
+  color: #666;
+  margin-top: 10px;
+  line-height: 1.5;
 }
 
 /* Buttons styling */

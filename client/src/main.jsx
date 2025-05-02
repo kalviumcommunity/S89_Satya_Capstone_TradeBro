@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import './responsive.css'
+import './utils/axiosConfig'  // Import axios config
 import App from './App.jsx'
 
 

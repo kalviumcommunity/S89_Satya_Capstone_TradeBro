@@ -2,11 +2,13 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import { FiUser, FiMail, FiLock, FiUserPlus } from "react-icons/fi";
+import { useAuth } from "../context/AuthContext";
 import "./AuthPages.css";
 import Squares from "../UI/squares";
 
 const Signup = () => {
   const navigate = useNavigate();
+  const { register } = useAuth();
   const [form, setForm] = useState({
     username: "",
     email: "",
@@ -39,6 +41,12 @@ const Signup = () => {
         },
         { withCredentials: true }
       );
+
+      // Store the token in AuthContext and localStorage
+      if (res.data.token) {
+        register(res.data.token);
+      }
+
       setSuccess(true);
       setTimeout(() => setSuccess(false), 2000);
       setTimeout(() => navigate("/portfolio"), 1000);
