@@ -8,6 +8,7 @@ import LandingPage from "./pages/landingPage";
 import ForgetPassword from './pages/ForgetPassword';
 import ResetPassword from './pages/ResetPassword';
 import PortfolioPage from "./pages/portfolio";
+import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import News from "./pages/News";
 import Notifications from "./pages/Notifications";
@@ -56,6 +57,11 @@ const AppRoutes = () => {
               <ResetPassword />
             </PageTransition>
           } />
+          <Route path="/dashboard" element={
+            <PageTransition>
+              <Dashboard />
+            </PageTransition>
+          }/>
           <Route path="/portfolio" element={
             <PageTransition>
               <PortfolioPage />

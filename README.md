@@ -1,76 +1,108 @@
-# 🎓 Capstone Project: TradeBro – Learn Stock Trading by Doing
+# TradeBro - Virtual Stock Trading Platform
 
-## 📌 Project Idea
+## Project Overview
 
 **TradeBro** is a virtual stock market simulator that enables users to gain real-world trading experience without investing real money. It provides a risk-free, educational platform where users can trade using virtual funds, analyze real-time data, track their portfolios, and learn investment strategies in an interactive way.
 
----
+## Features
 
-## 📖 Project Description
+- **Virtual Trading**: Practice trading with virtual money
+- **Portfolio Management**: Track your holdings and performance
+- **Real-time Data**: Access live market data for informed decisions
+- **Trading Assistant**: Get AI-powered trading advice
+- **Daily Rewards**: Earn virtual coins by logging in daily
 
-**TradeBro** is built to help students and beginner investors:
-- Understand how the stock market functions
-- Practice trading with real-time data and no financial risk
-- Learn market terminology and financial concepts
-- Use screeners to discover investment opportunities
-- Track portfolio performance and improve decision-making skills
+## Tech Stack
 
-The platform includes features such as:
-- Stock search & trading using virtual currency  
-- Portfolio tracking with charts and analytics  
-- Real-time price updates and historical data  
-- Stock screener with key financial metrics  
-- Educational modules and gamified challenges  
+- **Frontend**: React.js, Tailwind CSS, Recharts
+- **Backend**: Node.js, Express
+- **Database**: MongoDB
+- **Authentication**: JWT
+- **APIs**: Financial Modeling Prep API
 
----
+## Getting Started
 
-## 🛠 Tech Stack
+### Prerequisites
 
-- **Frontend:** React.js, Tailwind CSS, Recharts
-- **Backend:** Node.js, Express
-- **Database:** MONGODB
-- **Authentication:** Firebase Auth or JWT
-- **APIs:** Financial Modeling Prep / Yahoo Finance API
-- **Hosting:** Vercel (Frontend), Render (Backend), Firebase (DB)
+- Node.js (v14 or higher)
+- npm or yarn
+- MongoDB connection
 
----
+### Installation
 
-## 📅 25-Day Development Plan
+1. Clone the repository
+   ```
+   git clone https://github.com/yourusername/tradebro.git
+   cd tradebro
+   ```
 
-| **Day** | **Milestone**                                                                    |
-|--------:|-----------------------------------------------------------------------------------|
-| Day 1   | Set up GitHub repo, define scope, finalize tech stack                            |
-| Day 2   | Design UI wireframes and plan user flow                                           |
-| Day 3   | Initialize frontend with React + Tailwind                                         |
-| Day 4   | Set up backend server with Express.js                                             |
-| Day 5   | Add Firebase/JWT user authentication                                              |
-| Day 6   | Connect and configure database (MONGO DB)                          |
-| Day 7   | Integrate stock data API and fetch stock quotes                                  |
-| Day 8   | Build stock search component and show real-time data                             |
-| Day 9   | Implement virtual trading (buy/sell) logic                                        |
-| Day 10  | Store trade transactions in the database                                          |
-| Day 11  | Create a portfolio dashboard: P&L, holdings, transaction history                 |
-| Day 12  | Add charting (Recharts or TradingView) for price history                         |
-| Day 13  | Develop a stock screener with filtering options                                  |
-| Day 14  | Build educational section: glossary, articles, beginner guides                   |
-| Day 15  | Add quiz module for investment concepts                                           |
-| Day 16  | Implement leaderboard based on portfolio performance                             |
-| Day 17  | Add user profile page with stats and badges                                       |
-| Day 18  | Make app responsive, refine UI elements                                           |
-| Day 19  | Implement notification system (mock earnings alerts, reminders)                  |
-| Day 20  | Test app: unit testing, user flow testing                                         |
-| Day 21  | Fix bugs and handle edge cases                                                    |
-| Day 22  | Deploy frontend (Vercel) and backend (Render or Firebase)                        |
-| Day 23  | Write in-app help section and tooltips                                            |
-| Day 24  | Final bug fixes, cleanup, and prepare for presentation                           |
-| Day 25  | Deliver final demo and submit capstone project                                    |
+2. Install dependencies for both client and server
+   ```
+   cd client
+   npm install
+   cd ../server
+   npm install
+   ```
 
----
+3. Create a `.env` file in the server directory with the following variables:
+   ```
+   PORT=5000
+   MONGO_URI=your_mongodb_connection_string
+   JWT_SECRET=your_jwt_secret
+   SESSION_SECRET=your_session_secret
+   FMP_API_KEY=your_financial_modeling_prep_api_key
+   GEMINI_API_KEY=your_gemini_api_key
+   ```
 
-## ✅ Final Goal
+4. Start the application
 
-To launch **TradeBro** as a fully working virtual trading simulation app where users can learn to invest, build portfolios, and improve financial literacy—all in a risk-free environment.
+   Start the server:
+   ```
+   cd server
+   npm start
+   ```
 
----
+   Start the client (in a new terminal):
+   ```
+   cd client
+   npm run dev
+   ```
 
-## 🙌 Created by: Satya
+5. Access the application
+   - Backend: http://localhost:5000
+   - Frontend: http://localhost:5173
+
+## Virtual Money System
+
+TradeBro includes a virtual money system that allows users to:
+
+- Start with ₹10,000 virtual Indian Rupees
+- Earn ₹1 daily by logging in (can only be claimed once every 24 hours)
+- Buy and sell stocks with virtual money
+- Track transaction history and portfolio performance in Indian Rupees (₹)
+
+## Deployment Notes
+
+### Files Excluded from Version Control
+The following files and directories are excluded from version control via .gitignore:
+
+- `node_modules/` directories (both client and server)
+- Environment files (`.env`)
+- Testing directories and files
+- Log files
+- Build artifacts and distribution files
+- Batch files (`.bat`)
+
+### Before Pushing to GitHub
+1. Ensure you have a proper `.env` file locally (not included in the repository)
+2. Make sure all dependencies are properly listed in package.json files
+3. Test the application locally to verify everything works
+4. Remove any sensitive information from the codebase
+
+### Setting Up After Cloning
+After cloning the repository, you'll need to:
+1. Create the `.env` file with the required environment variables
+2. Install dependencies using `npm install` in both client and server directories
+3. Start the application as described in the Installation section
+
+## Created by: Satya

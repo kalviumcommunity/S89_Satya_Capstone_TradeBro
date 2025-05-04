@@ -1,13 +1,11 @@
 const express = require('express');
 const dotenv = require('dotenv');
-const cors = require('cors');
 const axios = require('axios');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 dotenv.config();  // Load environment variables from .env file
 
 const router = express.Router();
-const apiKey = process.env.STOCK_API_KEY;  // Retrieve the stock API key from environment
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);  // Load Gemini API key
 
 // System Instruction for the chatbot
@@ -30,6 +28,8 @@ const systemInstruction = [
 12. For any stock query, provide the following data points: price, daily high, daily low, market cap, P/E ratio, and volume.
 13. For stocks not in your database, provide reasonable simulated data.
 14. NEVER ask the user for API details or similar technical information.
+15. DO NOT mention or discuss virtual money, coins, or any virtual currency features.
+16. Focus only on providing real stock market information and analysis.
 
 *Sample Conversational Responses:*
 - "Hi there! How can I help with your trading questions today?"
@@ -51,13 +51,14 @@ Remember that market conditions change quickly, so always verify before making d
   }
 ];
 
-// Function to get stock data
+// Function to get stock data using our proxy server
 const getStockData = async (symbol) => {
   try {
-    const url = `https://financialmodelingprep.com/api/v3/quote/${symbol}?apikey=${apiKey}`;
+    // Use our proxy server instead of direct API call
+    const url = `http://localhost:${process.env.PORT || 5000}/api/proxy/stock-batch?symbols=${symbol}`;
     const response = await axios.get(url);
 
-    if (response.data.length > 0) {
+    if (response.data && response.data.length > 0) {
       const stockData = response.data[0];
       return {
         price: stockData.price,
@@ -76,13 +77,14 @@ const getStockData = async (symbol) => {
   }
 };
 
-// Function to get top gainers
+// Function to get top gainers using our proxy server
 const getTopGainers = async () => {
   try {
-    const url = `https://financialmodelingprep.com/api/v3/stock_market/gainers?apikey=${apiKey}`;
+    // Use our proxy server instead of direct API call
+    const url = `http://localhost:${process.env.PORT || 5000}/api/proxy/top-gainers`;
     const response = await axios.get(url);
 
-    if (response.data.length > 0) {
+    if (response.data && response.data.length > 0) {
       return response.data.slice(0, 5).map(stock => ({
         symbol: stock.symbol,
         companyName: stock.name,
@@ -100,22 +102,37 @@ const getTopGainers = async () => {
 // Initialize chat sessions cache
 const chatSessions = new Map();
 
+// Import models
+const User = require('./models/User');
+const VirtualMoney = require('./models/VirtualMoney');
+const { verifyToken } = require('./middleware/auth');
+
 // Endpoint to start a new chat session
 router.post('/start', async (req, res) => {
   try {
     const sessionId = req.body.sessionId || Date.now().toString();
 
     // Initialize the generative model for Gemini AI
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
 
-    // Start a chat session with the system instruction
+    // Start a chat session with a basic system instruction
     const chat = model.startChat({
       history: [
         {
           role: 'user',
-          parts: [{ text: systemInstruction[0].text }], // System message with initial instruction
+          parts: [{ text: systemInstruction[0].text }],
+        },
+        {
+          role: 'model',
+          parts: [{ text: `I understand my role as TradeBro, a friendly and conversational stock market assistant. I'll be helpful, engaging, and personable while providing accurate information about stocks and trading.` }],
         },
       ],
+      generationConfig: {
+        temperature: 0.7,
+        topP: 0.95,
+        topK: 64,
+        maxOutputTokens: 2048,
+      },
     });
 
     // Store the chat session
@@ -126,12 +143,89 @@ router.post('/start', async (req, res) => {
       sessionId,
       message: "Chat session started successfully"
     });
+    return;
   } catch (error) {
     console.error('Error starting chat session:', error);
     res.status(500).json({
       success: false,
       error: error.message
     });
+    return;
+  }
+
+  // If we get here, try the authenticated version
+  if (req.user) {
+    try {
+      const sessionId = req.body.sessionId || Date.now().toString();
+
+      // Get user details for personalization
+      const user = await User.findById(req.user.id);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+
+      // Get user's virtual money data
+      let virtualMoney = await VirtualMoney.findOne({ userId: req.user.id });
+      if (!virtualMoney && user.email) {
+        virtualMoney = await VirtualMoney.findOne({ userEmail: user.email });
+      }
+
+      // Create personalized system instruction
+      const personalizedInstruction = systemInstruction[0].text + `\n\n*User Information:*\nUsername: ${user.username}\nEmail: ${user.email}\n`;
+
+      // Add portfolio information if available
+      let portfolioInfo = "";
+      if (virtualMoney && virtualMoney.portfolio && virtualMoney.portfolio.length > 0) {
+        portfolioInfo = "\n*User Portfolio:*\n";
+        virtualMoney.portfolio.forEach(stock => {
+          portfolioInfo += `- ${stock.stockSymbol}: ${stock.quantity} shares at avg. price $${stock.averageBuyPrice.toFixed(2)}\n`;
+        });
+      }
+
+      // Initialize the generative model for Gemini AI
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+
+      // Combine personalized instruction with portfolio info
+      const fullInstruction = personalizedInstruction + portfolioInfo;
+
+      // Start a chat session with the personalized system instruction
+      const chat = model.startChat({
+        history: [
+          {
+            role: 'user',
+            parts: [{ text: fullInstruction }], // System message with personalized instruction
+          },
+          {
+            role: 'model',
+            parts: [{ text: `I understand my role as TradeBro, a friendly and conversational stock market assistant for ${user.username}. I'll be helpful, engaging, and personable while providing accurate information about stocks and trading. I'll follow all the guidelines you've provided and personalize my responses based on your portfolio and preferences.` }],
+          },
+        ],
+        generationConfig: {
+          temperature: 0.7,
+          topP: 0.95,
+          topK: 64,
+          maxOutputTokens: 2048,
+        },
+      });
+
+      // Store the chat session
+      chatSessions.set(sessionId, chat);
+
+      res.status(200).json({
+        success: true,
+        sessionId,
+        message: "Chat session started successfully"
+      });
+    } catch (error) {
+      console.error('Error starting chat session:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
   }
 });
 
@@ -205,20 +299,76 @@ router.post('/message', async (req, res) => {
 
       // If it's a simple greeting, handle it conversationally
       if (isSimpleGreeting) {
-        const result = await chat.sendMessage(message);
-        const response = result.response.text();
+        try {
+          const result = await chat.sendMessage(message);
+          const response = result.response.text();
 
-        return res.status(200).json({
-          success: true,
-          type: 'text',
-          message: response
-        });
+          return res.status(200).json({
+            success: true,
+            type: 'text',
+            message: response
+          });
+        } catch (greetingError) {
+          console.error('Error handling greeting:', greetingError);
+
+          // Fallback responses for common greetings
+          const greetingResponses = {
+            'hi': "Hi there! How can I help with your trading questions today?",
+            'hello': "Hello! I'm TradeBro, your friendly trading assistant. What would you like to know?",
+            'hey': "Hey! Ready to talk stocks and trading strategies? What's on your mind?",
+            'how are you': "I'm doing great, thanks for asking! How can I assist with your trading journey today?"
+          };
+
+          // Find a matching greeting or use default
+          let responseText = "Hello! I'm your TradeBro assistant. How can I help you with stocks or trading today?";
+          for (const [greeting, response] of Object.entries(greetingResponses)) {
+            if (message.toLowerCase().includes(greeting)) {
+              responseText = response;
+              break;
+            }
+          }
+
+          // Try to recreate the chat session if it failed
+          try {
+            // Initialize the generative model for Gemini AI with a more reliable model
+            const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+
+            // Start a new chat session with a basic system instruction
+            const newChat = model.startChat({
+              history: [
+                {
+                  role: 'user',
+                  parts: [{ text: systemInstruction[0].text }],
+                },
+                {
+                  role: 'model',
+                  parts: [{ text: `I understand my role as TradeBro, a friendly and conversational stock market assistant.` }],
+                },
+              ],
+              generationConfig: {
+                temperature: 0.7,
+                maxOutputTokens: 1024,
+              },
+            });
+
+            // Replace the existing chat session
+            chatSessions.set(sessionId, newChat);
+            console.log("Recreated chat session with more reliable model");
+          } catch (recreateError) {
+            console.error("Failed to recreate chat session:", recreateError);
+          }
+
+          return res.status(200).json({
+            success: true,
+            type: 'text',
+            message: responseText
+          });
+        }
       }
 
       // Process the full message to extract context
       // Look for phrases like "give me data about [COMPANY]" or "tell me about [COMPANY] stock"
       let stockSymbol = null;
-      let companyName = null;
 
       // Check for company names in known formats
       const knownCompanies = {
@@ -300,7 +450,6 @@ router.post('/message', async (req, res) => {
       const lowerMessage = message.toLowerCase();
       for (const [company, symbol] of Object.entries(knownCompanies)) {
         if (lowerMessage.includes(company)) {
-          companyName = company;
           stockSymbol = symbol;
           break;
         }
@@ -370,14 +519,25 @@ router.post('/message', async (req, res) => {
     }
 
     // Send the message to the Gemini API
-    const result = await chat.sendMessage(message);
-    const response = result.response.text();
+    try {
+      const result = await chat.sendMessage(message);
+      const response = result.response.text();
 
-    res.status(200).json({
-      success: true,
-      type: 'text',
-      message: response
-    });
+      res.status(200).json({
+        success: true,
+        type: 'text',
+        message: response
+      });
+    } catch (generalError) {
+      console.error('Error generating response:', generalError);
+
+      // Provide a fallback response
+      res.status(200).json({
+        success: true,
+        type: 'text',
+        message: "I'm here to help with your trading and stock market questions. Could you please provide more details about what you'd like to know?"
+      });
+    }
   } catch (error) {
     console.error('Error sending message:', error);
     res.status(500).json({
@@ -408,6 +568,62 @@ router.post('/end', (req, res) => {
     });
   } catch (error) {
     console.error('Error ending chat session:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Endpoint to get user portfolio for chatbot
+router.get('/user-portfolio', verifyToken, async (req, res) => {
+  try {
+    // Get user details
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Get user's virtual money data
+    let virtualMoney = await VirtualMoney.findOne({ userId: req.user.id });
+    if (!virtualMoney && user.email) {
+      virtualMoney = await VirtualMoney.findOne({ userEmail: user.email });
+    }
+
+    if (!virtualMoney) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          username: user.username,
+          email: user.email,
+          balance: 0,
+          portfolio: []
+        }
+      });
+    }
+
+    // Format portfolio data
+    const portfolioData = virtualMoney.portfolio.map(stock => ({
+      symbol: stock.stockSymbol,
+      quantity: stock.quantity,
+      averagePrice: stock.averageBuyPrice,
+      lastUpdated: stock.lastUpdated
+    }));
+
+    res.status(200).json({
+      success: true,
+      data: {
+        username: user.username,
+        email: user.email,
+        balance: virtualMoney.balance,
+        portfolio: portfolioData
+      }
+    });
+  } catch (error) {
+    console.error('Error getting user portfolio:', error);
     res.status(500).json({
       success: false,
       error: error.message

@@ -88,7 +88,12 @@ router.post('/login', async (req, res) => {
 
     console.log("Password is correct for user:", email);
 
-    const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({
+      id: user._id,
+      email: user.email,
+      username: user.username,
+      fullName: user.fullName || user.username
+    }, JWT_SECRET, { expiresIn: '7d' });
     res.cookie('authToken', token, {
       httpOnly: true,
       secure: false,
@@ -163,7 +168,7 @@ router.put('/resetpassword', async (req, res) => {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     user.password = hashedPassword;
     user.code = null;
-    user.codeExpires = null; 
+    user.codeExpires = null;
     await user.save();
 
     res.status(200).json({ message: 'Password reset successfully. Redirecting to login page...' });
@@ -180,7 +185,7 @@ router.get('/user', verifyToken, (req, res) => {
 
 // Google OAuth Login Route
 router.get('/auth/google',
-  passport.authenticate('google', { 
+  passport.authenticate('google', {
     scope: ['profile', 'email'], // Ensure this is included
     prompt: 'select_account' // Optional: Forces account selection
   })
@@ -188,19 +193,20 @@ router.get('/auth/google',
 
 // Google OAuth Callback Route
 router.get('/auth/google/callback',
-  passport.authenticate('google', { 
+  passport.authenticate('google', {
     failureRedirect: '/login',
     failureMessage: true
   }),
   (req, res) => {
     try {
       // Generate JWT Token for Google OAuth
-      const token = jwt.sign({ 
-        id: req.user._id, 
+      const token = jwt.sign({
+        id: req.user._id,
         email: req.user.email,
-        username: req.user.username
+        username: req.user.username,
+        fullName: req.user.fullName || req.user.username
       }, JWT_SECRET, { expiresIn: '7d' });
-      
+
       // Set the token in a cookie
       res.cookie('authToken', token, {
         httpOnly: true,
@@ -208,7 +214,7 @@ router.get('/auth/google/callback',
         sameSite: 'strict',
         maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
       });
-      
+
       // Redirect to frontend with success message and user data
       res.redirect(`http://localhost:5173/portfolio?success=true&token=${token}`);
     } catch (error) {

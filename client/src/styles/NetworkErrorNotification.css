@@ -1,0 +1,94 @@
+.network-error-notification {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  max-width: 400px;
+  z-index: 1000;
+  animation: slide-in 0.3s ease-out;
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.notification-icon {
+  font-size: 24px;
+  color: var(--error-color);
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.notification-content {
+  flex-grow: 1;
+}
+
+.notification-content p {
+  margin: 0;
+  color: var(--text-color);
+  font-size: 14px;
+}
+
+.notification-actions {
+  display: flex;
+  margin-top: 12px;
+  gap: 8px;
+}
+
+.offline-button, .dismiss-button {
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.offline-button {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+}
+
+.offline-button:hover {
+  background-color: var(--primary-dark);
+}
+
+.dismiss-button {
+  background-color: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+}
+
+.dismiss-button:hover {
+  background-color: var(--hover-bg);
+}
+
+/* Dark mode adjustments */
+[data-theme="dark"] .network-error-notification {
+  background-color: #2a2a2a;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .dismiss-button {
+  border-color: #444;
+}
+
+[data-theme="dark"] .dismiss-button:hover {
+  background-color: #333;
+}

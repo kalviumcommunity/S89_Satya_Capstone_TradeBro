@@ -6,9 +6,15 @@ const virtualMoneySchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  userEmail: {
+    type: String,
+    ref: 'User',
+    required: true,
+    index: true // Add index for faster queries
+  },
   balance: {
     type: Number,
-    default: 10000, // Start with 10,000 virtual coins
+    default: 10000, // Start with 10,000 Indian Rupees (₹)
     required: true
   },
   lastLoginReward: {
@@ -19,7 +25,7 @@ const virtualMoneySchema = new mongoose.Schema({
     {
       type: {
         type: String,
-        enum: ['DEPOSIT', 'WITHDRAWAL', 'BUY', 'SELL', 'LOGIN_REWARD'],
+        enum: ['DEPOSIT', 'BUY', 'SELL', 'LOGIN_REWARD'],
         required: true
       },
       amount: {
@@ -71,31 +77,7 @@ const virtualMoneySchema = new mongoose.Schema({
   ]
 }, { timestamps: true });
 
-// Method to add login reward
-virtualMoneySchema.methods.addLoginReward = async function() {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  // Check if user already received a reward today
-  if (this.lastLoginReward && this.lastLoginReward >= today) {
-    return false; // Already received reward today
-  }
-
-  // Add reward
-  const rewardAmount = 1; // 1 virtual coin per day
-  this.balance += rewardAmount;
-  this.lastLoginReward = new Date();
-
-  // Add transaction record
-  this.transactions.push({
-    type: 'LOGIN_REWARD',
-    amount: rewardAmount,
-    description: 'Daily login reward'
-  });
-
-  await this.save();
-  return true;
-};
+// No longer needed - implemented directly in route
 
 // Method to buy stock
 virtualMoneySchema.methods.buyStock = async function(stockSymbol, quantity, price) {
@@ -116,7 +98,7 @@ virtualMoneySchema.methods.buyStock = async function(stockSymbol, quantity, pric
     stockSymbol,
     stockQuantity: quantity,
     stockPrice: price,
-    description: `Bought ${quantity} shares of ${stockSymbol} at $${price}`
+    description: `Bought ${quantity} shares of ${stockSymbol} at ₹${price.toLocaleString('en-IN')}`
   });
 
   // Update portfolio
@@ -172,7 +154,7 @@ virtualMoneySchema.methods.sellStock = async function(stockSymbol, quantity, pri
     stockSymbol,
     stockQuantity: quantity,
     stockPrice: price,
-    description: `Sold ${quantity} shares of ${stockSymbol} at $${price}`
+    description: `Sold ${quantity} shares of ${stockSymbol} at ₹${price.toLocaleString('en-IN')}`
   });
 
   // Update portfolio

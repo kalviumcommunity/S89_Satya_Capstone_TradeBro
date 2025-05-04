@@ -1,0 +1,171 @@
+.watchlist-search {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+}
+
+.watchlist-search .search-input-container {
+  position: relative;
+  width: 100%;
+}
+
+.watchlist-search .search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+}
+
+.watchlist-search .search-input {
+  width: 100%;
+  padding: 10px 10px 10px 40px;
+  border: 1px solid #dee2e6;
+  border-radius: 25px;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+}
+
+.watchlist-search .search-input:focus {
+  outline: none;
+  border-color: #1B8E99;
+  box-shadow: 0 0 0 3px rgba(27, 142, 153, 0.1);
+}
+
+.watchlist-search .search-results {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  width: 100%;
+  max-height: 300px;
+  overflow-y: auto;
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  border: 1px solid #dee2e6;
+}
+
+.watchlist-search .search-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.watchlist-search .search-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(27, 142, 153, 0.1);
+  border-radius: 50%;
+  border-top-color: #1B8E99;
+  animation: spin 1s linear infinite;
+  margin-bottom: 10px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.watchlist-search .no-results {
+  padding: 15px;
+  text-align: center;
+  color: #6c757d;
+}
+
+.watchlist-search .results-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.watchlist-search .result-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  border-bottom: 1px solid #f1f3f5;
+  transition: background-color 0.2s ease;
+}
+
+.watchlist-search .result-item:last-child {
+  border-bottom: none;
+}
+
+.watchlist-search .result-item:hover {
+  background-color: #f8f9fa;
+}
+
+.watchlist-search .stock-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.watchlist-search .stock-symbol {
+  font-weight: 600;
+  color: #1B8E99;
+}
+
+.watchlist-search .stock-name {
+  font-size: 0.85rem;
+  color: #495057;
+}
+
+.watchlist-search .stock-exchange {
+  font-size: 0.75rem;
+  color: #6c757d;
+  background-color: #f1f3f5;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-top: 2px;
+}
+
+.watchlist-search .add-stock-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background-color: #1B8E99;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.watchlist-search .add-stock-btn:hover:not(:disabled) {
+  background-color: #157a7f;
+  transform: scale(1.05);
+}
+
+.watchlist-search .add-stock-btn.added {
+  background-color: #28a745;
+  cursor: default;
+}
+
+.watchlist-search .add-stock-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .watchlist-search {
+    max-width: 100%;
+  }
+  
+  .watchlist-search .result-item {
+    padding: 10px;
+  }
+  
+  .watchlist-search .stock-name {
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}

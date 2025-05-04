@@ -1,0 +1,242 @@
+/* Enhanced Dark Mode Styles */
+
+/* Dark Theme Variables */
+[data-theme="dark"] {
+  /* Base Colors */
+  --primary-color: #22b8b0;
+  --primary-light: #30d6ce;
+  --primary-dark: #1B8E99;
+  --secondary-color: #D4A5E7;
+  --secondary-light: #e0bfed;
+  --secondary-dark: #b98ad0;
+  
+  /* Backgrounds */
+  --background-color: #121212;
+  --background-gradient: linear-gradient(135deg, #121212, #1e1e1e);
+  --card-background: #1e1e1e;
+  --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  --input-background: rgba(255, 255, 255, 0.05);
+  --input-border: rgba(255, 255, 255, 0.1);
+  
+  /* Text Colors */
+  --text-color: #e9ecef;
+  --text-secondary: #adb5bd;
+  --text-muted: #6c757d;
+  
+  /* Borders */
+  --border-color: rgba(255, 255, 255, 0.1);
+  
+  /* Component-specific colors */
+  --sidebar-bg: #1a1a1a;
+  --sidebar-hover: #2a2a2a;
+  --sidebar-active: #333333;
+  --toast-bg: #2a2a2a;
+  --modal-bg: #1e1e1e;
+  --dropdown-bg: #1e1e1e;
+  --dropdown-hover: #2a2a2a;
+  
+  /* Table colors */
+  --table-header-bg: #2a2a2a;
+  --table-row-hover: rgba(255, 255, 255, 0.05);
+  --table-border: rgba(255, 255, 255, 0.1);
+  
+  /* Chart colors */
+  --chart-grid: rgba(255, 255, 255, 0.1);
+  --chart-text: #adb5bd;
+}
+
+/* Dark mode specific overrides */
+[data-theme="dark"] .card {
+  background-color: var(--card-background);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border-color);
+}
+
+[data-theme="dark"] .btn-secondary {
+  background-color: #2a2a2a;
+  color: var(--text-color);
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .btn-secondary:hover {
+  background-color: #333333;
+}
+
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  background-color: #2a2a2a;
+  color: var(--text-color);
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] input:focus,
+[data-theme="dark"] select:focus,
+[data-theme="dark"] textarea:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(34, 184, 176, 0.25);
+}
+
+/* Sidebar Dark Mode */
+[data-theme="dark"] .sidebar {
+  background-color: var(--sidebar-bg);
+  border-right: 1px solid var(--border-color);
+}
+
+[data-theme="dark"] .sidebar-link {
+  color: var(--text-color);
+}
+
+[data-theme="dark"] .sidebar-link:hover {
+  background-color: var(--sidebar-hover);
+}
+
+[data-theme="dark"] .sidebar-link.active {
+  background-color: var(--sidebar-active);
+  color: var(--primary-color);
+}
+
+/* Table Dark Mode */
+[data-theme="dark"] table {
+  color: var(--text-color);
+}
+
+[data-theme="dark"] th {
+  background-color: var(--table-header-bg);
+  color: var(--text-color);
+  border-color: var(--table-border);
+}
+
+[data-theme="dark"] td {
+  border-color: var(--table-border);
+}
+
+[data-theme="dark"] tr:hover {
+  background-color: var(--table-row-hover);
+}
+
+/* Modal Dark Mode */
+[data-theme="dark"] .modal-content {
+  background-color: var(--modal-bg);
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .modal-header {
+  border-bottom-color: var(--border-color);
+}
+
+[data-theme="dark"] .modal-footer {
+  border-top-color: var(--border-color);
+}
+
+/* Toast Dark Mode */
+[data-theme="dark"] .toast {
+  background-color: var(--toast-bg);
+  color: var(--text-color);
+  border-color: var(--border-color);
+}
+
+/* Dropdown Dark Mode */
+[data-theme="dark"] .dropdown-menu {
+  background-color: var(--dropdown-bg);
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .dropdown-item {
+  color: var(--text-color);
+}
+
+[data-theme="dark"] .dropdown-item:hover {
+  background-color: var(--dropdown-hover);
+}
+
+/* Chart Dark Mode */
+[data-theme="dark"] .recharts-cartesian-grid-horizontal line,
+[data-theme="dark"] .recharts-cartesian-grid-vertical line {
+  stroke: var(--chart-grid);
+}
+
+[data-theme="dark"] .recharts-text {
+  fill: var(--chart-text);
+}
+
+/* Stock Detail Dark Mode */
+[data-theme="dark"] .stock-detail-container {
+  background-color: var(--card-background);
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .stock-detail-header {
+  border-bottom-color: var(--border-color);
+}
+
+/* Watchlist Dark Mode */
+[data-theme="dark"] .watchlist-table {
+  background-color: var(--card-background);
+}
+
+[data-theme="dark"] .watchlist-table th {
+  background-color: var(--table-header-bg);
+}
+
+/* Orders Dark Mode */
+[data-theme="dark"] .orders-table {
+  background-color: var(--card-background);
+}
+
+[data-theme="dark"] .orders-table th {
+  background-color: var(--table-header-bg);
+}
+
+/* History Dark Mode */
+[data-theme="dark"] .history-table {
+  background-color: var(--card-background);
+}
+
+[data-theme="dark"] .history-table th {
+  background-color: var(--table-header-bg);
+}
+
+/* Trading Assistant Dark Mode */
+[data-theme="dark"] .chat-container {
+  background-color: var(--card-background);
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .chat-message.user {
+  background-color: var(--sidebar-active);
+}
+
+[data-theme="dark"] .chat-message.bot {
+  background-color: var(--sidebar-hover);
+}
+
+[data-theme="dark"] .chat-input {
+  background-color: var(--sidebar-hover);
+  border-color: var(--border-color);
+}
+
+/* Settings Dark Mode */
+[data-theme="dark"] .settings-card {
+  background-color: var(--card-background);
+  border-color: var(--border-color);
+}
+
+/* Scrollbar Dark Mode */
+[data-theme="dark"] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 4px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: #444;
+}

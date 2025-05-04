@@ -2,14 +2,21 @@ const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const jwt = require("jsonwebtoken"); // Import JWT for token generation
 const User = require("./models/User"); // Adjust path to your User schema
+require('dotenv').config();
 
-passport.use(
-  new GoogleStrategy(
-    {
-      clientID: process.env.GOOGLE_CLIENT_ID, // Replace with your Google Client ID
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET, // Replace with your Google Client Secret
-      callbackURL: "http://localhost:5000/api/auth/auth/google/callback", // Adjust for production
-    },
+// Check if Google credentials are available
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+
+// Only configure Google strategy if credentials are available
+if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
+  passport.use(
+    new GoogleStrategy(
+      {
+        clientID: GOOGLE_CLIENT_ID,
+        clientSecret: GOOGLE_CLIENT_SECRET,
+        callbackURL: "http://localhost:5000/api/auth/auth/google/callback",
+      },
 
     async (accessToken, refreshToken, profile, done) => {
       try {
@@ -48,7 +55,10 @@ passport.use(
       }
     }
   )
-);
+  );
+} else {
+  console.warn("Google OAuth credentials not found. Google authentication will not be available.");
+}
 
 passport.serializeUser((user, done) => {
   done(null, user.id || user._id || user.user?.id || user.user?._id);

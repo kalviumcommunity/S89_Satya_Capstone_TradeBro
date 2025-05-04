@@ -6,8 +6,10 @@ import { ThemeProvider } from "./context/ThemeContext";
 import { ToastProvider } from "./context/ToastContext";
 import { SidebarProvider } from "./context/SidebarContext";
 import { AuthProvider } from "./context/AuthContext";
+import { PusherProvider } from "./context/PusherContext";
 import AppRoutes from "./approutes";
 import "./styles/theme.css";
+import "./styles/DarkMode.css";
 import "./App.css";
 
 const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -19,11 +21,13 @@ const App = () => {
         <ToastProvider>
           <SidebarProvider>
             <AuthProvider>
-              <Router>
-                <div className="app-wrapper">
-                  <AppRoutes />
-                </div>
-              </Router>
+              <PusherProvider>
+                <Router>
+                  <div className="app-wrapper">
+                    <AppRoutes />
+                  </div>
+                </Router>
+              </PusherProvider>
             </AuthProvider>
           </SidebarProvider>
         </ToastProvider>

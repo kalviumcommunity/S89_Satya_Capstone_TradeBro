@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "./Settings.css";
@@ -15,18 +15,45 @@ const SettingsPage = () => {
   const [notifications, setNotifications] = useState(true); // Notifications setting
   const [successMessage, setSuccessMessage] = useState("");
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  const handleSaveNotifications = async () => {
+  // Fetch current notification settings
+  useEffect(() => {
+    const fetchNotificationSettings = async () => {
+      try {
+        const response = await axios.get("http://localhost:5000/api/settings/notifications");
+        if (response.data.success) {
+          setNotifications(response.data.notifications);
+        }
+      } catch (error) {
+        console.error("Error fetching notification settings:", error);
+        // Use default value (true) if fetch fails
+      }
+    };
+
+    fetchNotificationSettings();
+  }, []);
+
+  // Function to update notifications setting automatically when toggled
+  const handleNotificationsToggle = async () => {
+    const newValue = !notifications;
+    setNotifications(newValue);
+    setIsUpdating(true);
+
     try {
       const response = await axios.put("http://localhost:5000/api/settings/notifications", {
-        notifications
+        notifications: newValue
       });
 
       setSuccessMessage(response.data.message || "Notification settings updated successfully");
-      toast.success("Settings saved successfully");
+      toast.success("Notifications " + (newValue ? "enabled" : "disabled"));
     } catch (error) {
       console.error("Error updating notification settings:", error);
-      toast.error("Failed to update settings");
+      toast.error("Failed to update notification settings");
+      // Revert the toggle if the API call fails
+      setNotifications(!newValue);
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -71,17 +98,14 @@ const SettingsPage = () => {
               <input
                 type="checkbox"
                 checked={notifications}
-                onChange={() => setNotifications(!notifications)}
+                onChange={handleNotificationsToggle}
+                disabled={isUpdating}
               />
+              {isUpdating && <span className="updating-indicator">Updating...</span>}
             </div>
             <p className="setting-description">
               Receive notifications about market updates, price alerts, and important news.
             </p>
-          </div>
-          <div className="settings-buttons">
-            <button className="save-btn" onClick={handleSaveNotifications}>
-              Save Changes
-            </button>
           </div>
 
           <div className="settings-card account-actions">

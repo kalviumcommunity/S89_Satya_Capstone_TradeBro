@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiBell, FiCheck, FiTrash2, FiAlertCircle, FiInfo, FiCheckCircle } from "react-icons/fi";
+import { FiBell, FiCheck, FiTrash2, FiAlertCircle, FiInfo, FiCheckCircle, FiExternalLink } from "react-icons/fi";
+import axios from "axios";
+import { API_ENDPOINTS } from "../config/apiConfig";
+import { useAuth } from "../context/AuthContext";
+import { usePusher } from "../context/PusherContext";
+import { useToast } from "../hooks/useToast";
 import PageLayout from "../components/PageLayout";
 import "./Notifications.css";
 
@@ -8,79 +13,97 @@ const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
+  const { isAuthenticated } = useAuth();
+  const toast = useToast();
+  usePusher(); // Initialize Pusher connection
 
-  // Mock notifications data (replace with actual API call)
+  // Fetch notifications from API
   useEffect(() => {
     const fetchNotifications = async () => {
+      if (!isAuthenticated) return;
+
       setLoading(true);
       try {
-        // In a real app, replace this with an actual API call
-        // const response = await axios.get('https://api.example.com/notifications');
-        // setNotifications(response.data);
-
-        // Mock data for demonstration
-        setTimeout(() => {
-          const mockNotifications = [
-            {
-              id: 1,
-              type: "alert",
-              title: "Price Alert: AAPL",
-              message: "Apple Inc. has reached your target price of $180.",
-              timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 minutes ago
-              read: false
-            },
-            {
-              id: 2,
-              type: "info",
-              title: "Market Update",
-              message: "US markets have opened higher today with the S&P 500 up 0.5%.",
-              timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
-              read: true
-            },
-            {
-              id: 3,
-              type: "success",
-              title: "Order Executed",
-              message: "Your buy order for 10 shares of MSFT has been successfully executed.",
-              timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), // 5 hours ago
-              read: false
-            },
-            {
-              id: 4,
-              type: "alert",
-              title: "Unusual Activity",
-              message: "We've detected unusual trading activity in your account. Please verify recent transactions.",
-              timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
-              read: false
-            },
-            {
-              id: 5,
-              type: "info",
-              title: "New Feature Available",
-              message: "Check out our new portfolio analysis tools now available in your dashboard.",
-              timestamp: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(), // 2 days ago
-              read: true
-            },
-            {
-              id: 6,
-              type: "success",
-              title: "Dividend Payment",
-              message: "A dividend of $45.30 from your investments has been credited to your account.",
-              timestamp: new Date(Date.now() - 1000 * 60 * 60 * 72).toISOString(), // 3 days ago
-              read: true
-            }
-          ];
-          setNotifications(mockNotifications);
-          setLoading(false);
-        }, 1000);
+        const response = await axios.get(API_ENDPOINTS.NOTIFICATIONS.ALL);
+        if (response.data.success) {
+          setNotifications(response.data.data);
+        } else {
+          toast.error("Failed to fetch notifications");
+          setNotifications([]);
+        }
       } catch (error) {
         console.error("Error fetching notifications:", error);
+        toast.error("Failed to load notifications");
+        setNotifications([]);
+      } finally {
         setLoading(false);
       }
     };
 
     fetchNotifications();
-  }, []);
+  }, [isAuthenticated, toast]);
+
+  // Listen for real-time notification events
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    // Handle new notification
+    const handleNewNotification = (event) => {
+      const newNotification = event.detail;
+
+      // Add new notification to the list
+      setNotifications(prevNotifications =>
+        [newNotification, ...prevNotifications]
+      );
+
+      // Show toast for new notification
+      toast.info(`New notification: ${newNotification.title}`);
+    };
+
+    // Handle notification update (mark as read)
+    const handleNotificationUpdate = (event) => {
+      const { id, read } = event.detail;
+
+      // Update notification in the list
+      setNotifications(prevNotifications =>
+        prevNotifications.map(notification =>
+          notification._id === id ? { ...notification, read } : notification
+        )
+      );
+    };
+
+    // Handle notification deletion
+    const handleNotificationDelete = (event) => {
+      const { id } = event.detail;
+
+      // Remove notification from the list
+      setNotifications(prevNotifications =>
+        prevNotifications.filter(notification => notification._id !== id)
+      );
+    };
+
+    // Handle marking all notifications as read
+    const handleMarkAllRead = () => {
+      // Update all notifications in the list
+      setNotifications(prevNotifications =>
+        prevNotifications.map(notification => ({ ...notification, read: true }))
+      );
+    };
+
+    // Add event listeners
+    window.addEventListener('new-notification', handleNewNotification);
+    window.addEventListener('notification-update', handleNotificationUpdate);
+    window.addEventListener('notification-delete', handleNotificationDelete);
+    window.addEventListener('notifications-read-all', handleMarkAllRead);
+
+    // Clean up event listeners
+    return () => {
+      window.removeEventListener('new-notification', handleNewNotification);
+      window.removeEventListener('notification-update', handleNotificationUpdate);
+      window.removeEventListener('notification-delete', handleNotificationDelete);
+      window.removeEventListener('notifications-read-all', handleMarkAllRead);
+    };
+  }, [isAuthenticated, toast]);
 
   // Filter notifications
   const filteredNotifications = notifications.filter(notification => {
@@ -90,26 +113,79 @@ const Notifications = () => {
   });
 
   // Mark notification as read
-  const markAsRead = (id) => {
-    setNotifications(prevNotifications =>
-      prevNotifications.map(notification =>
-        notification.id === id ? { ...notification, read: true } : notification
-      )
-    );
+  const markAsRead = async (id) => {
+    if (!isAuthenticated) return;
+
+    try {
+      const response = await axios.put(API_ENDPOINTS.NOTIFICATIONS.MARK_READ(id));
+
+      if (response.data.success) {
+        // Update will happen via Pusher event
+        console.log("Notification marked as read:", id);
+      } else {
+        toast.error("Failed to mark notification as read");
+      }
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      toast.error("Failed to update notification");
+
+      // Fallback to local update
+      setNotifications(prevNotifications =>
+        prevNotifications.map(notification =>
+          notification._id === id ? { ...notification, read: true } : notification
+        )
+      );
+    }
   };
 
   // Delete notification
-  const deleteNotification = (id) => {
-    setNotifications(prevNotifications =>
-      prevNotifications.filter(notification => notification.id !== id)
-    );
+  const deleteNotification = async (id) => {
+    if (!isAuthenticated) return;
+
+    try {
+      const response = await axios.delete(API_ENDPOINTS.NOTIFICATIONS.DELETE(id));
+
+      if (response.data.success) {
+        // Update will happen via Pusher event
+        console.log("Notification deleted:", id);
+        toast.info("Notification deleted");
+      } else {
+        toast.error("Failed to delete notification");
+      }
+    } catch (error) {
+      console.error("Error deleting notification:", error);
+      toast.error("Failed to delete notification");
+
+      // Fallback to local update
+      setNotifications(prevNotifications =>
+        prevNotifications.filter(notification => notification._id !== id)
+      );
+    }
   };
 
   // Mark all as read
-  const markAllAsRead = () => {
-    setNotifications(prevNotifications =>
-      prevNotifications.map(notification => ({ ...notification, read: true }))
-    );
+  const markAllAsRead = async () => {
+    if (!isAuthenticated) return;
+
+    try {
+      const response = await axios.put(API_ENDPOINTS.NOTIFICATIONS.MARK_ALL_READ);
+
+      if (response.data.success) {
+        // Update will happen via Pusher event
+        console.log("All notifications marked as read");
+        toast.success(`${response.data.count} notifications marked as read`);
+      } else {
+        toast.error("Failed to update notifications");
+      }
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
+      toast.error("Failed to update notifications");
+
+      // Fallback to local update
+      setNotifications(prevNotifications =>
+        prevNotifications.map(notification => ({ ...notification, read: true }))
+      );
+    }
   };
 
   // Format timestamp
@@ -206,7 +282,7 @@ const Notifications = () => {
             <AnimatePresence>
               {filteredNotifications.map((notification) => (
                 <motion.div
-                  key={notification.id}
+                  key={notification._id}
                   className={`notification-item ${notification.read ? "read" : "unread"}`}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -214,19 +290,33 @@ const Notifications = () => {
                   transition={{ duration: 0.3 }}
                   layout
                 >
-                  <div className="notification-content" onClick={() => markAsRead(notification.id)}>
+                  <div className="notification-content" onClick={() => markAsRead(notification._id)}>
                     {getNotificationIcon(notification.type)}
                     <div className="notification-details">
                       <h3 className="notification-title">{notification.title}</h3>
                       <p className="notification-message">{notification.message}</p>
-                      <span className="notification-time">{formatTimestamp(notification.timestamp)}</span>
+                      <span className="notification-time">{formatTimestamp(notification.createdAt)}</span>
+                      {notification.link && (
+                        <a
+                          href={notification.link}
+                          className="notification-link"
+                          onClick={(e) => e.stopPropagation()}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          View Details <FiExternalLink />
+                        </a>
+                      )}
                     </div>
                   </div>
                   <div className="notification-actions">
                     {!notification.read && (
                       <button
                         className="action-btn read-btn"
-                        onClick={() => markAsRead(notification.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          markAsRead(notification._id);
+                        }}
                         title="Mark as read"
                       >
                         <FiCheck />
@@ -234,7 +324,10 @@ const Notifications = () => {
                     )}
                     <button
                       className="action-btn delete-btn"
-                      onClick={() => deleteNotification(notification.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteNotification(notification._id);
+                      }}
                       title="Delete notification"
                     >
                       <FiTrash2 />

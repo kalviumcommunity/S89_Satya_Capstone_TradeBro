@@ -3,14 +3,18 @@ import { motion } from "framer-motion";
 import { FiFilter, FiRefreshCw, FiCheck, FiX, FiClock, FiAlertCircle } from "react-icons/fi";
 import PageLayout from "../components/PageLayout";
 import { useToast } from "../context/ToastContext";
+import { useAuth } from "../context/AuthContext";
+import axios from "axios";
 import "./Orders.css";
 
 const Orders = () => {
   const { showToast } = useToast();
+  const { isAuthenticated } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
 
   // Mock data for demonstration
   const mockOrders = [
@@ -81,12 +85,53 @@ const Orders = () => {
 
   // Load orders data
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setOrders(mockOrders);
-      setLoading(false);
-    }, 1000);
-  }, []);
+    const fetchOrders = async () => {
+      if (!isAuthenticated) {
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await axios.get("http://localhost:5000/api/orders/all");
+
+        if (response.data.success) {
+          // Transform the data to match our frontend format
+          const formattedOrders = response.data.data.map(order => ({
+            id: order._id,
+            type: order.type.toLowerCase(),
+            symbol: order.stockSymbol,
+            name: order.stockName,
+            quantity: order.quantity,
+            price: order.price,
+            total: order.total,
+            orderType: order.orderType.toLowerCase(),
+            status: order.status.toLowerCase(),
+            createdAt: order.createdAt,
+            filledAt: order.filledAt,
+            cancelledAt: order.cancelledAt
+          }));
+
+          setOrders(formattedOrders);
+        } else {
+          setError("Failed to load orders");
+          // Use mock data as fallback
+          setOrders(mockOrders);
+        }
+      } catch (err) {
+        console.error("Error fetching orders:", err);
+        setError("Failed to load orders. Using sample data instead.");
+        // Use mock data as fallback
+        setOrders(mockOrders);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, [isAuthenticated]);
 
   // Filter orders based on status
   const filteredOrders = orders.filter((order) => {
@@ -101,43 +146,97 @@ const Orders = () => {
   };
 
   // Refresh orders
-  const refreshOrders = () => {
+  const refreshOrders = async () => {
+    if (!isAuthenticated) {
+      showToast("Please log in to refresh orders", "error");
+      return;
+    }
+
     setRefreshing(true);
-    // Simulate API call
-    setTimeout(() => {
-      // Update with slightly different data to simulate refresh
-      const updatedOrders = [...mockOrders];
-      // Randomly change status of one order
-      if (updatedOrders.length > 0) {
-        const randomIndex = Math.floor(Math.random() * updatedOrders.length);
-        const randomOrder = updatedOrders[randomIndex];
-        if (randomOrder.status === "open") {
-          randomOrder.status = "filled";
-          randomOrder.filledAt = new Date().toISOString();
-        }
+    setError(null);
+
+    try {
+      const response = await axios.get("http://localhost:5000/api/orders/all");
+
+      if (response.data.success) {
+        // Transform the data to match our frontend format
+        const formattedOrders = response.data.data.map(order => ({
+          id: order._id,
+          type: order.type.toLowerCase(),
+          symbol: order.stockSymbol,
+          name: order.stockName,
+          quantity: order.quantity,
+          price: order.price,
+          total: order.total,
+          orderType: order.orderType.toLowerCase(),
+          status: order.status.toLowerCase(),
+          createdAt: order.createdAt,
+          filledAt: order.filledAt,
+          cancelledAt: order.cancelledAt
+        }));
+
+        setOrders(formattedOrders);
+        showToast("Orders refreshed", "success");
+      } else {
+        setError("Failed to refresh orders");
+        showToast("Failed to refresh orders", "error");
       }
-      setOrders(updatedOrders);
+    } catch (err) {
+      console.error("Error refreshing orders:", err);
+      setError("Failed to refresh orders");
+      showToast("Failed to refresh orders", "error");
+    } finally {
       setRefreshing(false);
-      showToast("Orders refreshed", "success");
-    }, 1000);
+    }
   };
 
   // Cancel order
-  const cancelOrder = (id) => {
-    // In a real app, you would call an API to cancel the order
-    const updatedOrders = orders.map(order => {
-      if (order.id === id) {
-        return {
-          ...order,
-          status: "cancelled",
-          cancelledAt: new Date().toISOString()
-        };
-      }
-      return order;
-    });
+  const cancelOrder = async (id) => {
+    if (!isAuthenticated) {
+      showToast("Please log in to cancel orders", "error");
+      return;
+    }
 
-    setOrders(updatedOrders);
-    showToast("Order cancelled successfully", "success");
+    try {
+      const response = await axios.post(`http://localhost:5000/api/orders/cancel/${id}`);
+
+      if (response.data.success) {
+        // Update the order in the local state
+        const updatedOrders = orders.map(order => {
+          if (order.id === id) {
+            return {
+              ...order,
+              status: "cancelled",
+              cancelledAt: new Date().toISOString()
+            };
+          }
+          return order;
+        });
+
+        setOrders(updatedOrders);
+        showToast("Order cancelled successfully", "success");
+      } else {
+        showToast(response.data.message || "Failed to cancel order", "error");
+      }
+    } catch (err) {
+      console.error("Error cancelling order:", err);
+      showToast("Failed to cancel order", "error");
+
+      // Fallback to local implementation if API fails
+      const updatedOrders = orders.map(order => {
+        if (order.id === id) {
+          return {
+            ...order,
+            status: "cancelled",
+            cancelledAt: new Date().toISOString()
+          };
+        }
+        return order;
+      });
+
+      setOrders(updatedOrders);
+      showToast("Order cancelled (local only)", "warning");
+    }
   };
 
   // Get status icon
@@ -200,6 +299,15 @@ const Orders = () => {
           <div className="loading-container">
             <div className="loading-spinner"></div>
             <p>Loading orders...</p>
+          </div>
+        ) : error ? (
+          <div className="error-container">
+            <FiAlertCircle className="error-icon" />
+            <p>{error}</p>
+          </div>
+        ) : !isAuthenticated ? (
+          <div className="empty-orders">
+            <p>Please log in to view your orders.</p>
           </div>
         ) : filteredOrders.length === 0 ? (
           <div className="empty-orders">
