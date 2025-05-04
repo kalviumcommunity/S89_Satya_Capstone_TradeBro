@@ -410,14 +410,14 @@ const StockChart = ({ symbol }) => {
     <div className="stock-chart-container">
       <div className="chart-header">
         <div className="chart-title-container">
-          <h3>Price Chart</h3>
+          <h3>{symbol} Price Chart</h3>
           <div
             className="chart-info-icon"
             onMouseEnter={(e) => {
               setTooltipInfo({
                 x: e.clientX,
                 y: e.clientY,
-                content: "Chart data may be simulated if real-time data is unavailable."
+                content: "Chart data may be simulated if real-time data is unavailable. Hover over chart points for detailed information."
               });
               setShowTooltip(true);
             }}
@@ -443,22 +443,25 @@ const StockChart = ({ symbol }) => {
             <button
               className={chartType === "line" ? "active" : ""}
               onClick={() => setChartType("line")}
-              title="Line Chart"
+              title="Line Chart - Shows closing prices connected by a line"
             >
+              <FiTrendingUp style={{ marginRight: '4px' }} />
               Line
             </button>
             <button
               className={chartType === "area" ? "active" : ""}
               onClick={() => setChartType("area")}
-              title="Area Chart"
+              title="Area Chart - Shows price movement with filled area below"
             >
+              <FiTrendingUp style={{ marginRight: '4px' }} />
               Area
             </button>
             <button
               className={chartType === "candle" ? "active" : ""}
               onClick={() => setChartType("candle")}
-              title="Candlestick Chart"
+              title="Candlestick Chart - Shows open, high, low, and close prices"
             >
+              <FiTrendingUp style={{ marginRight: '4px' }} />
               Candle
             </button>
           </div>
@@ -467,42 +470,49 @@ const StockChart = ({ symbol }) => {
             <button
               className={timeRange === "5min" ? "active" : ""}
               onClick={() => setTimeRange("5min")}
+              title="5-Minute intervals"
             >
               5M
             </button>
             <button
               className={timeRange === "1day" ? "active" : ""}
               onClick={() => setTimeRange("1day")}
+              title="1 Day view"
             >
               1D
             </button>
             <button
               className={timeRange === "1week" ? "active" : ""}
               onClick={() => setTimeRange("1week")}
+              title="1 Week view"
             >
               1W
             </button>
             <button
               className={timeRange === "1month" ? "active" : ""}
               onClick={() => setTimeRange("1month")}
+              title="1 Month view"
             >
               1M
             </button>
             <button
               className={timeRange === "3months" ? "active" : ""}
               onClick={() => setTimeRange("3months")}
+              title="3 Months view"
             >
               3M
             </button>
             <button
               className={timeRange === "1year" ? "active" : ""}
               onClick={() => setTimeRange("1year")}
+              title="1 Year view"
             >
               1Y
             </button>
             <button
               className={timeRange === "all" ? "active" : ""}
               onClick={() => setTimeRange("all")}
+              title="All available data"
             >
               All
             </button>
@@ -523,11 +533,12 @@ const StockChart = ({ symbol }) => {
         <>
           <div className="chart-summary">
             <div className={`price-change ${isPositive ? "positive" : "negative"}`}>
+              {isPositive ? <FiTrendingUp style={{ marginRight: '6px' }} /> : <FiTrendingDown style={{ marginRight: '6px' }} />}
               <span>{isPositive ? "+" : ""}{change.toFixed(2)}</span>
               <span className="percentage">({isPositive ? "+" : ""}{percentage.toFixed(2)}%)</span>
             </div>
             <div className="date-range">
-              <FiCalendar />
+              <FiCalendar style={{ marginRight: '6px' }} />
               <span>
                 {timeRange === "5min"
                   ? `Today (${filteredData[0].time} - ${filteredData[filteredData.length - 1].time})`
@@ -538,13 +549,13 @@ const StockChart = ({ symbol }) => {
           </div>
 
           <div className="chart-container">
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height="100%">
               {chartType === "line" && (
                 <LineChart
                   data={filteredData}
                   margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(var(--border-color-rgb), 0.2)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid-color)" />
                   <XAxis
                     dataKey={timeRange === "5min" ? "time" : "date"}
                     tick={{ fill: 'var(--text-primary)' }}
@@ -571,8 +582,9 @@ const StockChart = ({ symbol }) => {
                     stroke={isPositive ? "var(--success-color)" : "var(--error-color)"}
                     strokeWidth={2}
                     dot={false}
-                    activeDot={{ r: 6 }}
+                    activeDot={{ r: 6, fill: isPositive ? "var(--success-color)" : "var(--error-color)", stroke: "#fff", strokeWidth: 2 }}
                     name="Price"
+                    animationDuration={1000}
                   />
                 </LineChart>
               )}
@@ -582,7 +594,7 @@ const StockChart = ({ symbol }) => {
                   data={filteredData}
                   margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(var(--border-color-rgb), 0.2)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid-color)" />
                   <XAxis
                     dataKey={timeRange === "5min" ? "time" : "date"}
                     tick={{ fill: 'var(--text-primary)' }}
@@ -605,11 +617,12 @@ const StockChart = ({ symbol }) => {
                   <Area
                     type="monotone"
                     dataKey="price"
-                    fill={isPositive ? "rgba(var(--success-color-rgb), 0.2)" : "rgba(var(--error-color-rgb), 0.2)"}
+                    fill={isPositive ? "rgba(var(--success-color-rgb), 0.15)" : "rgba(var(--error-color-rgb), 0.15)"}
                     stroke={isPositive ? "var(--success-color)" : "var(--error-color)"}
                     strokeWidth={2}
-                    activeDot={{ r: 6 }}
+                    activeDot={{ r: 6, fill: isPositive ? "var(--success-color)" : "var(--error-color)", stroke: "#fff", strokeWidth: 2 }}
                     name="Price"
+                    animationDuration={1000}
                   />
                   <Line
                     type="monotone"
@@ -617,8 +630,9 @@ const StockChart = ({ symbol }) => {
                     stroke={isPositive ? "var(--success-color)" : "var(--error-color)"}
                     strokeWidth={2}
                     dot={false}
-                    activeDot={{ r: 6 }}
+                    activeDot={{ r: 6, fill: isPositive ? "var(--success-color)" : "var(--error-color)", stroke: "#fff", strokeWidth: 2 }}
                     name="Price"
+                    animationDuration={1000}
                   />
                 </ComposedChart>
               )}
@@ -628,7 +642,7 @@ const StockChart = ({ symbol }) => {
                   data={filteredData}
                   margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(var(--border-color-rgb), 0.2)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid-color)" />
                   <XAxis
                     dataKey={timeRange === "5min" ? "time" : "date"}
                     tick={{ fill: 'var(--text-primary)' }}
@@ -681,8 +695,9 @@ const StockChart = ({ symbol }) => {
                     stroke={isPositive ? "var(--success-color)" : "var(--error-color)"}
                     strokeWidth={1}
                     dot={false}
-                    activeDot={{ r: 6 }}
+                    activeDot={{ r: 6, fill: isPositive ? "var(--success-color)" : "var(--error-color)", stroke: "#fff", strokeWidth: 2 }}
                     name="Close"
+                    animationDuration={1000}
                   />
                 </ComposedChart>
               )}
@@ -691,7 +706,14 @@ const StockChart = ({ symbol }) => {
         </>
       ) : (
         <div className="no-data">
+          <FiAlertCircle className="error-icon" />
           <p>No chart data available for the selected time range</p>
+          <button
+            onClick={() => setTimeRange("1week")}
+            className="retry-button"
+          >
+            Try 1 Week View
+          </button>
         </div>
       )}
     </div>

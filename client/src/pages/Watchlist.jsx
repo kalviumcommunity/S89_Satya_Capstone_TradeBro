@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { FiPlus, FiTrash2, FiRefreshCw, FiTrendingUp, FiTrendingDown, FiSearch, FiAlertCircle } from "react-icons/fi";
+import { FiPlus, FiTrash2, FiRefreshCw, FiTrendingUp, FiTrendingDown, FiSearch, FiAlertCircle, FiX } from "react-icons/fi";
 import PageLayout from "../components/PageLayout";
 import WatchlistSearch from "../components/WatchlistSearch";
 import { useToast } from "../hooks/useToast";
 import { useAuth } from "../context/AuthContext";
 import { useOfflineMode } from "../context/OfflineContext";
 import axios from "axios";
+import API_ENDPOINTS from "../config/apiConfig";
 import "./Watchlist.css";
 
 const Watchlist = () => {
-  const { showToast } = useToast();
+  const toast = useToast();
   const { isAuthenticated } = useAuth();
   const { isOffline } = useOfflineMode();
   const [watchlist, setWatchlist] = useState([]);
@@ -106,8 +107,8 @@ const Watchlist = () => {
 
         // Add search parameter if there's a search term
         const url = searchTerm
-          ? `http://localhost:5000/api/watchlist/stocks?search=${encodeURIComponent(searchTerm)}`
-          : "http://localhost:5000/api/watchlist/stocks";
+          ? `${API_ENDPOINTS.WATCHLIST.STOCKS}?search=${encodeURIComponent(searchTerm)}`
+          : API_ENDPOINTS.WATCHLIST.STOCKS;
 
         const response = await axios.get(url);
 
@@ -154,21 +155,21 @@ const Watchlist = () => {
   // We're now filtering on the server side or in the fetchWatchlist function
   const filteredWatchlist = watchlist;
 
-  // Add stock to watchlist
-  const addToWatchlist = async () => {
+  // Add stock to watchlist directly from search
+  const addStockToWatchlist = async (symbol, name) => {
     if (!isAuthenticated) {
-      showToast("Please log in to add stocks to your watchlist", "error");
+      toast.error("Please log in to add stocks to your watchlist");
       return;
     }
 
-    if (!newStock.trim()) {
-      showToast("Please enter a stock symbol", "error");
+    if (!symbol.trim()) {
+      toast.error("Please enter a stock symbol");
       return;
     }
 
     // Check if stock already exists in watchlist
-    if (watchlist.some((stock) => stock.symbol === newStock.toUpperCase())) {
-      showToast(`${newStock.toUpperCase()} is already in your watchlist`, "warning");
+    if (watchlist.some((stock) => stock.symbol === symbol.toUpperCase())) {
+      toast.info(`${symbol.toUpperCase()} is already in your watchlist`);
       return;
     }
 
@@ -177,8 +178,8 @@ const Watchlist = () => {
         // Offline mode - use mock data
         const newStockData = {
           id: watchlist.length + 1,
-          symbol: newStock.toUpperCase(),
-          name: `${newStock.toUpperCase()} Corp`,
+          symbol: symbol.toUpperCase(),
+          name: name || `${symbol.toUpperCase()} Corp`,
           price: (Math.random() * 200 + 50).toFixed(2),
           change: (Math.random() * 10 - 5).toFixed(2),
           changePercent: (Math.random() * 5 - 2.5).toFixed(2),
@@ -187,34 +188,46 @@ const Watchlist = () => {
         };
 
         setWatchlist([...watchlist, newStockData]);
-        setNewStock("");
-        showToast(`${newStockData.symbol} added to watchlist (offline mode)`, "success");
+        toast.success(`${newStockData.symbol} added to watchlist (offline mode)`);
         return;
       }
 
       // Online mode - call API
-      const response = await axios.post("http://localhost:5000/api/watchlist/add", {
-        symbol: newStock.toUpperCase(),
-        name: `${newStock.toUpperCase()}`
+      const response = await axios.post(API_ENDPOINTS.WATCHLIST.ADD, {
+        symbol: symbol.toUpperCase(),
+        name: name || `${symbol.toUpperCase()}`
       });
 
       if (response.data.success) {
-        // Refresh watchlist to get updated data with prices
+        // Add the stock to the watchlist immediately with temporary data
+        const tempStockData = {
+          id: Date.now(), // Use timestamp as temporary ID
+          symbol: symbol.toUpperCase(),
+          name: name || `${symbol.toUpperCase()}`,
+          price: "Loading...",
+          change: "0.00",
+          changePercent: "0.00",
+          marketCap: "Loading...",
+          volume: "Loading..."
+        };
+
+        setWatchlist([...watchlist, tempStockData]);
+
+        // Then refresh to get the actual data
         refreshWatchlist();
-        setNewStock("");
-        showToast(`${newStock.toUpperCase()} added to watchlist`, "success");
+        toast.success(`${symbol.toUpperCase()} added to watchlist`);
       } else {
-        showToast(response.data.message || "Failed to add stock to watchlist", "error");
+        toast.error(response.data.message || "Failed to add stock to watchlist");
       }
     } catch (err) {
       console.error("Error adding stock to watchlist:", err);
-      showToast("Failed to add stock to watchlist", "error");
+      toast.error("Failed to add stock to watchlist");
 
       // Fallback to local implementation
       const newStockData = {
         id: watchlist.length + 1,
-        symbol: newStock.toUpperCase(),
-        name: `${newStock.toUpperCase()} Corp`,
+        symbol: symbol.toUpperCase(),
+        name: name || `${symbol.toUpperCase()} Corp`,
         price: (Math.random() * 200 + 50).toFixed(2),
         change: (Math.random() * 10 - 5).toFixed(2),
         changePercent: (Math.random() * 5 - 2.5).toFixed(2),
@@ -223,15 +236,39 @@ const Watchlist = () => {
       };
 
       setWatchlist([...watchlist, newStockData]);
-      setNewStock("");
-      showToast(`${newStockData.symbol} added to watchlist (local only)`, "warning");
+      toast.info(`${newStockData.symbol} added to watchlist (local only)`);
     }
+  };
+
+  // Add stock to watchlist from input field
+  const addToWatchlist = async () => {
+    if (!isAuthenticated) {
+      toast.error("Please log in to add stocks to your watchlist");
+      return;
+    }
+
+    if (!newStock.trim()) {
+      toast.error("Please enter a stock symbol");
+      return;
+    }
+
+    // Check if stock already exists in watchlist
+    if (watchlist.some((stock) => stock.symbol === newStock.toUpperCase())) {
+      toast.info(`${newStock.toUpperCase()} is already in your watchlist`);
+      return;
+    }
+
+    // Use the addStockToWatchlist function with the newStock value
+    await addStockToWatchlist(newStock, null);
+
+    // Clear the input field
+    setNewStock("");
   };
 
   // Remove stock from watchlist
   const removeFromWatchlist = async (id) => {
     if (!isAuthenticated) {
-      showToast("Please log in to manage your watchlist", "error");
+      toast.error("Please log in to manage your watchlist");
       return;
     }
 
@@ -242,33 +279,33 @@ const Watchlist = () => {
       if (isOffline) {
         // Offline mode - just update local state
         setWatchlist(watchlist.filter((stock) => stock.id !== id));
-        showToast(`${stockToRemove.symbol} removed from watchlist (offline mode)`, "info");
+        toast.info(`${stockToRemove.symbol} removed from watchlist (offline mode)`);
         return;
       }
 
       // Online mode - call API
-      const response = await axios.delete(`http://localhost:5000/api/watchlist/remove/${stockToRemove.symbol}`);
+      const response = await axios.delete(API_ENDPOINTS.WATCHLIST.REMOVE(stockToRemove.symbol));
 
       if (response.data.success) {
         setWatchlist(watchlist.filter((stock) => stock.id !== id));
-        showToast(`${stockToRemove.symbol} removed from watchlist`, "info");
+        toast.info(`${stockToRemove.symbol} removed from watchlist`);
       } else {
-        showToast(response.data.message || "Failed to remove stock from watchlist", "error");
+        toast.error(response.data.message || "Failed to remove stock from watchlist");
       }
     } catch (err) {
       console.error("Error removing stock from watchlist:", err);
-      showToast("Failed to remove stock from watchlist", "error");
+      toast.error("Failed to remove stock from watchlist");
 
       // Fallback to local implementation
       setWatchlist(watchlist.filter((stock) => stock.id !== id));
-      showToast(`${stockToRemove.symbol} removed from watchlist (local only)`, "warning");
+      toast.info(`${stockToRemove.symbol} removed from watchlist (local only)`);
     }
   };
 
   // Refresh watchlist data
   const refreshWatchlist = async () => {
     if (!isAuthenticated) {
-      showToast("Please log in to refresh your watchlist", "error");
+      toast.error("Please log in to refresh your watchlist");
       return;
     }
 
@@ -279,6 +316,19 @@ const Watchlist = () => {
       if (isOffline) {
         // Offline mode - simulate refresh with random price changes
         const updatedWatchlist = watchlist.map((stock) => {
+          // Handle "Loading..." values
+          if (stock.price === "Loading..." || isNaN(parseFloat(stock.price))) {
+            return {
+              ...stock,
+              price: (Math.random() * 200 + 50).toFixed(2),
+              change: (Math.random() * 10 - 5).toFixed(2),
+              changePercent: (Math.random() * 5 - 2.5).toFixed(2),
+              marketCap: stock.marketCap === "Loading..." ? `${(Math.random() * 500 + 10).toFixed(1)}B` : stock.marketCap,
+              volume: stock.volume === "Loading..." ? `${(Math.random() * 50 + 5).toFixed(1)}M` : stock.volume
+            };
+          }
+
+          // Normal price update for existing stocks
           const priceChange = (Math.random() * 4 - 2).toFixed(2);
           const newPrice = (parseFloat(stock.price) + parseFloat(priceChange)).toFixed(2);
           const changePercent = ((priceChange / stock.price) * 100).toFixed(2);
@@ -292,27 +342,83 @@ const Watchlist = () => {
         });
 
         setWatchlist(updatedWatchlist);
-        showToast("Watchlist refreshed (offline mode)", "success");
+        toast.success("Watchlist refreshed (offline mode)");
         return;
       }
 
       // Online mode - call API
-      const response = await axios.get("http://localhost:5000/api/watchlist/stocks");
+      const response = await axios.get(API_ENDPOINTS.WATCHLIST.STOCKS);
 
       if (response.data.success) {
-        setWatchlist(response.data.data);
-        showToast("Watchlist refreshed", "success");
+        // If we get data from the API, update the watchlist
+        if (response.data.data && Array.isArray(response.data.data)) {
+          setWatchlist(response.data.data);
+          toast.success("Watchlist refreshed");
+        } else if (response.data.stocks && Array.isArray(response.data.stocks)) {
+          // Alternative data structure
+          setWatchlist(response.data.stocks);
+          toast.success("Watchlist refreshed");
+        } else {
+          // Handle empty or invalid data
+          setError("Invalid watchlist data received");
+          toast.error("Failed to refresh watchlist: Invalid data format");
+
+          // Update any "Loading..." data with random values
+          const updatedWatchlist = watchlist.map((stock) => {
+            if (stock.price === "Loading..." || stock.marketCap === "Loading..." || stock.volume === "Loading...") {
+              return {
+                ...stock,
+                price: (Math.random() * 200 + 50).toFixed(2),
+                change: (Math.random() * 10 - 5).toFixed(2),
+                changePercent: (Math.random() * 5 - 2.5).toFixed(2),
+                marketCap: stock.marketCap === "Loading..." ? `${(Math.random() * 500 + 10).toFixed(1)}B` : stock.marketCap,
+                volume: stock.volume === "Loading..." ? `${(Math.random() * 50 + 5).toFixed(1)}M` : stock.volume
+              };
+            }
+            return stock;
+          });
+          setWatchlist(updatedWatchlist);
+        }
       } else {
         setError("Failed to refresh watchlist");
-        showToast("Failed to refresh watchlist", "error");
+        toast.error("Failed to refresh watchlist");
+
+        // Update any "Loading..." data with random values
+        const updatedWatchlist = watchlist.map((stock) => {
+          if (stock.price === "Loading..." || stock.marketCap === "Loading..." || stock.volume === "Loading...") {
+            return {
+              ...stock,
+              price: (Math.random() * 200 + 50).toFixed(2),
+              change: (Math.random() * 10 - 5).toFixed(2),
+              changePercent: (Math.random() * 5 - 2.5).toFixed(2),
+              marketCap: stock.marketCap === "Loading..." ? `${(Math.random() * 500 + 10).toFixed(1)}B` : stock.marketCap,
+              volume: stock.volume === "Loading..." ? `${(Math.random() * 50 + 5).toFixed(1)}M` : stock.volume
+            };
+          }
+          return stock;
+        });
+        setWatchlist(updatedWatchlist);
       }
     } catch (err) {
       console.error("Error refreshing watchlist:", err);
       setError("Failed to refresh watchlist");
-      showToast("Failed to refresh watchlist", "error");
+      toast.error("Failed to refresh watchlist");
 
       // Fallback to local implementation
       const updatedWatchlist = watchlist.map((stock) => {
+        // Handle "Loading..." values
+        if (stock.price === "Loading..." || isNaN(parseFloat(stock.price))) {
+          return {
+            ...stock,
+            price: (Math.random() * 200 + 50).toFixed(2),
+            change: (Math.random() * 10 - 5).toFixed(2),
+            changePercent: (Math.random() * 5 - 2.5).toFixed(2),
+            marketCap: stock.marketCap === "Loading..." ? `${(Math.random() * 500 + 10).toFixed(1)}B` : stock.marketCap,
+            volume: stock.volume === "Loading..." ? `${(Math.random() * 50 + 5).toFixed(1)}M` : stock.volume
+          };
+        }
+
+        // Normal price update for existing stocks
         const priceChange = (Math.random() * 4 - 2).toFixed(2);
         const newPrice = (parseFloat(stock.price) + parseFloat(priceChange)).toFixed(2);
         const changePercent = ((priceChange / stock.price) * 100).toFixed(2);
@@ -326,7 +432,7 @@ const Watchlist = () => {
       });
 
       setWatchlist(updatedWatchlist);
-      showToast("Watchlist refreshed (local only)", "warning");
+      toast.info("Watchlist refreshed (local only)");
     } finally {
       setRefreshing(false);
     }
@@ -379,8 +485,8 @@ const Watchlist = () => {
           <div className="watchlist-controls">
             <WatchlistSearch
               onAddStock={(symbol, name) => {
-                setNewStock(symbol);
-                setTimeout(() => addToWatchlist(), 100);
+                // Directly call addToWatchlist with the symbol and name
+                addStockToWatchlist(symbol, name);
               }}
               watchlistSymbols={watchlist.map(stock => stock.symbol)}
             />
@@ -413,7 +519,7 @@ const Watchlist = () => {
         ) : filteredWatchlist.length === 0 ? (
           <div className="empty-watchlist">
             {isFiltered ? (
-              <>
+              <div>
                 <p>No stocks found matching "{searchTerm}"</p>
                 <p>Try a different search term or clear the filter.</p>
                 {totalStocks > 0 && (
@@ -421,7 +527,7 @@ const Watchlist = () => {
                     You have {totalStocks} stock{totalStocks !== 1 ? 's' : ''} in your watchlist.
                   </p>
                 )}
-              </>
+              </div>
             ) : (
               <p>No stocks found in your watchlist. Use the search above to find and add stocks.</p>
             )}

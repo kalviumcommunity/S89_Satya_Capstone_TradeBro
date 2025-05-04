@@ -67,9 +67,10 @@ const Login = () => {
       });
       console.log("Login successful:", response.data);
 
-      // Store the token in AuthContext and localStorage
+      // Store the token and user data in AuthContext and localStorage
       if (response.data.token) {
-        authLogin(response.data.token);
+        // Pass both token and user data to the login function
+        authLogin(response.data.token, response.data.user);
       }
 
       setSuccess(true);

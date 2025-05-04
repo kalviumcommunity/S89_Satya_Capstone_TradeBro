@@ -42,9 +42,10 @@ const Signup = () => {
         { withCredentials: true }
       );
 
-      // Store the token in AuthContext and localStorage
+      // Store the token and user data in AuthContext and localStorage
       if (res.data.token) {
-        register(res.data.token);
+        // Pass both token and user data to the register function
+        register(res.data.token, res.data.user);
       }
 
       setSuccess(true);

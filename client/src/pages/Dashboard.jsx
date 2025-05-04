@@ -1,14 +1,16 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FiTrendingUp, FiTrendingDown, FiDollarSign, FiBarChart2,
   FiCreditCard, FiGift, FiRefreshCw, FiInfo, FiAlertCircle,
-  FiSearch, FiX, FiStar, FiPlus
+  FiSearch, FiX, FiStar, FiPlus, FiClock, FiTrash2
 } from "react-icons/fi";
 import axios from "axios";
 import { useToast } from "../context/ToastContext";
 import { useAuth } from "../context/AuthContext";
 import { safeApiCall, createDummyData } from "../utils/apiUtils";
+import { addToSearchHistory, getRecentSearches, clearSearchHistory } from "../utils/searchHistoryUtils";
+import API_ENDPOINTS from "../config/apiConfig";
 import PageLayout from "../components/PageLayout";
 import Loading from "../components/Loading";
 import StockDetail from "../components/StockDetail";
@@ -40,7 +42,13 @@ const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [stockSymbols, setStockSymbols] = useState([]);
+  const [recentSearches, setRecentSearches] = useState([]);
+  const [showRecentSearches, setShowRecentSearches] = useState(false);
+
+  // Debounce timeout reference
+  const [searchTimeout, setSearchTimeout] = useState(null);
 
   // Fetch market data
   useEffect(() => {
@@ -50,9 +58,9 @@ const Dashboard = () => {
 
         // Use our proxy server instead of direct API calls
         const [indicesResponse, gainersResponse, losersResponse] = await Promise.all([
-          axios.get("http://localhost:5000/api/proxy/market-indices"),
-          axios.get("http://localhost:5000/api/proxy/top-gainers"),
-          axios.get("http://localhost:5000/api/proxy/top-losers")
+          axios.get(API_ENDPOINTS.PROXY.MARKET_INDICES),
+          axios.get(API_ENDPOINTS.PROXY.TOP_GAINERS),
+          axios.get(API_ENDPOINTS.PROXY.TOP_LOSERS)
         ]);
 
         setMarketData({
@@ -135,7 +143,7 @@ const Dashboard = () => {
       // Try the public endpoint first for testing
       const result = await safeApiCall({
         method: 'get',
-        url: "http://localhost:5000/api/virtual-money/public",
+        url: API_ENDPOINTS.VIRTUAL_MONEY.PUBLIC,
         fallbackData,
         timeout: 3000
       });
@@ -189,7 +197,7 @@ const Dashboard = () => {
 
       // Fetch current prices for all stocks in portfolio using our proxy
       const response = await axios.get(
-        `http://localhost:5000/api/proxy/stock-batch?symbols=${symbols}`
+        API_ENDPOINTS.PROXY.STOCK_BATCH(symbols)
       );
 
       if (response.data && response.data.length > 0) {
@@ -295,16 +303,49 @@ const Dashboard = () => {
       // Use safe API call with fallback data
       const result = await safeApiCall({
         method: 'get',
-        url: "http://localhost:5000/api/virtual-money/reward-status",
+        url: API_ENDPOINTS.VIRTUAL_MONEY.REWARD_STATUS,
         fallbackData,
         timeout: 3000
       });
 
-      if (result && result.success) {
+      console.log('Reward status result:', result);
+
+      if (result) {
+        // Check if the result has the expected structure
+        if (result.success && result.canClaim !== undefined) {
+          // Direct structure from API
+          console.log('Using direct structure for reward status');
+          setRewardStatus({
+            canClaim: result.canClaim,
+            message: result.message,
+            timeRemaining: result.timeRemaining
+          });
+        } else if (result.success && result.data && result.data.canClaim !== undefined) {
+          // Nested structure from mock data
+          console.log('Using nested structure for reward status');
+          setRewardStatus({
+            canClaim: result.data.canClaim,
+            message: result.data.message,
+            timeRemaining: result.data.timeRemaining
+          });
+        } else {
+          // Unexpected structure, use fallback
+          console.log('Unexpected reward status structure, using fallback');
+          const fallbackStatus = fallbackData();
+          setRewardStatus({
+            canClaim: fallbackStatus.canClaim,
+            message: fallbackStatus.message,
+            timeRemaining: fallbackStatus.timeRemaining
+          });
+        }
+      } else {
+        // No result, use fallback
+        console.log('No reward status result, using fallback');
+        const fallbackStatus = fallbackData();
         setRewardStatus({
-          canClaim: result.canClaim,
-          message: result.message,
-          timeRemaining: result.timeRemaining
+          canClaim: fallbackStatus.canClaim,
+          message: fallbackStatus.message,
+          timeRemaining: fallbackStatus.timeRemaining
         });
       }
     } catch (error) {
@@ -354,28 +395,47 @@ const Dashboard = () => {
       // Use safe API call with fallback data
       const result = await safeApiCall({
         method: 'post',
-        url: "http://localhost:5000/api/virtual-money/claim-reward",
+        url: API_ENDPOINTS.VIRTUAL_MONEY.CLAIM_REWARD,
         fallbackData,
         timeout: 3000
       });
 
-      if (result && result.success) {
-        // Update virtual money state
-        fetchVirtualMoney();
+      console.log('Claim reward result:', result);
 
-        // Show animation and toast
-        setShowRewardAnimation(true);
-        setTimeout(() => {
-          setShowRewardAnimation(false);
-        }, 3000);
+      if (result) {
+        if (result.success) {
+          // Update virtual money state
+          fetchVirtualMoney();
 
-        toast.success(`Daily reward claimed: +${result.data.rewardAmount} coin!`);
+          // Show animation and toast
+          setShowRewardAnimation(true);
+          setTimeout(() => {
+            setShowRewardAnimation(false);
+          }, 3000);
 
-        // Update reward status
-        checkRewardStatus();
-        return true;
+          // Get reward amount from the response
+          let rewardAmount = 1; // Default value
+          if (result.data && result.data.rewardAmount) {
+            rewardAmount = result.data.rewardAmount;
+          } else if (result.rewardAmount) {
+            rewardAmount = result.rewardAmount;
+          }
+
+          toast.success(`Daily reward claimed: +${rewardAmount} coin!`);
+
+          // Update reward status
+          checkRewardStatus();
+
+          // Save the claim time to localStorage
+          localStorage.setItem('lastRewardClaim', new Date().getTime().toString());
+
+          return true;
+        } else {
+          toast.info(result.message || "Failed to claim reward");
+          return false;
+        }
       } else {
-        toast.info(result.message || "Failed to claim reward");
+        toast.info("Failed to claim reward");
         return false;
       }
     } catch (error) {
@@ -386,7 +446,30 @@ const Dashboard = () => {
   };
 
   // Handle stock selection
-  const handleStockSelect = (symbol) => {
+  const handleStockSelect = (symbol, stockName = "") => {
+    // Find the stock in search results or stockSymbols
+    let stockData = searchResults.find(stock => stock.symbol === symbol);
+
+    // If not found in search results, try to find in stockSymbols
+    if (!stockData) {
+      stockData = stockSymbols.find(stock => stock.symbol === symbol);
+    }
+
+    // If still not found, create a basic stock object
+    if (!stockData) {
+      stockData = {
+        symbol,
+        name: stockName || symbol
+      };
+    }
+
+    // Add to search history
+    addToSearchHistory(stockData);
+
+    // Update recent searches
+    setRecentSearches(getRecentSearches());
+
+    // Set selected stock
     setSelectedStock(symbol);
   };
 
@@ -404,7 +487,7 @@ const Dashboard = () => {
 
     try {
       // Call API to add stock to watchlist
-      const response = await axios.post("http://localhost:5000/api/watchlist/add", {
+      const response = await axios.post(API_ENDPOINTS.WATCHLIST.ADD, {
         symbol,
         name
       });
@@ -419,6 +502,16 @@ const Dashboard = () => {
       toast.info(`${symbol} would be added to your watchlist (server unavailable)`);
     }
   };
+
+  // Load recent searches
+  useEffect(() => {
+    const loadRecentSearches = () => {
+      const recent = getRecentSearches();
+      setRecentSearches(recent);
+    };
+
+    loadRecentSearches();
+  }, []);
 
   // Fetch stock symbols
   useEffect(() => {
@@ -456,29 +549,89 @@ const Dashboard = () => {
         // Use safe API call with fallback data
         const result = await safeApiCall({
           method: 'get',
-          url: "http://localhost:5000/api/proxy/fmp/stock/list",
+          url: API_ENDPOINTS.STOCK_SEARCH.LIST,
           fallbackData,
-          timeout: 3000
+          timeout: 5000
         });
 
-        if (result && result.data) {
+        if (result) {
+          let stockData = [];
+
+          // Check if the result has the expected structure
+          if (result.data && Array.isArray(result.data)) {
+            stockData = result.data;
+          } else if (result.success && result.data && Array.isArray(result.data)) {
+            stockData = result.data;
+          }
+
           // Filter to get major stocks for better performance
-          const majorStocks = result.data
-            .filter(stock => stock.type === "stock" && !stock.symbol.includes("."))
+          const majorStocks = stockData
+            .filter(stock => stock.type === "stock")
             .slice(0, 1000); // Limit to 1000 stocks for performance
+
+          console.log(`Loaded ${majorStocks.length} stocks for search`);
           setStockSymbols(majorStocks);
         }
       } catch (err) {
         console.error("Error fetching stock symbols:", err);
         // Use the fallback stocks
-        setStockSymbols(fallbackData().data);
+        const fallbackResult = fallbackData();
+        if (fallbackResult && fallbackResult.data) {
+          console.log(`Using ${fallbackResult.data.length} fallback stocks for search`);
+          setStockSymbols(fallbackResult.data);
+        } else {
+          console.log('No fallback stock data available');
+          setStockSymbols([]);
+        }
       }
     };
 
     fetchStockSymbols();
   }, []);
 
-  // Handle search
+  // Perform search with API or local fallback
+  const performSearch = useCallback(async (query) => {
+    if (query.trim() === "") {
+      setSearchResults([]);
+      setIsSearching(false);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+
+    // If query is at least 2 characters, use the API
+    if (query.length >= 2) {
+      try {
+        // Use the stock search API
+        const response = await axios.get(`${API_ENDPOINTS.STOCK_SEARCH.SEARCH}?query=${query}`);
+
+        if (response.data && response.data.success && Array.isArray(response.data.data)) {
+          console.log(`Found ${response.data.data.length} stocks matching "${query}"`);
+          setSearchResults(response.data.data.slice(0, 5)); // Limit to 5 results
+          setIsLoading(false);
+          return;
+        }
+      } catch (error) {
+        console.error("Error searching for stocks:", error);
+        // Fall back to local search if API fails
+      }
+    }
+
+    // Fallback to local filtering if API fails or query is too short
+    const results = stockSymbols
+      .filter(stock =>
+        stock.symbol.toLowerCase().includes(query.toLowerCase()) ||
+        stock.name.toLowerCase().includes(query.toLowerCase())
+      )
+      .slice(0, 5); // Limit to 5 results
+
+    console.log(`Found ${results.length} stocks matching "${query}" (local search)`);
+    setSearchResults(results);
+    setIsLoading(false);
+  }, [stockSymbols]);
+
+  // Handle search with debounce
   const handleSearch = (e) => {
     const query = e.target.value;
     setSearchQuery(query);
@@ -491,15 +644,17 @@ const Dashboard = () => {
 
     setIsSearching(true);
 
-    // Filter stock symbols based on search query
-    const results = stockSymbols
-      .filter(stock =>
-        stock.symbol.toLowerCase().includes(query.toLowerCase()) ||
-        stock.name.toLowerCase().includes(query.toLowerCase())
-      )
-      .slice(0, 5); // Limit to 5 results
+    // Clear any existing timeout
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
 
-    setSearchResults(results);
+    // Set a new timeout to debounce the search
+    const timeoutId = setTimeout(() => {
+      performSearch(query);
+    }, 300); // 300ms debounce
+
+    setSearchTimeout(timeoutId);
   };
 
   // Clear search
@@ -507,6 +662,7 @@ const Dashboard = () => {
     setSearchQuery("");
     setSearchResults([]);
     setIsSearching(false);
+    setShowRecentSearches(false);
   };
 
   return (
@@ -536,6 +692,12 @@ const Dashboard = () => {
                 value={searchQuery}
                 onChange={handleSearch}
                 className="search-input"
+                onFocus={() => {
+                  setIsSearching(true);
+                  if (!searchQuery) {
+                    setShowRecentSearches(true);
+                  }
+                }}
               />
               {searchQuery && (
                 <button className="clear-search" onClick={clearSearch}>
@@ -544,52 +706,123 @@ const Dashboard = () => {
               )}
             </div>
 
-            {isSearching && searchResults.length > 0 && (
+            {isSearching && (
               <motion.div
                 className="search-results"
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.2 }}
               >
-                {searchResults.map(stock => (
-                  <div
-                    key={stock.symbol}
-                    className="search-result-item"
-                  >
-                    <div
-                      className="result-info"
-                      onClick={() => {
-                        handleStockSelect(stock.symbol);
-                        clearSearch();
-                      }}
-                    >
-                      <div className="result-symbol">{stock.symbol}</div>
-                      <div className="result-name">{stock.name}</div>
-                    </div>
-                    <button
-                      className="add-to-watchlist-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        addToWatchlist(stock.symbol, stock.name);
-                      }}
-                      title="Add to Watchlist"
-                    >
-                      <FiPlus />
-                      <FiStar />
-                    </button>
+                {isLoading ? (
+                  <div className="search-loading">
+                    <div className="search-loading-spinner"></div>
+                    <div>Searching...</div>
                   </div>
-                ))}
-              </motion.div>
-            )}
-
-            {isSearching && searchResults.length === 0 && (
-              <motion.div
-                className="search-results"
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <div className="no-results">No stocks found</div>
+                ) : searchResults.length > 0 ? (
+                  <>
+                    <div className="search-results-header">
+                      <span>Search Results</span>
+                    </div>
+                    {searchResults.map(stock => (
+                      <div
+                        key={stock.symbol}
+                        className="search-result-item"
+                      >
+                        <div
+                          className="result-info"
+                          onClick={() => {
+                            handleStockSelect(stock.symbol, stock.name);
+                            clearSearch();
+                          }}
+                        >
+                          <div className="result-symbol">{stock.symbol}</div>
+                          <div className="result-name">{stock.name}</div>
+                          <div className="result-details">
+                            {stock.exchange && (
+                              <span className="result-exchange">{stock.exchange}</span>
+                            )}
+                            {stock.country && (
+                              <span className="result-country">{stock.country}</span>
+                            )}
+                            {stock.currency && (
+                              <span className="result-currency">{stock.currency}</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="result-actions">
+                          <button
+                            className="add-to-watchlist-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              addToWatchlist(stock.symbol, stock.name);
+                            }}
+                            title="Add to Watchlist"
+                          >
+                            <FiPlus />
+                            <FiStar />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                ) : searchQuery.length > 0 ? (
+                  <div className="no-results">No stocks found</div>
+                ) : showRecentSearches && recentSearches.length > 0 ? (
+                  <>
+                    <div className="search-results-header">
+                      <span>Recent Searches</span>
+                      <button
+                        className="clear-history-btn"
+                        onClick={() => {
+                          clearSearchHistory();
+                          setRecentSearches([]);
+                          setShowRecentSearches(false);
+                        }}
+                        title="Clear History"
+                      >
+                        <FiTrash2 />
+                      </button>
+                    </div>
+                    {recentSearches.map(stock => (
+                      <div
+                        key={stock.symbol}
+                        className="search-result-item recent-search-item"
+                      >
+                        <div
+                          className="result-info"
+                          onClick={() => {
+                            handleStockSelect(stock.symbol, stock.name);
+                            clearSearch();
+                          }}
+                        >
+                          <div className="result-symbol">{stock.symbol}</div>
+                          <div className="result-name">{stock.name}</div>
+                          <div className="result-details">
+                            <span className="result-timestamp">
+                              <FiClock size={12} />
+                              {new Date(stock.lastSearched).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="result-actions">
+                          <button
+                            className="add-to-watchlist-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              addToWatchlist(stock.symbol, stock.name);
+                            }}
+                            title="Add to Watchlist"
+                          >
+                            <FiPlus />
+                            <FiStar />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                ) : (
+                  <div className="no-results">Type to search for stocks</div>
+                )}
               </motion.div>
             )}
           </motion.div>

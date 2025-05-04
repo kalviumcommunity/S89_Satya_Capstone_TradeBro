@@ -4,9 +4,11 @@ import { FiSearch, FiX, FiTrendingUp, FiTrendingDown } from "react-icons/fi";
 import axios from "axios";
 import StockDetail from "./StockDetail";
 import Loading from "./Loading";
+import { useOfflineMode } from "../context/OfflineContext";
 import "../styles/StockSearch.css";
 
 const StockSearch = ({ onStockSelect, placeholder = "Search for stocks..." }) => {
+  const { isOffline } = useOfflineMode();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -14,6 +16,22 @@ const StockSearch = ({ onStockSelect, placeholder = "Search for stocks..." }) =>
   const [selectedStock, setSelectedStock] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
   const searchRef = useRef(null);
+
+  // Mock data for offline mode
+  const mockSearchResults = [
+    { symbol: "AAPL", name: "Apple Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock" },
+    { symbol: "MSFT", name: "Microsoft Corporation", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock" },
+    { symbol: "GOOGL", name: "Alphabet Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock" },
+    { symbol: "AMZN", name: "Amazon.com Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock" },
+    { symbol: "META", name: "Meta Platforms Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock" },
+    { symbol: "TSLA", name: "Tesla, Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock" },
+    { symbol: "NFLX", name: "Netflix, Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock" },
+    { symbol: "NVDA", name: "NVIDIA Corporation", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock" },
+    { symbol: "RELIANCE.BSE", name: "Reliance Industries", exchange: "BSE", exchangeShortName: "BSE", type: "stock" },
+    { symbol: "TCS.BSE", name: "Tata Consultancy Services", exchange: "BSE", exchangeShortName: "BSE", type: "stock" },
+    { symbol: "INFY.BSE", name: "Infosys Ltd", exchange: "BSE", exchangeShortName: "BSE", type: "stock" },
+    { symbol: "HDFCBANK.BSE", name: "HDFC Bank Ltd", exchange: "BSE", exchangeShortName: "BSE", type: "stock" }
+  ];
 
   // Handle search input change
   const handleSearchChange = (e) => {
@@ -31,21 +49,52 @@ const StockSearch = ({ onStockSelect, placeholder = "Search for stocks..." }) =>
       setLoading(true);
       setError(null);
 
-      // Use the FMP API to search for stocks
-      const apiKey = "VCMjfaz3k5CjRqbLvtpMALKTks5YVLxx";
+      // Check if we're in offline mode
+      if (isOffline) {
+        console.log("Using mock data for stock search in offline mode");
+        // Filter mock data based on search query
+        const filteredResults = mockSearchResults.filter(stock =>
+          stock.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          stock.name.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+
+        if (filteredResults.length > 0) {
+          setSearchResults(filteredResults);
+        } else {
+          setSearchResults([]);
+          setError("No stocks found matching your search");
+        }
+        setLoading(false);
+        return;
+      }
+
+      // Use the backend proxy to search for stocks
       const response = await axios.get(
-        `https://financialmodelingprep.com/api/v3/search?query=${searchQuery}&limit=10&apikey=${apiKey}`
+        `http://localhost:5000/api/stocks/search?query=${searchQuery}`
       );
 
-      if (response.data && response.data.length > 0) {
-        setSearchResults(response.data);
+      if (response.data && response.data.success && response.data.data && response.data.data.length > 0) {
+        setSearchResults(response.data.data);
       } else {
         setSearchResults([]);
         setError("No stocks found matching your search");
       }
     } catch (err) {
       console.error("Error searching for stocks:", err);
-      setError("Failed to search for stocks. Please try again later.");
+
+      // If there's an error, try to use mock data as fallback
+      const filteredResults = mockSearchResults.filter(stock =>
+        stock.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        stock.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+
+      if (filteredResults.length > 0) {
+        console.log("Using mock data as fallback after API error");
+        setSearchResults(filteredResults);
+        setError(null);
+      } else {
+        setError("Failed to search for stocks. Please try again later.");
+      }
     } finally {
       setLoading(false);
     }
@@ -163,6 +212,17 @@ const StockSearch = ({ onStockSelect, placeholder = "Search for stocks..." }) =>
               exit={{ opacity: 0 }}
             >
               {error}
+            </motion.div>
+          )}
+
+          {isOffline && (
+            <motion.div
+              className="search-offline-notice"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              Using offline mode - showing mock data
             </motion.div>
           )}
         </AnimatePresence>

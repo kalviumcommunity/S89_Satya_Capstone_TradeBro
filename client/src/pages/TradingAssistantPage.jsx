@@ -4,16 +4,18 @@ import {
   FiSend, FiUser, FiCpu, FiChevronDown, FiChevronUp,
   FiAlertCircle, FiTrendingUp, FiBarChart2, FiPieChart,
   FiRefreshCw, FiClock, FiInfo, FiHelpCircle, FiDollarSign,
-  FiGift, FiShoppingCart
+  FiGift, FiShoppingCart, FiBell
 } from "react-icons/fi";
 import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
 import { useAuth } from "../context/AuthContext";
+import { usePusher } from "../context/PusherContext.jsx";
 import PageLayout from "../components/PageLayout";
 import "../styles/pages/TradingAssistantPage.css";
 
 const TradingAssistantPage = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const { channel } = usePusher();
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -136,6 +138,36 @@ const TradingAssistantPage = () => {
     }
   };
 
+  // Listen for notifications from Pusher
+  useEffect(() => {
+    if (channel && isAuthenticated) {
+      // Listen for notification events
+      const handleNotification = (data) => {
+        // If the notification is related to trading, add it as a message in the chat
+        if (data.type === 'trade' || data.type === 'market') {
+          setMessages(prevMessages => [
+            ...prevMessages,
+            {
+              id: uuidv4(),
+              text: `📢 ${data.message}`,
+              sender: "bot",
+              timestamp: new Date(),
+              isNotification: true
+            }
+          ]);
+        }
+      };
+
+      // Listen for custom events dispatched by PusherContext
+      window.addEventListener('new-notification', (event) => handleNotification(event.detail));
+
+      // Clean up on unmount
+      return () => {
+        window.removeEventListener('new-notification', (event) => handleNotification(event.detail));
+      };
+    }
+  }, [channel, isAuthenticated]);
+
   // Start a chat session when the component mounts
   useEffect(() => {
     const startChatSession = async () => {
@@ -148,7 +180,8 @@ const TradingAssistantPage = () => {
         try {
           // Try to start a chat session regardless of authentication status
           const response = await axios.post("http://localhost:5000/api/chatbot/start", {
-            sessionId: clientSessionId
+            sessionId: clientSessionId,
+            user: isAuthenticated && user ? user.email : null
           }, { timeout: 3000 });
 
           if (response.data.success) {
@@ -270,7 +303,8 @@ const TradingAssistantPage = () => {
         // Try to send message regardless of authentication status
         const response = await axios.post("http://localhost:5000/api/chatbot/message", {
           sessionId,
-          message: text
+          message: text,
+          user: isAuthenticated && user ? user.email : null
         }, { timeout: 5000 });
 
         if (response.data.success) {
@@ -716,16 +750,23 @@ Would you like me to explain any of these features in more detail?`;
                     {messages.map((message, index) => (
                       <motion.div
                         key={message.id}
-                        className={`message ${message.sender === "bot" ? "bot" : "user"} ${message.stockData ? "stock-data" : ""} ${message.topGainers ? "top-gainers" : ""}`}
+                        className={`message ${message.sender === "bot" ? "bot" : "user"}
+                                  ${message.stockData ? "stock-data" : ""}
+                                  ${message.topGainers ? "top-gainers" : ""}
+                                  ${message.isNotification ? "notification" : ""}`}
                         initial={{ opacity: 0, y: 20, scale: 0.8 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         transition={{ duration: 0.3, delay: index * 0.1 }}
                       >
                         <div className="message-avatar">
-                          {message.sender === "bot" ? <FiCpu /> : <FiUser />}
+                          {message.sender === "bot" ?
+                            (message.isNotification ? <FiBell /> : <FiCpu />) :
+                            <FiUser />}
                         </div>
                         <div className="message-content">
-                          <div className={`message-text ${message.isError ? 'error' : ''} ${message.isOffline ? 'offline' : ''}`}>
+                          <div className={`message-text
+                                        ${message.isError ? 'error' : ''}
+                                        ${message.isOffline ? 'offline' : ''}`}>
                             {formatMessageText(message.text)}
                           </div>
                           <div className="message-time">{formatTimestamp(message.timestamp)}</div>

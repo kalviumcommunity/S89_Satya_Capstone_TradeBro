@@ -55,32 +55,26 @@ export const AuthProvider = ({ children }) => {
           }
         }
 
-        // Try to get user data if needed
-        try {
-          const response = await axios.get('http://localhost:5000/api/auth/user');
-          setUser(response.data);
+        // Use user data from localStorage instead of fetching from API
+        const userName = localStorage.getItem('userName');
+        const userFullName = localStorage.getItem('userFullName');
 
-          // Store email for fallback
-          if (response.data && response.data.email) {
-            localStorage.setItem('userEmail', response.data.email);
-          }
-        } catch (error) {
-          console.error('Error fetching user data:', error);
+        if (userEmail) {
+          // Create user object from localStorage data
+          const userData = {
+            email: userEmail,
+            username: userName || userEmail.split('@')[0],
+            fullName: userFullName || userName || userEmail.split('@')[0],
+            profileImage: localStorage.getItem('userProfileImage'),
+            phoneNumber: localStorage.getItem('userPhoneNumber'),
+            language: localStorage.getItem('userLanguage'),
+            notifications: localStorage.getItem('userNotifications')
+              ? JSON.parse(localStorage.getItem('userNotifications'))
+              : true
+          };
 
-          // If token is invalid, clear it
-          if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-            logout();
-          } else if (!error.response || error.response.status === 404) {
-            // If server is down or endpoint not found, use fallback user data
-            console.log('Using fallback user data');
-            if (userEmail) {
-              setUser({
-                email: userEmail,
-                _id: 'local-user-id',
-                username: userEmail.split('@')[0]
-              });
-            }
-          }
+          setUser(userData);
+          console.log('Using user data from localStorage');
         }
       }
       setLoading(false);
@@ -112,16 +106,34 @@ export const AuthProvider = ({ children }) => {
     if (userData) {
       setUser(userData);
 
-      // Store email for fallback
-      if (userData.email) {
-        localStorage.setItem('userEmail', userData.email);
+      // Store user data in localStorage for sidebar and other components
+      localStorage.setItem('userEmail', userData.email || '');
+      localStorage.setItem('userName', userData.username || '');
+      localStorage.setItem('userFullName', userData.fullName || userData.username || '');
+
+      // Store additional user data if available
+      if (userData.profileImage) {
+        localStorage.setItem('userProfileImage', userData.profileImage);
+      }
+
+      if (userData.phoneNumber) {
+        localStorage.setItem('userPhoneNumber', userData.phoneNumber);
+      }
+
+      if (userData.language) {
+        localStorage.setItem('userLanguage', userData.language);
+      }
+
+      // Store notifications settings as JSON string
+      if (userData.notifications) {
+        localStorage.setItem('userNotifications', JSON.stringify(userData.notifications));
       }
     }
 
     // Store last login timestamp
     localStorage.setItem('lastLogin', new Date().toISOString());
 
-    console.log('User logged in successfully');
+    console.log('User logged in successfully with data stored in localStorage');
   };
 
   // Logout function

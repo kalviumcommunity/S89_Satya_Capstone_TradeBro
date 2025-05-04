@@ -6,7 +6,7 @@ import { ThemeProvider } from "./context/ThemeContext";
 import { ToastProvider } from "./context/ToastContext";
 import { SidebarProvider } from "./context/SidebarContext";
 import { AuthProvider } from "./context/AuthContext";
-import { PusherProvider } from "./context/PusherContext";
+import { PusherProvider } from "./context/PusherContext.jsx";
 import AppRoutes from "./approutes";
 import "./styles/theme.css";
 import "./styles/DarkMode.css";

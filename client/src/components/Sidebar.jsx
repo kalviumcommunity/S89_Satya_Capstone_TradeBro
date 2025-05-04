@@ -35,49 +35,21 @@ const Sidebar = () => {
     role: "Member"
   });
 
-  // Fetch user data
+  // Get user data from localStorage
   useEffect(() => {
-    const fetchUserData = async () => {
-      if (!isAuthenticated) return;
+    if (!isAuthenticated) return;
 
-      try {
-        const response = await axios.get("http://localhost:5000/api/settings", {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('authToken')}`
-          },
-          timeout: 3000
-        });
-
-        if (response.data && response.data.success) {
-          const userData = response.data.userSettings;
-
-          const userInfo = {
-            fullName: userData.fullName || "User",
-            email: userData.email || "",
-            profileImage: userData.profileImage
-              ? `http://localhost:5000/uploads/${userData.profileImage}`
-              : "https://randomuser.me/api/portraits/lego/1.jpg",
-            role: userData.role || "Member"
-          };
-
-          setUser(userInfo);
-        }
-      } catch (err) {
-        console.error("Error fetching user data for sidebar:", err);
-
-        // Use fallback data
-        const userInfo = {
-          fullName: localStorage.getItem('userName') || "User",
-          email: localStorage.getItem('userEmail') || "",
-          profileImage: "https://randomuser.me/api/portraits/lego/1.jpg",
-          role: "Member"
-        };
-
-        setUser(userInfo);
-      }
+    // Get user data directly from localStorage
+    const userInfo = {
+      fullName: localStorage.getItem('userFullName') || localStorage.getItem('userName') || "User",
+      email: localStorage.getItem('userEmail') || "",
+      profileImage: localStorage.getItem('userProfileImage')
+        ? `http://localhost:5000/uploads/${localStorage.getItem('userProfileImage')}`
+        : "https://randomuser.me/api/portraits/lego/1.jpg",
+      role: "Member"
     };
 
-    fetchUserData();
+    setUser(userInfo);
   }, [isAuthenticated]);
 
   // Handle logout

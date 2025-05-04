@@ -15,7 +15,6 @@ export const API_ENDPOINTS = {
     LOGIN: `${API_BASE_URL}/api/auth/login`,
     SIGNUP: `${API_BASE_URL}/api/auth/signup`,
     GOOGLE: `${API_BASE_URL}/api/auth/auth/google`,
-    USER: `${API_BASE_URL}/api/auth/user`,
     FORGOT_PASSWORD: `${API_BASE_URL}/api/auth/forgotpassword`,
     RESET_PASSWORD: `${API_BASE_URL}/api/auth/resetpassword`,
   },
@@ -36,6 +35,7 @@ export const API_ENDPOINTS = {
   // Virtual money endpoints
   VIRTUAL_MONEY: {
     ACCOUNT: `${API_BASE_URL}/api/virtual-money/account`,
+    PUBLIC: `${API_BASE_URL}/api/virtual-money/public`,
     BUY: `${API_BASE_URL}/api/virtual-money/buy`,
     SELL: `${API_BASE_URL}/api/virtual-money/sell`,
     CLAIM_REWARD: `${API_BASE_URL}/api/virtual-money/claim-reward`,
@@ -60,12 +60,18 @@ export const API_ENDPOINTS = {
 
   // Proxy endpoints
   PROXY: {
-    STOCK_BATCH: (symbols) => `${API_BASE_URL}/api/proxy/stock-batch?symbols=${symbols}`,
+    STOCK_BATCH: (symbol) => `${API_BASE_URL}/api/proxy/stock-batch?symbols=${symbol}`,
     STOCK_LIST: `${API_BASE_URL}/api/proxy/fmp/stock/list`,
     HISTORICAL_PRICE: (symbol) => `${API_BASE_URL}/api/proxy/fmp/historical-price-full/${symbol}`,
     MARKET_INDICES: `${API_BASE_URL}/api/proxy/market-indices`,
     TOP_GAINERS: `${API_BASE_URL}/api/proxy/top-gainers`,
     TOP_LOSERS: `${API_BASE_URL}/api/proxy/top-losers`,
+  },
+
+  // Stock Search endpoints
+  STOCK_SEARCH: {
+    SEARCH: `${API_BASE_URL}/api/stock-search`,
+    LIST: `${API_BASE_URL}/api/stock-search/list`,
   },
 
   // Contact endpoint

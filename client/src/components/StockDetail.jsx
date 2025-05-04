@@ -136,7 +136,7 @@ const StockDetail = ({ symbol, onClose, onBuySuccess, onSellSuccess }) => {
 
       try {
         // Try the public endpoint first for testing
-        const response = await axios.get("http://localhost:5000/api/virtual-money/public", { timeout: 3000 });
+        const response = await axios.get(API_ENDPOINTS.VIRTUAL_MONEY.PUBLIC, { timeout: 3000 });
         if (response.data.success) {
           setVirtualMoney(response.data.data);
         }

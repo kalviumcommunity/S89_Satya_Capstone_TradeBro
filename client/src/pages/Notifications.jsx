@@ -4,7 +4,7 @@ import { FiBell, FiCheck, FiTrash2, FiAlertCircle, FiInfo, FiCheckCircle, FiExte
 import axios from "axios";
 import { API_ENDPOINTS } from "../config/apiConfig";
 import { useAuth } from "../context/AuthContext";
-import { usePusher } from "../context/PusherContext";
+import { usePusher } from "../context/PusherContext.jsx";
 import { useToast } from "../hooks/useToast";
 import PageLayout from "../components/PageLayout";
 import "./Notifications.css";

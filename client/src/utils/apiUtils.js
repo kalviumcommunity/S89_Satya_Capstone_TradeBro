@@ -63,10 +63,70 @@ export const safeApiCall = async ({
       console.error(`API call to ${url} failed:`, error.message);
     }
 
+    // Special handling for reward-status endpoint
+    if (url && url.includes('/api/virtual-money/reward-status')) {
+      console.log('Special handling for reward-status endpoint');
+
+      try {
+        // Get user info
+        const userEmail = localStorage.getItem('userEmail') || 'user@example.com';
+        const userName = localStorage.getItem('userName') || 'User';
+        const userFullName = localStorage.getItem('userFullName') || userName;
+
+        // Check if user has already claimed reward today
+        const lastReward = localStorage.getItem('lastRewardClaim');
+        const today = new Date().setHours(0, 0, 0, 0);
+
+        if (lastReward && new Date(parseInt(lastReward)).setHours(0, 0, 0, 0) === today) {
+          // Already claimed today
+          console.log('Reward already claimed today (apiUtils fallback)');
+
+          // Calculate time remaining until next reward
+          const now = new Date();
+          const tomorrow = new Date(now);
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          tomorrow.setHours(0, 0, 0, 0);
+
+          const minutesRemaining = Math.ceil((tomorrow - now) / (1000 * 60));
+          const hoursRemaining = Math.floor(minutesRemaining / 60);
+          const mins = minutesRemaining % 60;
+
+          return {
+            success: true,
+            canClaim: false,
+            message: `Hi ${userFullName}, you've already claimed your daily reward.`,
+            timeRemaining: {
+              hours: hoursRemaining,
+              minutes: mins,
+              totalMinutes: minutesRemaining
+            },
+            nextRewardTime: tomorrow.toISOString(),
+            isFallbackData: true
+          };
+        } else {
+          // Can claim reward
+          return {
+            success: true,
+            canClaim: true,
+            message: `Hi ${userFullName}, you can claim your daily reward!`,
+            timeRemaining: {
+              hours: 0,
+              minutes: 0,
+              totalMinutes: 0
+            },
+            isFallbackData: true
+          };
+        }
+      } catch (fallbackError) {
+        console.error('Error in reward status special handling:', fallbackError);
+        // Continue to regular fallback handling
+      }
+    }
+
     // Use fallback data for any API error
     const dummyData = fallbackData();
     if (dummyData) {
-      console.log('Using fallback data due to API error');
+      console.log('Using fallback data due to API error:', dummyData);
 
       // If dummyData is already in the expected format, return it directly
       if (dummyData.success !== undefined) {
@@ -81,7 +141,11 @@ export const safeApiCall = async ({
         isFallbackData: true
       };
     }
-    return dummyData;
+    return {
+      success: false,
+      message: 'API call failed and no fallback data available',
+      isFallbackData: true
+    };
   }
 };
 

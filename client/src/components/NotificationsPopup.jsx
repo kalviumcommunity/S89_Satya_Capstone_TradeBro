@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import axios from "axios";
 import { API_ENDPOINTS } from "../config/apiConfig";
 import { useAuth } from "../context/AuthContext";
-import { usePusher } from "../context/PusherContext";
+import { usePusher } from "../context/PusherContext.jsx";
 import "./NotificationsPopup.css";
 
 const NotificationsPopup = () => {

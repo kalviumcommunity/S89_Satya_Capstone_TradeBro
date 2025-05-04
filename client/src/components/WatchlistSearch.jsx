@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
-import { FiSearch, FiPlus, FiCheck } from "react-icons/fi";
+import React, { useState, useEffect, useRef, Fragment } from "react";
+import { FiSearch, FiPlus, FiCheck, FiClock, FiTrash2, FiX } from "react-icons/fi";
 import axios from "axios";
 import { useToast } from "../hooks/useToast";
 import { useOfflineMode } from "../context/OfflineContext";
+import { addToSearchHistory, getRecentSearches, clearSearchHistory } from "../utils/searchHistoryUtils";
+import API_ENDPOINTS from "../config/apiConfig";
 import "../styles/WatchlistSearch.css";
 
 const WatchlistSearch = ({ onAddStock, watchlistSymbols = [] }) => {
@@ -12,6 +14,8 @@ const WatchlistSearch = ({ onAddStock, watchlistSymbols = [] }) => {
   const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [recentSearches, setRecentSearches] = useState([]);
+  const [showRecentSearches, setShowRecentSearches] = useState(false);
   const searchRef = useRef(null);
 
   // Mock data for offline mode
@@ -26,11 +30,22 @@ const WatchlistSearch = ({ onAddStock, watchlistSymbols = [] }) => {
     { symbol: "NVDA", name: "NVIDIA Corporation", exchange: "NASDAQ", type: "stock", inWatchlist: false }
   ];
 
+  // Load recent searches
+  useEffect(() => {
+    const loadRecentSearches = () => {
+      const recent = getRecentSearches();
+      setRecentSearches(recent);
+    };
+
+    loadRecentSearches();
+  }, []);
+
   // Close search results when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (searchRef.current && !searchRef.current.contains(event.target)) {
         setShowResults(false);
+        setShowRecentSearches(false);
       }
     };
 
@@ -124,7 +139,22 @@ const WatchlistSearch = ({ onAddStock, watchlistSymbols = [] }) => {
 
   // Handle search input change with debounce
   const handleSearchChange = (e) => {
-    setSearchTerm(e.target.value);
+    const value = e.target.value;
+    setSearchTerm(value);
+
+    if (value.trim() === "") {
+      setShowRecentSearches(true);
+    } else {
+      setShowRecentSearches(false);
+    }
+  };
+
+  // Clear search
+  const clearSearch = () => {
+    setSearchTerm("");
+    setSearchResults([]);
+    setShowResults(false);
+    setShowRecentSearches(false);
   };
 
   // Debounce search
@@ -142,7 +172,20 @@ const WatchlistSearch = ({ onAddStock, watchlistSymbols = [] }) => {
   }, [searchTerm]);
 
   // Add stock to watchlist
-  const handleAddStock = (symbol, name) => {
+  const handleAddStock = (symbol, name, exchange = "") => {
+    // Add to search history
+    const stockData = {
+      symbol,
+      name,
+      exchange
+    };
+
+    addToSearchHistory(stockData);
+
+    // Update recent searches
+    setRecentSearches(getRecentSearches());
+
+    // Call the parent component's onAddStock function
     onAddStock(symbol, name);
 
     // Update the search results to show the stock as added
@@ -162,41 +205,101 @@ const WatchlistSearch = ({ onAddStock, watchlistSymbols = [] }) => {
           value={searchTerm}
           onChange={handleSearchChange}
           className="search-input"
-          onFocus={() => searchTerm.trim().length > 1 && setShowResults(true)}
+          onFocus={() => {
+            if (searchTerm.trim().length > 1) {
+              setShowResults(true);
+              setShowRecentSearches(false);
+            } else {
+              setShowRecentSearches(true);
+            }
+          }}
         />
+        {searchTerm && (
+          <button className="clear-search-btn" onClick={clearSearch}>
+            <FiX />
+          </button>
+        )}
       </div>
 
-      {showResults && (
+      {(showResults || showRecentSearches) && (
         <div className="search-results">
           {loading ? (
-            <div className="search-loading">
+            <div className="search-loading" key="search-loading">
               <div className="search-spinner"></div>
-              <p>Searching...</p>
+              <p key="loading-message">Searching...</p>
             </div>
-          ) : searchResults.length === 0 ? (
+          ) : searchResults.length > 0 ? (
+            <Fragment key="search-results-section">
+              <div className="search-results-header" key="search-results-header">
+                <span>Search Results</span>
+              </div>
+              <ul className="results-list">
+                {searchResults.map((stock) => (
+                  <li key={stock.symbol} className="result-item">
+                    <div className="stock-info">
+                      <span className="stock-symbol">{stock.symbol}</span>
+                      <span className="stock-name">{stock.name}</span>
+                      {stock.exchange && <span className="stock-exchange">{stock.exchange}</span>}
+                    </div>
+                    <button
+                      className={`add-stock-btn ${stock.inWatchlist ? 'added' : ''}`}
+                      onClick={() => handleAddStock(stock.symbol, stock.name, stock.exchange)}
+                      disabled={stock.inWatchlist}
+                      title={stock.inWatchlist ? "Already in watchlist" : "Add to watchlist"}
+                    >
+                      {stock.inWatchlist ? <FiCheck /> : <FiPlus />}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </Fragment>
+          ) : searchTerm.trim().length > 0 ? (
             <div className="no-results">
-              <p>No stocks found. Try a different search term.</p>
+              <p key="no-results-message">No stocks found matching your search. Try a different search term.</p>
             </div>
+          ) : showRecentSearches && recentSearches.length > 0 ? (
+            <Fragment key="recent-searches-section">
+              <div className="search-results-header" key="recent-searches-header">
+                <span>Recent Searches</span>
+                <button
+                  className="clear-history-btn"
+                  onClick={() => {
+                    clearSearchHistory();
+                    setRecentSearches([]);
+                    setShowRecentSearches(false);
+                  }}
+                  title="Clear History"
+                >
+                  <FiTrash2 />
+                </button>
+              </div>
+              <ul className="results-list">
+                {recentSearches.map((stock) => (
+                  <li key={stock.symbol + "-" + stock.lastSearched} className="result-item recent-search-item">
+                    <div className="stock-info">
+                      <span className="stock-symbol">{stock.symbol}</span>
+                      <span className="stock-name">{stock.name}</span>
+                      <span className="result-timestamp">
+                        <FiClock size={12} />
+                        {new Date(stock.lastSearched).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <button
+                      className={`add-stock-btn ${watchlistSymbols.includes(stock.symbol) ? 'added' : ''}`}
+                      onClick={() => handleAddStock(stock.symbol, stock.name, stock.exchange)}
+                      disabled={watchlistSymbols.includes(stock.symbol)}
+                      title={watchlistSymbols.includes(stock.symbol) ? "Already in watchlist" : "Add to watchlist"}
+                    >
+                      {watchlistSymbols.includes(stock.symbol) ? <FiCheck /> : <FiPlus />}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </Fragment>
           ) : (
-            <ul className="results-list">
-              {searchResults.map((stock) => (
-                <li key={stock.symbol} className="result-item">
-                  <div className="stock-info">
-                    <span className="stock-symbol">{stock.symbol}</span>
-                    <span className="stock-name">{stock.name}</span>
-                    <span className="stock-exchange">{stock.exchange}</span>
-                  </div>
-                  <button
-                    className={`add-stock-btn ${stock.inWatchlist ? 'added' : ''}`}
-                    onClick={() => handleAddStock(stock.symbol, stock.name)}
-                    disabled={stock.inWatchlist}
-                    title={stock.inWatchlist ? "Already in watchlist" : "Add to watchlist"}
-                  >
-                    {stock.inWatchlist ? <FiCheck /> : <FiPlus />}
-                  </button>
-                </li>
-              ))}
-            </ul>
+            <div className="no-results">
+              <p key="empty-search-message">Type to search for stocks or view recent searches.</p>
+            </div>
           )}
         </div>
       )}

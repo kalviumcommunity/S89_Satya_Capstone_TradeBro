@@ -120,10 +120,22 @@ const setupMockGetEndpoints = (userData = null) => {
     // Watchlist endpoint
     if (url && url.includes('/api/watchlist/stocks')) {
       console.log('Using mock watchlist data');
+
+      // Get stored watchlist from localStorage or return empty array
+      let watchlist = [];
+      try {
+        const storedWatchlist = localStorage.getItem('watchlist');
+        if (storedWatchlist) {
+          watchlist = JSON.parse(storedWatchlist);
+        }
+      } catch (e) {
+        console.error('Error parsing stored watchlist:', e);
+      }
+
       return Promise.resolve({
         data: {
           success: true,
-          data: []
+          data: watchlist
         }
       });
     }
@@ -183,6 +195,76 @@ const setupMockGetEndpoints = (userData = null) => {
       });
     }
 
+    // Virtual money reward status endpoint
+    if (url && url.includes('/api/virtual-money/reward-status')) {
+      console.log('Using mock reward status endpoint');
+
+      try {
+        // Get user info
+        const userEmail = userData?.email || localStorage.getItem('userEmail') || 'user@example.com';
+        const userName = userData?.username || localStorage.getItem('userName') || 'User';
+        const userFullName = userData?.fullName || localStorage.getItem('userFullName') || userName;
+
+        // Check if user has already claimed reward today
+        const lastReward = localStorage.getItem('lastRewardClaim');
+        const today = new Date().setHours(0, 0, 0, 0);
+
+        if (lastReward && new Date(parseInt(lastReward)).setHours(0, 0, 0, 0) === today) {
+          // Already claimed today
+          console.log('Reward already claimed today (mock)');
+
+          // Calculate time remaining until next reward
+          const now = new Date();
+          const tomorrow = new Date(now);
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          tomorrow.setHours(0, 0, 0, 0);
+
+          const minutesRemaining = Math.ceil((tomorrow - now) / (1000 * 60));
+          const hoursRemaining = Math.floor(minutesRemaining / 60);
+          const mins = minutesRemaining % 60;
+
+          return Promise.resolve({
+            data: {
+              success: true,
+              canClaim: false,
+              message: `Hi ${userFullName}, you've already claimed your daily reward.`,
+              timeRemaining: {
+                hours: hoursRemaining,
+                minutes: mins,
+                totalMinutes: minutesRemaining
+              },
+              nextRewardTime: tomorrow.toISOString()
+            }
+          });
+        } else {
+          // Can claim reward
+          return Promise.resolve({
+            data: {
+              success: true,
+              canClaim: true,
+              message: `Hi ${userFullName}, you can claim your daily reward!`,
+              timeRemaining: {
+                hours: 0,
+                minutes: 0,
+                totalMinutes: 0
+              }
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error in mock reward status endpoint:', error);
+
+        // Return a generic response
+        return Promise.resolve({
+          data: {
+            success: true,
+            canClaim: true,
+            message: 'You can claim your daily reward!'
+          }
+        });
+      }
+    }
+
     // Orders endpoint
     if (url && url.includes('/api/orders/all')) {
       console.log('Using mock orders data');
@@ -190,6 +272,56 @@ const setupMockGetEndpoints = (userData = null) => {
         data: {
           success: true,
           data: []
+        }
+      });
+    }
+
+    // Stock search endpoint
+    if (url && url.includes('/api/stocks/search')) {
+      console.log('Using mock stock search endpoint');
+
+      // Extract the query parameter
+      const queryParam = url.split('?')[1];
+      const params = new URLSearchParams(queryParam);
+      const query = params.get('query');
+
+      if (!query) {
+        return Promise.resolve({
+          data: {
+            success: false,
+            message: 'Search query is required'
+          }
+        });
+      }
+
+      // Mock stock data
+      const mockStocks = [
+        { symbol: "AAPL", name: "Apple Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock" },
+        { symbol: "MSFT", name: "Microsoft Corporation", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock" },
+        { symbol: "GOOGL", name: "Alphabet Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock" },
+        { symbol: "AMZN", name: "Amazon.com Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock" },
+        { symbol: "META", name: "Meta Platforms Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock" },
+        { symbol: "TSLA", name: "Tesla, Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock" },
+        { symbol: "NFLX", name: "Netflix, Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock" },
+        { symbol: "NVDA", name: "NVIDIA Corporation", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock" },
+        { symbol: "RELIANCE.BSE", name: "Reliance Industries", exchange: "BSE", exchangeShortName: "BSE", type: "stock" },
+        { symbol: "TCS.BSE", name: "Tata Consultancy Services", exchange: "BSE", exchangeShortName: "BSE", type: "stock" },
+        { symbol: "INFY.BSE", name: "Infosys Ltd", exchange: "BSE", exchangeShortName: "BSE", type: "stock" },
+        { symbol: "HDFCBANK.BSE", name: "HDFC Bank Ltd", exchange: "BSE", exchangeShortName: "BSE", type: "stock" }
+      ];
+
+      // Filter stocks based on query
+      const filteredStocks = mockStocks.filter(stock =>
+        stock.symbol.toLowerCase().includes(query.toLowerCase()) ||
+        stock.name.toLowerCase().includes(query.toLowerCase())
+      );
+
+      return Promise.resolve({
+        data: {
+          success: true,
+          data: filteredStocks,
+          query,
+          note: 'Using mock data in offline mode'
         }
       });
     }
@@ -205,6 +337,71 @@ const setupMockGetEndpoints = (userData = null) => {
 const setupMockPostEndpoints = () => {
   axios.post = function(url, data, config) {
     // Handle specific POST endpoints here
+
+    // Watchlist add endpoint
+    if (url && url.includes('/api/watchlist/add')) {
+      console.log('Using mock watchlist add endpoint');
+
+      try {
+        // Get the stock data from the request
+        const { symbol, name } = data;
+
+        // Get existing watchlist from localStorage or create empty array
+        let watchlist = [];
+        try {
+          const storedWatchlist = localStorage.getItem('watchlist');
+          if (storedWatchlist) {
+            watchlist = JSON.parse(storedWatchlist);
+          }
+        } catch (e) {
+          console.error('Error parsing stored watchlist:', e);
+        }
+
+        // Check if stock already exists in watchlist
+        const stockExists = watchlist.some(item => item.symbol === symbol);
+
+        if (stockExists) {
+          return Promise.resolve({
+            data: {
+              success: false,
+              message: `${symbol} is already in your watchlist`
+            }
+          });
+        }
+
+        // Add stock to watchlist with an ID and mock data
+        watchlist.push({
+          symbol,
+          name,
+          addedAt: new Date().toISOString(),
+          id: Date.now(),
+          price: (Math.random() * 200 + 50).toFixed(2),
+          change: (Math.random() * 10 - 5).toFixed(2),
+          changePercent: (Math.random() * 5 - 2.5).toFixed(2),
+          marketCap: `${(Math.random() * 500 + 10).toFixed(1)}B`,
+          volume: `${(Math.random() * 50 + 5).toFixed(1)}M`
+        });
+
+        // Save updated watchlist to localStorage
+        localStorage.setItem('watchlist', JSON.stringify(watchlist));
+
+        return Promise.resolve({
+          data: {
+            success: true,
+            message: `${symbol} added to watchlist`,
+            data: watchlist
+          }
+        });
+      } catch (e) {
+        console.error('Error handling add to watchlist:', e);
+        return Promise.resolve({
+          data: {
+            success: true,
+            message: 'Stock added to watchlist (mock)'
+          }
+        });
+      }
+    }
 
     // Chatbot message endpoint
     if (url && url.includes('/api/chatbot/message')) {
@@ -464,6 +661,61 @@ const setupMockPutEndpoints = () => {
 const setupMockDeleteEndpoints = () => {
   axios.delete = function(url, config) {
     // Handle specific DELETE endpoints here
+
+    // Handle watchlist remove endpoint
+    if (url && url.includes('/api/watchlist/remove/')) {
+      console.log('Using mock watchlist remove endpoint');
+
+      try {
+        // Extract the symbol from the URL
+        const symbol = url.split('/').pop();
+
+        // Get existing watchlist from localStorage
+        let watchlist = [];
+        try {
+          const storedWatchlist = localStorage.getItem('watchlist');
+          if (storedWatchlist) {
+            watchlist = JSON.parse(storedWatchlist);
+          }
+        } catch (e) {
+          console.error('Error parsing stored watchlist:', e);
+        }
+
+        // Check if stock exists in watchlist
+        const stockExists = watchlist.some(item => item.symbol === symbol);
+
+        if (!stockExists) {
+          return Promise.resolve({
+            data: {
+              success: false,
+              message: `${symbol} is not in your watchlist`
+            }
+          });
+        }
+
+        // Remove stock from watchlist
+        const updatedWatchlist = watchlist.filter(item => item.symbol !== symbol);
+
+        // Save updated watchlist to localStorage
+        localStorage.setItem('watchlist', JSON.stringify(updatedWatchlist));
+
+        return Promise.resolve({
+          data: {
+            success: true,
+            message: `${symbol} removed from watchlist`,
+            data: updatedWatchlist
+          }
+        });
+      } catch (e) {
+        console.error('Error handling remove from watchlist:', e);
+        return Promise.resolve({
+          data: {
+            success: true,
+            message: 'Stock removed from watchlist (mock)'
+          }
+        });
+      }
+    }
 
     // Otherwise, use the original delete method
     return originalDelete.apply(this, arguments);

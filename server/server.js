@@ -15,11 +15,10 @@ require("./passport.config");
 // Initialize Express app
 const app = express();
 const PORT = process.env.PORT || 5000;
-// Use environment variable for MongoDB URI or fallback to a default
-// Note: It's recommended to set this in your .env file instead of hardcoding
-const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://kakihari03:2QHgAjnzMXevFO7l@cluster0.mhsl8lz.mongodb.net/tradebro?retryWrites=true&w=majority";
+// Use environment variables for database connection and API keys
+const MONGO_URI = process.env.MONGO_URI;
 // FMP API key for stock data
-const FMP_API = process.env.FMP_API_KEY || "VCMjfaz3k5CjRqbLvtpMALKTks5YVLxx";
+const FMP_API = process.env.FMP_API_KEY;
 
 // CORS configuration
 app.use(cors({
@@ -37,7 +36,7 @@ app.use("/uploads", express.static("uploads"));
 
 // Session configuration
 const sessionOptions = {
-  secret: process.env.SESSION_SECRET || "fcxdfghjklbhvgcfdfrtgyuhjbhv",
+  secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: { maxAge: 7 * 24 * 60 * 60 * 1000 } // 7 days
@@ -197,9 +196,9 @@ const chatbotRoutes = require("./chatbot");
 const virtualMoneyRoutes = require("./routes/virtualMoneyRoutes");
 const proxyRoutes = require("./routes/proxyRoutes");
 const { router: notificationRoutes } = require("./routes/notificationRoutes");
-const testNotificationRoute = require("./routes/testNotificationRoute");
 const watchlistRoutes = require("./routes/watchlistRoutes");
 const orderRoutes = require("./routes/orderRoutes");
+const stockSearchRoutes = require("./routes/stockSearchRoutes");
 
 // API Routes
 app.use("/api/auth", authRoutes);
@@ -209,9 +208,9 @@ app.use("/api/chatbot", chatbotRoutes);
 app.use("/api/virtual-money", virtualMoneyRoutes);
 app.use("/api/proxy", proxyRoutes);
 app.use("/api/notifications", notificationRoutes);
-app.use("/api/test", testNotificationRoute);
 app.use("/api/watchlist", watchlistRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/stock-search", stockSearchRoutes);
 
 // Error handling middleware
 app.use((err, _, res, __) => {

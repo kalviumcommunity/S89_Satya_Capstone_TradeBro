@@ -39,16 +39,43 @@ router.post('/signup', async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = new User({ username, email, password: hashedPassword });
+    const user = new User({
+      username,
+      email,
+      password: hashedPassword,
+      fullName: username // Default fullName to username
+    });
     const savedUser = await user.save();
-    const token = jwt.sign({ id: savedUser._id, email: savedUser.email }, JWT_SECRET, { expiresIn: '7d' });
+
+    // Include more user data in the token
+    const token = jwt.sign({
+      id: savedUser._id,
+      email: savedUser.email,
+      username: savedUser.username,
+      fullName: savedUser.fullName || savedUser.username
+    }, JWT_SECRET, { expiresIn: '7d' });
+
     res.cookie('authToken', token, {
       httpOnly: true,
       secure: false,
       sameSite: 'strict',
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
-    res.status(201).json({ message: 'User registered successfully', user: savedUser });
+
+    // Create a user object with only the necessary data for the client
+    const userData = {
+      id: savedUser._id,
+      email: savedUser.email,
+      username: savedUser.username,
+      fullName: savedUser.fullName || savedUser.username,
+      profileImage: savedUser.profileImage
+    };
+
+    res.status(201).json({
+      message: 'User registered successfully',
+      token,
+      user: userData
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Internal server error' });
@@ -94,6 +121,7 @@ router.post('/login', async (req, res) => {
       username: user.username,
       fullName: user.fullName || user.username
     }, JWT_SECRET, { expiresIn: '7d' });
+
     res.cookie('authToken', token, {
       httpOnly: true,
       secure: false,
@@ -101,7 +129,23 @@ router.post('/login', async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
-    res.status(200).json({ message: 'Login successful', token });
+    // Create a user object with only the necessary data for the client
+    const userData = {
+      id: user._id,
+      email: user.email,
+      username: user.username,
+      fullName: user.fullName || user.username,
+      profileImage: user.profileImage,
+      phoneNumber: user.phoneNumber,
+      language: user.language,
+      notifications: user.notifications
+    };
+
+    res.status(200).json({
+      message: 'Login successful',
+      token,
+      user: userData
+    });
   } catch (error) {
     console.error("Error in login route:", error);
     res.status(500).json({ message: 'Internal server error' });
@@ -178,10 +222,7 @@ router.put('/resetpassword', async (req, res) => {
   }
 });
 
-// Protected Route Example
-router.get('/user', verifyToken, (req, res) => {
-  res.status(200).send({ username: req.user.email });
-});
+// No longer needed - user data is sent during login/signup
 
 // Google OAuth Login Route
 router.get('/auth/google',
