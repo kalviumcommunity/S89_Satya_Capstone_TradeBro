@@ -28,20 +28,23 @@ axios.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
 
-      // Also add token as a cookie for servers that might expect it there
-      document.cookie = `authToken=${token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
+      // We're removing the insecure cookie storage of the token
+      // and only using Authorization header for authentication
 
-      // Log request for debugging (remove in production)
-      console.log(`Request to ${config.url} with auth token`);
+      // Only log in development environment
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`Request to ${config.url} with auth token`);
+      }
     } else {
-      console.log(`Request to ${config.url} without auth token`);
+      // Only log in development environment
+      if (process.env.NODE_ENV === 'development') {
+        // Check if we're on a page that should have auth but doesn't
+        const currentPath = window.location.pathname;
+        const authRequiredPaths = ['/portfolio', '/dashboard', '/settings', '/watchlist', '/orders'];
 
-      // Check if we're on a page that should have auth but doesn't
-      const currentPath = window.location.pathname;
-      const authRequiredPaths = ['/portfolio', '/dashboard', '/settings', '/watchlist', '/orders'];
-
-      if (authRequiredPaths.includes(currentPath)) {
-        console.warn(`WARNING: No auth token found for request to ${config.url} while on ${currentPath}`);
+        if (authRequiredPaths.includes(currentPath)) {
+          console.warn(`WARNING: No auth token found for request to ${config.url} while on ${currentPath}`);
+        }
       }
     }
 
@@ -59,18 +62,24 @@ axios.interceptors.response.use(
     return response;
   },
   (error) => {
-    // Log the error for debugging
-    console.error('API Error:', error.config?.url, error.message, error.response?.status);
+    // Only log errors in development environment
+    if (process.env.NODE_ENV === 'development') {
+      console.error('API Error:', error.config?.url, error.message, error.response?.status);
+    }
 
     // Check if this is an offline error
     if (error.isOfflineError) {
-      console.log('Request blocked due to offline mode:', error.message);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Request blocked due to offline mode:', error.message);
+      }
       return Promise.reject(error);
     }
 
     // Handle network errors (like ECONNREFUSED, timeout, etc.)
     if (error.code === 'ECONNABORTED' || !error.response) {
-      console.log('Network error detected:', error.message);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Network error detected:', error.message);
+      }
       // Dispatch an event to notify the app is offline
       const offlineEvent = new CustomEvent('app:offline', { detail: { error } });
       window.dispatchEvent(offlineEvent);

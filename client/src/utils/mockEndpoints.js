@@ -58,6 +58,7 @@ export const setupMockHealthEndpoint = () => {
 /**
  * Setup all mock endpoints for offline mode
  * @param {Object} userData - Optional user data to include in mock responses
+ * @returns {Function} - Cleanup function to restore original methods
  */
 export const setupAllMockEndpoints = (userData = null) => {
   // Save original methods if not already saved
@@ -73,7 +74,31 @@ export const setupAllMockEndpoints = (userData = null) => {
   setupMockDeleteEndpoints();
 
   mocksActive = true;
-  console.log('All mock endpoints setup');
+
+  // Only log in development environment
+  if (process.env.NODE_ENV === 'development') {
+    console.log('All mock endpoints setup');
+  }
+
+  // Return a cleanup function
+  return () => {
+    // Restore original methods
+    if (originalGet) axios.get = originalGet;
+    if (originalPost) axios.post = originalPost;
+    if (originalPut) axios.put = originalPut;
+    if (originalDelete) axios.delete = originalDelete;
+
+    // Reset flags
+    mocksActive = false;
+    originalGet = null;
+    originalPost = null;
+    originalPut = null;
+    originalDelete = null;
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Mock endpoints cleaned up');
+    }
+  };
 };
 
 /**
