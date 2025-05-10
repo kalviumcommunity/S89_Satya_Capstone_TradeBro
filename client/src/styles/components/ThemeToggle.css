@@ -1,0 +1,46 @@
+.theme-toggle {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  background: var(--card-background);
+  border: 1px solid var(--border-color);
+  transition: all var(--transition-medium);
+}
+
+.theme-toggle:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.theme-icon {
+  font-size: 1.5rem;
+  color: var(--text-color);
+}
+
+.sun {
+  color: #ffc107;
+}
+
+.moon {
+  color: #6c757d;
+}
+
+@media (max-width: 768px) {
+  .theme-toggle {
+    bottom: 15px;
+    right: 15px;
+    width: 35px;
+    height: 35px;
+  }
+
+  .theme-icon {
+    font-size: 1.2rem;
+  }
+}

@@ -20,6 +20,26 @@ const userSchema = new mongoose.Schema({
         unique: true,
         sparse: true // Allows null values for non-Google users
     },
+    fullName: {
+        type: String,
+        default: ''
+    },
+    phoneNumber: {
+        type: String,
+        default: ''
+    },
+    language: {
+        type: String,
+        default: 'English'
+    },
+    profileImage: {
+        type: String,
+        default: null
+    },
+    notifications: {
+        type: Boolean,
+        default: true
+    },
     code: {
         type: String
     },

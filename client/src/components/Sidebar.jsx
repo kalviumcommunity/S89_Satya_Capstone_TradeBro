@@ -1,36 +1,62 @@
-import React, { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  FiHome,
   FiTrendingUp,
-  FiBookOpen,
-  FiClock,
   FiBriefcase,
   FiSettings,
   FiMenu,
   FiUser,
-  FiBell,
-  FiFileText,
-  FiMessageSquare,
   FiCpu,
+  FiBarChart2,
+  FiLogOut,
+  FiClock,
+  FiBookOpen,
+  FiFileText,
+  FiBell,
 } from "react-icons/fi";
-import NotificationsPopup from "./NotificationsPopup";
 import ThemeToggle from "./ThemeToggle";
 import { useSidebar } from "../context/SidebarContext";
+import { useAuth } from "../context/AuthContext";
+import axios from "axios";
 import "./Sidebar.css";
 
 const Sidebar = () => {
   // Use the sidebar context instead of local state
   const { isCollapsed, isMobile, toggleSidebar } = useSidebar();
   const location = useLocation();
+  const navigate = useNavigate();
+  const { isAuthenticated, logout } = useAuth();
 
-  // Mock user data (in a real app, this would come from context or API)
+  // User data state
   const [user, setUser] = useState({
-    name: "John Doe",
-    email: "john.doe@example.com",
-    profileImage: "https://randomuser.me/api/portraits/men/32.jpg",
-    role: "Premium Member"
+    fullName: "User",
+    email: "",
+    profileImage: "https://randomuser.me/api/portraits/lego/1.jpg",
+    role: "Member"
   });
+
+  // Get user data from localStorage
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    // Get user data directly from localStorage
+    const userInfo = {
+      fullName: localStorage.getItem('userFullName') || localStorage.getItem('userName') || "User",
+      email: localStorage.getItem('userEmail') || "",
+      profileImage: localStorage.getItem('userProfileImage')
+        ? `http://localhost:5000/uploads/${localStorage.getItem('userProfileImage')}`
+        : "https://randomuser.me/api/portraits/lego/1.jpg",
+      role: "Member"
+    };
+
+    setUser(userInfo);
+  }, [isAuthenticated]);
+
+  // Handle logout
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   return (
     <div className={`sidebar ${isCollapsed ? "collapsed" : ""} ${isMobile ? "mobile" : ""}`}>
@@ -44,10 +70,10 @@ const Sidebar = () => {
       {!isCollapsed && (
         <div className="user-profile">
           <div className="user-avatar">
-            <img src={user.profileImage} alt={user.name} />
+            <img src={user.profileImage} alt={user.fullName} />
           </div>
           <div className="user-info">
-            <h3 className="user-name">{user.name}</h3>
+            <h3 className="user-name">{user.fullName}</h3>
             <p className="user-role">{user.role}</p>
           </div>
         </div>
@@ -55,9 +81,15 @@ const Sidebar = () => {
 
       <ul className="sidebar-links">
         <li>
-          <Link to="/" className={`sidebar-link ${location.pathname === "/" ? "active" : ""}`}>
-            <FiHome />
+          <Link to="/dashboard" className={`sidebar-link ${location.pathname === "/dashboard" ? "active" : ""}`}>
+            <FiBarChart2 />
             {!isCollapsed && <span>Dashboard</span>}
+          </Link>
+        </li>
+        <li>
+          <Link to="/portfolio" className={`sidebar-link ${location.pathname === "/portfolio" ? "active" : ""}`}>
+            <FiBriefcase />
+            {!isCollapsed && <span>Portfolio</span>}
           </Link>
         </li>
         <li>
@@ -79,15 +111,15 @@ const Sidebar = () => {
           </Link>
         </li>
         <li>
-          <Link to="/portfolio" className={`sidebar-link ${location.pathname === "/portfolio" ? "active" : ""}`}>
-            <FiBriefcase />
-            {!isCollapsed && <span>Portfolio</span>}
-          </Link>
-        </li>
-        <li>
           <Link to="/news" className={`sidebar-link ${location.pathname === "/news" ? "active" : ""}`}>
             <FiFileText />
             {!isCollapsed && <span>News</span>}
+          </Link>
+        </li>
+        <li>
+          <Link to="/notifications" className={`sidebar-link ${location.pathname === "/notifications" ? "active" : ""}`}>
+            <FiBell />
+            {!isCollapsed && <span>Notifications</span>}
           </Link>
         </li>
         <li>
@@ -101,9 +133,6 @@ const Sidebar = () => {
       <div className="sidebar-bottom">
         <div className="sidebar-actions">
           <div className="action-buttons">
-            <div className="notification-container">
-              <NotificationsPopup />
-            </div>
             <div className="theme-toggle-container">
               <ThemeToggle />
             </div>
@@ -118,6 +147,11 @@ const Sidebar = () => {
             <FiSettings />
             {!isCollapsed && <span>Settings</span>}
           </Link>
+
+          <button onClick={handleLogout} className="sidebar-link logout-btn">
+            <FiLogOut />
+            {!isCollapsed && <span>Logout</span>}
+          </button>
         </div>
 
         {!isCollapsed && (

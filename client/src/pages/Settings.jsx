@@ -1,32 +1,66 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "./Settings.css";
-import "./AuthPages.css";
 import PageLayout from "../components/PageLayout";
-import Squares from "../UI/squares";
 import { useToast } from "../context/ToastContext";
 import { useAuth } from "../context/AuthContext";
+import API_ENDPOINTS from "../config/apiConfig";
 
 const SettingsPage = () => {
   const navigate = useNavigate();
   const toast = useToast();
   const { logout } = useAuth();
-  const [notifications, setNotifications] = useState(true); // Notifications setting
+  const [notifications, setNotifications] = useState(false); // Notifications setting
   const [successMessage, setSuccessMessage] = useState("");
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  const handleSaveNotifications = async () => {
+  // Fetch current notification settings
+  useEffect(() => {
+    const fetchNotificationSettings = async () => {
+      try {
+        const response = await axios.get("http://localhost:5000/api/settings/notifications");
+        if (response.data.success) {
+          // Ensure we're setting a boolean value
+          setNotifications(response.data.notifications === true);
+        }
+      } catch (error) {
+        console.error("Error fetching notification settings:", error);
+        // Use default value (true) if fetch fails
+        setNotifications(true);
+      }
+    };
+
+    fetchNotificationSettings();
+  }, []);
+
+  // Function to update notifications setting automatically when toggled
+  const handleNotificationsToggle = async () => {
+    const newValue = !notifications;
+    setNotifications(newValue);
+    setIsUpdating(true);
+
     try {
       const response = await axios.put("http://localhost:5000/api/settings/notifications", {
-        notifications
+        notifications: newValue
       });
 
+      // Set success message and clear it after 3 seconds
       setSuccessMessage(response.data.message || "Notification settings updated successfully");
-      toast.success("Settings saved successfully");
+      setTimeout(() => {
+        setSuccessMessage("");
+      }, 3000);
+
+      // Show toast notification
+      toast.success("Notifications " + (newValue ? "enabled" : "disabled"));
     } catch (error) {
       console.error("Error updating notification settings:", error);
-      toast.error("Failed to update settings");
+      toast.error("Failed to update notification settings");
+      // Revert the toggle if the API call fails
+      setNotifications(!newValue);
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -51,55 +85,52 @@ const SettingsPage = () => {
   };
 
   return (
-    <div className="auth-full-bg">
-      <Squares
-        speed={0.5}
-        squareSize={40}
-        direction="diagonal"
-        borderColor="#cccccc"
-        hoverFillColor="#ffffff"
-        backgroundColor="#f0f8ff"
-      />
-      <PageLayout>
-        <div className="settings-container-wrapper">
+    <PageLayout>
+      <div className="settings-container-wrapper">
         <div className="settings-container">
           <h1 className="settings-header">⚙️ Application Settings</h1>
+
           <div className="settings-card">
             <h3>🔔 Notifications</h3>
             <div className="toggle-switch">
               <label>Enable Notifications</label>
-              <input
-                type="checkbox"
-                checked={notifications}
-                onChange={() => setNotifications(!notifications)}
-              />
+              <div>
+                <input
+                  type="checkbox"
+                  checked={notifications === true}
+                  onChange={handleNotificationsToggle}
+                  disabled={isUpdating}
+                />
+                {isUpdating && <span className="updating-indicator">Updating</span>}
+              </div>
             </div>
             <p className="setting-description">
               Receive notifications about market updates, price alerts, and important news.
+              You'll be notified when there are significant changes in your watchlist stocks.
             </p>
           </div>
-          <div className="settings-buttons">
-            <button className="save-btn" onClick={handleSaveNotifications}>
-              Save Changes
-            </button>
+
+          <div className="settings-card">
+            <h3>🔐 Account Actions</h3>
+            <p className="setting-description">
+              Sign out from your account to end your current session. All your data will remain
+              secure and you can log back in anytime.
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
+              <button
+                className="signout-btn"
+                onClick={handleSignOut}
+                disabled={isSigningOut}
+              >
+                {isSigningOut ? "Signing Out..." : "Sign Out"}
+              </button>
+            </div>
           </div>
 
-          <div className="settings-card account-actions">
-            <h3>🔐 Account Actions</h3>
-            <p>Sign out from your account or manage other account-related actions.</p>
-            <button
-              className="signout-btn"
-              onClick={handleSignOut}
-              disabled={isSigningOut}
-            >
-              {isSigningOut ? "Signing Out..." : "Sign Out"}
-            </button>
-          </div>
-          {successMessage && <p className="success-message">{successMessage}</p>}
+          {successMessage && <div className="success-message">{successMessage}</div>}
         </div>
-        </div>
-      </PageLayout>
-    </div>
+      </div>
+    </PageLayout>
   );
 };
 

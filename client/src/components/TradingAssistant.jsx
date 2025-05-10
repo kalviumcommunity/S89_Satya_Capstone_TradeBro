@@ -3,57 +3,153 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FiMessageSquare, FiX, FiSend, FiUser, FiCpu, FiChevronDown, FiChevronUp, FiAlertCircle } from "react-icons/fi";
 import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
-import "./TradingAssistant.css";
+import { safeApiCall, createDummyData } from "../utils/apiUtils";
+import API_ENDPOINTS from "../config/apiConfig";
+import "../styles/components/TradingAssistant.css";
 
 const TradingAssistant = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      text: "👋 Hi there! I'm your TradeBro assistant. Feel free to ask me anything about stocks, trading strategies, or market trends. How can I help you today?",
-      sender: "bot",
-      timestamp: new Date()
+  // Get saved state from localStorage or use defaults
+  const getSavedState = () => {
+    try {
+      const savedMessages = localStorage.getItem('tradebro_chat_messages');
+      const savedIsOpen = localStorage.getItem('tradebro_chat_isOpen');
+      const savedSuggestions = localStorage.getItem('tradebro_chat_suggestions');
+      const savedShowSuggestions = localStorage.getItem('tradebro_chat_showSuggestions');
+
+      return {
+        messages: savedMessages ? JSON.parse(savedMessages) : [
+          {
+            id: 1,
+            text: "👋 Hi there! I'm your TradeBro assistant. Feel free to ask me anything about stocks, trading strategies, or market trends. How can I help you today?",
+            sender: "bot",
+            timestamp: new Date()
+          }
+        ],
+        isOpen: savedIsOpen ? JSON.parse(savedIsOpen) : false,
+        suggestedQuestions: savedSuggestions ? JSON.parse(savedSuggestions) : [
+          "What are the current market trends?",
+          "Tell me about Zomato stock",
+          "Explain options trading",
+          "What's the difference between limit and market orders?"
+        ],
+        showSuggestions: savedShowSuggestions ? JSON.parse(savedShowSuggestions) : true
+      };
+    } catch (error) {
+      console.error("Error loading saved chat state:", error);
+      // Return defaults if there's an error
+      return {
+        messages: [
+          {
+            id: 1,
+            text: "👋 Hi there! I'm your TradeBro assistant. Feel free to ask me anything about stocks, trading strategies, or market trends. How can I help you today?",
+            sender: "bot",
+            timestamp: new Date()
+          }
+        ],
+        isOpen: false,
+        suggestedQuestions: [
+          "What are the current market trends?",
+          "Tell me about Zomato stock",
+          "Explain options trading",
+          "What's the difference between limit and market orders?"
+        ],
+        showSuggestions: true
+      };
     }
-  ]);
+  };
+
+  const savedState = getSavedState();
+
+  const [isOpen, setIsOpen] = useState(savedState.isOpen);
+  const [messages, setMessages] = useState(savedState.messages);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [suggestedQuestions, setSuggestedQuestions] = useState([
-    "What are the current market trends?",
-    "Tell me about Zomato stock",
-    "Explain options trading",
-    "What's the difference between limit and market orders?"
-  ]);
-  const [showSuggestions, setShowSuggestions] = useState(true);
+  const [suggestedQuestions, setSuggestedQuestions] = useState(savedState.suggestedQuestions);
+  const [showSuggestions, setShowSuggestions] = useState(savedState.showSuggestions);
   const [sessionId, setSessionId] = useState(null);
   const [error, setError] = useState(null);
   const messagesEndRef = useRef(null);
 
+  // Save state to localStorage when it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('tradebro_chat_messages', JSON.stringify(messages));
+    } catch (error) {
+      console.error("Error saving messages to localStorage:", error);
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('tradebro_chat_isOpen', JSON.stringify(isOpen));
+    } catch (error) {
+      console.error("Error saving isOpen state to localStorage:", error);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('tradebro_chat_suggestions', JSON.stringify(suggestedQuestions));
+      localStorage.setItem('tradebro_chat_showSuggestions', JSON.stringify(showSuggestions));
+    } catch (error) {
+      console.error("Error saving suggestions to localStorage:", error);
+    }
+  }, [suggestedQuestions, showSuggestions]);
+
   // Start a chat session when the component mounts
   useEffect(() => {
     const startChatSession = async () => {
+      const clientSessionId = uuidv4();
+
+      // Create fallback data for chat session
+      const fallbackData = createDummyData({
+        success: true,
+        sessionId: clientSessionId,
+        isFallbackSession: true
+      });
+
       try {
-        const clientSessionId = uuidv4();
-        const response = await axios.post("http://localhost:5000/api/chatbot/start", {
-          sessionId: clientSessionId
+        // Use safe API call with fallback data
+        const result = await safeApiCall({
+          method: 'post',
+          url: API_ENDPOINTS.CHATBOT.START,
+          data: { sessionId: clientSessionId },
+          fallbackData,
+          timeout: 3000
         });
 
-        if (response.data.success) {
-          setSessionId(response.data.sessionId);
-          console.log("Chat session started with ID:", response.data.sessionId);
-        } else {
-          setError("Failed to start chat session");
-          console.error("Failed to start chat session:", response.data);
+        if (result && result.success) {
+          setSessionId(result.sessionId);
+          console.log("Chat session started with ID:", result.sessionId);
+
+          // If this is a fallback session, add a message about limited connectivity
+          if (result.isFallbackSession) {
+            setTimeout(() => {
+              setMessages(prevMessages => [
+                ...prevMessages,
+                {
+                  id: uuidv4(),
+                  text: "I'm currently experiencing limited connectivity to the server. Some features may be limited, but I'll do my best to assist you.",
+                  sender: "bot",
+                  timestamp: new Date(),
+                  isFallback: true
+                }
+              ]);
+            }, 500);
+          }
         }
       } catch (err) {
-        // Instead of showing an error banner, add a friendly message to the chat
         console.error("Error starting chat session:", err);
 
-        // Add a user-friendly message to the chat instead of setting error state
+        // Set a local session ID as a fallback
+        setSessionId(clientSessionId);
+
+        // Add a user-friendly error message
         setMessages(prevMessages => [
           ...prevMessages,
           {
             id: uuidv4(),
-            text: "I'm having trouble initializing my systems. Please try closing and reopening the chat, or refresh the page if the issue persists.",
+            text: "I encountered an error while starting up. Some features may be limited.",
             sender: "bot",
             timestamp: new Date(),
             isError: true
@@ -69,7 +165,14 @@ const TradingAssistant = () => {
     // Clean up function to end the chat session when component unmounts
     return () => {
       if (sessionId) {
-        axios.post("http://localhost:5000/api/chatbot/end", { sessionId })
+        // Try to end the session
+        safeApiCall({
+          method: 'post',
+          url: API_ENDPOINTS.CHATBOT.END,
+          data: { sessionId },
+          fallbackData: createDummyData({ success: true }),
+          timeout: 2000
+        })
           .then(() => console.log("Chat session ended"))
           .catch(err => console.error("Error ending chat session:", err));
       }
@@ -96,109 +199,253 @@ const TradingAssistant = () => {
   // Send message to chatbot API
   const sendMessage = async (text) => {
     if (!sessionId) {
-      setError("Chat session not initialized");
-      return;
+      // Create a new session if one doesn't exist
+      try {
+        const clientSessionId = uuidv4();
+        setSessionId(clientSessionId);
+        console.log("Created new chat session with ID:", clientSessionId);
+      } catch (err) {
+        setError("Unable to initialize chat session. Please refresh the page and try again.");
+        return;
+      }
     }
 
     setIsTyping(true);
 
+    // Function to generate a response based on the query
+    const generateContextualResponse = (query) => {
+      const lowerQuery = query.toLowerCase();
+
+      if (lowerQuery.includes("stock") || lowerQuery.includes("price") || lowerQuery.includes("share")) {
+        return `I'd be happy to help you with information about stocks and the market.
+
+The stock market has been quite volatile lately, with tech stocks showing strong performance. If you're interested in a specific stock, you can ask me about it, and I'll provide you with the latest information.
+
+Some popular stocks to consider:
+• Reliance Industries (RELIANCE.NS)
+• Tata Consultancy Services (TCS.NS)
+• HDFC Bank (HDFCBANK.NS)
+• Infosys (INFY.NS)
+• ICICI Bank (ICICIBANK.NS)
+
+What specific information would you like to know?`;
+      } else if (lowerQuery.includes("market") || lowerQuery.includes("trend") || lowerQuery.includes("index")) {
+        return `The market has been showing interesting trends lately. Tech stocks continue to perform well, while energy and financial sectors have been more volatile.
+
+Key market indicators:
+• NIFTY 50: Showing moderate growth
+• BSE SENSEX: Stable with upward momentum
+• NIFTY Bank: Mixed performance
+• India VIX: Volatility has been decreasing
+
+Would you like more specific information about any particular sector or trend?`;
+      } else if (lowerQuery.includes("help") || lowerQuery.includes("what can you do") || lowerQuery.includes("assist")) {
+        return `I'm your TradeBro assistant, and I'm here to help you with all things related to trading and investing. Here's what I can do:
+
+1. Provide real-time stock information
+2. Analyze market trends
+3. Explain trading concepts
+4. Offer investment strategies
+5. Answer financial questions
+
+Just ask me anything related to trading, and I'll do my best to assist you!`;
+      } else if (lowerQuery.includes("buy") || lowerQuery.includes("sell") || lowerQuery.includes("trade")) {
+        return `I can help you understand trading concepts and strategies!
+
+When considering buying or selling stocks, it's important to:
+
+• Research the company fundamentals
+• Analyze technical indicators
+• Consider market conditions
+• Set clear entry and exit points
+• Manage your risk appropriately
+
+Would you like me to explain any of these aspects in more detail?`;
+      } else {
+        return `Thanks for your question! As your TradeBro assistant, I'm here to help with all your trading needs.
+
+Based on your question, I'd recommend exploring some of the key features of our platform:
+
+• Real-time stock tracking
+• Portfolio management
+• Market analysis tools
+• Trading strategies
+
+Would you like me to explain any of these features in more detail?`;
+      }
+    };
+
+    // Create fallback data for chat messages
+    const fallbackData = createDummyData(() => {
+      return {
+        success: true,
+        type: 'text',
+        message: generateContextualResponse(text),
+        isFallbackData: true
+      };
+    });
+
     try {
-      const response = await axios.post("http://localhost:5000/api/chatbot/message", {
-        sessionId,
-        message: text
+      // Use safe API call with fallback data
+      const result = await safeApiCall({
+        method: 'post',
+        url: API_ENDPOINTS.CHATBOT.MESSAGE,
+        data: {
+          sessionId,
+          message: text
+        },
+        fallbackData,
+        timeout: 10000 // Increase timeout to give server more time to respond
       });
 
-      if (response.data.success) {
+      if (result && result.success) {
         let botResponse;
 
-        // Handle different response types
-        if (response.data.type === 'text') {
-          botResponse = {
-            id: uuidv4(),
-            text: response.data.message,
-            sender: "bot",
-            timestamp: new Date()
-          };
-        } else if (response.data.type === 'stockData') {
-          // Format stock data response
-          const data = response.data.data;
+        try {
+          // Handle different response types
+          if (result.type === 'text') {
+            botResponse = {
+              id: uuidv4(),
+              text: result.message,
+              sender: "bot",
+              timestamp: new Date(),
+              isFallback: result.isFallbackData
+            };
+          } else if (result.type === 'stockData') {
+            // Format stock data response
+            const data = result.data || {};
 
-          // Format market cap to be more readable
-          let marketCapFormatted;
-          if (data.marketCap >= 1000000000000) {
-            marketCapFormatted = `$${(data.marketCap / 1000000000000).toFixed(2)} trillion`;
-          } else if (data.marketCap >= 1000000000) {
-            marketCapFormatted = `$${(data.marketCap / 1000000000).toFixed(2)} billion`;
-          } else if (data.marketCap >= 1000000) {
-            marketCapFormatted = `$${(data.marketCap / 1000000).toFixed(2)} million`;
-          } else {
-            marketCapFormatted = `$${data.marketCap.toLocaleString()}`;
-          }
+            // Safely format market cap with fallbacks
+            let marketCapFormatted = 'N/A';
+            try {
+              const marketCap = Number(data.marketCap);
+              if (!isNaN(marketCap)) {
+                if (marketCap >= 1000000000000) {
+                  marketCapFormatted = `₹${(marketCap / 1000000000000).toFixed(2)} trillion`;
+                } else if (marketCap >= 1000000000) {
+                  marketCapFormatted = `₹${(marketCap / 1000000000).toFixed(2)} billion`;
+                } else if (marketCap >= 1000000) {
+                  marketCapFormatted = `₹${(marketCap / 1000000).toFixed(2)} million`;
+                } else {
+                  marketCapFormatted = `₹${marketCap.toLocaleString()}`;
+                }
+              }
+            } catch (err) {
+              console.error("Error formatting market cap:", err);
+            }
 
-          // Use ₹ symbol for Indian stocks
-          const isIndianStock = response.data.symbol === "ZOMATO" ||
-                               response.data.symbol.endsWith(".NS") ||
-                               response.data.symbol.endsWith(".BO");
-          const currencySymbol = isIndianStock ? "₹" : "$";
+            // Use ₹ symbol for Indian stocks (default to ₹ for all stocks in our app)
+            const currencySymbol = "₹";
 
-          botResponse = {
-            id: uuidv4(),
-            text: `📊 Here's the latest data for ${response.data.symbol}:
+            // Safely format price data with fallbacks
+            const formatPrice = (value) => {
+              try {
+                return value !== undefined && !isNaN(Number(value))
+                  ? `${currencySymbol}${Number(value).toFixed(2)}`
+                  : 'N/A';
+              } catch (err) {
+                return 'N/A';
+              }
+            };
 
-• Price: ${currencySymbol}${data.price.toFixed(2)}
-• Daily High: ${currencySymbol}${data.dayHigh.toFixed(2)}
-• Daily Low: ${currencySymbol}${data.dayLow.toFixed(2)}
+            botResponse = {
+              id: uuidv4(),
+              text: `📊 Here's the latest data for ${result.symbol || 'this stock'}:
+
+• Price: ${formatPrice(data.price)}
+• Daily High: ${formatPrice(data.dayHigh)}
+• Daily Low: ${formatPrice(data.dayLow)}
 • Market Cap: ${marketCapFormatted}
-• P/E Ratio: ${data.peRatio ? data.peRatio.toFixed(2) : 'N/A'}
-• Volume: ${data.volume.toLocaleString()}
+• P/E Ratio: ${data.peRatio ? Number(data.peRatio).toFixed(2) : 'N/A'}
+• Volume: ${data.volume ? Number(data.volume).toLocaleString() : 'N/A'}
 
 Remember that market conditions change quickly, so always verify before making decisions! 📈`,
-            sender: "bot",
-            timestamp: new Date()
-          };
-        } else if (response.data.type === 'topGainers') {
-          // Format top gainers response
-          const gainers = response.data.data;
-          let gainersText = "🔥 Today's top performers in the market:\n\n";
+              sender: "bot",
+              timestamp: new Date(),
+              stockData: true,
+              isFallback: result.isFallbackData
+            };
+          } else if (result.type === 'topGainers') {
+            // Format top gainers response with error handling
+            try {
+              const gainers = Array.isArray(result.data) ? result.data : [];
+              let gainersText = "🔥 Today's top performers in the market:\n\n";
 
-          gainers.forEach((stock, index) => {
-            gainersText += `${index + 1}. ${stock.companyName} (${stock.symbol}): $${stock.price.toFixed(2)} (↑${stock.changePercent.toFixed(2)}%)\n`;
-          });
+              if (gainers.length > 0) {
+                gainers.forEach((stock, index) => {
+                  const symbol = stock.symbol || 'Unknown';
+                  const companyName = stock.companyName || symbol;
+                  const price = !isNaN(Number(stock.price)) ? Number(stock.price).toFixed(2) : 'N/A';
+                  const changePercent = !isNaN(Number(stock.changePercent)) ? Number(stock.changePercent).toFixed(2) : 'N/A';
 
-          gainersText += "\nThese stocks are showing strong momentum today! Remember that past performance doesn't guarantee future results. 📈";
+                  gainersText += `${index + 1}. ${companyName} (${symbol}): ₹${price} (↑${changePercent}%)\n`;
+                });
+              } else {
+                gainersText += "Sorry, I couldn't retrieve the top gainers at the moment.\n";
+              }
 
+              gainersText += "\nThese stocks are showing strong momentum today! Remember that past performance doesn't guarantee future results. 📈";
+
+              botResponse = {
+                id: uuidv4(),
+                text: gainersText,
+                sender: "bot",
+                timestamp: new Date(),
+                topGainers: true,
+                isFallback: result.isFallbackData
+              };
+            } catch (err) {
+              console.error("Error formatting top gainers:", err);
+              throw new Error("Failed to format top gainers data");
+            }
+          }
+        } catch (formatError) {
+          console.error("Error formatting response:", formatError);
+          // If there's an error in formatting, create a generic response
           botResponse = {
             id: uuidv4(),
-            text: gainersText,
+            text: "I found some information for you, but had trouble formatting it. Let me try to help you in another way. Could you rephrase your question?",
             sender: "bot",
-            timestamp: new Date()
+            timestamp: new Date(),
+            isFallback: true
           };
         }
 
-        setMessages(prevMessages => [...prevMessages, botResponse]);
+        if (botResponse) {
+          setMessages(prevMessages => [...prevMessages, botResponse]);
+        } else {
+          // Handle unknown response type with a fallback
+          const fallbackResponse = {
+            id: uuidv4(),
+            text: result.message || "I received your message but I'm not sure how to display the response. Let me try to help you with something else.",
+            sender: "bot",
+            timestamp: new Date(),
+            isFallback: true
+          };
+          setMessages(prevMessages => [...prevMessages, fallbackResponse]);
+        }
 
         // Update suggested questions based on the conversation
         updateSuggestedQuestions(text);
       } else {
-        setError("Failed to get response from chatbot");
-        console.error("Failed to get response:", response.data);
+        throw new Error("Failed to get response from chatbot");
       }
     } catch (err) {
       console.error("Error sending message:", err);
 
-      // Don't set the error state to avoid showing the error banner
-      // setError("Error communicating with chatbot service");
-
-      // Add a more friendly fallback error message as a regular bot message
-      const errorResponse = {
+      // Generate a helpful response based on the query
+      const fallbackResponse = {
         id: uuidv4(),
-        text: "I apologize, but I'm experiencing a temporary connection issue with my data sources. Please try your question again in a moment or ask something else.",
+        text: generateContextualResponse(text),
         sender: "bot",
         timestamp: new Date(),
-        isError: true
+        isFallback: true
       };
 
-      setMessages(prevMessages => [...prevMessages, errorResponse]);
+      setMessages(prevMessages => [...prevMessages, fallbackResponse]);
+
+      // Update suggested questions even in case of error
+      updateSuggestedQuestions(text);
     } finally {
       setIsTyping(false);
     }
@@ -237,10 +484,17 @@ Remember that market conditions change quickly, so always verify before making d
       timestamp: new Date()
     };
 
-    setMessages([...messages, userMessage]);
+    // First update the messages state
+    setMessages(prevMessages => [...prevMessages, userMessage]);
 
-    // Send message to chatbot API
-    sendMessage(question);
+    // Use setTimeout to ensure the state is updated before sending
+    setTimeout(() => {
+      // Send message to chatbot API
+      sendMessage(question);
+    }, 50);
+
+    // Also update the input field for better UX
+    setInputValue(question);
   };
 
   // Update suggested questions based on conversation context
@@ -291,37 +545,106 @@ Remember that market conditions change quickly, so always verify before making d
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Format message text with line breaks, quotes, and hashes
+  // Format message text with line breaks, quotes, bullet points, and hashes
   const formatMessageText = (text) => {
-    // First handle line breaks
-    const lines = text.split('\n');
+    if (!text) return null;
+
+    try {
+      // First handle line breaks
+      const lines = text.split('\n');
 
     return lines.map((line, i) => {
-      // Process markdown-style formatting
-      let processedLine = line;
+      // Skip empty lines but preserve the break
+      if (line.trim() === '') {
+        return <React.Fragment key={i}><br /></React.Fragment>;
+      }
 
-      // Handle bold text with asterisks (e.g., *bold*)
-      processedLine = processedLine.replace(
-        /\*(.*?)\*/g,
-        '<strong>$1</strong>'
-      );
-
-      // Handle quotes (e.g., "quote")
-      processedLine = processedLine.replace(
-        /"(.*?)"/g,
-        '<span class="quoted-text">"$1"</span>'
-      );
-
-      // Handle headers with hash (e.g., # Header)
-      if (processedLine.match(/^#+\s/)) {
-        const headerLevel = processedLine.match(/^(#+)\s/)[1].length;
-        const headerText = processedLine.replace(/^#+\s/, '');
+      // Handle bullet points (e.g., • Item or * Item or - Item)
+      if (line.trim().match(/^(•|\*|\-)\s+/)) {
+        const bulletContent = line.trim().replace(/^(•|\*|\-)\s+/, '');
         return (
           <React.Fragment key={i}>
-            <span className={`header-${headerLevel}`}>{headerText}</span>
+            <div className="bullet-point-row">
+              <span className="bullet-point">•</span>
+              <span className="bullet-content">{bulletContent}</span>
+            </div>
             {i < lines.length - 1 && <br />}
           </React.Fragment>
         );
+      }
+
+      // Handle headers with hash (e.g., # Header)
+      if (line.match(/^#+\s/)) {
+        try {
+          const headerMatch = line.match(/^(#+)\s/);
+          if (headerMatch && headerMatch[1]) {
+            const headerLevel = headerMatch[1].length;
+            const headerText = line.replace(/^#+\s/, '');
+            return (
+              <React.Fragment key={i}>
+                <span className={`header-${headerLevel}`}>{headerText}</span>
+                {i < lines.length - 1 && <br />}
+              </React.Fragment>
+            );
+          }
+        } catch (err) {
+          console.error("Error parsing header:", err);
+          // Fallback for header parsing errors
+          return (
+            <React.Fragment key={i}>
+              <span style={{ fontWeight: 'bold' }}>{line}</span>
+              {i < lines.length - 1 && <br />}
+            </React.Fragment>
+          );
+        }
+      }
+
+      // Handle stock data formatting (e.g., Price: $100.00)
+      if (line.match(/^(Price|Daily High|Daily Low|Market Cap|P\/E Ratio|Volume):/)) {
+        try {
+          const parts = line.split(':');
+          const label = parts[0].trim();
+          const value = parts.slice(1).join(':').trim(); // Handle colons in the value
+          return (
+            <React.Fragment key={i}>
+              <div className="stock-data-row">
+                <span className="stock-data-label">{label}:</span>
+                <span className="stock-data-value">{value}</span>
+              </div>
+              {i < lines.length - 1 && <br />}
+            </React.Fragment>
+          );
+        } catch (err) {
+          console.error("Error parsing stock data:", err);
+          // Fallback for stock data parsing errors
+          return (
+            <React.Fragment key={i}>
+              <div>{line}</div>
+              {i < lines.length - 1 && <br />}
+            </React.Fragment>
+          );
+        }
+      }
+
+      // Process other markdown-style formatting
+      let processedLine = line;
+
+      try {
+        // Handle bold text with asterisks (e.g., *bold*)
+        processedLine = processedLine.replace(
+          /\*([^*]+)\*/g,
+          '<strong>$1</strong>'
+        );
+
+        // Handle quotes (e.g., "quote")
+        processedLine = processedLine.replace(
+          /"([^"]+)"/g,
+          '<span class="quoted-text">"$1"</span>'
+        );
+      } catch (err) {
+        console.error("Error formatting text:", err);
+        // If formatting fails, just use the original line
+        processedLine = line;
       }
 
       return (
@@ -331,6 +654,11 @@ Remember that market conditions change quickly, so always verify before making d
         </React.Fragment>
       );
     });
+    } catch (error) {
+      console.error("Error formatting message:", error);
+      // Return the plain text as fallback
+      return <span>{text}</span>;
+    }
   };
 
   return (

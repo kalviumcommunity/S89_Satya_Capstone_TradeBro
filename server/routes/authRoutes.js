@@ -39,16 +39,43 @@ router.post('/signup', async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = new User({ username, email, password: hashedPassword });
+    const user = new User({
+      username,
+      email,
+      password: hashedPassword,
+      fullName: username // Default fullName to username
+    });
     const savedUser = await user.save();
-    const token = jwt.sign({ id: savedUser._id, email: savedUser.email }, JWT_SECRET, { expiresIn: '7d' });
+
+    // Include more user data in the token
+    const token = jwt.sign({
+      id: savedUser._id,
+      email: savedUser.email,
+      username: savedUser.username,
+      fullName: savedUser.fullName || savedUser.username
+    }, JWT_SECRET, { expiresIn: '30d' });
+
     res.cookie('authToken', token, {
       httpOnly: true,
       secure: false,
       sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     });
-    res.status(201).json({ message: 'User registered successfully', user: savedUser });
+
+    // Create a user object with only the necessary data for the client
+    const userData = {
+      id: savedUser._id,
+      email: savedUser.email,
+      username: savedUser.username,
+      fullName: savedUser.fullName || savedUser.username,
+      profileImage: savedUser.profileImage
+    };
+
+    res.status(201).json({
+      message: 'User registered successfully',
+      token,
+      user: userData
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Internal server error' });
@@ -88,15 +115,37 @@ router.post('/login', async (req, res) => {
 
     console.log("Password is correct for user:", email);
 
-    const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({
+      id: user._id,
+      email: user.email,
+      username: user.username,
+      fullName: user.fullName || user.username
+    }, JWT_SECRET, { expiresIn: '30d' });
+
     res.cookie('authToken', token, {
       httpOnly: true,
       secure: false,
       sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000
+      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
     });
 
-    res.status(200).json({ message: 'Login successful', token });
+    // Create a user object with only the necessary data for the client
+    const userData = {
+      id: user._id,
+      email: user.email,
+      username: user.username,
+      fullName: user.fullName || user.username,
+      profileImage: user.profileImage,
+      phoneNumber: user.phoneNumber,
+      language: user.language,
+      notifications: user.notifications
+    };
+
+    res.status(200).json({
+      message: 'Login successful',
+      token,
+      user: userData
+    });
   } catch (error) {
     console.error("Error in login route:", error);
     res.status(500).json({ message: 'Internal server error' });
@@ -119,25 +168,64 @@ router.post('/forgotpassword', async (req, res) => {
     user.codeExpires = Date.now() + 10 * 60 * 1000;
     await user.save();
 
+    // Log environment variables for debugging
+    console.log('Email config:', {
+      emailUser: process.env.email_nodemailer || process.env.EMAIL_USER,
+      emailPass: process.env.password_nodemailer ? 'Password exists' : 'No password',
+      emailService: process.env.EMAIL_SERVICE
+    });
+
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
       port: 587,
       auth: {
-        user: process.env.email_nodemailer,
-        pass: process.env.password_nodemailer
+        user: process.env.email_nodemailer || process.env.EMAIL_USER,
+        pass: process.env.password_nodemailer || process.env.EMAIL_PASSWORD
       }
     });
 
-    await transporter.sendMail({
-      from: "tradebro2025@gmail.com",
-      to: user.email,
-      subject: "Your Password Reset Code",
-      text: `Your code is: ${code}`
-    });
+    try {
+      await transporter.sendMail({
+        from: "tradebro2025@gmail.com",
+        to: user.email,
+        subject: "Your Password Reset Code",
+        text: `Your code is: ${code}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
+            <h2 style="color: #22b8b0;">TradeBro Password Reset</h2>
+            <p>Hello ${user.fullName || user.username},</p>
+            <p>You requested a password reset. Please use the following code to reset your password:</p>
+            <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; text-align: center; font-size: 24px; letter-spacing: 5px; font-weight: bold;">
+              ${code}
+            </div>
+            <p>This code will expire in 10 minutes.</p>
+            <p>If you did not request a password reset, please ignore this email.</p>
+            <p>Best regards,<br>The TradeBro Team</p>
+          </div>
+        `
+      });
 
-    return res.status(200).send({ msg: "Verification code sent successfully, check spam mails" });
+      console.log('Password reset email sent successfully to:', user.email);
+      return res.status(200).send({ msg: "Verification code sent successfully, check spam mails" });
+    } catch (emailError) {
+      console.error('Error sending email:', emailError);
+
+      // Check if it's an authentication error
+      if (emailError.code === 'EAUTH') {
+        return res.status(500).send({
+          msg: "Email authentication failed. Please check email credentials.",
+          error: emailError.message
+        });
+      }
+
+      return res.status(500).send({
+        msg: "Failed to send verification email",
+        error: emailError.message
+      });
+    }
   } catch (error) {
-    res.status(500).send({ msg: "Something went wrong", error });
+    console.error('Error in forgotpassword route:', error);
+    res.status(500).send({ msg: "Something went wrong", error: error.message });
   }
 });
 
@@ -163,7 +251,7 @@ router.put('/resetpassword', async (req, res) => {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     user.password = hashedPassword;
     user.code = null;
-    user.codeExpires = null; 
+    user.codeExpires = null;
     await user.save();
 
     res.status(200).json({ message: 'Password reset successfully. Redirecting to login page...' });
@@ -173,14 +261,39 @@ router.put('/resetpassword', async (req, res) => {
   }
 });
 
-// Protected Route Example
-router.get('/user', verifyToken, (req, res) => {
-  res.status(200).send({ username: req.user.email });
+// Get user data by token
+router.get('/user', verifyToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password -code -codeExpires');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Create a user object with only the necessary data for the client
+    const userData = {
+      id: user._id,
+      email: user.email,
+      username: user.username,
+      fullName: user.fullName || user.username,
+      profileImage: user.profileImage,
+      phoneNumber: user.phoneNumber,
+      language: user.language,
+      notifications: user.notifications
+    };
+
+    res.status(200).json({
+      success: true,
+      user: userData
+    });
+  } catch (error) {
+    console.error('Error fetching user data:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
 });
 
 // Google OAuth Login Route
 router.get('/auth/google',
-  passport.authenticate('google', { 
+  passport.authenticate('google', {
     scope: ['profile', 'email'], // Ensure this is included
     prompt: 'select_account' // Optional: Forces account selection
   })
@@ -188,29 +301,39 @@ router.get('/auth/google',
 
 // Google OAuth Callback Route
 router.get('/auth/google/callback',
-  passport.authenticate('google', { 
+  passport.authenticate('google', {
     failureRedirect: '/login',
     failureMessage: true
   }),
   (req, res) => {
     try {
-      // Generate JWT Token for Google OAuth
-      const token = jwt.sign({ 
-        id: req.user._id, 
+      console.log('Google OAuth callback received, user:', req.user.email);
+
+      // Make sure we have a valid user object
+      if (!req.user || !req.user._id) {
+        console.error('Invalid user object in Google callback');
+        return res.redirect(`http://localhost:5173/login?error=invalid_user`);
+      }
+
+      // Generate JWT Token for Google OAuth with more user data (30 days expiration)
+      const token = jwt.sign({
+        id: req.user._id,
         email: req.user.email,
-        username: req.user.username
-      }, JWT_SECRET, { expiresIn: '7d' });
-      
+        username: req.user.username || req.user.email.split('@')[0],
+        fullName: req.user.fullName || req.user.displayName || req.user.username || req.user.email.split('@')[0]
+      }, JWT_SECRET, { expiresIn: '30d' });
+
       // Set the token in a cookie
       res.cookie('authToken', token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
-        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
       });
-      
+
       // Redirect to frontend with success message and user data
-      res.redirect(`http://localhost:5173/portfolio?success=true&token=${token}`);
+      // Include token in the URL and set a flag to indicate Google login
+      res.redirect(`http://localhost:5173/login?success=true&token=${token}&google=true`);
     } catch (error) {
       console.error('Error in Google callback:', error);
       res.redirect(`http://localhost:5173/login?error=authentication_failed`);

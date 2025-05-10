@@ -31,8 +31,12 @@ export const ToastProvider = ({ children }) => {
     return addToast(message, 'info', duration, position);
   };
 
+  const warning = (message, duration, position) => {
+    return addToast(message, 'warning', duration, position);
+  };
+
   return (
-    <ToastContext.Provider value={{ addToast, removeToast, success, error, info }}>
+    <ToastContext.Provider value={{ addToast, removeToast, success, error, info, warning }}>
       {children}
       {toasts.map(toast => (
         <Toast

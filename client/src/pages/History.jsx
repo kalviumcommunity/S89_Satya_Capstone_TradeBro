@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { FiFilter, FiDownload, FiCalendar, FiTrendingUp, FiTrendingDown } from "react-icons/fi";
+import { FiFilter, FiDownload, FiCalendar, FiTrendingUp, FiTrendingDown, FiAlertCircle } from "react-icons/fi";
 import PageLayout from "../components/PageLayout";
 import { useToast } from "../context/ToastContext";
+import { useAuth } from "../context/AuthContext";
+import axios from "axios";
 import "./History.css";
 
 const History = () => {
   const { showToast } = useToast();
+  const { isAuthenticated } = useAuth();
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
@@ -14,6 +17,7 @@ const History = () => {
     from: "",
     to: ""
   });
+  const [error, setError] = useState(null);
 
   // Mock data for demonstration
   const mockTransactions = [
@@ -98,12 +102,50 @@ const History = () => {
 
   // Load transaction data
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setTransactions(mockTransactions);
-      setLoading(false);
-    }, 1000);
-  }, []);
+    const fetchTransactions = async () => {
+      if (!isAuthenticated) {
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await axios.get("http://localhost:5000/api/virtual-money/transactions");
+
+        if (response.data.success) {
+          // Transform the data to match our frontend format
+          const formattedTransactions = response.data.data.map((transaction, index) => ({
+            id: transaction._id || index,
+            type: transaction.type === 'BUY' ? 'buy' : transaction.type === 'SELL' ? 'sell' : 'other',
+            symbol: transaction.stockSymbol || '-',
+            name: transaction.description ? transaction.description.split(' ').slice(1).join(' ') : '-',
+            quantity: transaction.stockQuantity || 0,
+            price: transaction.stockPrice || 0,
+            total: Math.abs(transaction.amount) || 0,
+            date: transaction.timestamp,
+            status: 'completed'
+          }));
+
+          setTransactions(formattedTransactions);
+        } else {
+          setError("Failed to load transaction history");
+          // Use mock data as fallback
+          setTransactions(mockTransactions);
+        }
+      } catch (err) {
+        console.error("Error fetching transaction history:", err);
+        setError("Failed to load transaction history. Using sample data instead.");
+        // Use mock data as fallback
+        setTransactions(mockTransactions);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTransactions();
+  }, [isAuthenticated]);
 
   // Filter transactions based on type and date range
   const filteredTransactions = transactions.filter((transaction) => {
@@ -231,6 +273,15 @@ const History = () => {
           <div className="loading-container">
             <div className="loading-spinner"></div>
             <p>Loading transaction history...</p>
+          </div>
+        ) : error ? (
+          <div className="error-container">
+            <FiAlertCircle className="error-icon" />
+            <p>{error}</p>
+          </div>
+        ) : !isAuthenticated ? (
+          <div className="empty-history">
+            <p>Please log in to view your transaction history.</p>
           </div>
         ) : filteredTransactions.length === 0 ? (
           <div className="empty-history">

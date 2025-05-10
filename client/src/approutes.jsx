@@ -8,6 +8,7 @@ import LandingPage from "./pages/landingPage";
 import ForgetPassword from './pages/ForgetPassword';
 import ResetPassword from './pages/ResetPassword';
 import PortfolioPage from "./pages/portfolio";
+import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import News from "./pages/News";
 import Notifications from "./pages/Notifications";
@@ -18,6 +19,7 @@ import Orders from "./pages/Orders";
 import TradingAssistantPage from "./pages/TradingAssistantPage";
 import PageTransition from "./components/PageTransition";
 import TradingAssistant from "./components/TradingAssistant";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const AppRoutes = () => {
   const location = useLocation();
@@ -56,50 +58,75 @@ const AppRoutes = () => {
               <ResetPassword />
             </PageTransition>
           } />
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <PageTransition>
+                <Dashboard />
+              </PageTransition>
+            </ProtectedRoute>
+          }/>
           <Route path="/portfolio" element={
-            <PageTransition>
-              <PortfolioPage />
-            </PageTransition>
+            <ProtectedRoute>
+              <PageTransition>
+                <PortfolioPage />
+              </PageTransition>
+            </ProtectedRoute>
           }/>
           <Route path="/settings" element={
-            <PageTransition>
-              <Settings />
-            </PageTransition>
+            <ProtectedRoute>
+              <PageTransition>
+                <Settings />
+              </PageTransition>
+            </ProtectedRoute>
           }/>
           <Route path="/news" element={
-            <PageTransition>
-              <News />
-            </PageTransition>
+            <ProtectedRoute>
+              <PageTransition>
+                <News />
+              </PageTransition>
+            </ProtectedRoute>
           }/>
           <Route path="/notifications" element={
-            <PageTransition>
-              <Notifications />
-            </PageTransition>
+            <ProtectedRoute>
+              <PageTransition>
+                <Notifications />
+              </PageTransition>
+            </ProtectedRoute>
           }/>
           <Route path="/profile" element={
-            <PageTransition>
-              <Profile />
-            </PageTransition>
+            <ProtectedRoute>
+              <PageTransition>
+                <Profile />
+              </PageTransition>
+            </ProtectedRoute>
           }/>
           <Route path="/watchlist" element={
-            <PageTransition>
-              <Watchlist />
-            </PageTransition>
+            <ProtectedRoute>
+              <PageTransition>
+                <Watchlist />
+              </PageTransition>
+            </ProtectedRoute>
           }/>
           <Route path="/history" element={
-            <PageTransition>
-              <History />
-            </PageTransition>
+            <ProtectedRoute>
+              <PageTransition>
+                <History />
+              </PageTransition>
+            </ProtectedRoute>
           }/>
           <Route path="/orders" element={
-            <PageTransition>
-              <Orders />
-            </PageTransition>
+            <ProtectedRoute>
+              <PageTransition>
+                <Orders />
+              </PageTransition>
+            </ProtectedRoute>
           }/>
           <Route path="/assistant" element={
-            <PageTransition>
-              <TradingAssistantPage />
-            </PageTransition>
+            <ProtectedRoute>
+              <PageTransition>
+                <TradingAssistantPage />
+              </PageTransition>
+            </ProtectedRoute>
           }/>
         </Routes>
       </AnimatePresence>

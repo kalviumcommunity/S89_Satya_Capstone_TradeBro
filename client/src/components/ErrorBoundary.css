@@ -1,0 +1,151 @@
+.error-boundary-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+  background-color: var(--bg-primary, #f8f9fa);
+}
+
+.error-boundary-content {
+  max-width: 600px;
+  padding: 30px;
+  background-color: var(--card-bg, #fff);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.error-icon {
+  margin-bottom: 20px;
+}
+
+.error-boundary-content h2 {
+  margin-bottom: 15px;
+  color: var(--text-primary, #333);
+  font-size: 24px;
+}
+
+.error-message {
+  margin-bottom: 25px;
+  color: var(--text-secondary, #666);
+  font-size: 16px;
+  line-height: 1.5;
+  padding: 15px;
+  background-color: var(--bg-secondary, #f1f1f1);
+  border-radius: 8px;
+  word-break: break-word;
+}
+
+.error-actions {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.error-actions button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.refresh-button {
+  background-color: var(--primary-color, #1B8E99);
+  color: white;
+}
+
+.refresh-button:hover {
+  background-color: var(--primary-color-dark, #157a7f);
+}
+
+.home-button {
+  background-color: var(--button-bg, #f0f0f0);
+  color: var(--text-primary, #333);
+}
+
+.home-button:hover {
+  background-color: var(--button-hover, #e0e0e0);
+}
+
+.error-details {
+  margin-top: 20px;
+  text-align: left;
+}
+
+.error-details summary {
+  cursor: pointer;
+  color: var(--text-secondary, #666);
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+
+.error-details pre {
+  background-color: var(--bg-secondary, #f1f1f1);
+  padding: 15px;
+  border-radius: 8px;
+  overflow-x: auto;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-primary, #333);
+}
+
+/* Dark mode adjustments */
+[data-theme="dark"] .error-boundary-container {
+  background-color: var(--bg-primary, #1a1a1a);
+}
+
+[data-theme="dark"] .error-boundary-content {
+  background-color: var(--card-bg, #2a2a2a);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .error-boundary-content h2 {
+  color: var(--text-primary, #eee);
+}
+
+[data-theme="dark"] .error-message {
+  color: var(--text-secondary, #ccc);
+  background-color: var(--bg-secondary, #333);
+}
+
+[data-theme="dark"] .home-button {
+  background-color: var(--button-bg, #333);
+  color: var(--text-primary, #eee);
+}
+
+[data-theme="dark"] .home-button:hover {
+  background-color: var(--button-hover, #444);
+}
+
+[data-theme="dark"] .error-details summary {
+  color: var(--text-secondary, #aaa);
+}
+
+[data-theme="dark"] .error-details pre {
+  background-color: var(--bg-secondary, #333);
+  color: var(--text-primary, #eee);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .error-boundary-content {
+    padding: 20px;
+  }
+  
+  .error-actions {
+    flex-direction: column;
+  }
+  
+  .error-actions button {
+    width: 100%;
+  }
+}

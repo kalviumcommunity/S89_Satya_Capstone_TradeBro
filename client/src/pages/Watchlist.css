@@ -3,13 +3,17 @@
   color: var(--text-color, #212529);
 }
 
+.watchlist-header-container {
+  margin-bottom: 1.5rem;
+}
+
 .watchlist-header {
   font-size: 2.2rem;
   color: #333;
   font-weight: 700;
-  margin-bottom: 1.5rem;
   position: relative;
   display: inline-block;
+  margin-bottom: 0.5rem;
 }
 
 .watchlist-header::after {
@@ -23,13 +27,29 @@
   border-radius: 2px;
 }
 
+.filter-status {
+  font-size: 0.9rem;
+  color: #6c757d;
+  margin-top: 1rem;
+  padding: 0.5rem 0.75rem;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.total-stocks-info {
+  margin-top: 1rem;
+  font-style: italic;
+  color: #6c757d;
+}
+
 .watchlist-actions {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 2rem;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 1.5rem;
 }
 
 @media (max-width: 992px) {
@@ -39,7 +59,7 @@
   }
 }
 
-.search-container {
+.search-filter-container {
   position: relative;
   flex: 1;
   max-width: 300px;
@@ -68,24 +88,53 @@
   box-shadow: 0 0 0 3px rgba(27, 142, 153, 0.1);
 }
 
-.add-stock-container {
+.clear-search-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #6c757d;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  width: 20px;
+  height: 20px;
   display: flex;
-  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
 }
 
-.add-stock-input {
-  padding: 10px 15px;
-  border: 1px solid #dee2e6;
-  border-radius: 25px;
-  font-size: 0.95rem;
-  transition: all 0.3s ease;
-  width: 180px;
+.clear-search-btn:hover {
+  background-color: #f1f3f5;
+  color: #495057;
 }
 
-.add-stock-input:focus {
+.clear-search-btn:focus {
   outline: none;
-  border-color: #1B8E99;
-  box-shadow: 0 0 0 3px rgba(27, 142, 153, 0.1);
+  box-shadow: 0 0 0 2px rgba(27, 142, 153, 0.2);
+}
+
+.watchlist-controls {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .watchlist-controls {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .watchlist-controls .watchlist-search {
+    max-width: 100%;
+  }
 }
 
 .add-btn, .refresh-btn {

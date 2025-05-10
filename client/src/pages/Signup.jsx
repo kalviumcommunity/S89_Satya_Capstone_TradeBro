@@ -42,14 +42,18 @@ const Signup = () => {
         { withCredentials: true }
       );
 
-      // Store the token in AuthContext and localStorage
+      // Store the token and user data in AuthContext and localStorage
       if (res.data.token) {
-        register(res.data.token);
+        // Pass both token and user data to the register function
+        register(res.data.token, res.data.user);
       }
 
       setSuccess(true);
-      setTimeout(() => setSuccess(false), 2000);
-      setTimeout(() => navigate("/portfolio"), 1000);
+      setTimeout(() => setSuccess(false), 1000);
+      setTimeout(() => {
+        console.log("Redirecting to portfolio page after signup");
+        navigate("/portfolio", { replace: true });
+      }, 1200);
     } catch (err) {
       console.error("Signup error:", err.response?.data || err.message);
       alert("Signup failed. Please try again.");

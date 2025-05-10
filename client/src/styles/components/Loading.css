@@ -1,0 +1,40 @@
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+}
+
+.loading-container.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(5px);
+  z-index: 9999;
+}
+
+.loading-dots {
+  display: flex;
+  gap: 8px;
+}
+
+.loading-circle {
+  display: block;
+  border-radius: 50%;
+  background: var(--primary-color);
+}
+
+.loading-text {
+  color: var(--text-color);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  margin: 0;
+}
+
+.loading-container.overlay .loading-text {
+  color: white;
+}

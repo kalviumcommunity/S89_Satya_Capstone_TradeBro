@@ -1,68 +1,145 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { motion } from "framer-motion";
-import { FiUser, FiMail, FiPhone, FiEdit2, FiCamera, FiCheckCircle, FiBarChart2, FiDollarSign, FiClock } from "react-icons/fi";
+import { FiUser, FiMail, FiPhone, FiEdit2, FiCamera, FiCheckCircle, FiBarChart2, FiDollarSign, FiClock, FiAlertCircle } from "react-icons/fi";
 import PageLayout from "../components/PageLayout";
+import { useAuth } from "../context/AuthContext";
+import axios from "axios";
+import Loading from "../components/Loading";
+import { fetchProfile, fetchProfileSuccess, setEditedUser, updateProfile } from "../redux/reducers/profileReducer";
+import { setIsEditing, setLoading, setError } from "../redux/reducers/uiReducer";
+import { showSuccessToast, showErrorToast } from "../redux/reducers/toastReducer";
 import "./Profile.css";
 
 const Profile = () => {
-  const [user, setUser] = useState({
-    name: "John Doe",
-    email: "john.doe@example.com",
-    phone: "+1 (555) 123-4567",
-    joinDate: "2023-01-15",
-    profileImage: "https://randomuser.me/api/portraits/men/32.jpg",
-    tradingExperience: "Intermediate",
-    preferredMarkets: ["Stocks", "ETFs", "Crypto"],
-    bio: "Passionate investor with a focus on technology and renewable energy sectors. I believe in long-term growth strategies and sustainable investing."
-  });
+  const dispatch = useDispatch();
+  const { isAuthenticated } = useAuth();
 
-  const [stats, setStats] = useState({
-    totalTrades: 156,
-    successRate: 68,
-    avgReturn: 12.4,
-    portfolioValue: 28750.65,
-    activeWatchlists: 5
-  });
+  // Get state from Redux
+  const { userData: user, editedUser, stats, recentActivity } = useSelector(state => state.profile);
+  const { isEditing, loading, error } = useSelector(state => state.ui);
 
-  const [recentActivity, setRecentActivity] = useState([
-    {
-      id: 1,
-      type: "trade",
-      action: "Bought",
-      symbol: "AAPL",
-      quantity: 10,
-      price: 178.25,
-      date: "2023-10-15T14:30:00Z"
-    },
-    {
-      id: 2,
-      type: "watchlist",
-      action: "Added",
-      symbol: "TSLA",
-      date: "2023-10-14T10:15:00Z"
-    },
-    {
-      id: 3,
-      type: "trade",
-      action: "Sold",
-      symbol: "MSFT",
-      quantity: 5,
-      price: 332.80,
-      date: "2023-10-13T16:45:00Z"
-    },
-    {
-      id: 4,
-      type: "alert",
-      action: "Created",
-      symbol: "NVDA",
-      condition: "Price above $450",
-      date: "2023-10-12T09:20:00Z"
+  // Fetch user data
+  useEffect(() => {
+    if (!isAuthenticated) {
+      dispatch(setLoading(false));
+      return;
     }
-  ]);
 
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedUser, setEditedUser] = useState({ ...user });
-  const [loading, setLoading] = useState(false);
+    dispatch(setLoading(true));
+
+    const fetchUserData = async () => {
+      try {
+        // Get user settings
+        const response = await axios.get("http://localhost:5000/api/settings", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('authToken')}`
+          }
+        });
+
+        if (response.data.success) {
+          const userData = response.data.userSettings;
+
+          // Format the data
+          const formattedUserData = {
+            fullName: userData.fullName || "User",
+            email: userData.email || "",
+            phoneNumber: userData.phoneNumber || "",
+            joinDate: userData.createdAt || new Date().toISOString(),
+            profileImage: userData.profileImage
+              ? `http://localhost:5000/uploads/${userData.profileImage}`
+              : "https://randomuser.me/api/portraits/lego/1.jpg",
+            tradingExperience: userData.tradingExperience || "Beginner",
+            preferredMarkets: userData.preferredMarkets || ["Stocks"],
+            bio: userData.bio || "No bio provided yet."
+          };
+
+          // Mock statistics data
+          const statsData = {
+            totalTrades: 24,
+            successRate: 65,
+            avgReturn: 8.7,
+            portfolioValue: 12500.00,
+            activeWatchlists: 3
+          };
+
+          // Mock recent activity data
+          const activityData = [
+            {
+              id: 1,
+              type: "trade",
+              action: "Bought",
+              symbol: "AAPL",
+              quantity: 5,
+              price: 178.25,
+              date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() // 2 days ago
+            },
+            {
+              id: 2,
+              type: "watchlist",
+              action: "Added",
+              symbol: "TSLA",
+              date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() // 3 days ago
+            },
+            {
+              id: 3,
+              type: "trade",
+              action: "Sold",
+              symbol: "MSFT",
+              quantity: 2,
+              price: 332.80,
+              date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString() // 5 days ago
+            }
+          ];
+
+          // Dispatch to Redux
+          dispatch(fetchProfileSuccess({
+            userData: formattedUserData,
+            stats: statsData,
+            recentActivity: activityData
+          }));
+
+          // Also set the edited user data
+          dispatch(setEditedUser(formattedUserData));
+        }
+      } catch (err) {
+        console.error("Error fetching user data:", err);
+        dispatch(setError("Failed to load user data. Please try again later."));
+
+        // Set default data for development
+        const defaultUserData = {
+          fullName: "Demo User",
+          email: "demo@example.com",
+          phoneNumber: "+1 (555) 123-4567",
+          joinDate: new Date().toISOString(),
+          profileImage: "https://randomuser.me/api/portraits/lego/1.jpg",
+          tradingExperience: "Beginner",
+          preferredMarkets: ["Stocks", "ETFs"],
+          bio: "This is a demo account."
+        };
+
+        // Dispatch default data to Redux
+        dispatch(fetchProfileSuccess({
+          userData: defaultUserData,
+          stats: {
+            totalTrades: 24,
+            successRate: 65,
+            avgReturn: 8.7,
+            portfolioValue: 12500.00,
+            activeWatchlists: 3
+          },
+          recentActivity: []
+        }));
+
+        // Also set the edited user data
+        dispatch(setEditedUser(defaultUserData));
+      } finally {
+        dispatch(setLoading(false));
+      }
+    };
+
+    fetchUserData();
+  }, [isAuthenticated, dispatch]);
 
   // Format date
   const formatDate = (dateString) => {
@@ -79,32 +156,77 @@ const Profile = () => {
   // Handle edit form changes
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setEditedUser({ ...editedUser, [name]: value });
+    dispatch(setEditedUser({ ...editedUser, [name]: value }));
   };
 
   // Handle profile image change
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Store the file object directly for form submission
+      dispatch(setEditedUser({ ...editedUser, profileImage: file }));
+
+      // Also create a preview URL for display
       const reader = new FileReader();
       reader.onloadend = () => {
-        setEditedUser({ ...editedUser, profileImage: reader.result });
+        // This is just for preview, we'll use the file object for upload
+        dispatch(setEditedUser({ ...editedUser, profileImagePreview: reader.result }));
       };
       reader.readAsDataURL(file);
     }
   };
 
   // Handle form submission
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    dispatch(setLoading(true));
 
-    // Simulate API call
-    setTimeout(() => {
-      setUser(editedUser);
-      setIsEditing(false);
-      setLoading(false);
-    }, 1000);
+    try {
+      // Prepare form data for API
+      const formData = new FormData();
+      formData.append('fullName', editedUser.fullName);
+      formData.append('phoneNumber', editedUser.phoneNumber);
+      formData.append('tradingExperience', editedUser.tradingExperience);
+      formData.append('bio', editedUser.bio);
+
+      // Check if profile image is a File object (new upload) or a string (existing URL)
+      if (editedUser.profileImage instanceof File) {
+        formData.append('profileImage', editedUser.profileImage);
+      }
+
+      // Send data to API
+      const response = await axios.put('http://localhost:5000/api/settings', formData, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      if (response.data.success) {
+        // Update user state with new data
+        const updatedUserData = {
+          ...editedUser,
+          profileImage: response.data.userSettings.profileImage
+            ? `http://localhost:5000/uploads/${response.data.userSettings.profileImage}`
+            : editedUser.profileImage
+        };
+
+        dispatch(updateProfileSuccess(updatedUserData));
+        dispatch(setIsEditing(false));
+        dispatch(showSuccessToast('Profile updated successfully!'));
+      } else {
+        dispatch(showErrorToast('Failed to update profile. Please try again.'));
+      }
+    } catch (err) {
+      console.error('Error updating profile:', err);
+      dispatch(showErrorToast(err.response?.data?.message || 'Failed to update profile. Please try again.'));
+
+      // For development, still update the UI
+      dispatch(updateProfileSuccess(editedUser));
+      dispatch(setIsEditing(false));
+    } finally {
+      dispatch(setLoading(false));
+    }
   };
 
   return (
@@ -112,14 +234,24 @@ const Profile = () => {
       <div className="profile-container">
         <div className="profile-header">
           <h1>My Profile</h1>
-          {!isEditing && (
+          {!isEditing && !loading && (
             <button className="edit-profile-btn" onClick={() => setIsEditing(true)}>
               <FiEdit2 /> Edit Profile
             </button>
           )}
         </div>
 
-        <div className="profile-grid">
+        {loading ? (
+          <div className="loading-container">
+            <Loading size="large" text="Loading profile data..." />
+          </div>
+        ) : error ? (
+          <div className="error-container">
+            <FiAlertCircle className="error-icon" />
+            <p>{error}</p>
+          </div>
+        ) : (
+          <div className="profile-grid">
           {/* Profile Info Card */}
           <motion.div
             className="profile-card info-card"
@@ -131,8 +263,8 @@ const Profile = () => {
               <form onSubmit={handleSubmit} className="edit-form">
                 <div className="profile-image-container edit-mode">
                   <img
-                    src={editedUser.profileImage}
-                    alt={editedUser.name}
+                    src={editedUser.profileImagePreview || editedUser.profileImage}
+                    alt={editedUser.fullName}
                     className="profile-image"
                   />
                   <label className="image-upload-label">
@@ -150,8 +282,8 @@ const Profile = () => {
                   <label>Full Name</label>
                   <input
                     type="text"
-                    name="name"
-                    value={editedUser.name}
+                    name="fullName"
+                    value={editedUser.fullName}
                     onChange={handleChange}
                     required
                   />
@@ -165,15 +297,17 @@ const Profile = () => {
                     value={editedUser.email}
                     onChange={handleChange}
                     required
+                    disabled
                   />
+                  <small>Email cannot be changed</small>
                 </div>
 
                 <div className="form-group">
                   <label>Phone</label>
                   <input
                     type="tel"
-                    name="phone"
-                    value={editedUser.phone}
+                    name="phoneNumber"
+                    value={editedUser.phoneNumber}
                     onChange={handleChange}
                   />
                 </div>
@@ -207,8 +341,8 @@ const Profile = () => {
                     type="button"
                     className="cancel-btn"
                     onClick={() => {
-                      setIsEditing(false);
-                      setEditedUser({ ...user });
+                      dispatch(setIsEditing(false));
+                      dispatch(setEditedUser({ ...user }));
                     }}
                     disabled={loading}
                   >
@@ -228,11 +362,11 @@ const Profile = () => {
                 <div className="profile-image-container">
                   <img
                     src={user.profileImage}
-                    alt={user.name}
+                    alt={user.fullName}
                     className="profile-image"
                   />
                 </div>
-                <h2 className="profile-name">{user.name}</h2>
+                <h2 className="profile-name">{user.fullName}</h2>
                 <div className="profile-details">
                   <div className="detail-item">
                     <FiMail className="detail-icon" />
@@ -240,7 +374,7 @@ const Profile = () => {
                   </div>
                   <div className="detail-item">
                     <FiPhone className="detail-icon" />
-                    <span>{user.phone}</span>
+                    <span>{user.phoneNumber || "No phone number provided"}</span>
                   </div>
                   <div className="detail-item">
                     <FiUser className="detail-icon" />
@@ -353,6 +487,7 @@ const Profile = () => {
             </div>
           </motion.div>
         </div>
+        )}
       </div>
     </PageLayout>
   );

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiCheckCircle, FiAlertCircle, FiInfo, FiX } from 'react-icons/fi';
+import { FiCheckCircle, FiAlertCircle, FiInfo, FiX, FiAlertTriangle } from 'react-icons/fi';
 import './Toast.css';
 
 const toastVariants = {
@@ -9,10 +9,10 @@ const toastVariants = {
   exit: { opacity: 0, scale: 0.8, transition: { duration: 0.2 } }
 };
 
-const Toast = ({ 
-  message, 
-  type = 'success', 
-  duration = 3000, 
+const Toast = ({
+  message,
+  type = 'success',
+  duration = 3000,
   onClose,
   position = 'top-right'
 }) => {
@@ -38,6 +38,8 @@ const Toast = ({
         return <FiCheckCircle className="toast-icon success" />;
       case 'error':
         return <FiAlertCircle className="toast-icon error" />;
+      case 'warning':
+        return <FiAlertTriangle className="toast-icon warning" />;
       case 'info':
         return <FiInfo className="toast-icon info" />;
       default:
