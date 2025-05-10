@@ -63,7 +63,7 @@
 
   .sidebar.mobile .toggle-btn {
     position: absolute;
-    left: 20px;
+    right: 20px;
   }
 
   .sidebar.mobile.collapsed .toggle-btn {
@@ -127,6 +127,9 @@
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
+    font-size: 1.2rem;
+    text-align: center;
+    width: 50%;
   }
 }
 

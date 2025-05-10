@@ -33,8 +33,11 @@ const NavBar = memo(({ mobileMenuOpen, toggleMobileMenu, handleGetStarted }) => 
       className={`navbar ${scrolled ? 'scrolled' : ''}`}
       initial={{ y: -100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.5, ease: [0.6, 0.05, -0.01, 0.9] }}
+      transition={{ duration: 0.5, ease: [0.6, 0.05, 0.01, 0.9] }}
     >
+      {/* Empty div for mobile grid layout */}
+      <div className="navbar-spacer"></div>
+
       <motion.div
         className="logo"
         whileHover={{ scale: 1.05 }}
@@ -42,9 +45,11 @@ const NavBar = memo(({ mobileMenuOpen, toggleMobileMenu, handleGetStarted }) => 
       >
         TradeBro
       </motion.div>
+
       <button className="mobile-menu-btn" onClick={toggleMobileMenu} aria-label="Toggle menu">
-        {mobileMenuOpen ? <FiX /> : <FiMenu />}
+        {mobileMenuOpen ? <FiX size={24} /> : <FiMenu size={24} />}
       </button>
+
       <nav className={`nav-links ${mobileMenuOpen ? 'mobile-active' : ''}`}>
         <motion.a
           href="#features"
@@ -91,7 +96,7 @@ const HeroSection = memo(({ handleGetStarted }) => {
         className="hero-content"
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, ease: [0.6, 0.05, -0.01, 0.9] }}
+        transition={{ duration: 0.8, ease: [0.6, 0.05, 0.01, 0.9] }}
       >
         <AnimatedText
           text="Master the Markets with Confidence"

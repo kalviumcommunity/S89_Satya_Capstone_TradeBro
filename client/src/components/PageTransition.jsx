@@ -13,7 +13,7 @@ const pageVariants = {
     y: 0,
     transition: {
       duration: 0.5,
-      ease: [0.43, 0.13, 0.23, 0.96],
+      ease: "easeInOut",
       when: 'beforeChildren',
       staggerChildren: 0.1,
     },
@@ -23,7 +23,7 @@ const pageVariants = {
     y: -20,
     transition: {
       duration: 0.3,
-      ease: [0.43, 0.13, 0.23, 0.96],
+      ease: "easeInOut",
       when: 'afterChildren',
       staggerChildren: 0.05,
       staggerDirection: -1,
@@ -42,7 +42,7 @@ const childVariants = {
     y: 0,
     transition: {
       duration: 0.4,
-      ease: [0.43, 0.13, 0.23, 0.96],
+      ease: "easeInOut",
     },
   },
   out: {
@@ -50,7 +50,7 @@ const childVariants = {
     y: -10,
     transition: {
       duration: 0.2,
-      ease: [0.43, 0.13, 0.23, 0.96],
+      ease: "easeInOut",
     },
   },
 };
@@ -75,7 +75,7 @@ const PageTransition = ({
         x: 0,
         transition: {
           duration: 0.5,
-          ease: [0.43, 0.13, 0.23, 0.96],
+          ease: "easeInOut",
           when: 'beforeChildren',
           staggerChildren: 0.1,
         }
@@ -85,7 +85,7 @@ const PageTransition = ({
         x: 100,
         transition: {
           duration: 0.3,
-          ease: [0.43, 0.13, 0.23, 0.96],
+          ease: "easeInOut",
           when: 'afterChildren',
           staggerChildren: 0.05,
           staggerDirection: -1,
@@ -99,7 +99,7 @@ const PageTransition = ({
         scale: 1,
         transition: {
           duration: 0.5,
-          ease: [0.43, 0.13, 0.23, 0.96],
+          ease: "easeInOut",
           when: 'beforeChildren',
           staggerChildren: 0.1,
         }
@@ -109,7 +109,7 @@ const PageTransition = ({
         scale: 1.1,
         transition: {
           duration: 0.3,
-          ease: [0.43, 0.13, 0.23, 0.96],
+          ease: "easeInOut",
           when: 'afterChildren',
           staggerChildren: 0.05,
           staggerDirection: -1,

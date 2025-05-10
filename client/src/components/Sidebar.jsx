@@ -61,7 +61,7 @@ const Sidebar = () => {
   return (
     <div className={`sidebar ${isCollapsed ? "collapsed" : ""} ${isMobile ? "mobile" : ""}`}>
       <div className="top-section">
-        <button className="toggle-btn" onClick={toggleSidebar}>
+        <button className="toggle-btn" onClick={toggleSidebar} aria-label="Toggle menu">
           <FiMenu />
         </button>
         {!isCollapsed && <h1 className="logo">🚀 TradeBro</h1>}

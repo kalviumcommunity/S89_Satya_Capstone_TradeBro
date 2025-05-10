@@ -12,6 +12,7 @@ import { useAuth } from "../context/AuthContext";
 import { usePusher } from "../context/PusherContext.jsx";
 import { useToast } from "../context/ToastContext";
 import PageLayout from "../components/PageLayout";
+import MobileHeader from "../components/MobileHeader";
 import { API_ENDPOINTS } from "../config/apiConfig";
 import "../styles/pages/TradingAssistantPage.css";
 
@@ -371,9 +372,74 @@ const TradingAssistantPage = () => {
     }
   }, [messages]);
 
+  // Note: The duplicate handleSubmit, handleSuggestedQuestion, and updateSuggestedQuestions functions
+  // have been removed. The implementations are kept at lines ~784, ~807, and ~834 respectively.
+
   // Handle input change
   const handleInputChange = (e) => {
     setInputValue(e.target.value);
+  };
+
+  // Note: Removed duplicate formatMessageText function.
+  // The implementation at lines ~829-1039 is more comprehensive and is kept.
+
+  // Format timestamp to be more readable
+  const formatTimestamp = (timestamp) => {
+    if (!timestamp) return "";
+
+    const now = new Date();
+    const messageDate = new Date(timestamp);
+
+    // If the message is from today, just show the time
+    if (messageDate.toDateString() === now.toDateString()) {
+      return messageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    // If the message is from yesterday, show "Yesterday" and the time
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    if (messageDate.toDateString() === yesterday.toDateString()) {
+      return `Yesterday, ${messageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    }
+
+    // Otherwise, show the date and time
+    return messageDate.toLocaleString([], {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  // Handle sending a message from the input field
+  const handleSendMessage = () => {
+    if (!inputValue.trim() || isTyping) return;
+
+    // Add user message to chat
+    const userMessage = {
+      id: uuidv4(),
+      text: inputValue,
+      sender: "user",
+      timestamp: new Date()
+    };
+
+    setMessages(prevMessages => [...prevMessages, userMessage]);
+
+    // Send to API
+    const messageText = inputValue;
+    setInputValue("");
+    sendMessage(messageText);
+
+    // Update suggested questions based on user's message
+    updateSuggestedQuestions(messageText);
+  };
+
+  // Handle key press in input field
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
   };
 
   // Send message to chatbot API
@@ -736,11 +802,8 @@ Would you like me to explain any of these features in more detail?`;
     }
   };
 
-  // Format timestamp
-  const formatTimestamp = (timestamp) => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
+  // Note: Removed duplicate formatTimestamp function.
+  // The implementation at lines ~406-432 is more comprehensive and is kept.
 
   // Format message text with line breaks, quotes, bullet points, tables, and hashes
   const formatMessageText = (text) => {
@@ -955,7 +1018,8 @@ Would you like me to explain any of these features in more detail?`;
   return (
     <PageLayout>
       <div className="trading-assistant-page">
-        <div className="assistant-header">
+        {/* Desktop Header */}
+        <div className="assistant-header desktop-only">
           <motion.div
             className="header-content"
             initial={{ opacity: 0, y: -20 }}
@@ -965,6 +1029,14 @@ Would you like me to explain any of these features in more detail?`;
             <h1>Trading Assistant</h1>
             <p>Ask about stocks, market trends, or trading strategies</p>
           </motion.div>
+        </div>
+
+        {/* Mobile Header */}
+        <div className="mobile-only">
+          <MobileHeader
+            title="TradeBro"
+            subtitle="Trading Assistant"
+          />
         </div>
 
         <div className="assistant-container">
@@ -1178,6 +1250,7 @@ Would you like me to explain any of these features in more detail?`;
                       placeholder="Ask me about stocks, trading, or market trends..."
                       value={inputValue}
                       onChange={handleInputChange}
+                      onKeyPress={handleKeyPress}
                       disabled={isTyping || !sessionId}
                     />
                     <motion.button

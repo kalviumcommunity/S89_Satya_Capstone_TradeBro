@@ -14,7 +14,7 @@ import { useInView } from 'framer-motion';
 export const useElementInView = (options = { once: true, amount: 0.3 }) => {
   const ref = useRef(null);
   const isInView = useInView(ref, options);
-  
+
   return { ref, isInView };
 };
 
@@ -32,13 +32,13 @@ export const useTypewriter = (text, speed = 50, startTyping = true) => {
 
   useEffect(() => {
     if (!isTyping) return;
-    
+
     if (currentIndex < text.length) {
       const timeout = setTimeout(() => {
         setDisplayText(prev => prev + text[currentIndex]);
         setCurrentIndex(prev => prev + 1);
       }, speed);
-      
+
       return () => clearTimeout(timeout);
     } else {
       setIsTyping(false);
@@ -163,8 +163,8 @@ export const pulseVariants = {
  */
 export const hoverVariants = {
   initial: { scale: 1, boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.1)' },
-  hover: { 
-    scale: 1.03, 
+  hover: {
+    scale: 1.03,
     boxShadow: '0px 10px 20px rgba(0, 0, 0, 0.15)',
     transition: { duration: 0.3, ease: 'easeInOut' }
   },
@@ -184,7 +184,7 @@ export const pageTransitionVariants = {
     y: 0,
     transition: {
       duration: 0.5,
-      ease: [0.43, 0.13, 0.23, 0.96],
+      ease: "easeInOut",
       when: 'beforeChildren',
       staggerChildren: 0.1,
     },
@@ -194,7 +194,7 @@ export const pageTransitionVariants = {
     y: -20,
     transition: {
       duration: 0.3,
-      ease: [0.43, 0.13, 0.23, 0.96],
+      ease: "easeInOut",
       when: 'afterChildren',
       staggerChildren: 0.05,
       staggerDirection: -1,
