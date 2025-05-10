@@ -8,6 +8,9 @@
 import axios from 'axios';
 import { API_BASE_URL } from '../config/apiConfig';
 
+// Define NODE_ENV for development/production mode
+const NODE_ENV = window.location.hostname === 'localhost' ? 'development' : 'production';
+
 // Original axios methods
 let originalGet = null;
 let originalPost = null;
@@ -18,9 +21,23 @@ let originalDelete = null;
 let mocksActive = false;
 
 /**
+ * Helper function to create a tracked timeout
+ * @param {Function} callback - The function to call after the timeout
+ * @param {number} delay - The delay in milliseconds
+ * @param {Array} timeoutIds - Array to store timeout IDs for cleanup
+ * @returns {number} - The timeout ID
+ */
+const createTrackedTimeout = (callback, delay, timeoutIds) => {
+  const timeoutId = setTimeout(callback, delay);
+  timeoutIds.push(timeoutId);
+  return timeoutId;
+};
+
+/**
  * Set up a mock health endpoint for offline mode
  * This allows the app to check if the backend is available
  * without actually making network requests
+ * @returns {Function} - Cleanup function to restore original methods
  */
 export const setupMockHealthEndpoint = () => {
   // Save original get method if not already saved
@@ -28,11 +45,40 @@ export const setupMockHealthEndpoint = () => {
     originalGet = axios.get;
   }
 
+  // Track pending requests and timeouts
+  const pendingRequests = [];
+  const timeoutIds = [];
+
+  // Store the original XMLHttpRequest.prototype.send method
+  const originalXHRSend = XMLHttpRequest.prototype.send;
+
+  // Override XMLHttpRequest.prototype.send to track requests
+  XMLHttpRequest.prototype.send = function(...args) {
+    const xhr = this;
+    pendingRequests.push(xhr);
+
+    // Remove the request from pendingRequests when it completes
+    const onLoadEnd = function() {
+      const index = pendingRequests.indexOf(xhr);
+      if (index !== -1) {
+        pendingRequests.splice(index, 1);
+      }
+      xhr.removeEventListener('loadend', onLoadEnd);
+    };
+
+    xhr.addEventListener('loadend', onLoadEnd);
+
+    // Call the original send method
+    return originalXHRSend.apply(this, args);
+  };
+
   // Override the get method to intercept health endpoint requests
   axios.get = function(url, config) {
     // Check if this is a health endpoint request
     if (url && url.includes('/api/health')) {
-      console.log('Intercepted health endpoint request');
+      if (NODE_ENV === 'development') {
+        console.log('Intercepted health endpoint request');
+      }
       // Return a rejected promise to simulate offline mode
       return Promise.reject({
         response: {
@@ -51,6 +97,29 @@ export const setupMockHealthEndpoint = () => {
     // Restore the original get method
     if (originalGet) {
       axios.get = originalGet;
+    }
+
+    // Restore original XMLHttpRequest.prototype.send
+    XMLHttpRequest.prototype.send = originalXHRSend;
+
+    // Abort any pending requests
+    pendingRequests.forEach(xhr => {
+      try {
+        if (xhr.readyState !== 4) {
+          xhr.abort();
+        }
+      } catch (e) {
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Error aborting XHR:', e);
+        }
+      }
+    });
+
+    // Clear any timeouts
+    timeoutIds.forEach(id => clearTimeout(id));
+
+    if (NODE_ENV === 'development') {
+      console.log('Health endpoint mock cleaned up');
     }
   };
 };
@@ -76,9 +145,36 @@ export const setupAllMockEndpoints = (userData = null) => {
   mocksActive = true;
 
   // Only log in development environment
-  if (process.env.NODE_ENV === 'development') {
+  if (NODE_ENV === 'development') {
     console.log('All mock endpoints setup');
   }
+
+  // Keep track of pending requests and timeouts
+  const pendingRequests = [];
+  const timeoutIds = [];
+
+  // Store the original XMLHttpRequest.prototype.send method
+  const originalXHRSend = XMLHttpRequest.prototype.send;
+
+  // Override XMLHttpRequest.prototype.send to track requests
+  XMLHttpRequest.prototype.send = function(...args) {
+    const xhr = this;
+    pendingRequests.push(xhr);
+
+    // Remove the request from pendingRequests when it completes
+    const onLoadEnd = function() {
+      const index = pendingRequests.indexOf(xhr);
+      if (index !== -1) {
+        pendingRequests.splice(index, 1);
+      }
+      xhr.removeEventListener('loadend', onLoadEnd);
+    };
+
+    xhr.addEventListener('loadend', onLoadEnd);
+
+    // Call the original send method
+    return originalXHRSend.apply(this, args);
+  };
 
   // Return a cleanup function
   return () => {
@@ -88,6 +184,25 @@ export const setupAllMockEndpoints = (userData = null) => {
     if (originalPut) axios.put = originalPut;
     if (originalDelete) axios.delete = originalDelete;
 
+    // Restore original XMLHttpRequest.prototype.send
+    XMLHttpRequest.prototype.send = originalXHRSend;
+
+    // Abort any pending requests
+    pendingRequests.forEach(xhr => {
+      try {
+        if (xhr.readyState !== 4) {
+          xhr.abort();
+        }
+      } catch (e) {
+        if (NODE_ENV === 'development') {
+          console.error('Error aborting XHR:', e);
+        }
+      }
+    });
+
+    // Clear any timeouts
+    timeoutIds.forEach(id => clearTimeout(id));
+
     // Reset flags
     mocksActive = false;
     originalGet = null;
@@ -95,7 +210,7 @@ export const setupAllMockEndpoints = (userData = null) => {
     originalPut = null;
     originalDelete = null;
 
-    if (process.env.NODE_ENV === 'development') {
+    if (NODE_ENV === 'development') {
       console.log('Mock endpoints cleaned up');
     }
   };
