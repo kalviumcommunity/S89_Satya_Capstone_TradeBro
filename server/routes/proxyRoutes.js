@@ -23,6 +23,25 @@ const isCacheValid = (endpoint) => {
   return now - cache.timestamps[endpoint] < cache.maxAge;
 };
 
+// Helper function to check if market is open
+const isMarketOpen = () => {
+  const now = new Date();
+  const day = now.getDay();
+  const hours = now.getHours();
+  const minutes = now.getMinutes();
+
+  // Weekend check (0 = Sunday, 6 = Saturday)
+  if (day === 0 || day === 6) {
+    return false;
+  }
+
+  // Market hours check (9:30 AM to 4:00 PM IST for NSE/BSE)
+  const isBeforeOpen = hours < 9 || (hours === 9 && minutes < 30);
+  const isAfterClose = hours > 16 || (hours === 16 && minutes >= 0);
+
+  return !(isBeforeOpen || isAfterClose);
+};
+
 // Function to generate realistic mock data for any stock
 const generateMockStockData = (symbol, name, isGainer = Math.random() > 0.5) => {
   // Generate a realistic base price based on the symbol
@@ -152,12 +171,15 @@ router.get("/fmp/:endpoint", async (req, res) => {
         liveData = response.data.map(item => {
           // Only modify items with price and changesPercentage properties
           if (item.price !== undefined && item.changesPercentage !== undefined) {
-            const randomChange = (Math.random() * 0.4) - 0.2; // Random value between -0.2 and 0.2
-            return {
-              ...item,
-              price: parseFloat((item.price + randomChange).toFixed(2)),
-              changesPercentage: parseFloat((item.changesPercentage + randomChange).toFixed(2))
-            };
+            // Only apply price changes if market is open
+            if (isMarketOpen()) {
+              const randomChange = (Math.random() * 0.4) - 0.2; // Random value between -0.2 and 0.2
+              return {
+                ...item,
+                price: parseFloat((item.price + randomChange).toFixed(2)),
+                changesPercentage: parseFloat((item.changesPercentage + randomChange).toFixed(2))
+              };
+            }
           }
           return item;
         });
@@ -216,37 +238,40 @@ router.get("/stock-batch", async (req, res) => {
         if (mockData.stockQuotes[symbol]) {
           const stockData = { ...mockData.stockQuotes[symbol] };
 
-          // Add personalization based on userId if available
-          if (userId) {
-            // Create deterministic but seemingly random changes based on userId and symbol
-            const hash = (userId + symbol).split('').reduce((a, b) => {
-              a = ((a << 5) - a) + b.charCodeAt(0);
-              return a & a;
-            }, 0);
+          // Only apply price changes if market is open
+          if (isMarketOpen()) {
+            // Add personalization based on userId if available
+            if (userId) {
+              // Create deterministic but seemingly random changes based on userId and symbol
+              const hash = (userId + symbol).split('').reduce((a, b) => {
+                a = ((a << 5) - a) + b.charCodeAt(0);
+                return a & a;
+              }, 0);
 
-            // Use the hash to create personalized price fluctuations
-            const personalFactor = (hash % 20) / 100; // -0.1 to 0.1
-            const isPositive = hash % 2 === 0;
-            const personalizedChange = isPositive ? personalFactor : -personalFactor;
+              // Use the hash to create personalized price fluctuations
+              const personalFactor = (hash % 20) / 100; // -0.1 to 0.1
+              const isPositive = hash % 2 === 0;
+              const personalizedChange = isPositive ? personalFactor : -personalFactor;
 
-            // Apply personalized changes
-            const newPrice = parseFloat((stockData.price * (1 + personalizedChange)).toFixed(2));
-            const priceChange = newPrice - stockData.price;
-            const percentChange = (priceChange / stockData.price) * 100;
+              // Apply personalized changes
+              const newPrice = parseFloat((stockData.price * (1 + personalizedChange)).toFixed(2));
+              const priceChange = newPrice - stockData.price;
+              const percentChange = (priceChange / stockData.price) * 100;
 
-            stockData.price = newPrice;
-            stockData.change = parseFloat((stockData.change + priceChange).toFixed(2));
-            stockData.changesPercentage = parseFloat((stockData.changesPercentage + percentChange).toFixed(2));
-          } else {
-            // Regular random changes if no userId
-            const randomChange = (Math.random() * 0.4) - 0.2; // Random value between -0.2 and 0.2
-            const newPrice = parseFloat((stockData.price + randomChange).toFixed(2));
-            const priceChange = newPrice - stockData.price;
-            const percentChange = (priceChange / stockData.price) * 100;
+              stockData.price = newPrice;
+              stockData.change = parseFloat((stockData.change + priceChange).toFixed(2));
+              stockData.changesPercentage = parseFloat((stockData.changesPercentage + percentChange).toFixed(2));
+            } else {
+              // Regular random changes if no userId
+              const randomChange = (Math.random() * 0.4) - 0.2; // Random value between -0.2 and 0.2
+              const newPrice = parseFloat((stockData.price + randomChange).toFixed(2));
+              const priceChange = newPrice - stockData.price;
+              const percentChange = (priceChange / stockData.price) * 100;
 
-            stockData.price = newPrice;
-            stockData.change = parseFloat((stockData.change + priceChange).toFixed(2));
-            stockData.changesPercentage = parseFloat((stockData.changesPercentage + percentChange).toFixed(2));
+              stockData.price = newPrice;
+              stockData.change = parseFloat((stockData.change + priceChange).toFixed(2));
+              stockData.changesPercentage = parseFloat((stockData.changesPercentage + percentChange).toFixed(2));
+            }
           }
 
           liveData.push(stockData);
@@ -455,14 +480,17 @@ router.get("/market-indices", async (req, res) => {
     );
 
     if (response.data && response.data.length > 0) {
-      // Add some randomness to simulate live data
+      // Add some randomness to simulate live data, but only if market is open
       const liveData = response.data.map(item => {
-        const randomChange = (Math.random() * 0.4) - 0.2; // Random value between -0.2 and 0.2
-        return {
-          ...item,
-          price: parseFloat((item.price + randomChange).toFixed(2)),
-          changesPercentage: parseFloat((item.changesPercentage + randomChange).toFixed(2))
-        };
+        if (isMarketOpen()) {
+          const randomChange = (Math.random() * 0.4) - 0.2; // Random value between -0.2 and 0.2
+          return {
+            ...item,
+            price: parseFloat((item.price + randomChange).toFixed(2)),
+            changesPercentage: parseFloat((item.changesPercentage + randomChange).toFixed(2))
+          };
+        }
+        return item;
       });
 
       // Update cache
@@ -479,14 +507,17 @@ router.get("/market-indices", async (req, res) => {
     // Use mock data as fallback
     console.log("Using mock data for market indices");
 
-    // Add some randomness to simulate live data
+    // Add some randomness to simulate live data, but only if market is open
     const liveData = mockData.indices.map(item => {
-      const randomChange = (Math.random() * 0.4) - 0.2; // Random value between -0.2 and 0.2
-      return {
-        ...item,
-        price: parseFloat((item.price + randomChange).toFixed(2)),
-        changesPercentage: parseFloat((item.changesPercentage + randomChange).toFixed(2))
-      };
+      if (isMarketOpen()) {
+        const randomChange = (Math.random() * 0.4) - 0.2; // Random value between -0.2 and 0.2
+        return {
+          ...item,
+          price: parseFloat((item.price + randomChange).toFixed(2)),
+          changesPercentage: parseFloat((item.changesPercentage + randomChange).toFixed(2))
+        };
+      }
+      return item;
     });
 
     // Update cache with mock data

@@ -1,8 +1,10 @@
-/* Import responsive styles */
+/* Import styles */
 @import url('./responsive.css');
+@import url('./styles/animations.css');
 
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    scroll-behavior: smooth;
 }

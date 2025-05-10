@@ -29,20 +29,48 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
 
           // Create a new user if not found
           user = new User({
-            username: profile.displayName,
+            username: profile.displayName || profile.emails[0].value.split('@')[0],
             email: profile.emails[0].value,
+            fullName: profile.displayName || profile.name?.givenName + ' ' + profile.name?.familyName,
             password: null, // No password for Google-authenticated users
+            profileImage: profile.photos?.[0]?.value || null,
           });
           await user.save();
         } else {
           console.log("User already exists:", user.email); // Debugging
+
+          // Update user information if needed
+          let needsUpdate = false;
+
+          // Update fullName if not set
+          if (!user.fullName && profile.displayName) {
+            user.fullName = profile.displayName;
+            needsUpdate = true;
+          }
+
+          // Update profile image if available
+          if (profile.photos?.[0]?.value && (!user.profileImage || user.profileImage !== profile.photos[0].value)) {
+            user.profileImage = profile.photos[0].value;
+            needsUpdate = true;
+          }
+
+          // Save if updates were made
+          if (needsUpdate) {
+            await user.save();
+            console.log("Updated existing user with Google profile data");
+          }
         }
 
-        // Generate JWT token for the user
+        // Generate JWT token for the user with more user data
         const token = jwt.sign(
-          { id: user._id, email: user.email },
+          {
+            id: user._id,
+            email: user.email,
+            username: user.username || user.email.split('@')[0],
+            fullName: user.fullName || profile.displayName || user.username
+          },
           process.env.JWT_SECRET,
-          { expiresIn: "1h" } // Token expires in 1 hour
+          { expiresIn: "7d" } // Token expires in 7 days
         );
 
         // Attach the token to the user object

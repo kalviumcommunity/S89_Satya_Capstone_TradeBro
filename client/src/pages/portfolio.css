@@ -288,10 +288,39 @@
   width: 100%;
 }
 
+.portfolio-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-md, 15px);
+  margin-bottom: var(--spacing-md, 15px);
+  padding: var(--spacing-sm, 10px);
+  border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.05));
+}
+
+.refresh-btn {
+  background: linear-gradient(135deg, var(--primary-color, #1B8E99), #22b8b0);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-md, 8px);
+  padding: var(--spacing-sm, 10px) var(--spacing-md, 15px);
+  font-size: var(--font-size-sm, 0.9rem);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs, 5px);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.refresh-btn:hover {
+  background: linear-gradient(135deg, #22b8b0, #27d0c8);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
 @media (max-width: 768px) {
   .portfolio-actions {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-direction: row;
+    justify-content: space-between;
     gap: var(--spacing-md, 15px);
   }
 
@@ -301,12 +330,12 @@
 }
 
 @media (max-width: 576px) {
-  .portfolio-buttons {
+  .portfolio-buttons, .portfolio-actions {
     flex-direction: column;
     gap: var(--spacing-sm, 10px);
   }
 
-  .portfolio-buttons button {
+  .portfolio-buttons button, .portfolio-actions button {
     width: 100%;
   }
 }

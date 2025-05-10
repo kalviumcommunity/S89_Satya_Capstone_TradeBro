@@ -2,16 +2,22 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiTrendingUp, FiTrendingDown, FiDollarSign, FiBarChart2, FiShoppingCart, FiAlertCircle, FiClock } from "react-icons/fi";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import { useToast } from "../context/ToastContext";
 import { useAuth } from "../context/AuthContext";
+import { useVirtualMoney } from "../context/VirtualMoneyContext";
 import Loading from "./Loading";
 import StockChart from "./StockChart";
+import BuySellModal from "./BuySellModal";
 import API_ENDPOINTS from "../config/apiConfig";
+import { formatIndianRupees, formatLargeIndianRupees } from '../utils/currencyUtils';
 import "../styles/StockDetail.css";
 
 const StockDetail = ({ symbol, onClose, onBuySuccess, onSellSuccess }) => {
   const { isAuthenticated } = useAuth();
   const toast = useToast();
+  const navigate = useNavigate();
+  const { virtualMoney, updateVirtualMoney } = useVirtualMoney();
   const [stockData, setStockData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -20,10 +26,6 @@ const StockDetail = ({ symbol, onClose, onBuySuccess, onSellSuccess }) => {
   const [quantity, setQuantity] = useState(1);
   const [orderType, setOrderType] = useState("MARKET");
   const [limitPrice, setLimitPrice] = useState("");
-  const [virtualMoney, setVirtualMoney] = useState({
-    balance: 0,
-    portfolio: []
-  });
   const [processingTransaction, setProcessingTransaction] = useState(false);
 
   // Fetch stock data
@@ -205,6 +207,12 @@ const StockDetail = ({ symbol, onClose, onBuySuccess, onSellSuccess }) => {
 
           setShowBuyModal(false);
           if (onBuySuccess) onBuySuccess();
+
+          // Redirect to portfolio page after a short delay
+          setTimeout(() => {
+            console.log("Redirecting to portfolio page after buy transaction");
+            navigate('/portfolio?transactionSuccess=true', { replace: true });
+          }, 1000);
         }
       } catch (apiError) {
         console.log("Backend API not available, using local implementation");
@@ -319,6 +327,12 @@ const StockDetail = ({ symbol, onClose, onBuySuccess, onSellSuccess }) => {
 
           setShowSellModal(false);
           if (onSellSuccess) onSellSuccess();
+
+          // Redirect to portfolio page after a short delay
+          setTimeout(() => {
+            console.log("Redirecting to portfolio page after sell transaction");
+            navigate('/portfolio?transactionSuccess=true', { replace: true });
+          }, 1000);
         }
       } catch (apiError) {
         console.log("Backend API not available, using local implementation");
@@ -363,25 +377,18 @@ const StockDetail = ({ symbol, onClose, onBuySuccess, onSellSuccess }) => {
 
         setShowSellModal(false);
         if (onSellSuccess) onSellSuccess();
+
+        // Redirect to portfolio page after a short delay
+        setTimeout(() => {
+          console.log("Redirecting to portfolio page after sell transaction (offline mode)");
+          navigate('/portfolio?transactionSuccess=true', { replace: true });
+        }, 1000);
       }
     } catch (err) {
       console.error("Error selling stock:", err);
       toast.error("Failed to complete sale. Please try again.");
     } finally {
       setProcessingTransaction(false);
-    }
-  };
-
-  // Format large numbers
-  const formatLargeNumber = (num) => {
-    if (num >= 1000000000000) {
-      return `$${(num / 1000000000000).toFixed(2)}T`;
-    } else if (num >= 1000000000) {
-      return `$${(num / 1000000000).toFixed(2)}B`;
-    } else if (num >= 1000000) {
-      return `$${(num / 1000000).toFixed(2)}M`;
-    } else {
-      return `$${num.toLocaleString()}`;
     }
   };
 
@@ -446,7 +453,7 @@ const StockDetail = ({ symbol, onClose, onBuySuccess, onSellSuccess }) => {
               </div>
               <div className="detail-item">
                 <span className="detail-label">Market Cap</span>
-                <span className="detail-value">{formatLargeNumber(stockData.marketCap)}</span>
+                <span className="detail-value">{formatLargeIndianRupees(stockData.marketCap)}</span>
               </div>
               <div className="detail-item">
                 <span className="detail-label">P/E Ratio</span>
@@ -462,7 +469,7 @@ const StockDetail = ({ symbol, onClose, onBuySuccess, onSellSuccess }) => {
               </div>
             </div>
 
-            <StockChart symbol={symbol} />
+            <StockChart symbol={symbol} chartType="candle" timeRange="5min" />
 
             <div className="action-buttons">
               <button className="buy-btn" onClick={() => setShowBuyModal(true)}>
@@ -476,215 +483,36 @@ const StockDetail = ({ symbol, onClose, onBuySuccess, onSellSuccess }) => {
         )}
 
         {/* Buy Modal */}
-        <AnimatePresence>
-          {showBuyModal && (
-            <motion.div
-              className="transaction-modal"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <motion.div
-                className="modal-content"
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.8, opacity: 0 }}
-              >
-                <h3>Buy {symbol}</h3>
-                <p className="balance-info">Available Balance: ${virtualMoney.balance.toFixed(2)}</p>
-                <p className="price-info">Current Price: ${stockData?.price.toFixed(2)}</p>
+        <BuySellModal
+          isOpen={showBuyModal}
+          onClose={() => setShowBuyModal(false)}
+          type="BUY"
+          stockData={stockData}
+          onSuccess={(data) => {
+            if (onBuySuccess) onBuySuccess(data);
+            setVirtualMoney(data);
+          }}
+          virtualMoney={virtualMoney}
+        />
 
-                <div className="order-type-selector">
-                  <label>Order Type:</label>
-                  <div className="order-type-buttons">
-                    <button
-                      type="button"
-                      className={orderType === "MARKET" ? "active" : ""}
-                      onClick={() => setOrderType("MARKET")}
-                    >
-                      Market
-                    </button>
-                    <button
-                      type="button"
-                      className={orderType === "LIMIT" ? "active" : ""}
-                      onClick={() => setOrderType("LIMIT")}
-                    >
-                      Limit
-                    </button>
-                  </div>
-                </div>
 
-                <div className="quantity-input">
-                  <label>Quantity:</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={quantity}
-                    onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                  />
-                </div>
-
-                {orderType === "LIMIT" && (
-                  <div className="limit-price-input">
-                    <label>Limit Price ($):</label>
-                    <input
-                      type="number"
-                      min="0.01"
-                      step="0.01"
-                      value={limitPrice}
-                      onChange={(e) => setLimitPrice(e.target.value)}
-                      placeholder="Enter limit price"
-                    />
-                    <p className="limit-price-info">
-                      <FiClock /> Order will execute when price reaches ${limitPrice || "0.00"}
-                    </p>
-                  </div>
-                )}
-
-                <div className="total-cost">
-                  <p>Estimated Total: ${(quantity * (stockData?.price || 0)).toFixed(2)}</p>
-                  {orderType === "LIMIT" && (
-                    <p className="limit-total">
-                      Limit Total: ${limitPrice ? (quantity * parseFloat(limitPrice)).toFixed(2) : "0.00"}
-                    </p>
-                  )}
-                </div>
-
-                <div className="modal-buttons">
-                  <button
-                    className="confirm-btn"
-                    onClick={handleBuy}
-                    disabled={processingTransaction}
-                  >
-                    {processingTransaction ? <Loading size="small" text="" /> : orderType === "MARKET" ? "Buy Now" : "Place Order"}
-                  </button>
-                  <button
-                    className="cancel-btn"
-                    onClick={() => setShowBuyModal(false)}
-                    disabled={processingTransaction}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {/* Sell Modal */}
-        <AnimatePresence>
-          {showSellModal && (
-            <motion.div
-              className="transaction-modal"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <motion.div
-                className="modal-content"
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.8, opacity: 0 }}
-              >
-                <h3>Sell {symbol}</h3>
-                <p className="balance-info">Current Balance: ${virtualMoney.balance.toFixed(2)}</p>
-                <p className="price-info">Current Price: ${stockData?.price.toFixed(2)}</p>
+        <BuySellModal
+          isOpen={showSellModal}
+          onClose={() => setShowSellModal(false)}
+          type="SELL"
+          stockData={stockData}
+          onSuccess={(data) => {
+            if (onSellSuccess) onSellSuccess(data);
+            setVirtualMoney(data);
+          }}
+          virtualMoney={virtualMoney}
+        />
 
-                {virtualMoney.portfolio.find(item => item.stockSymbol === symbol) ? (
-                  <>
-                    <p className="shares-info">
-                      Shares Owned: {virtualMoney.portfolio.find(item => item.stockSymbol === symbol)?.quantity || 0}
-                    </p>
 
-                    <div className="order-type-selector">
-                      <label>Order Type:</label>
-                      <div className="order-type-buttons">
-                        <button
-                          type="button"
-                          className={orderType === "MARKET" ? "active" : ""}
-                          onClick={() => setOrderType("MARKET")}
-                        >
-                          Market
-                        </button>
-                        <button
-                          type="button"
-                          className={orderType === "LIMIT" ? "active" : ""}
-                          onClick={() => setOrderType("LIMIT")}
-                        >
-                          Limit
-                        </button>
-                      </div>
-                    </div>
 
-                    <div className="quantity-input">
-                      <label>Quantity to Sell:</label>
-                      <input
-                        type="number"
-                        min="1"
-                        max={virtualMoney.portfolio.find(item => item.stockSymbol === symbol)?.quantity || 0}
-                        value={quantity}
-                        onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                      />
-                    </div>
 
-                    {orderType === "LIMIT" && (
-                      <div className="limit-price-input">
-                        <label>Limit Price ($):</label>
-                        <input
-                          type="number"
-                          min="0.01"
-                          step="0.01"
-                          value={limitPrice}
-                          onChange={(e) => setLimitPrice(e.target.value)}
-                          placeholder="Enter limit price"
-                        />
-                        <p className="limit-price-info">
-                          <FiClock /> Order will execute when price reaches ${limitPrice || "0.00"}
-                        </p>
-                      </div>
-                    )}
-
-                    <div className="total-value">
-                      <p>Estimated Value: ${(quantity * (stockData?.price || 0)).toFixed(2)}</p>
-                      {orderType === "LIMIT" && (
-                        <p className="limit-total">
-                          Limit Value: ${limitPrice ? (quantity * parseFloat(limitPrice)).toFixed(2) : "0.00"}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="modal-buttons">
-                      <button
-                        className="confirm-btn"
-                        onClick={handleSell}
-                        disabled={processingTransaction}
-                      >
-                        {processingTransaction ? <Loading size="small" text="" /> : orderType === "MARKET" ? "Sell Now" : "Place Order"}
-                      </button>
-                      <button
-                        className="cancel-btn"
-                        onClick={() => setShowSellModal(false)}
-                        disabled={processingTransaction}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <div className="no-shares">
-                    <p>You don't own any shares of {symbol}</p>
-                    <button
-                      className="cancel-btn"
-                      onClick={() => setShowSellModal(false)}
-                    >
-                      Close
-                    </button>
-                  </div>
-                )}
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </motion.div>
     </motion.div>
   );

@@ -6,6 +6,9 @@ import './utils/axiosConfig'  // Import axios config
 import { setupAllMockEndpoints } from './utils/mockEndpoints'
 import App from './App.jsx'
 
+// Import animation libraries
+import { AnimatePresence } from 'framer-motion'
+
 // Check if we should use mock endpoints
 const useMocks = localStorage.getItem('useMockEndpoints') === 'true';
 
@@ -25,6 +28,8 @@ window.addEventListener('app:offline', (event) => {
 // Render the app
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <App />
+    <AnimatePresence mode="wait">
+      <App />
+    </AnimatePresence>
   </StrictMode>,
 )

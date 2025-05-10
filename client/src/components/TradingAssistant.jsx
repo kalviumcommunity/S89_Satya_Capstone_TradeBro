@@ -8,27 +8,93 @@ import API_ENDPOINTS from "../config/apiConfig";
 import "../styles/components/TradingAssistant.css";
 
 const TradingAssistant = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      text: "👋 Hi there! I'm your TradeBro assistant. Feel free to ask me anything about stocks, trading strategies, or market trends. How can I help you today?",
-      sender: "bot",
-      timestamp: new Date()
+  // Get saved state from localStorage or use defaults
+  const getSavedState = () => {
+    try {
+      const savedMessages = localStorage.getItem('tradebro_chat_messages');
+      const savedIsOpen = localStorage.getItem('tradebro_chat_isOpen');
+      const savedSuggestions = localStorage.getItem('tradebro_chat_suggestions');
+      const savedShowSuggestions = localStorage.getItem('tradebro_chat_showSuggestions');
+
+      return {
+        messages: savedMessages ? JSON.parse(savedMessages) : [
+          {
+            id: 1,
+            text: "👋 Hi there! I'm your TradeBro assistant. Feel free to ask me anything about stocks, trading strategies, or market trends. How can I help you today?",
+            sender: "bot",
+            timestamp: new Date()
+          }
+        ],
+        isOpen: savedIsOpen ? JSON.parse(savedIsOpen) : false,
+        suggestedQuestions: savedSuggestions ? JSON.parse(savedSuggestions) : [
+          "What are the current market trends?",
+          "Tell me about Zomato stock",
+          "Explain options trading",
+          "What's the difference between limit and market orders?"
+        ],
+        showSuggestions: savedShowSuggestions ? JSON.parse(savedShowSuggestions) : true
+      };
+    } catch (error) {
+      console.error("Error loading saved chat state:", error);
+      // Return defaults if there's an error
+      return {
+        messages: [
+          {
+            id: 1,
+            text: "👋 Hi there! I'm your TradeBro assistant. Feel free to ask me anything about stocks, trading strategies, or market trends. How can I help you today?",
+            sender: "bot",
+            timestamp: new Date()
+          }
+        ],
+        isOpen: false,
+        suggestedQuestions: [
+          "What are the current market trends?",
+          "Tell me about Zomato stock",
+          "Explain options trading",
+          "What's the difference between limit and market orders?"
+        ],
+        showSuggestions: true
+      };
     }
-  ]);
+  };
+
+  const savedState = getSavedState();
+
+  const [isOpen, setIsOpen] = useState(savedState.isOpen);
+  const [messages, setMessages] = useState(savedState.messages);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [suggestedQuestions, setSuggestedQuestions] = useState([
-    "What are the current market trends?",
-    "Tell me about Zomato stock",
-    "Explain options trading",
-    "What's the difference between limit and market orders?"
-  ]);
-  const [showSuggestions, setShowSuggestions] = useState(true);
+  const [suggestedQuestions, setSuggestedQuestions] = useState(savedState.suggestedQuestions);
+  const [showSuggestions, setShowSuggestions] = useState(savedState.showSuggestions);
   const [sessionId, setSessionId] = useState(null);
   const [error, setError] = useState(null);
   const messagesEndRef = useRef(null);
+
+  // Save state to localStorage when it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('tradebro_chat_messages', JSON.stringify(messages));
+    } catch (error) {
+      console.error("Error saving messages to localStorage:", error);
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('tradebro_chat_isOpen', JSON.stringify(isOpen));
+    } catch (error) {
+      console.error("Error saving isOpen state to localStorage:", error);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('tradebro_chat_suggestions', JSON.stringify(suggestedQuestions));
+      localStorage.setItem('tradebro_chat_showSuggestions', JSON.stringify(showSuggestions));
+    } catch (error) {
+      console.error("Error saving suggestions to localStorage:", error);
+    }
+  }, [suggestedQuestions, showSuggestions]);
 
   // Start a chat session when the component mounts
   useEffect(() => {
@@ -133,42 +199,48 @@ const TradingAssistant = () => {
   // Send message to chatbot API
   const sendMessage = async (text) => {
     if (!sessionId) {
-      setError("Chat session not initialized");
-      return;
+      // Create a new session if one doesn't exist
+      try {
+        const clientSessionId = uuidv4();
+        setSessionId(clientSessionId);
+        console.log("Created new chat session with ID:", clientSessionId);
+      } catch (err) {
+        setError("Unable to initialize chat session. Please refresh the page and try again.");
+        return;
+      }
     }
 
     setIsTyping(true);
 
-    // Create fallback data for chat messages
-    const fallbackData = createDummyData(() => {
-      // Generate a helpful response based on the query
-      let responseText;
+    // Function to generate a response based on the query
+    const generateContextualResponse = (query) => {
+      const lowerQuery = query.toLowerCase();
 
-      if (text.toLowerCase().includes("stock") || text.toLowerCase().includes("price")) {
-        responseText = `I'd be happy to help you with information about stocks and the market.
+      if (lowerQuery.includes("stock") || lowerQuery.includes("price") || lowerQuery.includes("share")) {
+        return `I'd be happy to help you with information about stocks and the market.
 
 The stock market has been quite volatile lately, with tech stocks showing strong performance. If you're interested in a specific stock, you can ask me about it, and I'll provide you with the latest information.
 
 Some popular stocks to consider:
-• Apple (AAPL)
-• Microsoft (MSFT)
-• Amazon (AMZN)
-• Tesla (TSLA)
-• Google (GOOGL)
+• Reliance Industries (RELIANCE.NS)
+• Tata Consultancy Services (TCS.NS)
+• HDFC Bank (HDFCBANK.NS)
+• Infosys (INFY.NS)
+• ICICI Bank (ICICIBANK.NS)
 
 What specific information would you like to know?`;
-      } else if (text.toLowerCase().includes("market") || text.toLowerCase().includes("trend")) {
-        responseText = `The market has been showing interesting trends lately. Tech stocks continue to perform well, while energy and financial sectors have been more volatile.
+      } else if (lowerQuery.includes("market") || lowerQuery.includes("trend") || lowerQuery.includes("index")) {
+        return `The market has been showing interesting trends lately. Tech stocks continue to perform well, while energy and financial sectors have been more volatile.
 
 Key market indicators:
-• S&P 500: Showing moderate growth
-• NASDAQ: Technology-driven growth
-• Dow Jones: Mixed performance
-• VIX: Volatility has been decreasing
+• NIFTY 50: Showing moderate growth
+• BSE SENSEX: Stable with upward momentum
+• NIFTY Bank: Mixed performance
+• India VIX: Volatility has been decreasing
 
 Would you like more specific information about any particular sector or trend?`;
-      } else if (text.toLowerCase().includes("help") || text.toLowerCase().includes("what can you do")) {
-        responseText = `I'm your TradeBro assistant, and I'm here to help you with all things related to trading and investing. Here's what I can do:
+      } else if (lowerQuery.includes("help") || lowerQuery.includes("what can you do") || lowerQuery.includes("assist")) {
+        return `I'm your TradeBro assistant, and I'm here to help you with all things related to trading and investing. Here's what I can do:
 
 1. Provide real-time stock information
 2. Analyze market trends
@@ -177,8 +249,20 @@ Would you like more specific information about any particular sector or trend?`;
 5. Answer financial questions
 
 Just ask me anything related to trading, and I'll do my best to assist you!`;
+      } else if (lowerQuery.includes("buy") || lowerQuery.includes("sell") || lowerQuery.includes("trade")) {
+        return `I can help you understand trading concepts and strategies!
+
+When considering buying or selling stocks, it's important to:
+
+• Research the company fundamentals
+• Analyze technical indicators
+• Consider market conditions
+• Set clear entry and exit points
+• Manage your risk appropriately
+
+Would you like me to explain any of these aspects in more detail?`;
       } else {
-        responseText = `Thanks for your question! As your TradeBro assistant, I'm here to help with all your trading needs.
+        return `Thanks for your question! As your TradeBro assistant, I'm here to help with all your trading needs.
 
 Based on your question, I'd recommend exploring some of the key features of our platform:
 
@@ -189,12 +273,15 @@ Based on your question, I'd recommend exploring some of the key features of our 
 
 Would you like me to explain any of these features in more detail?`;
       }
+    };
 
+    // Create fallback data for chat messages
+    const fallbackData = createDummyData(() => {
       return {
         success: true,
         type: 'text',
-        message: responseText,
-        isFallbackData: false
+        message: generateContextualResponse(text),
+        isFallbackData: true
       };
     });
 
@@ -208,85 +295,134 @@ Would you like me to explain any of these features in more detail?`;
           message: text
         },
         fallbackData,
-        timeout: 5000
+        timeout: 10000 // Increase timeout to give server more time to respond
       });
 
       if (result && result.success) {
         let botResponse;
 
-        // Handle different response types
-        if (result.type === 'text') {
-          botResponse = {
-            id: uuidv4(),
-            text: result.message,
-            sender: "bot",
-            timestamp: new Date(),
-            isFallback: result.isFallbackData
-          };
-        } else if (result.type === 'stockData') {
-          // Format stock data response
-          const data = result.data;
+        try {
+          // Handle different response types
+          if (result.type === 'text') {
+            botResponse = {
+              id: uuidv4(),
+              text: result.message,
+              sender: "bot",
+              timestamp: new Date(),
+              isFallback: result.isFallbackData
+            };
+          } else if (result.type === 'stockData') {
+            // Format stock data response
+            const data = result.data || {};
 
-          // Format market cap to be more readable
-          let marketCapFormatted;
-          if (data.marketCap >= 1000000000000) {
-            marketCapFormatted = `$${(data.marketCap / 1000000000000).toFixed(2)} trillion`;
-          } else if (data.marketCap >= 1000000000) {
-            marketCapFormatted = `$${(data.marketCap / 1000000000).toFixed(2)} billion`;
-          } else if (data.marketCap >= 1000000) {
-            marketCapFormatted = `$${(data.marketCap / 1000000).toFixed(2)} million`;
-          } else {
-            marketCapFormatted = `$${data.marketCap.toLocaleString()}`;
-          }
+            // Safely format market cap with fallbacks
+            let marketCapFormatted = 'N/A';
+            try {
+              const marketCap = Number(data.marketCap);
+              if (!isNaN(marketCap)) {
+                if (marketCap >= 1000000000000) {
+                  marketCapFormatted = `₹${(marketCap / 1000000000000).toFixed(2)} trillion`;
+                } else if (marketCap >= 1000000000) {
+                  marketCapFormatted = `₹${(marketCap / 1000000000).toFixed(2)} billion`;
+                } else if (marketCap >= 1000000) {
+                  marketCapFormatted = `₹${(marketCap / 1000000).toFixed(2)} million`;
+                } else {
+                  marketCapFormatted = `₹${marketCap.toLocaleString()}`;
+                }
+              }
+            } catch (err) {
+              console.error("Error formatting market cap:", err);
+            }
 
-          // Use ₹ symbol for Indian stocks
-          const isIndianStock = result.symbol === "ZOMATO" ||
-                               (result.symbol && result.symbol.endsWith(".NS")) ||
-                               (result.symbol && result.symbol.endsWith(".BO"));
-          const currencySymbol = isIndianStock ? "₹" : "$";
+            // Use ₹ symbol for Indian stocks (default to ₹ for all stocks in our app)
+            const currencySymbol = "₹";
 
-          botResponse = {
-            id: uuidv4(),
-            text: `📊 Here's the latest data for ${result.symbol}:
+            // Safely format price data with fallbacks
+            const formatPrice = (value) => {
+              try {
+                return value !== undefined && !isNaN(Number(value))
+                  ? `${currencySymbol}${Number(value).toFixed(2)}`
+                  : 'N/A';
+              } catch (err) {
+                return 'N/A';
+              }
+            };
 
-• Price: ${currencySymbol}${data.price.toFixed(2)}
-• Daily High: ${currencySymbol}${data.dayHigh.toFixed(2)}
-• Daily Low: ${currencySymbol}${data.dayLow.toFixed(2)}
+            botResponse = {
+              id: uuidv4(),
+              text: `📊 Here's the latest data for ${result.symbol || 'this stock'}:
+
+• Price: ${formatPrice(data.price)}
+• Daily High: ${formatPrice(data.dayHigh)}
+• Daily Low: ${formatPrice(data.dayLow)}
 • Market Cap: ${marketCapFormatted}
-• P/E Ratio: ${data.peRatio ? data.peRatio.toFixed(2) : 'N/A'}
-• Volume: ${data.volume.toLocaleString()}
+• P/E Ratio: ${data.peRatio ? Number(data.peRatio).toFixed(2) : 'N/A'}
+• Volume: ${data.volume ? Number(data.volume).toLocaleString() : 'N/A'}
 
 Remember that market conditions change quickly, so always verify before making decisions! 📈`,
-            sender: "bot",
-            timestamp: new Date(),
-            stockData: true,
-            isFallback: result.isFallbackData
-          };
-        } else if (result.type === 'topGainers') {
-          // Format top gainers response
-          const gainers = result.data;
-          let gainersText = "🔥 Today's top performers in the market:\n\n";
+              sender: "bot",
+              timestamp: new Date(),
+              stockData: true,
+              isFallback: result.isFallbackData
+            };
+          } else if (result.type === 'topGainers') {
+            // Format top gainers response with error handling
+            try {
+              const gainers = Array.isArray(result.data) ? result.data : [];
+              let gainersText = "🔥 Today's top performers in the market:\n\n";
 
-          gainers.forEach((stock, index) => {
-            gainersText += `${index + 1}. ${stock.companyName} (${stock.symbol}): $${stock.price.toFixed(2)} (↑${stock.changePercent.toFixed(2)}%)\n`;
-          });
+              if (gainers.length > 0) {
+                gainers.forEach((stock, index) => {
+                  const symbol = stock.symbol || 'Unknown';
+                  const companyName = stock.companyName || symbol;
+                  const price = !isNaN(Number(stock.price)) ? Number(stock.price).toFixed(2) : 'N/A';
+                  const changePercent = !isNaN(Number(stock.changePercent)) ? Number(stock.changePercent).toFixed(2) : 'N/A';
 
-          gainersText += "\nThese stocks are showing strong momentum today! Remember that past performance doesn't guarantee future results. 📈";
+                  gainersText += `${index + 1}. ${companyName} (${symbol}): ₹${price} (↑${changePercent}%)\n`;
+                });
+              } else {
+                gainersText += "Sorry, I couldn't retrieve the top gainers at the moment.\n";
+              }
 
+              gainersText += "\nThese stocks are showing strong momentum today! Remember that past performance doesn't guarantee future results. 📈";
+
+              botResponse = {
+                id: uuidv4(),
+                text: gainersText,
+                sender: "bot",
+                timestamp: new Date(),
+                topGainers: true,
+                isFallback: result.isFallbackData
+              };
+            } catch (err) {
+              console.error("Error formatting top gainers:", err);
+              throw new Error("Failed to format top gainers data");
+            }
+          }
+        } catch (formatError) {
+          console.error("Error formatting response:", formatError);
+          // If there's an error in formatting, create a generic response
           botResponse = {
             id: uuidv4(),
-            text: gainersText,
+            text: "I found some information for you, but had trouble formatting it. Let me try to help you in another way. Could you rephrase your question?",
             sender: "bot",
             timestamp: new Date(),
-            topGainers: true,
-            isFallback: result.isFallbackData
+            isFallback: true
           };
         }
 
         if (botResponse) {
           setMessages(prevMessages => [...prevMessages, botResponse]);
         } else {
-          throw new Error("Unknown response type");
+          // Handle unknown response type with a fallback
+          const fallbackResponse = {
+            id: uuidv4(),
+            text: result.message || "I received your message but I'm not sure how to display the response. Let me try to help you with something else.",
+            sender: "bot",
+            timestamp: new Date(),
+            isFallback: true
+          };
+          setMessages(prevMessages => [...prevMessages, fallbackResponse]);
         }
 
         // Update suggested questions based on the conversation
@@ -298,79 +434,18 @@ Remember that market conditions change quickly, so always verify before making d
       console.error("Error sending message:", err);
 
       // Generate a helpful response based on the query
-      let fallbackResponse;
-
-      if (text.toLowerCase().includes("stock") || text.toLowerCase().includes("price")) {
-        fallbackResponse = {
-          id: uuidv4(),
-          text: `I'd be happy to help you with information about stocks and the market.
-
-The stock market has been quite volatile lately, with tech stocks showing strong performance. If you're interested in a specific stock, you can ask me about it, and I'll provide you with the latest information.
-
-Some popular stocks to consider:
-• Apple (AAPL)
-• Microsoft (MSFT)
-• Amazon (AMZN)
-• Tesla (TSLA)
-• Google (GOOGL)
-
-What specific information would you like to know?`,
-          sender: "bot",
-          timestamp: new Date(),
-          isFallback: false
-        };
-      } else if (text.toLowerCase().includes("market") || text.toLowerCase().includes("trend")) {
-        fallbackResponse = {
-          id: uuidv4(),
-          text: `The market has been showing interesting trends lately. Tech stocks continue to perform well, while energy and financial sectors have been more volatile.
-
-Key market indicators:
-• S&P 500: Showing moderate growth
-• NASDAQ: Technology-driven growth
-• Dow Jones: Mixed performance
-• VIX: Volatility has been decreasing
-
-Would you like more specific information about any particular sector or trend?`,
-          sender: "bot",
-          timestamp: new Date(),
-          isFallback: false
-        };
-      } else if (text.toLowerCase().includes("help") || text.toLowerCase().includes("what can you do")) {
-        fallbackResponse = {
-          id: uuidv4(),
-          text: `I'm your TradeBro assistant, and I'm here to help you with all things related to trading and investing. Here's what I can do:
-
-1. Provide real-time stock information
-2. Analyze market trends
-3. Explain trading concepts
-4. Offer investment strategies
-5. Answer financial questions
-
-Just ask me anything related to trading, and I'll do my best to assist you!`,
-          sender: "bot",
-          timestamp: new Date(),
-          isFallback: false
-        };
-      } else {
-        fallbackResponse = {
-          id: uuidv4(),
-          text: `Thanks for your question! As your TradeBro assistant, I'm here to help with all your trading needs.
-
-Based on your question, I'd recommend exploring some of the key features of our platform:
-
-• Real-time stock tracking
-• Portfolio management
-• Market analysis tools
-• Trading strategies
-
-Would you like me to explain any of these features in more detail?`,
-          sender: "bot",
-          timestamp: new Date(),
-          isFallback: false
-        };
-      }
+      const fallbackResponse = {
+        id: uuidv4(),
+        text: generateContextualResponse(text),
+        sender: "bot",
+        timestamp: new Date(),
+        isFallback: true
+      };
 
       setMessages(prevMessages => [...prevMessages, fallbackResponse]);
+
+      // Update suggested questions even in case of error
+      updateSuggestedQuestions(text);
     } finally {
       setIsTyping(false);
     }

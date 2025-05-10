@@ -8,6 +8,21 @@ const MongoStore = require("connect-mongo");
 const cookieParser = require("cookie-parser");
 const axios = require("axios");
 
+// Import middleware and routes
+const responseMiddleware = require("./middleware/responseMiddleware");
+const authRoutes = require("./routes/authRoutes");
+const dataRoutes = require("./routes/apiRoutes");
+const settingsRoutes = require("./routes/settings");
+const chatbotRoutes = require("./chatbot");
+const virtualMoneyRoutes = require("./routes/virtualMoneyRoutes");
+const proxyRoutes = require("./routes/proxyRoutes");
+const { router: notificationRoutes } = require("./routes/notificationRoutes");
+const watchlistRoutes = require("./routes/watchlistRoutes");
+const orderRoutes = require("./routes/orderRoutes");
+const stockSearchRoutes = require("./routes/stockSearchRoutes");
+const exampleRoutes = require("./routes/exampleRoutes");
+const userDataRoutes = require("./routes/userDataRoutes");
+
 // Load environment variables
 dotenv.config();
 require("./passport.config");
@@ -33,6 +48,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use("/uploads", express.static("uploads"));
+
+// Apply response middleware to standardize API responses
+app.use(responseMiddleware);
 
 // Session configuration
 const sessionOptions = {
@@ -64,9 +82,8 @@ app.use(passport.session());
 
 // Health check endpoint
 app.get('/api/health', (_, res) => {
-  res.status(200).json({
+  const healthData = {
     status: 'ok',
-    message: 'Server is running',
     timestamp: new Date().toISOString(),
     mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
     routes: {
@@ -75,31 +92,67 @@ app.get('/api/health', (_, res) => {
       watchlist: true,
       orders: true,
       virtualMoney: true,
-      notifications: true
+      notifications: true,
+      userdata: true,
+      chatHistory: true
     }
-  });
+  };
+  return res.success('Server is running', healthData);
 });
 
 // Simple test endpoint
 app.get('/api/test', (_, res) => {
-  res.json({
-    message: 'API is working correctly',
+  return res.success('API is working correctly', {
     time: new Date().toISOString()
   });
 });
 
 // Public virtual money endpoint for testing
 app.get('/api/virtual-money/public', (_, res) => {
-  res.json({
-    success: true,
-    data: {
-      balance: 10000,
-      balanceFormatted: '₹10,000',
-      lastLoginReward: null,
-      portfolio: [],
-      currency: 'INR'
-    }
-  });
+  const virtualMoneyData = {
+    balance: 10000,
+    balanceFormatted: '₹10,000',
+    lastLoginReward: null,
+    portfolio: [],
+    currency: 'INR'
+  };
+  return res.success('Virtual money data retrieved', virtualMoneyData);
+});
+
+// Test endpoint for reward status
+app.get('/api/virtual-money/test-reward-status', (_, res) => {
+  const rewardData = {
+    canClaim: true,
+    balance: 10000,
+    balanceFormatted: '₹10,000'
+  };
+  return res.success('You can claim your daily reward!', rewardData);
+});
+
+// Public reward status endpoint (no authentication required)
+app.get('/api/virtual-money/public-reward-status', (_, res) => {
+  const now = new Date();
+  // Mock last reward time (12 hours ago)
+  const lastReward = new Date(now.getTime() - (12 * 60 * 60 * 1000));
+  const hoursSinceLastReward = 12;
+
+  // Calculate time remaining
+  const minutesRemaining = Math.ceil((24 - hoursSinceLastReward) * 60);
+  const hoursRemaining = Math.floor(minutesRemaining / 60);
+  const mins = minutesRemaining % 60;
+
+  const rewardStatusData = {
+    canClaim: false,
+    timeRemaining: {
+      hours: hoursRemaining,
+      minutes: mins,
+      totalMinutes: minutesRemaining
+    },
+    balance: 10000,
+    balanceFormatted: '₹10,000'
+  };
+
+  return res.success(`You can claim your next reward in ${hoursRemaining}h ${mins}m`, rewardStatusData);
 });
 
 // Stock search endpoint (public)
@@ -108,97 +161,150 @@ app.get('/api/stocks/search', async (req, res) => {
     const { query } = req.query;
 
     if (!query || query.length < 1) {
-      return res.status(400).json({
-        success: false,
-        message: 'Search query is required'
-      });
+      return res.validationError('Search query is required');
     }
+
+    console.log(`Direct stock search request received for query: "${query}"`);
+
+    // Define a common format for search results
+    let searchResults = [];
+    let apiSource = 'none';
 
     try {
-      // Search for stocks using FMP API
+      // Search for stocks using FMP API with timeout
+      console.log('Attempting to search with FMP API');
       const response = await axios.get(
-        `https://financialmodelingprep.com/api/v3/search?query=${query}&limit=10&apikey=${FMP_API}`
+        `https://financialmodelingprep.com/api/v3/search?query=${query}&limit=15&apikey=${FMP_API}`,
+        { timeout: 5000 } // 5 second timeout
       );
 
-      // Filter out non-stock results and prioritize exact matches
-      let searchResults = response.data
-        .filter(item => item.type === 'stock' || item.type === 'etf')
-        .map(stock => ({
-          symbol: stock.symbol,
-          name: stock.name || stock.symbol,
-          exchange: stock.exchangeShortName || 'Unknown',
-          type: stock.type || 'stock'
-        }));
+      if (response.data && Array.isArray(response.data)) {
+        // Filter out non-stock results and prioritize exact matches
+        searchResults = response.data
+          .filter(item => item.type === 'stock' || item.type === 'etf')
+          .map(stock => ({
+            symbol: stock.symbol,
+            name: stock.name || stock.symbol,
+            exchange: stock.exchangeShortName || 'Unknown',
+            exchangeShortName: stock.exchangeShortName || 'Unknown',
+            type: stock.type || 'stock',
+            country: stock.country || 'Unknown',
+            currency: 'USD' // FMP doesn't provide currency, assume USD
+          }));
 
-      // Sort results: exact symbol matches first, then by symbol length (shorter first)
-      searchResults.sort((a, b) => {
-        // Exact symbol match gets highest priority
-        if (a.symbol.toLowerCase() === query.toLowerCase()) return -1;
-        if (b.symbol.toLowerCase() === query.toLowerCase()) return 1;
-
-        // Starts with the query gets second priority
-        const aStartsWith = a.symbol.toLowerCase().startsWith(query.toLowerCase());
-        const bStartsWith = b.symbol.toLowerCase().startsWith(query.toLowerCase());
-        if (aStartsWith && !bStartsWith) return -1;
-        if (!aStartsWith && bStartsWith) return 1;
-
-        // Shorter symbols get third priority
-        return a.symbol.length - b.symbol.length;
-      });
-
-      res.status(200).json({
-        success: true,
-        data: searchResults,
-        query
-      });
+        apiSource = 'fmp';
+        console.log(`FMP API returned ${searchResults.length} results`);
+      } else {
+        throw new Error('Invalid response format from FMP API');
+      }
     } catch (apiError) {
-      console.error('Error searching for stocks:', apiError);
+      console.error('Error searching for stocks with FMP API:', apiError.message);
 
-      // Fallback to a basic search if API fails
-      // Create mock results based on the query
-      const mockResults = [
-        {
-          symbol: query.toUpperCase(),
-          name: `${query.toUpperCase()} Corporation`,
-          exchange: 'NASDAQ',
-          type: 'stock'
-        },
-        {
-          symbol: `${query.toUpperCase()}.X`,
-          name: `${query.toUpperCase()} Index`,
-          exchange: 'NYSE',
-          type: 'etf'
+      // Try Twelve Data API as fallback
+      try {
+        console.log('Attempting to search with Twelve Data API');
+        const twelveDataResponse = await axios.get(
+          `https://api.twelvedata.com/symbol_search?symbol=${query}&outputsize=20&apikey=${TWELVE_DATA_API_KEY}`,
+          { timeout: 5000 } // 5 second timeout
+        );
+
+        if (twelveDataResponse.data && twelveDataResponse.data.data && Array.isArray(twelveDataResponse.data.data)) {
+          // Map the response to a consistent format
+          searchResults = twelveDataResponse.data.data
+            .filter(item => item.instrument_type === 'Common Stock' ||
+                            item.instrument_type === 'ETF' ||
+                            item.instrument_type === 'Index')
+            .map(stock => ({
+              symbol: stock.symbol,
+              name: stock.instrument_name || stock.symbol,
+              exchange: stock.exchange || 'Unknown',
+              exchangeShortName: stock.exchange || 'Unknown',
+              type: stock.instrument_type === 'Common Stock' ? 'stock' :
+                    stock.instrument_type === 'ETF' ? 'etf' : 'index',
+              country: stock.country || 'Unknown',
+              currency: stock.currency || 'Unknown'
+            }));
+
+          apiSource = 'twelvedata';
+          console.log(`Twelve Data API returned ${searchResults.length} results`);
+        } else {
+          throw new Error('Invalid response format from Twelve Data API');
         }
-      ];
+      } catch (twelveDataError) {
+        console.error('Error with Twelve Data API:', twelveDataError.message);
 
-      res.status(200).json({
-        success: true,
-        data: mockResults,
-        query,
-        note: 'Using fallback data due to API limitations'
-      });
+        // Both APIs failed, use mock data
+        console.log('Both APIs failed, using mock data');
+
+        // Create mock results based on the query
+        searchResults = [
+          {
+            symbol: query.toUpperCase(),
+            name: `${query.toUpperCase()} Corporation`,
+            exchange: 'NASDAQ',
+            exchangeShortName: 'NASDAQ',
+            type: 'stock',
+            country: 'United States',
+            currency: 'USD'
+          },
+          {
+            symbol: `${query.toUpperCase()}.BSE`,
+            name: `${query.toUpperCase()} BSE`,
+            exchange: 'BSE',
+            exchangeShortName: 'BSE',
+            type: 'stock',
+            country: 'India',
+            currency: 'INR'
+          },
+          {
+            symbol: `${query.toUpperCase()}.NSE`,
+            name: `${query.toUpperCase()} NSE`,
+            exchange: 'NSE',
+            exchangeShortName: 'NSE',
+            type: 'stock',
+            country: 'India',
+            currency: 'INR'
+          }
+        ];
+
+        apiSource = 'mock';
+        console.log('Using mock data with 3 results');
+      }
     }
-  } catch (error) {
-    console.error('Error in stock search:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message
+
+    // Sort results: exact symbol matches first, then by symbol length (shorter first)
+    searchResults.sort((a, b) => {
+      // Exact symbol match gets highest priority
+      if (a.symbol.toLowerCase() === query.toLowerCase()) return -1;
+      if (b.symbol.toLowerCase() === query.toLowerCase()) return 1;
+
+      // Starts with the query gets second priority
+      const aStartsWith = a.symbol.toLowerCase().startsWith(query.toLowerCase());
+      const bStartsWith = b.symbol.toLowerCase().startsWith(query.toLowerCase());
+      if (aStartsWith && !bStartsWith) return -1;
+      if (!aStartsWith && bStartsWith) return 1;
+
+      // Prioritize Indian stocks (BSE/NSE) if available
+      const aIsIndian = a.exchange.includes('BSE') || a.exchange.includes('NSE');
+      const bIsIndian = b.exchange.includes('BSE') || b.exchange.includes('NSE');
+      if (aIsIndian && !bIsIndian) return -1;
+      if (!aIsIndian && bIsIndian) return 1;
+
+      // Shorter symbols get fourth priority
+      return a.symbol.length - b.symbol.length;
     });
+
+    return res.success('Stocks retrieved successfully', {
+      results: searchResults,
+      query,
+      source: apiSource,
+      isFallback: apiSource === 'mock'
+    });
+  } catch (error) {
+    console.error('Error in direct stock search:', error);
+    return res.error('Server error', error);
   }
 });
-
-// Import and use routes
-const authRoutes = require("./routes/authRoutes");
-const dataRoutes = require("./routes/apiRoutes");
-const settingsRoutes = require("./routes/settings");
-const chatbotRoutes = require("./chatbot");
-const virtualMoneyRoutes = require("./routes/virtualMoneyRoutes");
-const proxyRoutes = require("./routes/proxyRoutes");
-const { router: notificationRoutes } = require("./routes/notificationRoutes");
-const watchlistRoutes = require("./routes/watchlistRoutes");
-const orderRoutes = require("./routes/orderRoutes");
-const stockSearchRoutes = require("./routes/stockSearchRoutes");
 
 // API Routes
 app.use("/api/auth", authRoutes);
@@ -211,14 +317,13 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/watchlist", watchlistRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/stock-search", stockSearchRoutes);
+app.use("/api/example", exampleRoutes);
+app.use("/api/userdata", userDataRoutes);
 
 // Error handling middleware
-app.use((err, _, res, __) => {
+app.use((err, req, res, next) => {
   console.error("Server error:", err);
-  res.status(500).json({
-    success: false,
-    message: "Internal Server Error"
-  });
+  return res.error("Internal Server Error", err);
 });
 
 // Connect to MongoDB with improved options

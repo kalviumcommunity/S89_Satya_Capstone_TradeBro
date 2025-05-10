@@ -1,19 +1,61 @@
-import React, { useState, useContext, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  FiPlusCircle, FiRefreshCw, FiTrendingUp, FiTrendingDown,
-  FiDollarSign, FiBarChart2, FiCreditCard, FiShoppingCart, FiGift, FiSearch
+  FiRefreshCw, FiTrendingUp, FiTrendingDown,
+  FiDollarSign, FiBarChart2, FiCreditCard, FiGift,
+  FiMaximize2, FiTrash2
 } from "react-icons/fi";
 import { useToast } from "../context/ToastContext";
+import { useAuth } from "../context/AuthContext";
+import { useVirtualMoney } from "../context/VirtualMoneyContext";
 import { safeApiCall, createDummyData } from "../utils/apiUtils";
 import { getCachedStockSymbols, cacheStockSymbols } from "../utils/stockCache";
 import PageLayout from "../components/PageLayout";
 import Loading from "../components/Loading";
-import StockDetail from "../components/StockDetail";
+import FullScreenStockDetail from "../components/FullScreenStockDetail";
 import StockSearch from "../components/StockSearch";
 import axios from "axios";
 import API_ENDPOINTS from "../config/apiConfig";
 import "./portfolio.css";
+
+// Add some additional styles for the clickable rows
+const additionalStyles = `
+  .stock-row {
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .stock-row:hover {
+    background-color: rgba(34, 184, 176, 0.05) !important;
+  }
+
+  .view-detail-btn {
+    background-color: rgba(34, 184, 176, 0.1);
+    color: #22b8b0;
+    border: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-left: 8px;
+  }
+
+  .view-detail-btn:hover {
+    background-color: rgba(34, 184, 176, 0.2);
+    transform: scale(1.1);
+  }
+
+  .pl-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+  }
+`;
 
 const mockPortfolio = [
   {
@@ -34,13 +76,11 @@ const mockPortfolio = [
 
 const PortfolioPage = () => {
   const toast = useToast();
+  const { isAuthenticated, user } = useAuth();
+  const { virtualMoney, fetchVirtualMoney, updateVirtualMoney } = useVirtualMoney();
   const [portfolio, setPortfolio] = useState(mockPortfolio);
   const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [virtualMoney, setVirtualMoney] = useState({
-    balance: 10000,
-    lastLoginReward: null
-  });
   const [showRewardAnimation, setShowRewardAnimation] = useState(false);
   const [newStock, setNewStock] = useState({
     symbol: "",
@@ -51,6 +91,7 @@ const PortfolioPage = () => {
   });
   const [errors, setErrors] = useState({});
   const [selectedStock, setSelectedStock] = useState(null);
+  const [showFullScreenDetail, setShowFullScreenDetail] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [stockSymbols, setStockSymbols] = useState([]);
@@ -99,7 +140,7 @@ const PortfolioPage = () => {
   }, []);
 
   // Handle search
-  const handleSearch = () => {
+  const handleSearch = React.useCallback(() => {
     if (!searchQuery.trim()) {
       setSearchResults([]);
       return;
@@ -111,106 +152,45 @@ const PortfolioPage = () => {
     ).slice(0, 10); // Limit to 10 results
 
     setSearchResults(results);
-  };
+  }, [searchQuery, stockSymbols]);
 
   useEffect(() => {
     handleSearch();
-  }, [searchQuery]);
+  }, [handleSearch]);
 
   // Handle stock selection
   const handleStockSelect = (symbol) => {
     setSelectedStock(symbol);
+    setShowFullScreenDetail(true);
     setSearchQuery("");
     setSearchResults([]);
   };
 
-  // Handle transaction success
-  const handleTransactionSuccess = () => {
-    fetchVirtualMoney();
+  // Handle closing the full-screen detail view
+  const handleCloseFullScreenDetail = () => {
+    setShowFullScreenDetail(false);
+    setSelectedStock(null);
   };
 
-  // Fetch virtual money data
-  const fetchVirtualMoney = async () => {
-    try {
-      // Create fallback data for virtual money
-      const fallbackData = createDummyData({
-        balance: 9500, // Start with less to show some losses
-        portfolio: [
-          {
-            stockSymbol: "AAPL",
-            quantity: 10,
-            averageBuyPrice: 150.25,
-            lastUpdated: new Date().toISOString()
-          },
-          {
-            stockSymbol: "MSFT",
-            quantity: 5,
-            averageBuyPrice: 250.50,
-            lastUpdated: new Date().toISOString()
-          }
-        ],
-        lastLoginReward: null
-      });
+  // Handle transaction success
+  const handleTransactionSuccess = () => {
+    // Show loading indicator
+    setIsLoading(true);
 
-      // Use safe API call with fallback data
-      const result = await safeApiCall({
-        method: 'get',
-        url: API_ENDPOINTS.VIRTUAL_MONEY.ACCOUNT,
-        fallbackData,
-        timeout: 3000
-      });
+    // Fetch updated portfolio data
+    fetchVirtualMoneyData();
 
-      if (result && result.success) {
-        // Check if the data is in the expected format
-        const virtualMoneyData = result.data || result;
+    // Show success toast
+    toast.success("Portfolio updated successfully!");
 
-        setVirtualMoney(virtualMoneyData);
-
-        // Update portfolio with current prices
-        if (virtualMoneyData.portfolio && virtualMoneyData.portfolio.length > 0) {
-          updatePortfolioWithCurrentPrices(virtualMoneyData.portfolio);
-        } else {
-          setPortfolio([]);
-        }
-
-        // If this is fallback data, save to localStorage for future use
-        if (result.isFallbackData) {
-          localStorage.setItem('virtualMoney', JSON.stringify(virtualMoneyData));
-        }
-      }
-
-      // Check if user can claim daily reward
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      if (!virtualMoney.lastLoginReward || new Date(virtualMoney.lastLoginReward) < today) {
-        // Show claim reward button is handled by the button's disabled state
-      }
-    } catch (err) {
-      console.error("Error in virtual money handling:", err);
-
-      // Try to use data from local storage as a last resort
-      const storedData = localStorage.getItem('virtualMoney');
-      if (storedData) {
-        try {
-          const parsedData = JSON.parse(storedData);
-          setVirtualMoney(parsedData);
-
-          if (parsedData.portfolio && parsedData.portfolio.length > 0) {
-            updatePortfolioWithCurrentPrices(parsedData.portfolio);
-          }
-        } catch (e) {
-          console.error("Error parsing stored virtual money data:", e);
-        }
-      }
-
-      // Show error notification to user
-      toast.error("Failed to fetch portfolio data. Server may be down.");
-    }
+    // Hide loading after a short delay
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
   };
 
   // Update portfolio with current prices
-  const updatePortfolioWithCurrentPrices = async (portfolioData) => {
+  const updatePortfolioWithCurrentPrices = React.useCallback(async (portfolioData) => {
     try {
       // Check if the portfolio data already has currentPrice (from server)
       const hasCurrentPrices = portfolioData.some(item => item.currentPrice !== undefined);
@@ -275,8 +255,14 @@ const PortfolioPage = () => {
         return [];
       });
 
+      // Get auth token from localStorage
+      const token = localStorage.getItem('authToken');
+
+      // Set headers with auth token if available
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
       // Get user ID for personalized data if authenticated
-      const userId = localStorage.getItem('userId') || localStorage.getItem('authToken');
+      const userId = user?.id || localStorage.getItem('userId') || token;
 
       // Use safe API call with fallback data
       const result = await safeApiCall({
@@ -284,8 +270,9 @@ const PortfolioPage = () => {
         url: userId
           ? `${API_ENDPOINTS.PROXY.STOCK_BATCH(symbols)}&userId=${userId}`
           : API_ENDPOINTS.PROXY.STOCK_BATCH(symbols),
+        headers,
         fallbackData,
-        timeout: 3000
+        timeout: 5000 // Increase timeout to 5 seconds
       });
 
       if (result && result.data && result.data.length > 0) {
@@ -395,18 +382,156 @@ const PortfolioPage = () => {
         setPortfolio(fallbackPortfolio);
       }
     }
-  };
+  }, [user, safeApiCall]);
+
+  // Fetch virtual money data using context
+  const fetchVirtualMoneyData = React.useCallback(() => {
+    if (!isAuthenticated) return Promise.resolve();
+
+    // Use the fetchVirtualMoney function from context
+    // Wrap in a Promise to ensure we can use .then() and .catch()
+    return Promise.resolve(fetchVirtualMoney(true)); // Force refresh
+  }, [isAuthenticated, fetchVirtualMoney]);
+
+  // Update portfolio when virtual money changes
+  React.useEffect(() => {
+    if (virtualMoney.portfolio && virtualMoney.portfolio.length > 0) {
+      updatePortfolioWithCurrentPrices(virtualMoney.portfolio);
+    } else {
+      setPortfolio([]);
+    }
+  }, [updatePortfolioWithCurrentPrices, virtualMoney]);
+
+  // Handle Google OAuth callback with token in URL
+  const { login } = useAuth();
 
   useEffect(() => {
-    fetchVirtualMoney();
+    // Check for token in URL (from Google OAuth callback)
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    const success = urlParams.get('success');
 
-    // Set up interval to refresh portfolio prices every 15 seconds
+    if (token && success === 'true') {
+      console.log('Google OAuth token found in URL');
+
+      // Remove token from URL to prevent issues on refresh
+      window.history.replaceState({}, document.title, '/portfolio');
+
+      // Show success message
+      toast.success('Successfully logged in with Google!');
+
+      // Fetch user data
+      const fetchUserData = async () => {
+        try {
+          const response = await axios.get('http://localhost:5000/api/auth/user', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+
+          if (response.data && response.data.user) {
+            console.log('User data fetched successfully:', response.data.user);
+
+            // Call login function with token and user data
+            login(token, response.data.user, true);
+
+            // Force a refresh of virtual money data
+            setTimeout(() => {
+              fetchVirtualMoney();
+            }, 500);
+          } else {
+            console.warn('User data response is empty or invalid');
+            // Even if we can't fetch user data, still call login with the token
+            login(token, null, true);
+          }
+        } catch (error) {
+          console.error('Error fetching user data after Google login:', error);
+
+          // Create a basic user object from the token
+          try {
+            // Decode the JWT token to get basic user info
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+              return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+
+            const payload = JSON.parse(jsonPayload);
+            console.log('Decoded token payload:', payload);
+
+            // Create a basic user object from the token payload
+            const basicUserData = {
+              id: payload.id,
+              email: payload.email,
+              username: payload.username || payload.email.split('@')[0],
+              fullName: payload.fullName || payload.username || payload.email.split('@')[0]
+            };
+
+            // Call login with the basic user data
+            login(token, basicUserData, true);
+          } catch (decodeError) {
+            console.error('Error decoding token:', decodeError);
+            // If all else fails, just call login with the token
+            login(token, null, true);
+          }
+        }
+      };
+
+      fetchUserData();
+    }
+  }, [login, toast, fetchVirtualMoneyData]);
+
+  useEffect(() => {
+    // Show loading indicator
+    setIsLoading(true);
+
+    // Initial fetch - don't use Promise chaining since fetchVirtualMoneyData may not return a Promise
+    fetchVirtualMoneyData();
+
+    // Hide loading indicator after a short delay
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
+
+    // Check URL parameters for transaction success
+    const urlParams = new URLSearchParams(window.location.search);
+    const transactionSuccess = urlParams.get('transactionSuccess');
+
+    if (transactionSuccess === 'true') {
+      // Clear URL parameters
+      window.history.replaceState({}, document.title, '/portfolio');
+
+      // Show success toast
+      toast.success("Transaction completed successfully!");
+
+      // Force refresh portfolio data
+      setTimeout(() => {
+        fetchVirtualMoneyData();
+      }, 1000);
+    }
+
+    // Set up interval to refresh portfolio prices every 30 seconds
+    // This is less frequent to prevent rendering loops
     const intervalId = setInterval(() => {
-      fetchVirtualMoney();
-    }, 15000);
+      // Only fetch if the document is visible (user is active)
+      if (document.visibilityState === 'visible') {
+        fetchVirtualMoneyData();
+      }
+    }, 30000); // 30 seconds
 
-    return () => clearInterval(intervalId);
-  }, []);
+    // Set up visibility change listener to fetch when user returns to the app
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchVirtualMoneyData();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Clean up
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [fetchVirtualMoneyData, toast]);
 
   // Function to claim daily login reward
   const claimDailyReward = async () => {
@@ -421,8 +546,21 @@ const PortfolioPage = () => {
       try {
         console.log("Attempting to claim daily reward from API");
 
+        // Get auth token from localStorage
+        const token = localStorage.getItem('authToken');
+
+        // Set headers with auth token if available
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+        // Add user info to request body if available
+        const requestBody = user ? {
+          userId: user.id,
+          userEmail: user.email
+        } : {};
+
         // Add a timeout to the request
-        const response = await axios.post(API_ENDPOINTS.VIRTUAL_MONEY.CLAIM_REWARD, {}, {
+        const response = await axios.post(API_ENDPOINTS.VIRTUAL_MONEY.CLAIM_REWARD, requestBody, {
+          headers,
           timeout: 10000 // 10 second timeout
         });
 
@@ -438,7 +576,7 @@ const PortfolioPage = () => {
           const dayStreak = response.data.data.dayStreak || 1;
 
           // Update virtual money with the new balance and user info
-          setVirtualMoney({
+          updateVirtualMoney({
             ...virtualMoney,
             balance: response.data.data.balance,
             lastLoginReward: new Date(),
@@ -450,7 +588,7 @@ const PortfolioPage = () => {
           console.log("Successfully claimed reward from API");
 
           // Show personalized success message
-          toast.success(response.data.message || `Daily reward claimed: +${rewardAmount} coin!`);
+          toast.success(response.data.message || `Daily reward claimed: +₹${rewardAmount}`);
         } else {
           // Handle unsuccessful response
           toast.error(response.data.message || "Failed to claim reward");
@@ -519,7 +657,7 @@ const PortfolioPage = () => {
           lastLoginReward: new Date()
         };
 
-        setVirtualMoney(updatedVirtualMoney);
+        updateVirtualMoney(updatedVirtualMoney);
 
         // Save to local storage for offline use
         localStorage.setItem('virtualMoney', JSON.stringify(updatedVirtualMoney));
@@ -530,7 +668,7 @@ const PortfolioPage = () => {
           setShowRewardAnimation(false);
         }, 3000);
 
-        toast.success(`Daily reward claimed: +${rewardAmount} coin!`);
+        toast.success(`Daily reward claimed: +₹${rewardAmount}`);
         return true;
       }
 
@@ -630,7 +768,7 @@ const PortfolioPage = () => {
 
     // Check if user has enough virtual money
     if (totalCost > virtualMoney.balance) {
-      toast.error(`Insufficient funds. You need ${totalCost} coins but have ${virtualMoney.balance} coins.`);
+      toast.error(`Insufficient funds. You need ₹${totalCost.toLocaleString('en-IN')} but have ₹${virtualMoney.balance.toLocaleString('en-IN')}.`);
       return;
     }
 
@@ -647,10 +785,10 @@ const PortfolioPage = () => {
 
         if (response.data.success) {
           // Update virtual money and portfolio
-          setVirtualMoney(response.data.data);
+          updateVirtualMoney(response.data.data);
 
           // Fetch updated portfolio data
-          fetchVirtualMoney();
+          fetchVirtualMoneyData();
 
           toast.success(`Successfully purchased ${quantity} shares of ${symbol.toUpperCase()}`);
         }
@@ -686,10 +824,10 @@ const PortfolioPage = () => {
           ]
         };
 
-        setVirtualMoney(updatedVirtualMoney);
+        updateVirtualMoney(updatedVirtualMoney);
         localStorage.setItem('virtualMoney', JSON.stringify(updatedVirtualMoney));
 
-        toast.success(`${symbol.toUpperCase()} added to portfolio! Spent ${totalCost} coins.`);
+        toast.success(`${symbol.toUpperCase()} added to portfolio! Spent ₹${totalCost.toLocaleString('en-IN')}.`);
       }
 
       // Reset form
@@ -720,15 +858,15 @@ const PortfolioPage = () => {
       try {
         // Call API to reset portfolio
         try {
-          const response = await axios.delete("http://localhost:5000/api/virtual-money/portfolio");
+          const response = await axios.delete(API_ENDPOINTS.VIRTUAL_MONEY.PORTFOLIO);
 
           if (response.data.success) {
             // Update virtual money and portfolio
-            fetchVirtualMoney();
+            fetchVirtualMoneyData();
             toast.success("Portfolio has been reset successfully");
           }
         } catch (apiError) {
-          console.log("Backend API not available, using local implementation");
+          console.log("Backend API not available, using local implementation", apiError);
 
           // Local implementation
           const updatedVirtualMoney = {
@@ -736,7 +874,7 @@ const PortfolioPage = () => {
             portfolio: []
           };
 
-          setVirtualMoney(updatedVirtualMoney);
+          updateVirtualMoney(updatedVirtualMoney);
           setPortfolio([]);
           localStorage.setItem('virtualMoney', JSON.stringify(updatedVirtualMoney));
 
@@ -751,6 +889,7 @@ const PortfolioPage = () => {
 
   return (
     <PageLayout>
+      <style>{additionalStyles}</style>
       <motion.div
         className="portfolio-container"
         initial={{ opacity: 0 }}
@@ -850,7 +989,7 @@ const PortfolioPage = () => {
               exit={{ opacity: 0, y: -20 }}
             >
               <FiGift className="reward-icon" />
-              <span>+1 coin!</span>
+              <span>+₹1</span>
             </motion.div>
           )}
         </AnimatePresence>
@@ -861,6 +1000,27 @@ const PortfolioPage = () => {
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.3 }}
         >
+          <div className="portfolio-actions">
+            <motion.button
+              className="refresh-btn"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={fetchVirtualMoneyData}
+              title="Refresh portfolio data"
+            >
+              <FiRefreshCw /> Refresh
+            </motion.button>
+            <motion.button
+              className="reset-btn"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={resetPortfolio}
+              title="Reset portfolio"
+            >
+              <FiTrash2 /> Reset Portfolio
+            </motion.button>
+          </div>
+
           {portfolio.length > 0 ? (
             <table className="portfolio-table">
               <thead>
@@ -886,6 +1046,8 @@ const PortfolioPage = () => {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.1 * idx }}
                       whileHover={{ backgroundColor: "rgba(255, 255, 255, 0.9)" }}
+                      className="stock-row"
+                      onClick={() => handleStockSelect(stock.symbol)}
                     >
                       <td className="symbol-cell">{stock.symbol}</td>
                       <td>{stock.company}</td>
@@ -897,6 +1059,16 @@ const PortfolioPage = () => {
                           <span>₹{stockPL.toLocaleString()}</span>
                           <span className="percentage">({percentChange}%)</span>
                           {stockPL >= 0 ? <FiTrendingUp /> : <FiTrendingDown />}
+                          <button
+                            className="view-detail-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStockSelect(stock.symbol);
+                            }}
+                            title="View details"
+                          >
+                            <FiMaximize2 />
+                          </button>
                         </div>
                       </td>
                     </motion.tr>
@@ -944,7 +1116,7 @@ const PortfolioPage = () => {
                 transition={{ type: "spring", stiffness: 300, damping: 25 }}
               >
                 <h2>Buy Stock with Virtual Money</h2>
-                <p className="modal-subtitle">Available Balance: ${virtualMoney.balance.toLocaleString()} coins</p>
+                <p className="modal-subtitle">Available Balance: ₹{virtualMoney.balance.toLocaleString('en-IN')}</p>
                 <form onSubmit={addStock}>
                   <div className="form-group">
                     <input
@@ -1034,15 +1206,30 @@ const PortfolioPage = () => {
         </AnimatePresence>
       </motion.div>
 
-      {/* Stock Detail Component */}
-      {selectedStock && (
-        <StockDetail
-          symbol={selectedStock}
-          onClose={() => setSelectedStock(null)}
-          onBuySuccess={handleTransactionSuccess}
-          onSellSuccess={handleTransactionSuccess}
-        />
-      )}
+      {/* Full-screen stock detail */}
+      <AnimatePresence>
+        {showFullScreenDetail && selectedStock && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <FullScreenStockDetail
+              symbol={selectedStock}
+              onClose={handleCloseFullScreenDetail}
+              onBuySuccess={() => {
+                handleCloseFullScreenDetail();
+                handleTransactionSuccess();
+              }}
+              onSellSuccess={() => {
+                handleCloseFullScreenDetail();
+                handleTransactionSuccess();
+              }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </PageLayout>
   );
 };

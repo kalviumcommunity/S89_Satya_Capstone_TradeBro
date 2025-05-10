@@ -82,6 +82,14 @@ html {
   z-index: 1000;
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
   border-bottom: 1px solid rgba(27, 142, 153, 0.1);
+  transition: all 0.3s ease;
+}
+
+/* Scrolled navbar style */
+.navbar.scrolled {
+  padding: 0.7rem 2rem;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 5px 30px rgba(0, 0, 0, 0.1);
 }
 
 .logo {
@@ -193,7 +201,7 @@ html {
   }
 }
 
-.hero-content h1 {
+.hero-content h1, .hero-title {
   font-size: 4rem;
   font-weight: 800;
   margin-bottom: 2rem;
@@ -203,6 +211,25 @@ html {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+}
+
+/* Text animation styles */
+.text-rotate {
+  display: inline-flex;
+  flex-wrap: wrap;
+}
+
+.text-rotate-word {
+  display: inline-flex;
+  margin-right: 0.25em;
+}
+
+.text-rotate-element {
+  display: inline-block;
+}
+
+.text-rotate-space {
+  width: 0.25em;
 }
 
 @media (max-width: 768px) {
@@ -405,11 +432,17 @@ html {
   transition: all var(--transition-medium);
 }
 
+/* We'll keep the hover styles for non-JS users, but our animation components will handle most of this */
 .features-section .feature:hover {
   transform: translateY(-10px) scale(1.02);
   box-shadow: var(--shadow-feature);
   border-color: rgba(27, 142, 153, 0.15);
   background: rgba(255, 255, 255, 0.85);
+}
+
+/* Animation specific styles */
+.features-section .feature {
+  will-change: transform, box-shadow;
 }
 
 .features-section .feature:hover::after {
@@ -852,6 +885,7 @@ html {
   grid-template-columns: repeat(1, 1fr);
   gap: 2rem;
   margin-top: 2rem;
+  will-change: transform, opacity;
 }
 
 @media (min-width: 576px) {
@@ -1210,6 +1244,7 @@ html {
   flex-direction: column;
   gap: 2rem;
   margin-top: 2rem;
+  will-change: transform, opacity;
 }
 
 @media (min-width: 768px) {
@@ -1458,4 +1493,38 @@ html {
 
 .gallery-item:hover .gallery-caption {
   transform: translateY(0);
+}
+
+/* Additional Animation Styles */
+.hero-title {
+  display: inline-block;
+}
+
+/* Scrolled navbar style */
+.navbar.scrolled {
+  padding: 0.7rem 2rem;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 5px 30px rgba(0, 0, 0, 0.1);
+}
+
+/* Animation specific styles */
+.section-title {
+  will-change: transform, opacity;
+}
+
+/* Parallax section styles */
+.about-section {
+  will-change: transform;
+  overflow: visible;
+}
+
+/* Contact form animation styles */
+.contact-form input,
+.contact-form textarea {
+  will-change: transform, box-shadow;
+}
+
+/* Footer link animation styles */
+.footer a {
+  will-change: transform, color;
 }

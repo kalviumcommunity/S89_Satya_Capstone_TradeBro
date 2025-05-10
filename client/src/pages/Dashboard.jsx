@@ -8,28 +8,25 @@ import {
 import axios from "axios";
 import { useToast } from "../context/ToastContext";
 import { useAuth } from "../context/AuthContext";
+import { useVirtualMoney } from "../context/VirtualMoneyContext";
 import { safeApiCall, createDummyData } from "../utils/apiUtils";
 import { addToSearchHistory, getRecentSearches, clearSearchHistory } from "../utils/searchHistoryUtils";
 import API_ENDPOINTS from "../config/apiConfig";
 import PageLayout from "../components/PageLayout";
 import Loading from "../components/Loading";
-import StockDetail from "../components/StockDetail";
+import FullPageStockChart from "../components/FullPageStockChart";
 import "./Dashboard.css";
 
 const Dashboard = () => {
   const { isAuthenticated } = useAuth();
   const toast = useToast();
+  const { virtualMoney, loading: virtualMoneyLoading, fetchVirtualMoney } = useVirtualMoney();
   const [loading, setLoading] = useState(true);
   const [marketData, setMarketData] = useState({
     indices: [],
     topGainers: [],
     topLosers: [],
     marketStatus: "open"
-  });
-  const [virtualMoney, setVirtualMoney] = useState({
-    balance: 10000,
-    lastLoginReward: null,
-    portfolio: []
   });
   const [showRewardAnimation, setShowRewardAnimation] = useState(false);
   const [selectedStock, setSelectedStock] = useState(null);
@@ -108,76 +105,19 @@ const Dashboard = () => {
     fetchMarketData();
   }, []);
 
-  // Fetch virtual money data
-  const fetchVirtualMoney = async () => {
-    if (!isAuthenticated) return;
-
-    try {
-      // Create fallback data function
-      const fallbackData = createDummyData({
-        balance: 10000,
-        portfolio: [
-          {
-            stockSymbol: "AAPL",
-            quantity: 10,
-            averageBuyPrice: 150.25,
-            currentPrice: 145.75,
-            totalValue: 1457.50,
-            profitLoss: -47.50,
-            profitLossPercentage: -3.16
-          },
-          {
-            stockSymbol: "MSFT",
-            quantity: 5,
-            averageBuyPrice: 250.50,
-            currentPrice: 260.25,
-            totalValue: 1301.25,
-            profitLoss: 48.75,
-            profitLossPercentage: 3.89
-          }
-        ],
-        lastLoginReward: null
+  // Update portfolio summary when virtual money data changes
+  useEffect(() => {
+    if (virtualMoney && virtualMoney.portfolio && virtualMoney.portfolio.length > 0) {
+      updatePortfolioSummary(virtualMoney.portfolio);
+    } else {
+      setPortfolioSummary({
+        totalInvestment: 0,
+        totalValue: 0,
+        profitLoss: 0,
+        profitLossPercentage: 0
       });
-
-      // Use safe API call with fallback data
-      // Try the public endpoint first for testing
-      const result = await safeApiCall({
-        method: 'get',
-        url: API_ENDPOINTS.VIRTUAL_MONEY.PUBLIC,
-        fallbackData,
-        timeout: 3000
-      });
-
-      if (result && result.success) {
-        setVirtualMoney(result.data);
-
-        // Update portfolio summary
-        if (result.data.portfolio && result.data.portfolio.length > 0) {
-          updatePortfolioSummary(result.data.portfolio);
-        }
-
-        // If this is fallback data, save to localStorage for future use
-        if (result.isFallbackData) {
-          localStorage.setItem('virtualMoney', JSON.stringify(result.data));
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching virtual money data:", error);
-      toast.error("Failed to fetch virtual money data");
-
-      // Try to use data from localStorage as a last resort
-      const storedData = localStorage.getItem('virtualMoney');
-      if (storedData) {
-        try {
-          const parsedData = JSON.parse(storedData);
-          setVirtualMoney(parsedData);
-          updatePortfolioSummary(parsedData.portfolio || []);
-        } catch (e) {
-          console.error("Error parsing stored virtual money data:", e);
-        }
-      }
     }
-  };
+  }, [virtualMoney]);
 
   // Update portfolio summary
   const updatePortfolioSummary = async (portfolioData) => {
@@ -245,16 +185,8 @@ const Dashboard = () => {
     }
   };
 
-  useEffect(() => {
-    fetchVirtualMoney();
-
-    // Set up interval to refresh data every 15 seconds for more frequent updates
-    const virtualMoneyIntervalId = setInterval(() => {
-      fetchVirtualMoney();
-    }, 15000);
-
-    return () => clearInterval(virtualMoneyIntervalId);
-  }, [isAuthenticated]);
+  // No need for an interval to refresh virtual money data
+  // The VirtualMoneyContext already handles periodic refreshes
 
   // No automatic refresh of market data
 
@@ -301,9 +233,14 @@ const Dashboard = () => {
       };
 
       // Use safe API call with fallback data
+      // Use the public endpoint for non-authenticated users, otherwise use the authenticated endpoint
+      const endpoint = isAuthenticated
+        ? API_ENDPOINTS.VIRTUAL_MONEY.REWARD_STATUS
+        : API_ENDPOINTS.VIRTUAL_MONEY.REWARD_STATUS_PUBLIC;
+
       const result = await safeApiCall({
         method: 'get',
-        url: API_ENDPOINTS.VIRTUAL_MONEY.REWARD_STATUS,
+        url: endpoint,
         fallbackData,
         timeout: 3000
       });
@@ -361,81 +298,37 @@ const Dashboard = () => {
   }, [isAuthenticated, virtualMoney.lastLoginReward]);
 
   // Function to claim daily login reward
-  const claimDailyReward = async () => {
+  const handleClaimDailyReward = async () => {
     if (!rewardStatus.canClaim) {
       toast.info(rewardStatus.message);
       return false;
     }
 
     try {
-      // Create fallback data for claiming reward
-      const fallbackData = () => {
-        // Get current virtual money data
-        const storedData = localStorage.getItem('virtualMoney');
-        let currentData = storedData ? JSON.parse(storedData) : { balance: 10000, portfolio: [] };
+      // Use axios to claim the reward
+      const response = await axios.post(API_ENDPOINTS.VIRTUAL_MONEY.CLAIM_REWARD);
 
-        // Update the data with reward
-        const updatedData = {
-          ...currentData,
-          balance: (currentData.balance || 0) + 1,
-          lastLoginReward: new Date().toISOString()
-        };
+      if (response.data && response.data.success) {
+        // Show animation and toast
+        setShowRewardAnimation(true);
+        setTimeout(() => {
+          setShowRewardAnimation(false);
+        }, 3000);
 
-        // Save to localStorage
-        localStorage.setItem('virtualMoney', JSON.stringify(updatedData));
+        toast.success(`Daily reward claimed: +₹1`);
 
-        return {
-          success: true,
-          data: {
-            rewardAmount: 1
-          }
-        };
-      };
+        // Refresh virtual money data
+        fetchVirtualMoney(true);
 
-      // Use safe API call with fallback data
-      const result = await safeApiCall({
-        method: 'post',
-        url: API_ENDPOINTS.VIRTUAL_MONEY.CLAIM_REWARD,
-        fallbackData,
-        timeout: 3000
-      });
+        // Update reward status
+        checkRewardStatus();
 
-      console.log('Claim reward result:', result);
+        // Save the claim time to localStorage
+        localStorage.setItem('lastRewardClaim', new Date().getTime().toString());
 
-      if (result) {
-        if (result.success) {
-          // Update virtual money state
-          fetchVirtualMoney();
-
-          // Show animation and toast
-          setShowRewardAnimation(true);
-          setTimeout(() => {
-            setShowRewardAnimation(false);
-          }, 3000);
-
-          // Get reward amount from the response
-          let rewardAmount = 1; // Default value
-          if (result.data && result.data.rewardAmount) {
-            rewardAmount = result.data.rewardAmount;
-          } else if (result.rewardAmount) {
-            rewardAmount = result.rewardAmount;
-          }
-
-          toast.success(`Daily reward claimed: +${rewardAmount} coin!`);
-
-          // Update reward status
-          checkRewardStatus();
-
-          // Save the claim time to localStorage
-          localStorage.setItem('lastRewardClaim', new Date().getTime().toString());
-
-          return true;
-        } else {
-          toast.info(result.message || "Failed to claim reward");
-          return false;
-        }
+        return true;
       } else {
-        toast.info("Failed to claim reward");
+        toast.info(response.data?.message || "Failed to claim reward");
         return false;
       }
     } catch (error) {
@@ -469,13 +362,22 @@ const Dashboard = () => {
     // Update recent searches
     setRecentSearches(getRecentSearches());
 
+    // Clear search input and hide results
+    setSearchQuery("");
+    setIsSearching(false);
+    setShowRecentSearches(false);
+
     // Set selected stock
     setSelectedStock(symbol);
+
+    // Show a toast notification to confirm selection
+    toast.success(`Selected ${symbol} - ${stockData.name || 'Stock'}`);
   };
 
   // Handle transaction success
   const handleTransactionSuccess = () => {
-    fetchVirtualMoney();
+    // Refresh virtual money data
+    fetchVirtualMoney(true);
   };
 
   // Add stock to watchlist
@@ -660,7 +562,7 @@ const Dashboard = () => {
   // Clear search
   const clearSearch = () => {
     setSearchQuery("");
-    setSearchResults([]);
+    // Don't clear search results, just hide them
     setIsSearching(false);
     setShowRecentSearches(false);
   };
@@ -694,7 +596,9 @@ const Dashboard = () => {
                 className="search-input"
                 onFocus={() => {
                   setIsSearching(true);
-                  if (!searchQuery) {
+                  if (searchResults.length > 0) {
+                    // Show existing search results if available
+                  } else if (!searchQuery) {
                     setShowRecentSearches(true);
                   }
                 }}
@@ -722,6 +626,13 @@ const Dashboard = () => {
                   <>
                     <div className="search-results-header">
                       <span>Search Results</span>
+                      <button
+                        className="clear-search-btn"
+                        onClick={() => setIsSearching(false)}
+                        title="Close Results"
+                      >
+                        <FiX />
+                      </button>
                     </div>
                     {searchResults.map(stock => (
                       <div
@@ -766,22 +677,46 @@ const Dashboard = () => {
                     ))}
                   </>
                 ) : searchQuery.length > 0 ? (
-                  <div className="no-results">No stocks found</div>
+                  <>
+                    <div className="search-results-header">
+                      <span>Search Results</span>
+                      <button
+                        className="clear-search-btn"
+                        onClick={() => setIsSearching(false)}
+                        title="Close Results"
+                      >
+                        <FiX />
+                      </button>
+                    </div>
+                    <div className="no-results">
+                      <FiAlertCircle className="no-results-icon" />
+                      <p>No stocks found matching "{searchQuery}"</p>
+                    </div>
+                  </>
                 ) : showRecentSearches && recentSearches.length > 0 ? (
                   <>
                     <div className="search-results-header">
                       <span>Recent Searches</span>
-                      <button
-                        className="clear-history-btn"
-                        onClick={() => {
-                          clearSearchHistory();
-                          setRecentSearches([]);
-                          setShowRecentSearches(false);
-                        }}
-                        title="Clear History"
-                      >
-                        <FiTrash2 />
-                      </button>
+                      <div className="header-buttons">
+                        <button
+                          className="clear-history-btn"
+                          onClick={() => {
+                            clearSearchHistory();
+                            setRecentSearches([]);
+                            setShowRecentSearches(false);
+                          }}
+                          title="Clear History"
+                        >
+                          <FiTrash2 />
+                        </button>
+                        <button
+                          className="clear-search-btn"
+                          onClick={() => setIsSearching(false)}
+                          title="Close Results"
+                        >
+                          <FiX />
+                        </button>
+                      </div>
                     </div>
                     {recentSearches.map(stock => (
                       <div
@@ -853,12 +788,12 @@ const Dashboard = () => {
                   animate={{ scale: [1, 1.1, 1] }}
                   transition={{ duration: 0.5 }}
                 >
-                  ${virtualMoney.balance.toLocaleString()}
+                  ₹{virtualMoney.balance.toLocaleString('en-IN')}
                 </motion.h2>
                 <div className="reward-button-container">
                   <button
                     className={`claim-reward-btn ${!rewardStatus.canClaim ? 'claimed' : ''}`}
-                    onClick={claimDailyReward}
+                    onClick={handleClaimDailyReward}
                     disabled={!rewardStatus.canClaim}
                   >
                     <FiGift /> {rewardStatus.canClaim ? 'Claim Daily Reward' : rewardStatus.message}
@@ -871,7 +806,7 @@ const Dashboard = () => {
               >
                 <FiDollarSign className="card-icon" />
                 <p>Total Investment</p>
-                <h2>${portfolioSummary.totalInvestment.toLocaleString(undefined, {maximumFractionDigits: 2})}</h2>
+                <h2>₹{portfolioSummary.totalInvestment.toLocaleString('en-IN', {maximumFractionDigits: 2})}</h2>
               </motion.div>
               <motion.div
                 className="summary-card glass"
@@ -879,7 +814,7 @@ const Dashboard = () => {
               >
                 <FiBarChart2 className="card-icon" />
                 <p>Current Value</p>
-                <h2>${portfolioSummary.totalValue.toLocaleString(undefined, {maximumFractionDigits: 2})}</h2>
+                <h2>₹{portfolioSummary.totalValue.toLocaleString('en-IN', {maximumFractionDigits: 2})}</h2>
               </motion.div>
               <motion.div
                 className={`summary-card glass ${
@@ -893,7 +828,7 @@ const Dashboard = () => {
                   <FiTrendingDown className="card-icon" />
                 )}
                 <p>Profit / Loss</p>
-                <h2>${portfolioSummary.profitLoss.toLocaleString(undefined, {maximumFractionDigits: 2})}</h2>
+                <h2>₹{portfolioSummary.profitLoss.toLocaleString('en-IN', {maximumFractionDigits: 2})}</h2>
                 <p className="percentage">
                   ({portfolioSummary.profitLossPercentage.toFixed(2)}%)
                 </p>
@@ -987,7 +922,7 @@ const Dashboard = () => {
                           animate={{ scale: [1, 1.05, 1] }} // Pulse animation
                           transition={{ duration: 0.5 }}
                         >
-                          ${stock.price.toFixed(2)}
+                          ₹{stock.price.toFixed(2)}
                         </motion.div>
                         <div className="mover-change">
                           <FiTrendingUp />
@@ -1048,7 +983,7 @@ const Dashboard = () => {
                           animate={{ scale: [1, 1.05, 1] }} // Pulse animation
                           transition={{ duration: 0.5 }}
                         >
-                          ${stock.price.toFixed(2)}
+                          ₹{stock.price.toFixed(2)}
                         </motion.div>
                         <div className="mover-change">
                           <FiTrendingDown />
@@ -1073,18 +1008,17 @@ const Dashboard = () => {
               exit={{ opacity: 0, y: -20 }}
             >
               <FiGift className="reward-icon" />
-              <span>+1 coin!</span>
+              <span>+₹1</span>
             </motion.div>
           )}
         </AnimatePresence>
 
         {/* Stock Detail Component */}
         {selectedStock && (
-          <StockDetail
+          <FullPageStockChart
             symbol={selectedStock}
             onClose={() => setSelectedStock(null)}
-            onBuySuccess={handleTransactionSuccess}
-            onSellSuccess={handleTransactionSuccess}
+            onTransactionSuccess={handleTransactionSuccess}
           />
         )}
       </div>

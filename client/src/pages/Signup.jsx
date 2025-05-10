@@ -49,8 +49,11 @@ const Signup = () => {
       }
 
       setSuccess(true);
-      setTimeout(() => setSuccess(false), 2000);
-      setTimeout(() => navigate("/portfolio"), 1000);
+      setTimeout(() => setSuccess(false), 1000);
+      setTimeout(() => {
+        console.log("Redirecting to portfolio page after signup");
+        navigate("/portfolio", { replace: true });
+      }, 1200);
     } catch (err) {
       console.error("Signup error:", err.response?.data || err.message);
       alert("Signup failed. Please try again.");

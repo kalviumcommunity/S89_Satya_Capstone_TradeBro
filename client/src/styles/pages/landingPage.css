@@ -185,11 +185,25 @@ html {
   z-index: 1;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 992px) {
   .hero-section {
     flex-direction: row;
     text-align: left;
     padding: 8rem 8rem 4rem;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  .hero-section {
+    flex-direction: row;
+    text-align: left;
+    padding: 6rem 4rem 3rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .hero-section {
+    padding: 5rem 1.5rem 2rem;
   }
 }
 
@@ -353,6 +367,34 @@ html {
   }
 }
 
+@media (max-width: 768px) {
+  .features-section {
+    padding: var(--spacing-lg) var(--spacing-md);
+    margin: 1.5rem 0;
+  }
+
+  .features-section .features-grid {
+    gap: 2rem;
+    margin-top: 3rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .features-section {
+    padding: var(--spacing-md) var(--spacing-sm);
+    margin: 1rem 0;
+  }
+
+  .features-section .features-grid {
+    gap: 1.5rem;
+    margin-top: 2rem;
+  }
+
+  .features-section::before {
+    height: 150px;
+  }
+}
+
 .section-title {
   font-size: 2.8rem;
   text-align: center;
@@ -378,6 +420,31 @@ html {
   border-radius: 3px;
 }
 
+@media (max-width: 768px) {
+  .section-title {
+    font-size: 2.4rem;
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .section-title::after {
+    width: 50px;
+    bottom: -10px;
+  }
+}
+
+@media (max-width: 576px) {
+  .section-title {
+    font-size: 2rem;
+    margin-bottom: var(--spacing-md);
+  }
+
+  .section-title::after {
+    width: 40px;
+    height: 2px;
+    bottom: -8px;
+  }
+}
+
 .features-section .feature {
   background: rgba(255, 255, 255, 0.7);
   padding: var(--spacing-xl);
@@ -390,6 +457,18 @@ html {
   overflow: hidden;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+}
+
+@media (max-width: 768px) {
+  .features-section .feature {
+    padding: var(--spacing-lg);
+  }
+}
+
+@media (max-width: 576px) {
+  .features-section .feature {
+    padding: var(--spacing-md);
+  }
 }
 
 .features-section .feature::after {
@@ -475,6 +554,30 @@ html {
 
 .features-section .feature:hover p {
   color: var(--text-color);
+}
+
+@media (max-width: 768px) {
+  .features-section .feature h3 {
+    margin-bottom: var(--spacing-sm);
+    font-size: 1.6rem;
+  }
+
+  .features-section .feature p {
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+}
+
+@media (max-width: 576px) {
+  .features-section .feature h3 {
+    margin-bottom: var(--spacing-xs);
+    font-size: 1.4rem;
+  }
+
+  .features-section .feature p {
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
 }
 
 /* Feature Icon Styles */

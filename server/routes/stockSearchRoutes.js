@@ -9,7 +9,7 @@ const TWELVE_DATA_API_KEY = process.env.TWELVE_DATA_API_KEY;
 
 /**
  * @route   GET /api/stock-search
- * @desc    Search for stocks using Twelve Data API
+ * @desc    Search for stocks using Twelve Data API with fallback to FMP API
  * @access  Public
  */
 router.get('/', async (req, res) => {
@@ -23,15 +23,24 @@ router.get('/', async (req, res) => {
       });
     }
 
+    console.log(`Stock search request received for query: "${query}"`);
+
+    // Define a common format for search results
+    let searchResults = [];
+    let apiSource = 'none';
+    let apiError = null;
+
+    // Try Twelve Data API first
     try {
-      // Search for stocks using Twelve Data API
+      console.log('Attempting to search with Twelve Data API');
       const response = await axios.get(
-        `https://api.twelvedata.com/symbol_search?symbol=${query}&outputsize=20&apikey=${TWELVE_DATA_API_KEY}`
+        `https://api.twelvedata.com/symbol_search?symbol=${query}&outputsize=20&apikey=${TWELVE_DATA_API_KEY}`,
+        { timeout: 5000 } // 5 second timeout
       );
 
-      if (response.data && response.data.data) {
+      if (response.data && response.data.data && Array.isArray(response.data.data)) {
         // Map the response to a consistent format
-        let searchResults = response.data.data
+        searchResults = response.data.data
           .filter(item => item.instrument_type === 'Common Stock' ||
                           item.instrument_type === 'ETF' ||
                           item.instrument_type === 'Index')
@@ -39,81 +48,122 @@ router.get('/', async (req, res) => {
             symbol: stock.symbol,
             name: stock.instrument_name || stock.symbol,
             exchange: stock.exchange || 'Unknown',
+            exchangeShortName: stock.exchange || 'Unknown',
             type: stock.instrument_type === 'Common Stock' ? 'stock' :
                   stock.instrument_type === 'ETF' ? 'etf' : 'index',
             country: stock.country || 'Unknown',
             currency: stock.currency || 'Unknown'
           }));
 
-        // Sort results: exact symbol matches first, then by symbol length (shorter first)
-        searchResults.sort((a, b) => {
-          // Exact symbol match gets highest priority
-          if (a.symbol.toLowerCase() === query.toLowerCase()) return -1;
-          if (b.symbol.toLowerCase() === query.toLowerCase()) return 1;
-
-          // Starts with the query gets second priority
-          const aStartsWith = a.symbol.toLowerCase().startsWith(query.toLowerCase());
-          const bStartsWith = b.symbol.toLowerCase().startsWith(query.toLowerCase());
-          if (aStartsWith && !bStartsWith) return -1;
-          if (!aStartsWith && bStartsWith) return 1;
-
-          // Prioritize Indian stocks (BSE/NSE) if available
-          const aIsIndian = a.exchange.includes('BSE') || a.exchange.includes('NSE');
-          const bIsIndian = b.exchange.includes('BSE') || b.exchange.includes('NSE');
-          if (aIsIndian && !bIsIndian) return -1;
-          if (!aIsIndian && bIsIndian) return 1;
-
-          // Shorter symbols get fourth priority
-          return a.symbol.length - b.symbol.length;
-        });
-
-        res.status(200).json({
-          success: true,
-          data: searchResults,
-          query
-        });
+        apiSource = 'twelvedata';
+        console.log(`Twelve Data API returned ${searchResults.length} results`);
       } else {
         throw new Error('Invalid response format from Twelve Data API');
       }
-    } catch (apiError) {
-      console.error('Error searching for stocks:', apiError);
+    } catch (twelveDataError) {
+      console.error('Error with Twelve Data API:', twelveDataError.message);
+      apiError = twelveDataError;
 
-      // Fallback to a basic search if API fails
-      // Create mock results based on the query
-      const mockResults = [
-        {
-          symbol: `${query.toUpperCase()}.BSE`,
-          name: `${query.toUpperCase()} BSE`,
-          exchange: 'BSE',
-          type: 'stock',
-          country: 'India',
-          currency: 'INR'
-        },
-        {
-          symbol: `${query.toUpperCase()}.NSE`,
-          name: `${query.toUpperCase()} NSE`,
-          exchange: 'NSE',
-          type: 'stock',
-          country: 'India',
-          currency: 'INR'
-        },
-        {
-          symbol: query.toUpperCase(),
-          name: `${query.toUpperCase()} Corporation`,
-          exchange: 'NASDAQ',
-          type: 'stock',
-          country: 'United States',
-          currency: 'USD'
+      // Try FMP API as fallback
+      try {
+        console.log('Attempting to search with FMP API');
+        const fmpResponse = await axios.get(
+          `https://financialmodelingprep.com/api/v3/search?query=${query}&limit=20&apikey=${FMP_API_KEY}`,
+          { timeout: 5000 } // 5 second timeout
+        );
+
+        if (fmpResponse.data && Array.isArray(fmpResponse.data)) {
+          // Map FMP response to our consistent format
+          searchResults = fmpResponse.data
+            .filter(item => item.type === 'stock' || item.type === 'etf')
+            .map(stock => ({
+              symbol: stock.symbol,
+              name: stock.name || stock.symbol,
+              exchange: stock.exchange || stock.exchangeShortName || 'Unknown',
+              exchangeShortName: stock.exchangeShortName || stock.exchange || 'Unknown',
+              type: stock.type || 'stock',
+              country: stock.country || 'Unknown',
+              currency: 'USD' // FMP doesn't provide currency, assume USD
+            }));
+
+          apiSource = 'fmp';
+          console.log(`FMP API returned ${searchResults.length} results`);
+        } else {
+          throw new Error('Invalid response format from FMP API');
         }
-      ];
+      } catch (fmpError) {
+        console.error('Error with FMP API:', fmpError.message);
 
-      res.status(200).json({
-        success: true,
-        data: mockResults,
-        query,
-        note: 'Using fallback data due to API limitations'
-      });
+        // Both APIs failed, use mock data
+        console.log('Both APIs failed, using mock data');
+
+        // Create mock results based on the query
+        searchResults = [
+          {
+            symbol: `${query.toUpperCase()}.BSE`,
+            name: `${query.toUpperCase()} BSE`,
+            exchange: 'BSE',
+            exchangeShortName: 'BSE',
+            type: 'stock',
+            country: 'India',
+            currency: 'INR'
+          },
+          {
+            symbol: `${query.toUpperCase()}.NSE`,
+            name: `${query.toUpperCase()} NSE`,
+            exchange: 'NSE',
+            exchangeShortName: 'NSE',
+            type: 'stock',
+            country: 'India',
+            currency: 'INR'
+          },
+          {
+            symbol: query.toUpperCase(),
+            name: `${query.toUpperCase()} Corporation`,
+            exchange: 'NASDAQ',
+            exchangeShortName: 'NASDAQ',
+            type: 'stock',
+            country: 'United States',
+            currency: 'USD'
+          }
+        ];
+
+        apiSource = 'mock';
+        console.log('Using mock data with 3 results');
+      }
     }
+
+    // Sort results regardless of source
+    searchResults.sort((a, b) => {
+      // Exact symbol match gets highest priority
+      if (a.symbol.toLowerCase() === query.toLowerCase()) return -1;
+      if (b.symbol.toLowerCase() === query.toLowerCase()) return 1;
+
+      // Starts with the query gets second priority
+      const aStartsWith = a.symbol.toLowerCase().startsWith(query.toLowerCase());
+      const bStartsWith = b.symbol.toLowerCase().startsWith(query.toLowerCase());
+      if (aStartsWith && !bStartsWith) return -1;
+      if (!aStartsWith && bStartsWith) return 1;
+
+      // Prioritize Indian stocks (BSE/NSE) if available
+      const aIsIndian = a.exchange.includes('BSE') || a.exchange.includes('NSE');
+      const bIsIndian = b.exchange.includes('BSE') || b.exchange.includes('NSE');
+      if (aIsIndian && !bIsIndian) return -1;
+      if (!aIsIndian && bIsIndian) return 1;
+
+      // Shorter symbols get fourth priority
+      return a.symbol.length - b.symbol.length;
+    });
+
+    // Return the results
+    res.status(200).json({
+      success: true,
+      data: searchResults,
+      query,
+      source: apiSource,
+      note: apiSource === 'mock' ? 'Using fallback data due to API limitations' : undefined
+    });
+
   } catch (error) {
     console.error('Error in stock search:', error);
     res.status(500).json({

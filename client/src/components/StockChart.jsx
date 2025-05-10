@@ -18,15 +18,28 @@ import Loading from "./Loading";
 import API_ENDPOINTS from "../config/apiConfig";
 import "../styles/StockChart.css";
 
-const StockChart = ({ symbol }) => {
+const StockChart = ({ symbol, timeRange: propTimeRange, chartType: propChartType, fullscreen = false }) => {
   const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [timeRange, setTimeRange] = useState("1week"); // Default to 1 week
+  const [timeRange, setTimeRange] = useState(propTimeRange || "1week"); // Use prop if provided
   const [intradayData, setIntradayData] = useState([]);
-  const [chartType, setChartType] = useState("line"); // Default to line chart
+  const [chartType, setChartType] = useState(propChartType || "line"); // Use prop if provided
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipInfo, setTooltipInfo] = useState({ x: 0, y: 0, content: "" });
+
+  // Update internal state when props change
+  useEffect(() => {
+    if (propTimeRange) {
+      setTimeRange(propTimeRange);
+    }
+  }, [propTimeRange]);
+
+  useEffect(() => {
+    if (propChartType) {
+      setChartType(propChartType);
+    }
+  }, [propChartType]);
 
   useEffect(() => {
     const fetchChartData = async () => {
@@ -369,37 +382,57 @@ const StockChart = ({ symbol }) => {
   // Custom tooltip component
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
+      const isPositiveChange = payload[0].payload.open
+        ? payload[0].value >= payload[0].payload.open
+        : true;
+
       return (
         <div className="custom-tooltip">
-          <p className="tooltip-date">{label}</p>
-          <p className="tooltip-price">
-            <span className="label">Price: </span>
-            <span className="value">${payload[0].value.toFixed(2)}</span>
-          </p>
-          {payload[0].payload.open && (
-            <p className="tooltip-open">
-              <span className="label">Open: </span>
-              <span className="value">${payload[0].payload.open.toFixed(2)}</span>
-            </p>
-          )}
-          {payload[0].payload.high && (
-            <p className="tooltip-high">
-              <span className="label">High: </span>
-              <span className="value">${payload[0].payload.high.toFixed(2)}</span>
-            </p>
-          )}
-          {payload[0].payload.low && (
-            <p className="tooltip-low">
-              <span className="label">Low: </span>
-              <span className="value">${payload[0].payload.low.toFixed(2)}</span>
-            </p>
-          )}
-          {payload[0].payload.volume && (
-            <p className="tooltip-volume">
-              <span className="label">Volume: </span>
-              <span className="value">{payload[0].payload.volume.toLocaleString()}</span>
-            </p>
-          )}
+          <div className="tooltip-header">
+            <span className="tooltip-date">{label}</span>
+            <span className={`tooltip-change ${isPositiveChange ? 'positive' : 'negative'}`}>
+              {isPositiveChange ? <i className="fas fa-caret-up"></i> : <i className="fas fa-caret-down"></i>}
+            </span>
+          </div>
+
+          <div className="tooltip-price">
+            <span className="value">₹{payload[0].value.toLocaleString()}</span>
+          </div>
+
+          <div className="tooltip-details">
+            {payload[0].payload.open && (
+              <div className="tooltip-row">
+                <span className="label">
+                  <i className="tooltip-icon far fa-circle"></i> Open
+                </span>
+                <span className="value">₹{payload[0].payload.open.toLocaleString()}</span>
+              </div>
+            )}
+            {payload[0].payload.high && (
+              <div className="tooltip-row">
+                <span className="label">
+                  <i className="tooltip-icon fas fa-arrow-up" style={{ color: '#26a69a' }}></i> High
+                </span>
+                <span className="value high">₹{payload[0].payload.high.toLocaleString()}</span>
+              </div>
+            )}
+            {payload[0].payload.low && (
+              <div className="tooltip-row">
+                <span className="label">
+                  <i className="tooltip-icon fas fa-arrow-down" style={{ color: '#ef5350' }}></i> Low
+                </span>
+                <span className="value low">₹{payload[0].payload.low.toLocaleString()}</span>
+              </div>
+            )}
+            {payload[0].payload.volume && (
+              <div className="tooltip-row">
+                <span className="label">
+                  <i className="tooltip-icon fas fa-exchange-alt"></i> Volume
+                </span>
+                <span className="value">{payload[0].payload.volume.toLocaleString()}</span>
+              </div>
+            )}
+          </div>
         </div>
       );
     }
@@ -407,10 +440,33 @@ const StockChart = ({ symbol }) => {
   };
 
   return (
-    <div className="stock-chart-container">
-      <div className="chart-header">
-        <div className="chart-title-container">
-          <h3>{symbol} Price Chart</h3>
+    <div className={`stock-chart-container ${fullscreen ? 'fullscreen-chart' : ''}`}>
+      {/* Chart time range controls - Always show for consistency */}
+      <div className="chart-time-controls">
+        <div className="chart-title">
+          <h3>{symbol} Chart</h3>
+        </div>
+      </div>
+
+      {/* Chart controls */}
+      <div className="tradingview-controls">
+        <button title="Line Chart" onClick={() => setChartType("line")}>
+          <i className="fas fa-chart-line"></i>
+        </button>
+        <button title="Area Chart" onClick={() => setChartType("area")}>
+          <i className="fas fa-chart-area"></i>
+        </button>
+        <button title="Candlestick Chart" onClick={() => setChartType("candle")}>
+          <i className="fas fa-chart-bar"></i>
+        </button>
+        <button title="Toggle Fullscreen" onClick={() => setFullscreen(!fullscreen)}>
+          <i className={`fas ${fullscreen ? 'fa-compress' : 'fa-expand'}`}></i>
+        </button>
+      </div>
+
+      {/* Info tooltip for chart data - Only show if not in fullscreen mode */}
+      {!fullscreen && (
+        <div className="chart-info-container">
           <div
             className="chart-info-icon"
             onMouseEnter={(e) => {
@@ -437,88 +493,7 @@ const StockChart = ({ symbol }) => {
             </div>
           )}
         </div>
-
-        <div className="chart-controls">
-          <div className="chart-type-selector">
-            <button
-              className={chartType === "line" ? "active" : ""}
-              onClick={() => setChartType("line")}
-              title="Line Chart - Shows closing prices connected by a line"
-            >
-              <FiTrendingUp style={{ marginRight: '4px' }} />
-              Line
-            </button>
-            <button
-              className={chartType === "area" ? "active" : ""}
-              onClick={() => setChartType("area")}
-              title="Area Chart - Shows price movement with filled area below"
-            >
-              <FiTrendingUp style={{ marginRight: '4px' }} />
-              Area
-            </button>
-            <button
-              className={chartType === "candle" ? "active" : ""}
-              onClick={() => setChartType("candle")}
-              title="Candlestick Chart - Shows open, high, low, and close prices"
-            >
-              <FiTrendingUp style={{ marginRight: '4px' }} />
-              Candle
-            </button>
-          </div>
-
-          <div className="time-range-selector">
-            <button
-              className={timeRange === "5min" ? "active" : ""}
-              onClick={() => setTimeRange("5min")}
-              title="5-Minute intervals"
-            >
-              5M
-            </button>
-            <button
-              className={timeRange === "1day" ? "active" : ""}
-              onClick={() => setTimeRange("1day")}
-              title="1 Day view"
-            >
-              1D
-            </button>
-            <button
-              className={timeRange === "1week" ? "active" : ""}
-              onClick={() => setTimeRange("1week")}
-              title="1 Week view"
-            >
-              1W
-            </button>
-            <button
-              className={timeRange === "1month" ? "active" : ""}
-              onClick={() => setTimeRange("1month")}
-              title="1 Month view"
-            >
-              1M
-            </button>
-            <button
-              className={timeRange === "3months" ? "active" : ""}
-              onClick={() => setTimeRange("3months")}
-              title="3 Months view"
-            >
-              3M
-            </button>
-            <button
-              className={timeRange === "1year" ? "active" : ""}
-              onClick={() => setTimeRange("1year")}
-              title="1 Year view"
-            >
-              1Y
-            </button>
-            <button
-              className={timeRange === "all" ? "active" : ""}
-              onClick={() => setTimeRange("all")}
-              title="All available data"
-            >
-              All
-            </button>
-          </div>
-        </div>
-      </div>
+      )}
 
       {loading ? (
         <div className="chart-loading">
@@ -533,174 +508,242 @@ const StockChart = ({ symbol }) => {
         <>
           <div className="chart-summary">
             <div className={`price-change ${isPositive ? "positive" : "negative"}`}>
-              {isPositive ? <FiTrendingUp style={{ marginRight: '6px' }} /> : <FiTrendingDown style={{ marginRight: '6px' }} />}
+              {isPositive ? <i className="fas fa-caret-up"></i> : <i className="fas fa-caret-down"></i>}
               <span>{isPositive ? "+" : ""}{change.toFixed(2)}</span>
               <span className="percentage">({isPositive ? "+" : ""}{percentage.toFixed(2)}%)</span>
             </div>
             <div className="date-range">
-              <FiCalendar style={{ marginRight: '6px' }} />
+              <i className="far fa-calendar-alt"></i>
               <span>
                 {timeRange === "5min"
-                  ? `Today (${filteredData[0].time} - ${filteredData[filteredData.length - 1].time})`
+                  ? `${filteredData[0].time} - ${filteredData[filteredData.length - 1].time}`
                   : `${filteredData[0].date} - ${filteredData[filteredData.length - 1].date}`
                 }
               </span>
             </div>
           </div>
 
-          <div className="chart-container">
+          <div className={`chart-container ${fullscreen ? 'fullscreen-chart-container' : ''}`}>
+            {/* Chart logo */}
+            <div className="tradingview-logo">
+              <i className="fas fa-chart-line"></i>
+              <span>TradeBro Charts</span>
+            </div>
             <ResponsiveContainer width="100%" height="100%">
-              {chartType === "line" && (
-                <LineChart
-                  data={filteredData}
-                  margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid-color)" />
-                  <XAxis
-                    dataKey={timeRange === "5min" ? "time" : "date"}
-                    tick={{ fill: 'var(--text-primary)' }}
-                    tickFormatter={(value, index) => {
-                      // Show fewer ticks for better readability
-                      const divisor = timeRange === "5min" ? 12 : 5; // Show fewer ticks for 5min candles
-                      return index % Math.ceil(filteredData.length / divisor) === 0 ? value : '';
-                    }}
-                  />
-                  <YAxis
-                    domain={['auto', 'auto']}
-                    tick={{ fill: 'var(--text-primary)' }}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend />
-                  <ReferenceLine
-                    y={filteredData[0].price}
-                    stroke="rgba(var(--border-color-rgb), 0.5)"
-                    strokeDasharray="3 3"
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="price"
-                    stroke={isPositive ? "var(--success-color)" : "var(--error-color)"}
-                    strokeWidth={2}
-                    dot={false}
-                    activeDot={{ r: 6, fill: isPositive ? "var(--success-color)" : "var(--error-color)", stroke: "#fff", strokeWidth: 2 }}
-                    name="Price"
-                    animationDuration={1000}
-                  />
-                </LineChart>
-              )}
+{(() => {
+                // Render different chart types based on chartType prop
+                const commonProps = {
+                  data: filteredData,
+                  margin: { top: 10, right: 60, left: 0, bottom: 30 } /* TradingView-like margins */
+                };
 
-              {chartType === "area" && (
-                <ComposedChart
-                  data={filteredData}
-                  margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid-color)" />
-                  <XAxis
-                    dataKey={timeRange === "5min" ? "time" : "date"}
-                    tick={{ fill: 'var(--text-primary)' }}
-                    tickFormatter={(value, index) => {
-                      const divisor = timeRange === "5min" ? 12 : 5; // Show fewer ticks for 5min candles
-                      return index % Math.ceil(filteredData.length / divisor) === 0 ? value : '';
-                    }}
-                  />
-                  <YAxis
-                    domain={['auto', 'auto']}
-                    tick={{ fill: 'var(--text-primary)' }}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend />
-                  <ReferenceLine
-                    y={filteredData[0].price}
-                    stroke="rgba(var(--border-color-rgb), 0.5)"
-                    strokeDasharray="3 3"
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="price"
-                    fill={isPositive ? "rgba(var(--success-color-rgb), 0.15)" : "rgba(var(--error-color-rgb), 0.15)"}
-                    stroke={isPositive ? "var(--success-color)" : "var(--error-color)"}
-                    strokeWidth={2}
-                    activeDot={{ r: 6, fill: isPositive ? "var(--success-color)" : "var(--error-color)", stroke: "#fff", strokeWidth: 2 }}
-                    name="Price"
-                    animationDuration={1000}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="price"
-                    stroke={isPositive ? "var(--success-color)" : "var(--error-color)"}
-                    strokeWidth={2}
-                    dot={false}
-                    activeDot={{ r: 6, fill: isPositive ? "var(--success-color)" : "var(--error-color)", stroke: "#fff", strokeWidth: 2 }}
-                    name="Price"
-                    animationDuration={1000}
-                  />
-                </ComposedChart>
-              )}
-
-              {chartType === "candle" && (
-                <ComposedChart
-                  data={filteredData}
-                  margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid-color)" />
-                  <XAxis
-                    dataKey={timeRange === "5min" ? "time" : "date"}
-                    tick={{ fill: 'var(--text-primary)' }}
-                    tickFormatter={(value, index) => {
-                      const divisor = timeRange === "5min" ? 12 : 5; // Show fewer ticks for 5min candles
-                      return index % Math.ceil(filteredData.length / divisor) === 0 ? value : '';
-                    }}
-                  />
-                  <YAxis
-                    domain={['auto', 'auto']}
-                    tick={{ fill: 'var(--text-primary)' }}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend />
-                  <ReferenceLine
-                    y={filteredData[0].price}
-                    stroke="rgba(var(--border-color-rgb), 0.5)"
-                    strokeDasharray="3 3"
-                  />
-
-                  {/* High-Low lines */}
-                  {filteredData.map((item, index) => (
+                const commonAxisProps = {
+                  xAxis: (
+                    <XAxis
+                      dataKey={timeRange === "5min" ? "time" : "date"}
+                      tick={{ fill: '#787b86', fontSize: 11, fontWeight: 400 }} /* TradingView style */
+                      height={30}
+                      tickFormatter={(value, index) => {
+                        // Show fewer ticks like TradingView
+                        const divisor = timeRange === "5min" ? 8 : 6;
+                        return index % Math.ceil(filteredData.length / divisor) === 0 ? value : '';
+                      }}
+                      axisLine={{ stroke: '#e0e3eb', strokeWidth: 1 }}
+                      tickLine={{ stroke: '#e0e3eb', strokeWidth: 1 }}
+                      padding={{ left: 5, right: 5 }}
+                    />
+                  ),
+                  yAxis: (
+                    <YAxis
+                      domain={['auto', 'auto']}
+                      tick={{ fill: '#787b86', fontSize: 11, fontWeight: 400 }} /* TradingView style */
+                      width={60}
+                      tickFormatter={(value) => `₹${value.toLocaleString()}`}
+                      axisLine={{ stroke: '#e0e3eb', strokeWidth: 1 }}
+                      tickLine={{ stroke: '#e0e3eb', strokeWidth: 1 }}
+                      padding={{ top: 10, bottom: 10 }}
+                      allowDecimals={false}
+                      tickCount={6}
+                      orientation="right" /* TradingView typically has Y-axis on right */
+                    />
+                  ),
+                  grid: (
+                    <CartesianGrid
+                      strokeDasharray={null}
+                      stroke="#f0f3fa" /* TradingView grid color */
+                      opacity={0.7}
+                      horizontal={true}
+                      vertical={true}
+                    />
+                  ),
+                  tooltip: (
+                    <Tooltip
+                      content={<CustomTooltip />}
+                      wrapperStyle={{ zIndex: 1000 }}
+                      cursor={{ strokeWidth: 2 }} /* Make cursor more visible */
+                      animationDuration={300}
+                      animationEasing="ease-out"
+                    />
+                  ),
+                  legend: (
+                    <Legend
+                      verticalAlign="top"
+                      height={30}
+                      wrapperStyle={{
+                        paddingTop: '5px',
+                        fontSize: '11px',
+                        fontWeight: 400
+                      }}
+                      iconType="circle"
+                      iconSize={8}
+                      formatter={(value) => <span style={{ color: '#787b86', padding: '2px 4px' }}>{value}</span>}
+                    />
+                  ),
+                  referenceLine: (
                     <ReferenceLine
-                      key={`hl-${index}`}
-                      segment={[
-                        { x: timeRange === "5min" ? item.time : item.date, y: item.low },
-                        { x: timeRange === "5min" ? item.time : item.date, y: item.high }
-                      ]}
-                      stroke={item.open < item.price ? "var(--success-color)" : "var(--error-color)"}
+                      y={filteredData[0].price}
+                      stroke="#787b86"
+                      strokeDasharray="3 3"
                       strokeWidth={1}
+                      ifOverflow="extendDomain"
                     />
-                  ))}
+                  ),
+                  gradient: (
+                    <defs>
+                      <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={isPositive ? "#26a69a" : "#ef5350"} stopOpacity={0.2}/>
+                        <stop offset="95%" stopColor={isPositive ? "#26a69a" : "#ef5350"} stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                  )
+                };
 
-                  {/* Open-Close rectangles */}
-                  {filteredData.map((item, index) => (
-                    <ReferenceLine
-                      key={`oc-${index}`}
-                      segment={[
-                        { x: timeRange === "5min" ? item.time : item.date, y: item.open },
-                        { x: timeRange === "5min" ? item.time : item.date, y: item.price }
-                      ]}
-                      stroke={item.open < item.price ? "var(--success-color)" : "var(--error-color)"}
-                      strokeWidth={5}
-                    />
-                  ))}
+                // Candlestick chart (using ComposedChart with reference lines)
+                if (chartType === "candle") {
+                  return (
+                    <ComposedChart {...commonProps}>
+                      {commonAxisProps.grid}
+                      {commonAxisProps.gradient}
+                      {commonAxisProps.xAxis}
+                      {commonAxisProps.yAxis}
+                      {commonAxisProps.tooltip}
+                      {commonAxisProps.legend}
+                      {commonAxisProps.referenceLine}
 
-                  <Line
-                    type="monotone"
-                    dataKey="price"
-                    stroke={isPositive ? "var(--success-color)" : "var(--error-color)"}
-                    strokeWidth={1}
-                    dot={false}
-                    activeDot={{ r: 6, fill: isPositive ? "var(--success-color)" : "var(--error-color)", stroke: "#fff", strokeWidth: 2 }}
-                    name="Close"
-                    animationDuration={1000}
-                  />
-                </ComposedChart>
-              )}
+                      {/* High-Low lines */}
+                      {filteredData.map((item, index) => (
+                        <ReferenceLine
+                          key={`hl-${index}`}
+                          segment={[
+                            { x: timeRange === "5min" ? item.time : item.date, y: item.low },
+                            { x: timeRange === "5min" ? item.time : item.date, y: item.high }
+                          ]}
+                          stroke={item.open < item.price ? "var(--success-color)" : "var(--error-color)"}
+                          strokeWidth={1}
+                        />
+                      ))}
+
+                      {/* Open-Close rectangles */}
+                      {filteredData.map((item, index) => (
+                        <ReferenceLine
+                          key={`oc-${index}`}
+                          segment={[
+                            { x: timeRange === "5min" ? item.time : item.date, y: item.open },
+                            { x: timeRange === "5min" ? item.time : item.date, y: item.price }
+                          ]}
+                          stroke={item.open < item.price ? "var(--success-color)" : "var(--error-color)"}
+                          strokeWidth={5}
+                        />
+                      ))}
+
+                      <Line
+                        type="monotone"
+                        dataKey="price"
+                        stroke={isPositive ? "#26a69a" : "#ef5350"} /* TradingView colors */
+                        strokeWidth={2}
+                        dot={false}
+                        activeDot={{
+                          r: 4,
+                          fill: isPositive ? "#26a69a" : "#ef5350",
+                          stroke: "#fff",
+                          strokeWidth: 2
+                        }}
+                        name="Close"
+                        animationDuration={800}
+                        isAnimationActive={true}
+                        connectNulls={true}
+                      />
+                    </ComposedChart>
+                  );
+                }
+
+                // Area chart
+                else if (chartType === "area") {
+                  return (
+                    <ComposedChart {...commonProps}>
+                      {commonAxisProps.grid}
+                      {commonAxisProps.gradient}
+                      {commonAxisProps.xAxis}
+                      {commonAxisProps.yAxis}
+                      {commonAxisProps.tooltip}
+                      {commonAxisProps.legend}
+                      {commonAxisProps.referenceLine}
+
+                      <Area
+                        type="monotone"
+                        dataKey="price"
+                        fill="url(#colorPrice)"
+                        stroke={isPositive ? "#26a69a" : "#ef5350"} /* TradingView colors */
+                        fillOpacity={0.5}
+                        strokeWidth={1.5}
+                        name="Price"
+                        dot={false}
+                        activeDot={{
+                          r: 4,
+                          fill: isPositive ? "#26a69a" : "#ef5350",
+                          stroke: "#fff",
+                          strokeWidth: 2
+                        }}
+                        animationDuration={800}
+                        isAnimationActive={true}
+                      />
+                    </ComposedChart>
+                  );
+                }
+
+                // Line chart (default)
+                else {
+                  return (
+                    <ComposedChart {...commonProps}>
+                      {commonAxisProps.grid}
+                      {commonAxisProps.gradient}
+                      {commonAxisProps.xAxis}
+                      {commonAxisProps.yAxis}
+                      {commonAxisProps.tooltip}
+                      {commonAxisProps.legend}
+                      {commonAxisProps.referenceLine}
+
+                      <Line
+                        type="monotone"
+                        dataKey="price"
+                        stroke={isPositive ? "#26a69a" : "#ef5350"} /* TradingView colors */
+                        strokeWidth={2}
+                        dot={false}
+                        activeDot={{
+                          r: 4,
+                          fill: isPositive ? "#26a69a" : "#ef5350",
+                          stroke: "#fff",
+                          strokeWidth: 2
+                        }}
+                        name="Price"
+                        animationDuration={800}
+                        isAnimationActive={true}
+                        connectNulls={true}
+                      />
+                    </ComposedChart>
+                  );
+                }
+              })()}
             </ResponsiveContainer>
           </div>
         </>

@@ -29,14 +29,14 @@ router.get('/all', verifyToken, async (req, res) => {
 // Place a new order
 router.post('/place', verifyToken, async (req, res) => {
   try {
-    const { 
-      type, 
-      stockSymbol, 
-      stockName, 
-      quantity, 
-      price, 
-      orderType, 
-      limitPrice 
+    const {
+      type,
+      stockSymbol,
+      stockName,
+      quantity,
+      price,
+      orderType,
+      limitPrice
     } = req.body;
 
     // Validate input
@@ -99,13 +99,13 @@ router.post('/place', verifyToken, async (req, res) => {
         if (virtualMoney.balance < total) {
           return res.status(400).json({
             success: false,
-            message: `Insufficient balance. You need ${total} coins but have ${virtualMoney.balance} coins.`
+            message: `Insufficient balance. You need ₹${total.toLocaleString('en-IN')} but have ₹${virtualMoney.balance.toLocaleString('en-IN')}.`
           });
         }
 
         // Execute buy
         const result = await virtualMoney.buyStock(stockSymbol, quantity, price);
-        
+
         if (!result.success) {
           return res.status(400).json({
             success: false,
@@ -115,7 +115,7 @@ router.post('/place', verifyToken, async (req, res) => {
       } else if (type === 'SELL') {
         // For sell orders, check if user has enough shares
         const result = await virtualMoney.sellStock(stockSymbol, quantity, price);
-        
+
         if (!result.success) {
           return res.status(400).json({
             success: false,
@@ -189,7 +189,7 @@ router.post('/cancel/:orderId', verifyToken, async (req, res) => {
   try {
     const { orderId } = req.params;
 
-    const order = await Order.findOne({ 
+    const order = await Order.findOne({
       _id: orderId,
       userId: req.user.id
     });

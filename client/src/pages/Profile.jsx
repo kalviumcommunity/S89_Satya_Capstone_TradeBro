@@ -1,50 +1,34 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { motion } from "framer-motion";
 import { FiUser, FiMail, FiPhone, FiEdit2, FiCamera, FiCheckCircle, FiBarChart2, FiDollarSign, FiClock, FiAlertCircle } from "react-icons/fi";
 import PageLayout from "../components/PageLayout";
-import { useToast } from "../context/ToastContext";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
 import Loading from "../components/Loading";
+import { fetchProfile, fetchProfileSuccess, setEditedUser, updateProfile } from "../redux/reducers/profileReducer";
+import { setIsEditing, setLoading, setError } from "../redux/reducers/uiReducer";
+import { showSuccessToast, showErrorToast } from "../redux/reducers/toastReducer";
 import "./Profile.css";
 
 const Profile = () => {
+  const dispatch = useDispatch();
   const { isAuthenticated } = useAuth();
-  const toast = useToast();
 
-  const [user, setUser] = useState({
-    fullName: "",
-    email: "",
-    phoneNumber: "",
-    joinDate: new Date().toISOString(),
-    profileImage: null,
-    tradingExperience: "Beginner",
-    preferredMarkets: ["Stocks", "ETFs", "Crypto"],
-    bio: ""
-  });
-
-  const [stats, setStats] = useState({
-    totalTrades: 0,
-    successRate: 0,
-    avgReturn: 0,
-    portfolioValue: 0,
-    activeWatchlists: 0
-  });
-
-  const [recentActivity, setRecentActivity] = useState([]);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedUser, setEditedUser] = useState({ ...user });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  // Get state from Redux
+  const { userData: user, editedUser, stats, recentActivity } = useSelector(state => state.profile);
+  const { isEditing, loading, error } = useSelector(state => state.ui);
 
   // Fetch user data
   useEffect(() => {
-    const fetchUserData = async () => {
-      if (!isAuthenticated) {
-        setLoading(false);
-        return;
-      }
+    if (!isAuthenticated) {
+      dispatch(setLoading(false));
+      return;
+    }
 
+    dispatch(setLoading(true));
+
+    const fetchUserData = async () => {
       try {
         // Get user settings
         const response = await axios.get("http://localhost:5000/api/settings", {
@@ -57,7 +41,7 @@ const Profile = () => {
           const userData = response.data.userSettings;
 
           // Format the data
-          setUser({
+          const formattedUserData = {
             fullName: userData.fullName || "User",
             email: userData.email || "",
             phoneNumber: userData.phoneNumber || "",
@@ -68,68 +52,62 @@ const Profile = () => {
             tradingExperience: userData.tradingExperience || "Beginner",
             preferredMarkets: userData.preferredMarkets || ["Stocks"],
             bio: userData.bio || "No bio provided yet."
-          });
+          };
 
-          setEditedUser({
-            fullName: userData.fullName || "User",
-            email: userData.email || "",
-            phoneNumber: userData.phoneNumber || "",
-            joinDate: userData.createdAt || new Date().toISOString(),
-            profileImage: userData.profileImage
-              ? `http://localhost:5000/uploads/${userData.profileImage}`
-              : "https://randomuser.me/api/portraits/lego/1.jpg",
-            tradingExperience: userData.tradingExperience || "Beginner",
-            preferredMarkets: userData.preferredMarkets || ["Stocks"],
-            bio: userData.bio || "No bio provided yet."
-          });
+          // Mock statistics data
+          const statsData = {
+            totalTrades: 24,
+            successRate: 65,
+            avgReturn: 8.7,
+            portfolioValue: 12500.00,
+            activeWatchlists: 3
+          };
+
+          // Mock recent activity data
+          const activityData = [
+            {
+              id: 1,
+              type: "trade",
+              action: "Bought",
+              symbol: "AAPL",
+              quantity: 5,
+              price: 178.25,
+              date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() // 2 days ago
+            },
+            {
+              id: 2,
+              type: "watchlist",
+              action: "Added",
+              symbol: "TSLA",
+              date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() // 3 days ago
+            },
+            {
+              id: 3,
+              type: "trade",
+              action: "Sold",
+              symbol: "MSFT",
+              quantity: 2,
+              price: 332.80,
+              date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString() // 5 days ago
+            }
+          ];
+
+          // Dispatch to Redux
+          dispatch(fetchProfileSuccess({
+            userData: formattedUserData,
+            stats: statsData,
+            recentActivity: activityData
+          }));
+
+          // Also set the edited user data
+          dispatch(setEditedUser(formattedUserData));
         }
-
-        // Get trading statistics (this would be a separate API call in a real app)
-        // For now, we'll use mock data
-        setStats({
-          totalTrades: 24,
-          successRate: 65,
-          avgReturn: 8.7,
-          portfolioValue: 12500.00,
-          activeWatchlists: 3
-        });
-
-        // Get recent activity (this would be a separate API call in a real app)
-        // For now, we'll use mock data
-        setRecentActivity([
-          {
-            id: 1,
-            type: "trade",
-            action: "Bought",
-            symbol: "AAPL",
-            quantity: 5,
-            price: 178.25,
-            date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() // 2 days ago
-          },
-          {
-            id: 2,
-            type: "watchlist",
-            action: "Added",
-            symbol: "TSLA",
-            date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() // 3 days ago
-          },
-          {
-            id: 3,
-            type: "trade",
-            action: "Sold",
-            symbol: "MSFT",
-            quantity: 2,
-            price: 332.80,
-            date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString() // 5 days ago
-          }
-        ]);
-
       } catch (err) {
         console.error("Error fetching user data:", err);
-        setError("Failed to load user data. Please try again later.");
+        dispatch(setError("Failed to load user data. Please try again later."));
 
         // Set default data for development
-        setUser({
+        const defaultUserData = {
           fullName: "Demo User",
           email: "demo@example.com",
           phoneNumber: "+1 (555) 123-4567",
@@ -138,25 +116,30 @@ const Profile = () => {
           tradingExperience: "Beginner",
           preferredMarkets: ["Stocks", "ETFs"],
           bio: "This is a demo account."
-        });
+        };
 
-        setEditedUser({
-          fullName: "Demo User",
-          email: "demo@example.com",
-          phoneNumber: "+1 (555) 123-4567",
-          joinDate: new Date().toISOString(),
-          profileImage: "https://randomuser.me/api/portraits/lego/1.jpg",
-          tradingExperience: "Beginner",
-          preferredMarkets: ["Stocks", "ETFs"],
-          bio: "This is a demo account."
-        });
+        // Dispatch default data to Redux
+        dispatch(fetchProfileSuccess({
+          userData: defaultUserData,
+          stats: {
+            totalTrades: 24,
+            successRate: 65,
+            avgReturn: 8.7,
+            portfolioValue: 12500.00,
+            activeWatchlists: 3
+          },
+          recentActivity: []
+        }));
+
+        // Also set the edited user data
+        dispatch(setEditedUser(defaultUserData));
       } finally {
-        setLoading(false);
+        dispatch(setLoading(false));
       }
     };
 
     fetchUserData();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, dispatch]);
 
   // Format date
   const formatDate = (dateString) => {
@@ -173,7 +156,7 @@ const Profile = () => {
   // Handle edit form changes
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setEditedUser({ ...editedUser, [name]: value });
+    dispatch(setEditedUser({ ...editedUser, [name]: value }));
   };
 
   // Handle profile image change
@@ -181,13 +164,13 @@ const Profile = () => {
     const file = e.target.files[0];
     if (file) {
       // Store the file object directly for form submission
-      setEditedUser({ ...editedUser, profileImage: file });
+      dispatch(setEditedUser({ ...editedUser, profileImage: file }));
 
       // Also create a preview URL for display
       const reader = new FileReader();
       reader.onloadend = () => {
         // This is just for preview, we'll use the file object for upload
-        setEditedUser(prev => ({ ...prev, profileImagePreview: reader.result }));
+        dispatch(setEditedUser({ ...editedUser, profileImagePreview: reader.result }));
       };
       reader.readAsDataURL(file);
     }
@@ -196,7 +179,7 @@ const Profile = () => {
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    dispatch(setLoading(true));
 
     try {
       // Prepare form data for API
@@ -221,27 +204,28 @@ const Profile = () => {
 
       if (response.data.success) {
         // Update user state with new data
-        setUser({
+        const updatedUserData = {
           ...editedUser,
           profileImage: response.data.userSettings.profileImage
             ? `http://localhost:5000/uploads/${response.data.userSettings.profileImage}`
             : editedUser.profileImage
-        });
+        };
 
-        setIsEditing(false);
-        toast.success('Profile updated successfully!');
+        dispatch(updateProfileSuccess(updatedUserData));
+        dispatch(setIsEditing(false));
+        dispatch(showSuccessToast('Profile updated successfully!'));
       } else {
-        toast.error('Failed to update profile. Please try again.');
+        dispatch(showErrorToast('Failed to update profile. Please try again.'));
       }
     } catch (err) {
       console.error('Error updating profile:', err);
-      toast.error(err.response?.data?.message || 'Failed to update profile. Please try again.');
+      dispatch(showErrorToast(err.response?.data?.message || 'Failed to update profile. Please try again.'));
 
       // For development, still update the UI
-      setUser(editedUser);
-      setIsEditing(false);
+      dispatch(updateProfileSuccess(editedUser));
+      dispatch(setIsEditing(false));
     } finally {
-      setLoading(false);
+      dispatch(setLoading(false));
     }
   };
 
@@ -357,8 +341,8 @@ const Profile = () => {
                     type="button"
                     className="cancel-btn"
                     onClick={() => {
-                      setIsEditing(false);
-                      setEditedUser({ ...user });
+                      dispatch(setIsEditing(false));
+                      dispatch(setEditedUser({ ...user }));
                     }}
                     disabled={loading}
                   >

@@ -4,22 +4,25 @@ import {
   FiSend, FiUser, FiCpu, FiChevronDown, FiChevronUp,
   FiAlertCircle, FiTrendingUp, FiBarChart2, FiPieChart,
   FiRefreshCw, FiClock, FiInfo, FiHelpCircle, FiDollarSign,
-  FiGift, FiShoppingCart, FiBell
+  FiGift, FiShoppingCart, FiBell, FiZap, FiMessageSquare
 } from "react-icons/fi";
 import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
 import { useAuth } from "../context/AuthContext";
 import { usePusher } from "../context/PusherContext.jsx";
+import { useToast } from "../context/ToastContext";
 import PageLayout from "../components/PageLayout";
+import { API_ENDPOINTS } from "../config/apiConfig";
 import "../styles/pages/TradingAssistantPage.css";
 
 const TradingAssistantPage = () => {
   const { isAuthenticated, user } = useAuth();
   const { channel } = usePusher();
+  const { addToast, success, error: showError, info, warning } = useToast();
   const [messages, setMessages] = useState([
     {
       id: 1,
-      text: "👋 Hi there! I'm your TradeBro assistant. Feel free to ask me anything about stocks, trading strategies, or market trends. How can I help you today?",
+      text: "👋 Hi there! I'm your TradeBro assistant powered by Google's Gemini 2.0. You currently have ₹10,000 in virtual money to practice trading. Feel free to ask me anything about stocks, trading strategies, or market trends. How can I help you today?",
       sender: "bot",
       timestamp: new Date()
     }
@@ -34,7 +37,7 @@ const TradingAssistantPage = () => {
   ]);
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [sessionId, setSessionId] = useState(null);
-  const [error, setError] = useState(null);
+  const [errorMessage, setErrorMessage] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [virtualMoney, setVirtualMoney] = useState({
     balance: 10000,
@@ -42,29 +45,54 @@ const TradingAssistantPage = () => {
     portfolio: []
   });
   const [showRewardAnimation, setShowRewardAnimation] = useState(false);
+  const [modelInfo, setModelInfo] = useState({
+    name: "Gemini 2.0 Flash",
+    provider: "Google",
+    isActive: false
+  });
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
 
   // Function to fetch virtual money data
   const fetchVirtualMoneyData = async () => {
     try {
-      // Try to call the API to get virtual money data
-      try {
-        // Try the endpoint regardless of authentication status
-        const response = await axios.get("http://localhost:5000/api/virtual-money/account", { timeout: 3000 });
-        if (response.data.success) {
-          setVirtualMoney(response.data.data);
-          console.log("Successfully fetched virtual money data from API");
-        }
-      } catch (apiError) {
-        console.log("Backend API not available, using local storage data", apiError);
+      // Only fetch data if user is authenticated
+      if (isAuthenticated && user) {
+        try {
+          // Add authorization header with token
+          const token = localStorage.getItem('token');
+          const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-        // Try to get data from local storage
+          const response = await axios.get("http://localhost:5000/api/virtual-money/account", {
+            headers,
+            timeout: 5000
+          });
+
+          if (response.data.success) {
+            setVirtualMoney(response.data.data);
+            console.log("Successfully fetched virtual money data from API for user:", user.email);
+
+            // Store in local storage as backup
+            localStorage.setItem(`virtualMoney_${user.id}`, JSON.stringify(response.data.data));
+          }
+        } catch (apiError) {
+          console.log("Backend API not available, using local storage data", apiError);
+
+          // Try to get user-specific data from local storage
+          const storedData = localStorage.getItem(`virtualMoney_${user.id}`);
+          if (storedData) {
+            const parsedData = JSON.parse(storedData);
+            setVirtualMoney(parsedData);
+            console.log("Using user-specific data from local storage for:", user.email);
+          }
+        }
+      } else {
+        // For non-authenticated users, use generic data from local storage
         const storedData = localStorage.getItem('virtualMoney');
         if (storedData) {
           const parsedData = JSON.parse(storedData);
           setVirtualMoney(parsedData);
-          console.log("Using data from local storage");
+          console.log("Using generic data from local storage for non-authenticated user");
         }
       }
     } catch (err) {
@@ -79,25 +107,45 @@ const TradingAssistantPage = () => {
       let rewardClaimed = false;
       let rewardAmount = 1; // Default reward amount
 
-      // Try to call the API to claim daily reward
-      try {
-        // Try the endpoint regardless of authentication status
-        const response = await axios.post("http://localhost:5000/api/virtual-money/claim-reward", {}, { timeout: 3000 });
-        if (response.data.success) {
-          rewardAmount = response.data.data.rewardAmount || 1;
-          rewardClaimed = true;
-          console.log("Successfully claimed reward from API");
-        }
-      } catch (apiError) {
-        console.log("Backend API not available, using local implementation", apiError);
+      // Only proceed if user is authenticated
+      if (isAuthenticated && user) {
+        try {
+          // Add authorization header with token
+          const token = localStorage.getItem('token');
+          const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-        // Check if we got a 400 response (already claimed)
-        if (apiError.response && apiError.response.status === 400) {
-          console.log("Already claimed reward today (from API response)");
-          return false;
-        }
+          const response = await axios.post("http://localhost:5000/api/virtual-money/claim-reward", {}, {
+            headers,
+            timeout: 5000
+          });
 
-        // Local implementation for claiming reward
+          if (response.data.success) {
+            rewardAmount = response.data.data.rewardAmount || 1;
+            rewardClaimed = true;
+            console.log("Successfully claimed reward from API for user:", user.email);
+          }
+        } catch (apiError) {
+          console.log("Backend API not available or error claiming reward", apiError);
+
+          // Check if we got a 400 response (already claimed)
+          if (apiError.response && apiError.response.status === 400) {
+            console.log("Already claimed reward today (from API response)");
+            return false;
+          }
+
+          // Local implementation for claiming reward
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
+          if (!virtualMoney.lastLoginReward || new Date(virtualMoney.lastLoginReward) < today) {
+            rewardClaimed = true;
+          } else {
+            console.log("Already claimed reward today (from local check)");
+            return false;
+          }
+        }
+      } else {
+        // For non-authenticated users, use local implementation
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
@@ -120,7 +168,11 @@ const TradingAssistantPage = () => {
         setVirtualMoney(updatedVirtualMoney);
 
         // Save to local storage for offline use
-        localStorage.setItem('virtualMoney', JSON.stringify(updatedVirtualMoney));
+        if (isAuthenticated && user) {
+          localStorage.setItem(`virtualMoney_${user.id}`, JSON.stringify(updatedVirtualMoney));
+        } else {
+          localStorage.setItem('virtualMoney', JSON.stringify(updatedVirtualMoney));
+        }
 
         // Show animation
         setShowRewardAnimation(true);
@@ -178,23 +230,54 @@ const TradingAssistantPage = () => {
         // Try to connect to the backend
         let backendAvailable = false;
         try {
+          console.log("Attempting to start chat session at:", API_ENDPOINTS.CHATBOT.START);
           // Try to start a chat session regardless of authentication status
-          const response = await axios.post("http://localhost:5000/api/chatbot/start", {
+          const response = await axios.post(API_ENDPOINTS.CHATBOT.START, {
             sessionId: clientSessionId,
             user: isAuthenticated && user ? user.email : null
-          }, { timeout: 3000 });
+          }, { timeout: 5000 }); // Increased timeout for better reliability
 
           if (response.data.success) {
             setSessionId(response.data.sessionId);
             console.log("Chat session started with ID:", response.data.sessionId);
             backendAvailable = true;
+
+            // Set model info as active
+            setModelInfo(prev => ({
+              ...prev,
+              isActive: true
+            }));
+
+            // Show success toast
+            success("Connected to Gemini 2.0 AI", 3000);
           } else {
             console.error("Failed to start chat session:", response.data);
             // Set a local session ID as fallback
             setSessionId(clientSessionId);
+
+            // Show warning toast
+            warning("Using fallback mode - limited AI capabilities", 5000);
           }
         } catch (error) {
-          console.log("Backend API not available, using offline mode for chat:", error.message);
+          // Log detailed error information
+          console.error("Backend API error during chat initialization:", error.message);
+          if (error.response) {
+            console.error("Response status:", error.response.status);
+            console.error("Response data:", error.response.data);
+          }
+
+          // Show appropriate toast message based on error type
+          if (error.response && error.response.status === 404) {
+            console.log("Backend API not available (404 Not Found), using offline mode for chat");
+            showError("Chatbot API endpoint not found - using offline mode", 5000);
+          } else if (error.code === 'ECONNABORTED') {
+            console.log("Backend API timeout, using offline mode for chat");
+            warning("Request timed out - using offline mode", 5000);
+          } else {
+            console.log("Backend API error, using offline mode for chat:", error.message);
+            showError("Could not connect to AI service - using offline mode", 5000);
+          }
+
           // Set a local session ID
           setSessionId(clientSessionId);
         }
@@ -221,6 +304,9 @@ const TradingAssistantPage = () => {
               if (claimed) {
                 // Mark that we've shown the animation today
                 sessionStorage.setItem('rewardAnimationShown', today.toDateString());
+
+                // Show success toast
+                success("Daily reward claimed: +₹1", 3000);
               }
             } catch (error) {
               console.error("Error auto-claiming reward:", error);
@@ -234,9 +320,10 @@ const TradingAssistantPage = () => {
             ...prevMessages,
             {
               id: uuidv4(),
-              text: "Welcome to TradeBro! I'm your trading assistant, ready to help with all your trading and investment questions. Feel free to ask me about stocks, market trends, or trading strategies!",
+              text: "Welcome to TradeBro! I'm your trading assistant, ready to help with all your trading and investment questions. You have ₹" + virtualMoney.balance.toLocaleString() + " in virtual money to practice trading. I'm currently in offline mode with limited capabilities, but I'll do my best to assist you!",
               sender: "bot",
-              timestamp: new Date()
+              timestamp: new Date(),
+              isOffline: true
             }
           ]);
         }
@@ -252,8 +339,11 @@ const TradingAssistantPage = () => {
             isError: true
           }
         ]);
+
+        // Show error toast
+        showError("Failed to initialize chat system", 5000);
       } finally {
-        // Simulate loading for a better UX
+        // Add a slight delay for better UX
         setTimeout(() => {
           setIsLoading(false);
         }, 1500);
@@ -267,12 +357,12 @@ const TradingAssistantPage = () => {
     // Clean up function to end the chat session when component unmounts
     return () => {
       if (sessionId) {
-        axios.post("http://localhost:5000/api/chatbot/end", { sessionId })
+        axios.post(API_ENDPOINTS.CHATBOT.END, { sessionId })
           .then(() => console.log("Chat session ended"))
           .catch(err => console.error("Error ending chat session:", err));
       }
     };
-  }, [sessionId]);
+  }, [sessionId, isAuthenticated, user, success, showError, info, warning, addToast]);
 
   // Auto-scroll to bottom of messages
   useEffect(() => {
@@ -289,7 +379,8 @@ const TradingAssistantPage = () => {
   // Send message to chatbot API
   const sendMessage = async (text) => {
     if (!sessionId) {
-      setError("Chat session not initialized");
+      setErrorMessage("Chat session not initialized");
+      showError("Chat session not initialized", 3000);
       return;
     }
 
@@ -300,12 +391,13 @@ const TradingAssistantPage = () => {
       let botResponse;
 
       try {
+        console.log("Attempting to send message to:", API_ENDPOINTS.CHATBOT.MESSAGE);
         // Try to send message regardless of authentication status
-        const response = await axios.post("http://localhost:5000/api/chatbot/message", {
+        const response = await axios.post(API_ENDPOINTS.CHATBOT.MESSAGE, {
           sessionId,
           message: text,
           user: isAuthenticated && user ? user.email : null
-        }, { timeout: 5000 });
+        }, { timeout: 12000 }); // Increased timeout for complex queries
 
         if (response.data.success) {
           // Handle different response types
@@ -314,7 +406,8 @@ const TradingAssistantPage = () => {
               id: uuidv4(),
               text: response.data.message,
               sender: "bot",
-              timestamp: new Date()
+              timestamp: new Date(),
+              fromGemini: true
             };
           } else if (response.data.type === 'stockData') {
             // Format stock data response
@@ -352,7 +445,8 @@ const TradingAssistantPage = () => {
 Remember that market conditions change quickly, so always verify before making decisions! 📈`,
               sender: "bot",
               timestamp: new Date(),
-              stockData: true
+              stockData: true,
+              fromGemini: true
             };
           } else if (response.data.type === 'topGainers') {
             // Format top gainers response
@@ -370,8 +464,17 @@ Remember that market conditions change quickly, so always verify before making d
               text: gainersText,
               sender: "bot",
               timestamp: new Date(),
-              topGainers: true
+              topGainers: true,
+              fromGemini: true
             };
+          }
+
+          // Update model info to show it's active
+          if (!modelInfo.isActive) {
+            setModelInfo(prev => ({
+              ...prev,
+              isActive: true
+            }));
           }
         } else {
           console.error("Failed to get response:", response.data);
@@ -383,9 +486,35 @@ Remember that market conditions change quickly, so always verify before making d
             timestamp: new Date(),
             isError: true
           };
+
+          // Show warning toast
+          warning("AI had trouble processing your request", 3000);
         }
       } catch (apiError) {
-        console.log("Backend API not available, using mock response for chat");
+        // Log detailed error information
+        console.error("Backend API error:", apiError.message);
+        if (apiError.response) {
+          console.error("Response status:", apiError.response.status);
+          console.error("Response data:", apiError.response.data);
+        }
+
+        // Show appropriate toast message based on error type
+        if (apiError.response && apiError.response.status === 404) {
+          console.log("Backend API not available (404 Not Found), using mock response for chat");
+          showError("Chatbot API endpoint not found - using offline mode", 5000);
+        } else if (apiError.code === 'ECONNABORTED') {
+          console.log("Backend API timeout, using mock response for chat");
+          warning("Request timed out - using offline mode", 5000);
+        } else {
+          console.log("Backend API error, using mock response for chat", apiError);
+          info("Using offline mode - limited responses available", 3000);
+        }
+
+        // Update model info to show it's not active
+        setModelInfo(prev => ({
+          ...prev,
+          isActive: false
+        }));
 
         // Generate a helpful response based on the query
         let responseText;
@@ -441,13 +570,27 @@ Would you like me to explain any of these features in more detail?`;
           text: responseText,
           sender: "bot",
           timestamp: new Date(),
-          isMockResponse: true
+          isMockResponse: true,
+          isOffline: true
         };
+
+        // Show offline mode toast
+        info("Using offline mode - limited responses available", 3000);
       }
 
       // Add the response to messages
       if (botResponse) {
         setMessages(prevMessages => [...prevMessages, botResponse]);
+      } else {
+        // Handle case where no botResponse was created
+        const fallbackResponse = {
+          id: uuidv4(),
+          text: "I received your message but I'm not sure how to display the response. Let me try to help you with something else.",
+          sender: "bot",
+          timestamp: new Date(),
+          isFallback: true
+        };
+        setMessages(prevMessages => [...prevMessages, fallbackResponse]);
       }
 
       // Update suggested questions based on the conversation
@@ -464,6 +607,9 @@ Would you like me to explain any of these features in more detail?`;
       };
 
       setMessages(prevMessages => [...prevMessages, errorResponse]);
+
+      // Show error toast
+      showError("Error processing your message", 3000);
     } finally {
       setIsTyping(false);
     }
@@ -505,54 +651,87 @@ Would you like me to explain any of these features in more detail?`;
     // First update the messages state
     setMessages(prevMessages => [...prevMessages, userMessage]);
 
+    // Show animation for better UX
+    info("Processing your question...", 1500);
+
     // Use setTimeout to ensure the state is updated before sending
     setTimeout(() => {
       // Send message to chatbot API
       sendMessage(question);
-    }, 50);
+    }, 100);
 
     // Also update the input field for better UX
-    setInputValue(question);
+    setInputValue("");
   };
 
   // Update suggested questions based on conversation context
   const updateSuggestedQuestions = (userInput) => {
     const userQuestion = userInput.toLowerCase();
 
+    // Add animation to the questions update
+    const questionsContainer = document.querySelector('.questions-list');
+    if (questionsContainer) {
+      questionsContainer.classList.add('updating');
+      setTimeout(() => {
+        questionsContainer.classList.remove('updating');
+      }, 500);
+    }
+
     if (userQuestion.includes("market") || userQuestion.includes("trend")) {
       setSuggestedQuestions([
         "Which sectors are performing well?",
         "How do interest rates affect the market?",
         "What's the outlook for tech stocks?",
-        "Should I invest during market volatility?"
+        "Should I invest during market volatility?",
+        "Compare bull and bear markets"
       ]);
     } else if (userQuestion.includes("analyze") || userQuestion.includes("research")) {
       setSuggestedQuestions([
         "What are key financial ratios to look at?",
         "How do I read a balance sheet?",
         "What is fundamental analysis?",
-        "How important is a company's management team?"
+        "How important is a company's management team?",
+        "Explain technical vs fundamental analysis"
       ]);
-    } else if (userQuestion.includes("options")) {
+    } else if (userQuestion.includes("options") || userQuestion.includes("derivative")) {
       setSuggestedQuestions([
         "What is a call option?",
         "What is a put option?",
         "How do I calculate options premium?",
-        "What are covered calls?"
+        "What are covered calls?",
+        "Explain options trading for beginners"
       ]);
-    } else if (userQuestion.includes("stock") || userQuestion.includes("share")) {
+    } else if (userQuestion.includes("stock") || userQuestion.includes("share") || userQuestion.match(/\b[A-Z]{2,5}\b/)) {
       setSuggestedQuestions([
         "Show me Zomato stock data",
         "What's the current price of MSFT?",
         "Tell me about AMZN stock",
-        "Show me TSLA performance"
+        "Show me TSLA performance",
+        "Compare AAPL and GOOGL"
+      ]);
+    } else if (userQuestion.includes("invest") || userQuestion.includes("portfolio")) {
+      setSuggestedQuestions([
+        "How to build a diversified portfolio?",
+        "What is dollar-cost averaging?",
+        "Long-term vs short-term investing",
+        "How to rebalance a portfolio?",
+        "Explain risk management strategies"
+      ]);
+    } else if (userQuestion.includes("dividend") || userQuestion.includes("income")) {
+      setSuggestedQuestions([
+        "What are dividend stocks?",
+        "How do dividend yields work?",
+        "Best dividend stocks to consider",
+        "Dividend reinvestment plans explained",
+        "Tax implications of dividends"
       ]);
     } else {
       setSuggestedQuestions([
         "Show me today's top gainers",
         "What's the difference between stocks and bonds?",
         "How do dividends work?",
-        "What are ETFs?"
+        "What are ETFs?",
+        "Explain market capitalization"
       ]);
     }
   };
@@ -563,81 +742,214 @@ Would you like me to explain any of these features in more detail?`;
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Format message text with line breaks, quotes, bullet points, and hashes
+  // Format message text with line breaks, quotes, bullet points, tables, and hashes
   const formatMessageText = (text) => {
-    // First handle line breaks
-    const lines = text.split('\n');
+    if (!text) return null;
 
-    return lines.map((line, i) => {
-      // Skip empty lines but preserve the break
-      if (line.trim() === '') {
-        return <React.Fragment key={i}><br /></React.Fragment>;
+    try {
+      // Check if the text contains a table
+      if (text.includes('|')) {
+        return formatTableMessage(text);
       }
 
-      // Handle bullet points (e.g., • Item or * Item or - Item)
-      if (line.trim().match(/^(•|\*|\-)\s+/)) {
-        const bulletContent = line.trim().replace(/^(•|\*|\-)\s+/, '');
+      // First handle line breaks
+      const lines = text.split('\n');
+
+      return lines.map((line, i) => {
+        // Skip empty lines but preserve the break
+        if (line.trim() === '') {
+          return <React.Fragment key={i}><br /></React.Fragment>;
+        }
+
+        // Handle bullet points (e.g., • Item or * Item or - Item)
+        if (line.trim().match(/^(•|\*|\-)\s+/)) {
+          const bulletContent = line.trim().replace(/^(•|\*|\-)\s+/, '');
+          return (
+            <React.Fragment key={i}>
+              <div className="bullet-point-row">
+                <span className="bullet-point">•</span>
+                <span className="bullet-content">{formatInlineText(bulletContent)}</span>
+              </div>
+              {i < lines.length - 1 && <br />}
+            </React.Fragment>
+          );
+        }
+
+        // Handle headers with hash (e.g., # Header)
+        if (line.match(/^#+\s/)) {
+          const headerLevel = line.match(/^(#+)\s/)[1].length;
+          const headerText = line.replace(/^#+\s/, '');
+          return (
+            <React.Fragment key={i}>
+              <span className={`header-${headerLevel}`}>{formatInlineText(headerText)}</span>
+              {i < lines.length - 1 && <br />}
+            </React.Fragment>
+          );
+        }
+
+        // Handle stock data formatting (e.g., Price: $100.00)
+        if (line.match(/^(Price|Daily High|Daily Low|Market Cap|P\/E Ratio|Volume):/)) {
+          const parts = line.split(':');
+          const label = parts[0].trim();
+          const value = parts.slice(1).join(':').trim(); // Handle colons in the value
+          return (
+            <React.Fragment key={i}>
+              <div className="stock-data-row">
+                <span className="stock-data-label">{label}:</span>
+                <span className="stock-data-value">{formatInlineText(value)}</span>
+              </div>
+              {i < lines.length - 1 && <br />}
+            </React.Fragment>
+          );
+        }
+
+        // For regular lines, use the inline text formatter
         return (
           <React.Fragment key={i}>
-            <div className="bullet-point-row">
-              <span className="bullet-point">•</span>
-              <span className="bullet-content">{bulletContent}</span>
-            </div>
+            <span>{formatInlineText(line)}</span>
             {i < lines.length - 1 && <br />}
           </React.Fragment>
         );
-      }
+      });
+    } catch (error) {
+      console.error("Error formatting message:", error);
+      // Return the plain text as fallback
+      return <span>{text}</span>;
+    }
+  };
 
-      // Handle headers with hash (e.g., # Header)
-      if (line.match(/^#+\s/)) {
-        const headerLevel = line.match(/^(#+)\s/)[1].length;
-        const headerText = line.replace(/^#+\s/, '');
-        return (
-          <React.Fragment key={i}>
-            <span className={`header-${headerLevel}`}>{headerText}</span>
-            {i < lines.length - 1 && <br />}
-          </React.Fragment>
-        );
-      }
+  // Format inline text elements (bold, italic, quotes)
+  const formatInlineText = (text) => {
+    if (!text) return null;
 
-      // Handle stock data formatting (e.g., Price: $100.00)
-      if (line.match(/^(Price|Daily High|Daily Low|Market Cap|P\/E Ratio|Volume):/)) {
-        const parts = line.split(':');
-        const label = parts[0].trim();
-        const value = parts.slice(1).join(':').trim(); // Handle colons in the value
-        return (
-          <React.Fragment key={i}>
-            <div className="stock-data-row">
-              <span className="stock-data-label">{label}:</span>
-              <span className="stock-data-value">{value}</span>
-            </div>
-            {i < lines.length - 1 && <br />}
-          </React.Fragment>
-        );
-      }
+    try {
+      // Create a temporary element to safely parse HTML
+      const tempDiv = document.createElement('div');
 
-      // Process other markdown-style formatting
-      let processedLine = line;
+      // Process markdown-style formatting
+      let processedText = text;
 
       // Handle bold text with asterisks (e.g., *bold*)
-      processedLine = processedLine.replace(
-        /\*(.*?)\*/g,
-        '<strong>$1</strong>'
-      );
+      processedText = processedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      processedText = processedText.replace(/\*(.*?)\*/g, '<strong>$1</strong>');
+
+      // Handle italic text with underscores (e.g., _italic_)
+      processedText = processedText.replace(/_(.*?)_/g, '<em>$1</em>');
 
       // Handle quotes (e.g., "quote")
-      processedLine = processedLine.replace(
-        /"(.*?)"/g,
-        '<span class="quoted-text">"$1"</span>'
+      processedText = processedText.replace(/"([^"]+)"/g, '<span class="quoted-text">"$1"</span>');
+
+      // Set the processed text to the temporary element
+      tempDiv.innerHTML = processedText;
+
+      // Return the formatted content
+      return <span dangerouslySetInnerHTML={{ __html: tempDiv.innerHTML }} />;
+    } catch (error) {
+      console.error("Error formatting inline text:", error);
+      // Return the plain text as fallback
+      return text;
+    }
+  };
+
+  // Format message containing a table
+  const formatTableMessage = (text) => {
+    try {
+      // Split the text into lines
+      const lines = text.split('\n');
+
+      // Find table start and end indices
+      let tableStartIndex = -1;
+      let tableEndIndex = -1;
+
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].trim().startsWith('|') && tableStartIndex === -1) {
+          tableStartIndex = i;
+        } else if (tableStartIndex !== -1 && !lines[i].trim().startsWith('|') && tableEndIndex === -1) {
+          tableEndIndex = i - 1;
+          break;
+        }
+      }
+
+      // If we found the start but not the end, set end to the last line
+      if (tableStartIndex !== -1 && tableEndIndex === -1) {
+        tableEndIndex = lines.length - 1;
+      }
+
+      // If no table was found, format normally
+      if (tableStartIndex === -1) {
+        return lines.map((line, i) => (
+          <React.Fragment key={i}>
+            {formatInlineText(line)}
+            {i < lines.length - 1 && <br />}
+          </React.Fragment>
+        ));
+      }
+
+      // Format content before the table
+      const beforeTable = lines.slice(0, tableStartIndex).map((line, i) => (
+        <React.Fragment key={`before-${i}`}>
+          {formatInlineText(line)}
+          <br />
+        </React.Fragment>
+      ));
+
+      // Format the table
+      const tableLines = lines.slice(tableStartIndex, tableEndIndex + 1);
+      const tableRows = tableLines.map(line =>
+        line.trim().split('|').filter(cell => cell.trim() !== '')
       );
 
-      return (
-        <React.Fragment key={i}>
-          <span dangerouslySetInnerHTML={{ __html: processedLine }} />
-          {i < lines.length - 1 && <br />}
-        </React.Fragment>
+      // Check if the second row contains separator (e.g., |:---|:---|)
+      const hasSeparator = tableRows.length > 1 &&
+                          tableRows[1].some(cell => cell.trim().match(/^:?-+:?$/));
+
+      // Determine header row index and data rows
+      const headerRowIndex = 0;
+      const dataStartIndex = hasSeparator ? 2 : 1;
+
+      const table = (
+        <table className="chat-table">
+          <thead>
+            <tr>
+              {tableRows[headerRowIndex].map((cell, i) => (
+                <th key={i}>{formatInlineText(cell.trim())}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {tableRows.slice(dataStartIndex).map((row, rowIndex) => (
+              <tr key={rowIndex}>
+                {row.map((cell, cellIndex) => (
+                  <td key={cellIndex}>{formatInlineText(cell.trim())}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       );
-    });
+
+      // Format content after the table
+      const afterTable = lines.slice(tableEndIndex + 1).map((line, i) => (
+        <React.Fragment key={`after-${i}`}>
+          {formatInlineText(line)}
+          {i < lines.length - tableEndIndex - 2 && <br />}
+        </React.Fragment>
+      ));
+
+      // Combine everything
+      return (
+        <>
+          {beforeTable}
+          {table}
+          <br />
+          {afterTable}
+        </>
+      );
+    } catch (error) {
+      console.error("Error formatting table message:", error);
+      // Return the plain text as fallback
+      return <span>{text}</span>;
+    }
   };
 
   return (
@@ -651,7 +963,7 @@ Would you like me to explain any of these features in more detail?`;
             transition={{ duration: 0.5 }}
           >
             <h1>Trading Assistant</h1>
-            <p>Your AI-powered guide to the stock market</p>
+            <p>Ask about stocks, market trends, or trading strategies</p>
           </motion.div>
         </div>
 
@@ -672,7 +984,7 @@ Would you like me to explain any of these features in more detail?`;
                   className="sidebar-section virtual-money-section"
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.5, delay: 0.1 }}
+                  transition={{ duration: 0.5, delay: 0.15 }}
                 >
                   <h3><FiDollarSign /> Virtual Money</h3>
                   <div className="virtual-balance">
@@ -684,7 +996,7 @@ Would you like me to explain any of these features in more detail?`;
                       animate={{ scale: [1, 1.1, 1] }}
                       transition={{ duration: 0.5 }}
                     >
-                      ${virtualMoney.balance.toLocaleString()}
+                      ₹{virtualMoney.balance.toLocaleString()}
                     </motion.span>
                   </div>
                   <div className="reward-section">
@@ -695,7 +1007,7 @@ Would you like me to explain any of these features in more detail?`;
                     >
                       <FiGift /> {virtualMoney.lastLoginReward && new Date(virtualMoney.lastLoginReward).setHours(0,0,0,0) === new Date().setHours(0,0,0,0) ? 'Reward Claimed' : 'Claim Daily Reward'}
                     </button>
-                    <p className="reward-info">Login daily to earn 1 coin!</p>
+                    <p className="reward-info">Login daily to earn ₹1!</p>
                   </div>
                   <AnimatePresence>
                     {showRewardAnimation && (
@@ -706,43 +1018,54 @@ Would you like me to explain any of these features in more detail?`;
                         exit={{ opacity: 0, y: -20 }}
                       >
                         <FiGift className="reward-icon" />
-                        <span>+1 coin!</span>
+                        <span>+₹1</span>
                       </motion.div>
                     )}
                   </AnimatePresence>
                 </motion.div>
+
                 <motion.div
                   className="sidebar-section"
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.5, delay: 0.2 }}
+                  transition={{ duration: 0.5, delay: 0.25 }}
                 >
-                  <h3><FiInfo /> About</h3>
-                  <p>Ask me anything about stocks, market trends, or trading strategies.</p>
-                </motion.div>
-                <motion.div
-                  className="sidebar-section"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.5, delay: 0.3 }}
-                >
-                  <h3><FiHelpCircle /> Tips</h3>
-                  <ul>
-                    <li>Ask about specific stocks</li>
-                    <li>Get market insights</li>
-                    <li>Learn trading concepts</li>
-                    <li>Analyze market trends</li>
-                    <li>Use virtual money to practice trading</li>
+                  <h3><FiMessageSquare /> Quick Tips</h3>
+                  <ul className="capabilities-list">
+                    <motion.li
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.3 }}
+                    >
+                      <span className="capability-icon">📊</span>
+                      <span>Ask about stock prices</span>
+                    </motion.li>
+                    <motion.li
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.4 }}
+                    >
+                      <span className="capability-icon">📈</span>
+                      <span>Get market trends</span>
+                    </motion.li>
+                    <motion.li
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.5 }}
+                    >
+                      <span className="capability-icon">🧠</span>
+                      <span>Learn trading strategies</span>
+                    </motion.li>
                   </ul>
                 </motion.div>
               </div>
 
               <div className="chat-main" ref={chatContainerRef}>
                 <div className="chat-messages">
-                  {error && (
+                  {errorMessage && (
                     <div className="error-message">
                       <FiAlertCircle />
-                      <span>{error}</span>
+                      <span>{errorMessage}</span>
                     </div>
                   )}
 
@@ -753,23 +1076,40 @@ Would you like me to explain any of these features in more detail?`;
                         className={`message ${message.sender === "bot" ? "bot" : "user"}
                                   ${message.stockData ? "stock-data" : ""}
                                   ${message.topGainers ? "top-gainers" : ""}
-                                  ${message.isNotification ? "notification" : ""}`}
+                                  ${message.isNotification ? "notification" : ""}
+                                  ${message.fromGemini ? "from-gemini" : ""}
+                                  ${message.isMockResponse ? "mock-response" : ""}`}
                         initial={{ opacity: 0, y: 20, scale: 0.8 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         transition={{ duration: 0.3, delay: index * 0.1 }}
                       >
                         <div className="message-avatar">
-                          {message.sender === "bot" ?
-                            (message.isNotification ? <FiBell /> : <FiCpu />) :
-                            <FiUser />}
+                          {message.sender === "bot" ? (
+                            <FiCpu />
+                          ) : (
+                            <FiUser />
+                          )}
                         </div>
                         <div className="message-content">
+                          {message.fromGemini && (
+                            <div className="message-source">
+                              <span className="gemini-badge">Gemini 2.0</span>
+                            </div>
+                          )}
                           <div className={`message-text
                                         ${message.isError ? 'error' : ''}
-                                        ${message.isOffline ? 'offline' : ''}`}>
+                                        ${message.isOffline ? 'offline' : ''}
+                                        ${message.isMockResponse ? 'mock-response' : ''}`}>
                             {formatMessageText(message.text)}
                           </div>
-                          <div className="message-time">{formatTimestamp(message.timestamp)}</div>
+                          <div className="message-meta">
+                            <div className="message-time">{formatTimestamp(message.timestamp)}</div>
+                            {message.fromGemini && (
+                              <div className="message-model">
+                                <FiZap className="model-icon" />
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </motion.div>
                     ))}
@@ -821,7 +1161,7 @@ Would you like me to explain any of these features in more detail?`;
                               initial={{ opacity: 0, y: 10 }}
                               animate={{ opacity: 1, y: 0 }}
                               transition={{ duration: 0.3, delay: index * 0.05 }}
-                              whileHover={{ scale: 1.05, backgroundColor: "var(--primary-light)" }}
+                              whileHover={{ scale: 1.05 }}
                               whileTap={{ scale: 0.95 }}
                             >
                               {question}
@@ -843,7 +1183,7 @@ Would you like me to explain any of these features in more detail?`;
                     <motion.button
                       type="submit"
                       disabled={inputValue.trim() === "" || isTyping || !sessionId}
-                      whileHover={{ scale: 1.1, backgroundColor: "var(--primary-dark)" }}
+                      whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                     >
                       <FiSend />

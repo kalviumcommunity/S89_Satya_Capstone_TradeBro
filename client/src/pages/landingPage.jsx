@@ -1,74 +1,175 @@
-import React, { useState, memo } from "react";
+import React, { useState, memo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { FiMenu, FiX, FiBarChart2, FiPieChart, FiTrendingUp, FiArrowRight } from "react-icons/fi";
 import "./LandingPage.css";
 
+// Import animation components
+import {
+  ScrollReveal,
+  StaggerContainer,
+  FloatingElement,
+  AnimatedText,
+  ParallaxSection,
+  HoverElement
+} from "../components/animations";
+
 // Memoized components for better performance
-const NavBar = memo(({ mobileMenuOpen, toggleMobileMenu, handleGetStarted }) => (
-  <header className="navbar">
-    <div className="logo">TradeBro</div>
-    <button className="mobile-menu-btn" onClick={toggleMobileMenu} aria-label="Toggle menu">
-      {mobileMenuOpen ? <FiX /> : <FiMenu />}
-    </button>
-    <nav className={`nav-links ${mobileMenuOpen ? 'mobile-active' : ''}`}>
-      <a href="#features" onClick={() => toggleMobileMenu(false)}>Features</a>
-      <a href="#about" onClick={() => toggleMobileMenu(false)}>About</a>
-      <a href="#contact" onClick={() => toggleMobileMenu(false)}>Contact</a>
-      <button className="cta-button" onClick={handleGetStarted}>
-        Get Started
+const NavBar = memo(({ mobileMenuOpen, toggleMobileMenu, handleGetStarted }) => {
+  const [scrolled, setScrolled] = useState(false);
+
+  // Add scroll event listener
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 50);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  return (
+    <motion.header
+      className={`navbar ${scrolled ? 'scrolled' : ''}`}
+      initial={{ y: -100, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.5, ease: [0.6, 0.05, -0.01, 0.9] }}
+    >
+      <motion.div
+        className="logo"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        TradeBro
+      </motion.div>
+      <button className="mobile-menu-btn" onClick={toggleMobileMenu} aria-label="Toggle menu">
+        {mobileMenuOpen ? <FiX /> : <FiMenu />}
       </button>
-    </nav>
-  </header>
-));
+      <nav className={`nav-links ${mobileMenuOpen ? 'mobile-active' : ''}`}>
+        <motion.a
+          href="#features"
+          onClick={() => toggleMobileMenu(false)}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          Features
+        </motion.a>
+        <motion.a
+          href="#about"
+          onClick={() => toggleMobileMenu(false)}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          About
+        </motion.a>
+        <motion.a
+          href="#contact"
+          onClick={() => toggleMobileMenu(false)}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          Contact
+        </motion.a>
+        <HoverElement effect="both">
+          <button className="cta-button" onClick={handleGetStarted}>
+            Get Started
+          </button>
+        </HoverElement>
+      </nav>
+    </motion.header>
+  );
+});
 
-const HeroSection = memo(({ handleGetStarted }) => (
-  <section className="hero-section">
-    <div className="hero-content">
-      <h1>Master the Markets with Confidence</h1>
-      <p>
-        TradeBro is your personal stock market companion — track live data, simulate portfolios, and unlock insights with AI-powered tools.
-      </p>
-      <div className="hero-buttons">
-        <button className="primary-btn" onClick={handleGetStarted}>
-          Get Started <FiArrowRight style={{ marginLeft: '8px', verticalAlign: 'middle' }} />
-        </button>
-        <button className="secondary-btn">View Demo</button>
-      </div>
-    </div>
-    <div className="hero-visual">
-      <img src="https://i.pinimg.com/736x/51/bd/0f/51bd0f73220b38ec9066cab7b1df517c.jpg" alt="Stock Market Dashboard" loading="eager" />
-    </div>
-  </section>
-));
+const HeroSection = memo(({ handleGetStarted }) => {
+  // Parallax effect for hero section
+  const { scrollYProgress } = useScroll();
+  const y = useTransform(scrollYProgress, [0, 1], [0, 300]);
 
-// Feature component for reusability
+  return (
+    <section className="hero-section">
+      <motion.div
+        className="hero-content"
+        initial={{ opacity: 0, y: 50 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, ease: [0.6, 0.05, -0.01, 0.9] }}
+      >
+        <AnimatedText
+          text="Master the Markets with Confidence"
+          type="words"
+          animation="fadeUp"
+          className="hero-title"
+        />
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+        >
+          TradeBro is your personal stock market companion — track live data, simulate portfolios, and unlock insights with AI-powered tools.
+        </motion.p>
+        <motion.div
+          className="hero-buttons"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.6 }}
+        >
+          <HoverElement effect="both">
+            <button className="primary-btn" onClick={handleGetStarted}>
+              Get Started <FiArrowRight style={{ marginLeft: '8px', verticalAlign: 'middle' }} />
+            </button>
+          </HoverElement>
+          <HoverElement effect="lift">
+            <button className="secondary-btn">View Demo</button>
+          </HoverElement>
+        </motion.div>
+      </motion.div>
+      <FloatingElement amplitude={15} duration={4}>
+        <motion.div
+          className="hero-visual"
+          initial={{ opacity: 0, scale: 0.8, x: 100 }}
+          animate={{ opacity: 1, scale: 1, x: 0 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          style={{ y }}
+        >
+          <img src="https://i.pinimg.com/736x/51/bd/0f/51bd0f73220b38ec9066cab7b1df517c.jpg" alt="Stock Market Dashboard" loading="eager" />
+        </motion.div>
+      </FloatingElement>
+    </section>
+  );
+});
+
+// Feature component with animations
 const Feature = ({ icon: Icon, title, description }) => (
-  <div className="feature">
+  <HoverElement effect="lift" className="feature">
     <span className="feature-highlight"></span>
-    <div className="feature-icon-wrapper">
+    <FloatingElement amplitude={5} duration={3} className="feature-icon-wrapper">
       <Icon className="feature-icon" />
-    </div>
+    </FloatingElement>
     <h3>{title}</h3>
     <p>{description}</p>
-  </div>
+  </HoverElement>
 );
 
-// Gallery item component
+// Gallery item component with animations
 const GalleryItem = ({ src, alt, caption }) => (
-  <div className="gallery-item">
+  <HoverElement effect="both" className="gallery-item">
     <img src={src} alt={alt} loading="lazy" />
-    <div className="gallery-caption">
+    <motion.div
+      className="gallery-caption"
+      initial={{ opacity: 0, y: 20 }}
+      whileHover={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
       <h4>{caption}</h4>
-    </div>
-  </div>
+    </motion.div>
+  </HoverElement>
 );
 
-// Testimonial component
+// Testimonial component with animations
 const Testimonial = ({ quote, author }) => (
-  <div className="testimonial">
+  <HoverElement effect="lift" className="testimonial">
     <p>"{quote}"</p>
     <h4>- {author}</h4>
-  </div>
+  </HoverElement>
 );
 
 const LandingPage = () => {
@@ -135,75 +236,123 @@ const LandingPage = () => {
 
   return (
     <div className="landing-container">
-      <NavBar 
-        mobileMenuOpen={mobileMenuOpen} 
-        toggleMobileMenu={toggleMobileMenu} 
-        handleGetStarted={handleGetStarted} 
+      <NavBar
+        mobileMenuOpen={mobileMenuOpen}
+        toggleMobileMenu={toggleMobileMenu}
+        handleGetStarted={handleGetStarted}
       />
 
       <HeroSection handleGetStarted={handleGetStarted} />
 
-      <section className="features-section" id="features">
-        <h2 className="section-title">Key Features</h2>
-        <div className="features-grid">
-          {features.map((feature, index) => (
-            <Feature 
-              key={index}
-              icon={feature.icon}
-              title={feature.title}
-              description={feature.description}
+      <ScrollReveal>
+        <section className="features-section" id="features">
+          <h2 className="section-title">Key Features</h2>
+          <StaggerContainer className="features-grid" childVariant="fadeUp">
+            {features.map((feature, index) => (
+              <Feature
+                key={index}
+                icon={feature.icon}
+                title={feature.title}
+                description={feature.description}
+              />
+            ))}
+          </StaggerContainer>
+        </section>
+      </ScrollReveal>
+
+      <ParallaxSection speed={0.2} direction="up">
+        <ScrollReveal>
+          <section className="about-section" id="about">
+            <AnimatedText text="About TradeBro" type="words" className="section-title" />
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
+              Built for new investors and seasoned traders alike, TradeBro offers a modern platform for learning, testing, and mastering the stock market.
+            </motion.p>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+            >
+              From real-time market feeds to intelligent chat assistance and demo trading, we help you trade smarter — with confidence and clarity.
+            </motion.p>
+          </section>
+        </ScrollReveal>
+      </ParallaxSection>
+
+      <ScrollReveal>
+        <section className="gallery-section">
+          <h2 className="section-title">Platform Showcase</h2>
+          <StaggerContainer className="gallery-grid" childVariant="scale">
+            {galleryItems.map((item, index) => (
+              <GalleryItem
+                key={index}
+                src={item.src}
+                alt={item.alt}
+                caption={item.caption}
+              />
+            ))}
+          </StaggerContainer>
+        </section>
+      </ScrollReveal>
+
+      <ScrollReveal>
+        <section className="testimonials-section">
+          <h2 className="section-title">What Our Users Say</h2>
+          <StaggerContainer className="testimonials" childVariant="fadeUp">
+            {testimonials.map((testimonial, index) => (
+              <Testimonial
+                key={index}
+                quote={testimonial.quote}
+                author={testimonial.author}
+              />
+            ))}
+          </StaggerContainer>
+        </section>
+      </ScrollReveal>
+
+      <ScrollReveal>
+        <section className="contact-section" id="contact">
+          <h2 className="section-title">Contact Us</h2>
+          <p>Have a question or suggestion? We'd love to hear from you.</p>
+          <motion.form
+            className="contact-form"
+            onSubmit={(e) => e.preventDefault()}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            <motion.input
+              type="text"
+              placeholder="Your Name"
+              required
+              aria-label="Your Name"
+              whileFocus={{ scale: 1.02, boxShadow: "0 0 0 3px rgba(27, 142, 153, 0.2)" }}
             />
-          ))}
-        </div>
-      </section>
-
-      <section className="about-section" id="about">
-        <h2>About TradeBro</h2>
-        <p>
-          Built for new investors and seasoned traders alike, TradeBro offers a modern platform for learning, testing, and mastering the stock market.
-        </p>
-        <p>
-          From real-time market feeds to intelligent chat assistance and demo trading, we help you trade smarter — with confidence and clarity.
-        </p>
-      </section>
-
-      <section className="gallery-section">
-        <h2>Platform Showcase</h2>
-        <div className="gallery-grid">
-          {galleryItems.map((item, index) => (
-            <GalleryItem 
-              key={index}
-              src={item.src}
-              alt={item.alt}
-              caption={item.caption}
+            <motion.input
+              type="email"
+              placeholder="Your Email"
+              required
+              aria-label="Your Email"
+              whileFocus={{ scale: 1.02, boxShadow: "0 0 0 3px rgba(27, 142, 153, 0.2)" }}
             />
-          ))}
-        </div>
-      </section>
-
-      <section className="testimonials-section">
-        <h2>What Our Users Say</h2>
-        <div className="testimonials">
-          {testimonials.map((testimonial, index) => (
-            <Testimonial 
-              key={index}
-              quote={testimonial.quote}
-              author={testimonial.author}
-            />
-          ))}
-        </div>
-      </section>
-
-      <section className="contact-section" id="contact">
-        <h2>Contact Us</h2>
-        <p>Have a question or suggestion? We'd love to hear from you.</p>
-        <form className="contact-form" onSubmit={(e) => e.preventDefault()}>
-          <input type="text" placeholder="Your Name" required aria-label="Your Name" />
-          <input type="email" placeholder="Your Email" required aria-label="Your Email" />
-          <textarea placeholder="Your Message" required aria-label="Your Message"></textarea>
-          <button type="submit" className="primary-btn">Send Message</button>
-        </form>
-      </section>
+            <motion.textarea
+              placeholder="Your Message"
+              required
+              aria-label="Your Message"
+              whileFocus={{ scale: 1.02, boxShadow: "0 0 0 3px rgba(27, 142, 153, 0.2)" }}
+            ></motion.textarea>
+            <HoverElement effect="both">
+              <button type="submit" className="primary-btn">Send Message</button>
+            </HoverElement>
+          </motion.form>
+        </section>
+      </ScrollReveal>
 
       <footer className="footer">
         <p>© {new Date().getFullYear()} TradeBro. All rights reserved.</p>
@@ -215,7 +364,15 @@ const LandingPage = () => {
             { name: "LinkedIn", url: "https://linkedin.com" }
           ].map((social, index, arr) => (
             <React.Fragment key={social.name}>
-              <a href={social.url} target="_blank" rel="noopener noreferrer"> {social.name} </a>
+              <motion.a
+                href={social.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                whileHover={{ color: "#1B8E99", scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                {social.name}
+              </motion.a>
               {index < arr.length - 1 && "| "}
             </React.Fragment>
           ))}

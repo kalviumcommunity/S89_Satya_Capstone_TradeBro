@@ -40,6 +40,7 @@ export const API_ENDPOINTS = {
     SELL: `${API_BASE_URL}/api/virtual-money/sell`,
     CLAIM_REWARD: `${API_BASE_URL}/api/virtual-money/claim-reward`,
     REWARD_STATUS: `${API_BASE_URL}/api/virtual-money/reward-status`,
+    REWARD_STATUS_PUBLIC: `${API_BASE_URL}/api/virtual-money/reward-status-public`,
     TRANSACTIONS: `${API_BASE_URL}/api/virtual-money/transactions`,
     PORTFOLIO: `${API_BASE_URL}/api/virtual-money/portfolio`,
   },
@@ -56,6 +57,7 @@ export const API_ENDPOINTS = {
     STOCKS: `${API_BASE_URL}/api/watchlist/stocks`,
     ADD: `${API_BASE_URL}/api/watchlist/add`,
     REMOVE: (symbol) => `${API_BASE_URL}/api/watchlist/remove/${symbol}`,
+    SEARCH: `${API_BASE_URL}/api/watchlist/search`,
   },
 
   // Proxy endpoints
@@ -71,6 +73,7 @@ export const API_ENDPOINTS = {
   // Stock Search endpoints
   STOCK_SEARCH: {
     SEARCH: `${API_BASE_URL}/api/stock-search`,
+    SEARCH_DIRECT: `${API_BASE_URL}/api/stocks/search`,
     LIST: `${API_BASE_URL}/api/stock-search/list`,
   },
 

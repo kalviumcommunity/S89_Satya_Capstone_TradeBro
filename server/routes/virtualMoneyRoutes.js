@@ -286,7 +286,7 @@ router.post('/claim-reward', verifyToken, async (req, res) => {
       }
 
       // Add reward
-      const rewardAmount = 1; // 1 virtual coin per day
+      const rewardAmount = 1; // ₹1 per day
       virtualMoney.balance += rewardAmount;
       virtualMoney.lastLoginReward = now;
 
@@ -370,7 +370,45 @@ router.post('/claim-reward', verifyToken, async (req, res) => {
   }
 });
 
-// Check reward status
+// Public reward status endpoint (no authentication required)
+router.get('/reward-status-public', async (req, res) => {
+  try {
+    // This is a public endpoint that doesn't require authentication
+    // It returns mock data for testing purposes
+
+    const now = new Date();
+    // Mock last reward time (12 hours ago)
+    const lastReward = new Date(now.getTime() - (12 * 60 * 60 * 1000));
+    const hoursSinceLastReward = 12;
+
+    // Calculate time remaining
+    const minutesRemaining = Math.ceil((24 - hoursSinceLastReward) * 60);
+    const hoursRemaining = Math.floor(minutesRemaining / 60);
+    const mins = minutesRemaining % 60;
+
+    return res.status(200).json({
+      success: true,
+      canClaim: false,
+      message: `You can claim your next reward in ${hoursRemaining}h ${mins}m`,
+      timeRemaining: {
+        hours: hoursRemaining,
+        minutes: mins,
+        totalMinutes: minutesRemaining
+      },
+      balance: 10000,
+      balanceFormatted: '₹10,000'
+    });
+  } catch (error) {
+    console.error('Error in public reward status endpoint:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+});
+
+// Check reward status (authenticated version)
 router.get('/reward-status', verifyToken, async (req, res) => {
   try {
     // Get user details

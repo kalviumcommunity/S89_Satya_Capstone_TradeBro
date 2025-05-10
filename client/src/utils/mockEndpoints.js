@@ -662,6 +662,57 @@ const setupMockDeleteEndpoints = () => {
   axios.delete = function(url, config) {
     // Handle specific DELETE endpoints here
 
+    // Handle portfolio reset endpoint
+    if (url && url.includes('/api/virtual-money/portfolio')) {
+      console.log('Using mock portfolio reset endpoint');
+
+      try {
+        // Get current virtual money data
+        let virtualMoneyData = {
+          balance: 10000,
+          balanceFormatted: '₹10,000',
+          lastLoginReward: null,
+          portfolio: [],
+          currency: 'INR'
+        };
+
+        // Try to get existing data from localStorage
+        const storedData = localStorage.getItem('virtualMoney');
+        if (storedData) {
+          const parsedData = JSON.parse(storedData);
+          if (parsedData && typeof parsedData.balance === 'number') {
+            // Keep the balance but reset the portfolio
+            virtualMoneyData = {
+              ...parsedData,
+              portfolio: []
+            };
+          }
+        }
+
+        // Save updated data back to localStorage
+        localStorage.setItem('virtualMoney', JSON.stringify(virtualMoneyData));
+
+        return Promise.resolve({
+          data: {
+            success: true,
+            message: 'Portfolio has been reset successfully',
+            data: virtualMoneyData
+          }
+        });
+      } catch (error) {
+        console.error('Error in mock portfolio reset:', error);
+        return Promise.reject({
+          response: {
+            status: 500,
+            data: {
+              success: false,
+              message: 'Failed to reset portfolio'
+            }
+          }
+        });
+      }
+    }
+
     // Handle watchlist remove endpoint
     if (url && url.includes('/api/watchlist/remove/')) {
       console.log('Using mock watchlist remove endpoint');

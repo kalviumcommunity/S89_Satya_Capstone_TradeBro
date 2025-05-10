@@ -3,7 +3,7 @@ import { setupMockHealthEndpoint } from './mockEndpoints';
 import { API_BASE_URL } from '../config/apiConfig';
 
 // Configure axios defaults
-axios.defaults.timeout = 5000; // 5 seconds timeout by default
+axios.defaults.timeout = 10000; // 10 seconds timeout by default
 axios.defaults.baseURL = API_BASE_URL; // Set the base URL for all requests
 
 // Set up global error handling for network errors
@@ -35,6 +35,14 @@ axios.interceptors.request.use(
       console.log(`Request to ${config.url} with auth token`);
     } else {
       console.log(`Request to ${config.url} without auth token`);
+
+      // Check if we're on a page that should have auth but doesn't
+      const currentPath = window.location.pathname;
+      const authRequiredPaths = ['/portfolio', '/dashboard', '/settings', '/watchlist', '/orders'];
+
+      if (authRequiredPaths.includes(currentPath)) {
+        console.warn(`WARNING: No auth token found for request to ${config.url} while on ${currentPath}`);
+      }
     }
 
     return config;
@@ -412,7 +420,7 @@ axios.interceptors.response.use(
         }
 
         // If it's a stock search endpoint
-        if (error.config.url.includes('/api/stocks/search')) {
+        if (error.config.url.includes('/api/stock-search') || error.config.url.includes('/api/stocks/search')) {
           console.log('Returning mock stock search data for network error');
 
           // Extract the query parameter
@@ -429,20 +437,20 @@ axios.interceptors.response.use(
             });
           }
 
-          // Mock stock data
+          // Enhanced mock stock data with more fields
           const mockStocks = [
-            { symbol: "AAPL", name: "Apple Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock" },
-            { symbol: "MSFT", name: "Microsoft Corporation", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock" },
-            { symbol: "GOOGL", name: "Alphabet Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock" },
-            { symbol: "AMZN", name: "Amazon.com Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock" },
-            { symbol: "META", name: "Meta Platforms Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock" },
-            { symbol: "TSLA", name: "Tesla, Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock" },
-            { symbol: "NFLX", name: "Netflix, Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock" },
-            { symbol: "NVDA", name: "NVIDIA Corporation", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock" },
-            { symbol: "RELIANCE.BSE", name: "Reliance Industries", exchange: "BSE", exchangeShortName: "BSE", type: "stock" },
-            { symbol: "TCS.BSE", name: "Tata Consultancy Services", exchange: "BSE", exchangeShortName: "BSE", type: "stock" },
-            { symbol: "INFY.BSE", name: "Infosys Ltd", exchange: "BSE", exchangeShortName: "BSE", type: "stock" },
-            { symbol: "HDFCBANK.BSE", name: "HDFC Bank Ltd", exchange: "BSE", exchangeShortName: "BSE", type: "stock" }
+            { symbol: "AAPL", name: "Apple Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock", country: "United States", currency: "USD" },
+            { symbol: "MSFT", name: "Microsoft Corporation", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock", country: "United States", currency: "USD" },
+            { symbol: "GOOGL", name: "Alphabet Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock", country: "United States", currency: "USD" },
+            { symbol: "AMZN", name: "Amazon.com Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock", country: "United States", currency: "USD" },
+            { symbol: "META", name: "Meta Platforms Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock", country: "United States", currency: "USD" },
+            { symbol: "TSLA", name: "Tesla, Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock", country: "United States", currency: "USD" },
+            { symbol: "NFLX", name: "Netflix, Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock", country: "United States", currency: "USD" },
+            { symbol: "NVDA", name: "NVIDIA Corporation", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock", country: "United States", currency: "USD" },
+            { symbol: "RELIANCE.BSE", name: "Reliance Industries", exchange: "BSE", exchangeShortName: "BSE", type: "stock", country: "India", currency: "INR" },
+            { symbol: "TCS.BSE", name: "Tata Consultancy Services", exchange: "BSE", exchangeShortName: "BSE", type: "stock", country: "India", currency: "INR" },
+            { symbol: "INFY.BSE", name: "Infosys Ltd", exchange: "BSE", exchangeShortName: "BSE", type: "stock", country: "India", currency: "INR" },
+            { symbol: "HDFCBANK.BSE", name: "HDFC Bank Ltd", exchange: "BSE", exchangeShortName: "BSE", type: "stock", country: "India", currency: "INR" }
           ];
 
           // Filter stocks based on query
@@ -451,14 +459,32 @@ axios.interceptors.response.use(
             stock.name.toLowerCase().includes(query.toLowerCase())
           );
 
-          return Promise.resolve({
-            data: {
-              success: true,
-              data: filteredStocks,
-              query,
-              note: 'Using mock data due to network error'
-            }
-          });
+          console.log(`Found ${filteredStocks.length} mock stocks matching "${query}"`);
+
+          // Check which endpoint format to use
+          if (error.config.url.includes('/api/stocks/search')) {
+            // Direct endpoint format
+            return Promise.resolve({
+              data: {
+                success: true,
+                results: filteredStocks,
+                query,
+                source: 'mock',
+                note: 'Using mock data due to network error'
+              }
+            });
+          } else if (error.config.url.includes('/api/stock-search')) {
+            // stock-search endpoint format
+            return Promise.resolve({
+              data: {
+                success: true,
+                data: filteredStocks,
+                query,
+                source: 'mock',
+                note: 'Using mock data due to network error'
+              }
+            });
+          }
         }
       }
     }
@@ -467,13 +493,38 @@ axios.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       console.log('Authentication error (401):', error.config.url);
 
-      // Clear token and redirect to login
-      localStorage.removeItem('authToken');
+      // Get the current token
+      const token = localStorage.getItem('authToken');
 
-      // Only redirect if not already on login or signup page
+      // Check if we're on a page that requires authentication
       const currentPath = window.location.pathname;
-      if (currentPath !== '/login' && currentPath !== '/signup' && currentPath !== '/') {
-        window.location.href = '/login';
+      const authRequiredPaths = ['/portfolio', '/dashboard', '/settings', '/watchlist', '/orders'];
+      const isAuthRequiredPage = authRequiredPaths.includes(currentPath);
+
+      // Check if this is a login/signup request
+      const isAuthRequest = error.config.url.includes('/api/auth/login') ||
+                           error.config.url.includes('/api/auth/signup');
+
+      // If this is not an auth request and we're on an auth-required page
+      if (!isAuthRequest && isAuthRequiredPage) {
+        console.warn('Authentication required for this page. Redirecting to login...');
+
+        // Clear token
+        localStorage.removeItem('authToken');
+
+        // Only redirect if not already on login or signup page
+        if (currentPath !== '/login' && currentPath !== '/signup' && currentPath !== '/') {
+          // Add a small delay to allow console messages to be seen
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 500);
+        }
+      } else if (isAuthRequest) {
+        // This is a failed login/signup attempt, don't redirect
+        console.log('Login/signup attempt failed with 401. Not redirecting.');
+      } else {
+        // This is a 401 on a non-auth-required page, just log it
+        console.log('Received 401 for API request, but not redirecting.');
       }
     }
 
@@ -679,6 +730,57 @@ axios.interceptors.response.use(
         if (error.config.url.includes('/api/virtual-money')) {
           console.log('Returning mock virtual money data for 404');
 
+          // Handle portfolio reset endpoint
+          if (error.config.url.includes('/api/virtual-money/portfolio') && error.config.method === 'delete') {
+            console.log('Handling portfolio reset endpoint for 404');
+
+            try {
+              // Get current virtual money data
+              let virtualMoneyData = {
+                balance: 10000,
+                balanceFormatted: '₹10,000',
+                lastLoginReward: null,
+                portfolio: [],
+                currency: 'INR'
+              };
+
+              // Try to get existing data from localStorage
+              const storedData = localStorage.getItem('virtualMoney');
+              if (storedData) {
+                const parsedData = JSON.parse(storedData);
+                if (parsedData && typeof parsedData.balance === 'number') {
+                  // Keep the balance but reset the portfolio
+                  virtualMoneyData = {
+                    ...parsedData,
+                    portfolio: []
+                  };
+                }
+              }
+
+              // Save updated data back to localStorage
+              localStorage.setItem('virtualMoney', JSON.stringify(virtualMoneyData));
+
+              return Promise.resolve({
+                data: {
+                  success: true,
+                  message: 'Portfolio has been reset successfully',
+                  data: virtualMoneyData
+                }
+              });
+            } catch (error) {
+              console.error('Error in mock portfolio reset:', error);
+              return Promise.reject({
+                response: {
+                  status: 500,
+                  data: {
+                    success: false,
+                    message: 'Failed to reset portfolio'
+                  }
+                }
+              });
+            }
+          }
+
           // Handle specific virtual money endpoints
           if (error.config.url.includes('/api/virtual-money/reward-status')) {
             // For reward-status endpoint
@@ -876,7 +978,7 @@ axios.interceptors.response.use(
         }
 
         // If it's a stock search endpoint
-        if (error.config.url.includes('/api/stocks/search')) {
+        if (error.config.url.includes('/api/stock-search') || error.config.url.includes('/api/stocks/search')) {
           console.log('Returning mock stock search data for 404');
 
           // Extract the query parameter
@@ -893,20 +995,20 @@ axios.interceptors.response.use(
             });
           }
 
-          // Mock stock data
+          // Enhanced mock stock data with more fields
           const mockStocks = [
-            { symbol: "AAPL", name: "Apple Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock" },
-            { symbol: "MSFT", name: "Microsoft Corporation", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock" },
-            { symbol: "GOOGL", name: "Alphabet Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock" },
-            { symbol: "AMZN", name: "Amazon.com Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock" },
-            { symbol: "META", name: "Meta Platforms Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock" },
-            { symbol: "TSLA", name: "Tesla, Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock" },
-            { symbol: "NFLX", name: "Netflix, Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock" },
-            { symbol: "NVDA", name: "NVIDIA Corporation", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock" },
-            { symbol: "RELIANCE.BSE", name: "Reliance Industries", exchange: "BSE", exchangeShortName: "BSE", type: "stock" },
-            { symbol: "TCS.BSE", name: "Tata Consultancy Services", exchange: "BSE", exchangeShortName: "BSE", type: "stock" },
-            { symbol: "INFY.BSE", name: "Infosys Ltd", exchange: "BSE", exchangeShortName: "BSE", type: "stock" },
-            { symbol: "HDFCBANK.BSE", name: "HDFC Bank Ltd", exchange: "BSE", exchangeShortName: "BSE", type: "stock" }
+            { symbol: "AAPL", name: "Apple Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock", country: "United States", currency: "USD" },
+            { symbol: "MSFT", name: "Microsoft Corporation", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock", country: "United States", currency: "USD" },
+            { symbol: "GOOGL", name: "Alphabet Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock", country: "United States", currency: "USD" },
+            { symbol: "AMZN", name: "Amazon.com Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock", country: "United States", currency: "USD" },
+            { symbol: "META", name: "Meta Platforms Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock", country: "United States", currency: "USD" },
+            { symbol: "TSLA", name: "Tesla, Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock", country: "United States", currency: "USD" },
+            { symbol: "NFLX", name: "Netflix, Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock", country: "United States", currency: "USD" },
+            { symbol: "NVDA", name: "NVIDIA Corporation", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock", country: "United States", currency: "USD" },
+            { symbol: "RELIANCE.BSE", name: "Reliance Industries", exchange: "BSE", exchangeShortName: "BSE", type: "stock", country: "India", currency: "INR" },
+            { symbol: "TCS.BSE", name: "Tata Consultancy Services", exchange: "BSE", exchangeShortName: "BSE", type: "stock", country: "India", currency: "INR" },
+            { symbol: "INFY.BSE", name: "Infosys Ltd", exchange: "BSE", exchangeShortName: "BSE", type: "stock", country: "India", currency: "INR" },
+            { symbol: "HDFCBANK.BSE", name: "HDFC Bank Ltd", exchange: "BSE", exchangeShortName: "BSE", type: "stock", country: "India", currency: "INR" }
           ];
 
           // Filter stocks based on query
@@ -915,14 +1017,32 @@ axios.interceptors.response.use(
             stock.name.toLowerCase().includes(query.toLowerCase())
           );
 
-          return Promise.resolve({
-            data: {
-              success: true,
-              data: filteredStocks,
-              query,
-              note: 'Using mock data in offline mode'
-            }
-          });
+          console.log(`Found ${filteredStocks.length} mock stocks matching "${query}" for 404 response`);
+
+          // Check which endpoint format to use
+          if (error.config.url.includes('/api/stocks/search')) {
+            // Direct endpoint format
+            return Promise.resolve({
+              data: {
+                success: true,
+                results: filteredStocks,
+                query,
+                source: 'mock',
+                note: 'Using mock data in offline mode'
+              }
+            });
+          } else if (error.config.url.includes('/api/stock-search')) {
+            // stock-search endpoint format
+            return Promise.resolve({
+              data: {
+                success: true,
+                data: filteredStocks,
+                query,
+                source: 'mock',
+                note: 'Using mock data in offline mode'
+              }
+            });
+          }
         }
 
         // If it's a chatbot endpoint

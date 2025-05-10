@@ -9,10 +9,19 @@
   flex-direction: column;
   justify-content: space-between;
   box-shadow: 0 0 12px rgba(0, 0, 0, 0.08);
-  z-index: 100;
+  z-index: 1000;
   position: fixed;
   left: 0;
   top: 0;
+  overflow-y: hidden;
+  overflow-x: hidden;
+}
+
+/* Dark mode styles */
+[data-theme="dark"] .sidebar {
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  color: #e0e0e0;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.2);
 }
 
 @media (max-width: 768px) {
@@ -26,7 +35,12 @@
   }
 
   .sidebar.mobile {
-    transition: height 0.3s ease;
+    transition: all 0.3s ease;
+  }
+
+  .sidebar:not(.collapsed).mobile {
+    height: 100vh;
+    overflow-y: hidden;
   }
 }
 
@@ -62,6 +76,7 @@
     flex-direction: column;
     align-items: center;
     width: 100%;
+    margin-top: 1rem;
   }
 
   /* Hide settings in mobile view when collapsed */
@@ -119,18 +134,26 @@
   list-style: none;
   padding: 0;
   flex-grow: 1;
+  margin: 0;
 }
 
 @media (max-width: 768px) {
   .sidebar-links {
     display: flex;
-    flex-direction: row;
-    justify-content: space-around;
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    padding: 1rem 0;
   }
 
   .sidebar.collapsed .sidebar-links {
     display: none;
+  }
+}
+
+@media (max-width: 576px) {
+  .sidebar-links {
+    padding: 0.5rem 0;
   }
 }
 
@@ -143,14 +166,26 @@
   text-decoration: none;
   border-radius: 8px;
   margin: 8px 0;
-  transition: background 0.3s ease, color 0.3s ease;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+[data-theme="dark"] .sidebar-link {
+  color: #e0e0e0;
 }
 
 @media (max-width: 768px) {
   .sidebar-link {
+    padding: 10px 12px;
+    margin: 4px 0;
+    width: 90%;
+  }
+}
+
+@media (max-width: 576px) {
+  .sidebar-link {
     padding: 8px 10px;
-    margin: 4px;
-    justify-content: center;
+    margin: 3px 0;
   }
 }
 
@@ -160,8 +195,14 @@
 }
 
 .sidebar-link:hover {
-  background-color: #e0f2f1;
+  background-color: rgba(46, 125, 50, 0.1);
   color: #2E7D32;
+  transform: translateY(-2px);
+}
+
+[data-theme="dark"] .sidebar-link:hover {
+  background-color: rgba(46, 125, 50, 0.2);
+  color: #4ade80;
 }
 
 .sidebar-link.active {

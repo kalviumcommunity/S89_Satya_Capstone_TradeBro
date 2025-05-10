@@ -8,7 +8,7 @@ import API_ENDPOINTS from "../config/apiConfig";
 import "../styles/WatchlistSearch.css";
 
 const WatchlistSearch = ({ onAddStock, watchlistSymbols = [] }) => {
-  const { showToast } = useToast();
+  const toast = useToast();
   const { isOffline } = useOfflineMode();
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -91,10 +91,10 @@ const WatchlistSearch = ({ onAddStock, watchlistSymbols = [] }) => {
         return;
       }
 
-      // Call API to search for stocks (using the public endpoint)
-      const response = await axios.get(`http://localhost:5000/api/stocks/search?query=${searchTerm}`);
+      // Call API to search for stocks (using the watchlist search endpoint)
+      const response = await axios.get(`${API_ENDPOINTS.WATCHLIST.SEARCH}?query=${searchTerm}`);
 
-      if (response.data.success) {
+      if (response.data && response.data.success) {
         // Add inWatchlist property to each result
         const results = response.data.data.map(stock => ({
           ...stock,
@@ -102,7 +102,7 @@ const WatchlistSearch = ({ onAddStock, watchlistSymbols = [] }) => {
         }));
         setSearchResults(results);
       } else {
-        showToast("Failed to search for stocks", "error");
+        toast.error("Failed to search for stocks");
         // Use mock data as fallback
         const filteredResults = mockSearchResults
           .filter(stock =>
@@ -118,7 +118,7 @@ const WatchlistSearch = ({ onAddStock, watchlistSymbols = [] }) => {
       }
     } catch (error) {
       console.error("Error searching for stocks:", error);
-      showToast("Failed to search for stocks", "error");
+      toast.error("Failed to search for stocks");
 
       // Use mock data as fallback
       const filteredResults = mockSearchResults
@@ -173,26 +173,37 @@ const WatchlistSearch = ({ onAddStock, watchlistSymbols = [] }) => {
 
   // Add stock to watchlist
   const handleAddStock = (symbol, name, exchange = "") => {
-    // Add to search history
-    const stockData = {
-      symbol,
-      name,
-      exchange
-    };
+    try {
+      // Add to search history
+      const stockData = {
+        symbol,
+        name,
+        exchange
+      };
 
-    addToSearchHistory(stockData);
+      addToSearchHistory(stockData);
 
-    // Update recent searches
-    setRecentSearches(getRecentSearches());
+      // Update recent searches
+      setRecentSearches(getRecentSearches());
 
-    // Call the parent component's onAddStock function
-    onAddStock(symbol, name);
+      // Call the parent component's onAddStock function
+      onAddStock(symbol, name);
 
-    // Update the search results to show the stock as added
-    const updatedResults = searchResults.map(result =>
-      result.symbol === symbol ? { ...result, inWatchlist: true } : result
-    );
-    setSearchResults(updatedResults);
+      // Update the search results to show the stock as added
+      const updatedResults = searchResults.map(result =>
+        result.symbol === symbol ? { ...result, inWatchlist: true } : result
+      );
+      setSearchResults(updatedResults);
+
+      // Clear search after adding
+      setTimeout(() => {
+        setSearchTerm("");
+        setShowResults(false);
+      }, 1000);
+    } catch (error) {
+      console.error("Error adding stock to watchlist:", error);
+      toast.error("Failed to add stock to watchlist");
+    }
   };
 
   return (

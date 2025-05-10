@@ -1,14 +1,52 @@
 import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { FiPlus, FiTrash2, FiRefreshCw, FiTrendingUp, FiTrendingDown, FiSearch, FiAlertCircle, FiX } from "react-icons/fi";
+import { motion, AnimatePresence } from "framer-motion";
+import { FiPlus, FiTrash2, FiRefreshCw, FiTrendingUp, FiTrendingDown, FiSearch, FiAlertCircle, FiX, FiMaximize2 } from "react-icons/fi";
 import PageLayout from "../components/PageLayout";
 import WatchlistSearch from "../components/WatchlistSearch";
 import { useToast } from "../hooks/useToast";
 import { useAuth } from "../context/AuthContext";
 import { useOfflineMode } from "../context/OfflineContext";
+import FullScreenStockDetail from "../components/FullScreenStockDetail";
 import axios from "axios";
 import API_ENDPOINTS from "../config/apiConfig";
 import "./Watchlist.css";
+
+// Add some additional styles for the clickable rows
+const additionalStyles = `
+  .stock-row {
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .stock-row:hover {
+    background-color: rgba(34, 184, 176, 0.05) !important;
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+
+  .view-detail-btn {
+    background-color: rgba(34, 184, 176, 0.1);
+    color: #22b8b0;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .view-detail-btn:hover {
+    background-color: rgba(34, 184, 176, 0.2);
+    transform: scale(1.1);
+  }
+`;
 
 const Watchlist = () => {
   const toast = useToast();
@@ -22,6 +60,8 @@ const Watchlist = () => {
   const [error, setError] = useState(null);
   const [totalStocks, setTotalStocks] = useState(0);
   const [isFiltered, setIsFiltered] = useState(false);
+  const [selectedStock, setSelectedStock] = useState(null);
+  const [showFullScreenDetail, setShowFullScreenDetail] = useState(false);
 
   // Mock data for demonstration
   const mockWatchlist = [
@@ -155,6 +195,18 @@ const Watchlist = () => {
   // We're now filtering on the server side or in the fetchWatchlist function
   const filteredWatchlist = watchlist;
 
+  // Handle stock selection for full-screen detail view
+  const handleStockSelect = (symbol) => {
+    setSelectedStock(symbol);
+    setShowFullScreenDetail(true);
+  };
+
+  // Handle closing the full-screen detail view
+  const handleCloseFullScreenDetail = () => {
+    setShowFullScreenDetail(false);
+    setSelectedStock(null);
+  };
+
   // Add stock to watchlist directly from search
   const addStockToWatchlist = async (symbol, name) => {
     if (!isAuthenticated) {
@@ -192,15 +244,16 @@ const Watchlist = () => {
         return;
       }
 
-      // Online mode - call API
+      // Online mode - call API with proper data structure
       const response = await axios.post(API_ENDPOINTS.WATCHLIST.ADD, {
         symbol: symbol.toUpperCase(),
         name: name || `${symbol.toUpperCase()}`
       });
 
-      if (response.data.success) {
-        // Add the stock to the watchlist immediately with temporary data
-        const tempStockData = {
+      // Check if the response is successful
+      if (response.data && (response.data.success || response.data.data)) {
+        // Create a proper stock object from the response or with temporary data
+        const stockData = response.data.data || {
           id: Date.now(), // Use timestamp as temporary ID
           symbol: symbol.toUpperCase(),
           name: name || `${symbol.toUpperCase()}`,
@@ -211,13 +264,24 @@ const Watchlist = () => {
           volume: "Loading..."
         };
 
-        setWatchlist([...watchlist, tempStockData]);
+        // Add to watchlist
+        setWatchlist([...watchlist, stockData]);
+
+        // Store in localStorage as backup
+        try {
+          const storedWatchlist = localStorage.getItem('watchlist') || '[]';
+          const parsedWatchlist = JSON.parse(storedWatchlist);
+          parsedWatchlist.push(stockData);
+          localStorage.setItem('watchlist', JSON.stringify(parsedWatchlist));
+        } catch (storageError) {
+          console.error("Error updating localStorage:", storageError);
+        }
 
         // Then refresh to get the actual data
         refreshWatchlist();
         toast.success(`${symbol.toUpperCase()} added to watchlist`);
       } else {
-        toast.error(response.data.message || "Failed to add stock to watchlist");
+        toast.error(response.data?.message || "Failed to add stock to watchlist");
       }
     } catch (err) {
       console.error("Error adding stock to watchlist:", err);
@@ -236,6 +300,17 @@ const Watchlist = () => {
       };
 
       setWatchlist([...watchlist, newStockData]);
+
+      // Store in localStorage as backup
+      try {
+        const storedWatchlist = localStorage.getItem('watchlist') || '[]';
+        const parsedWatchlist = JSON.parse(storedWatchlist);
+        parsedWatchlist.push(newStockData);
+        localStorage.setItem('watchlist', JSON.stringify(parsedWatchlist));
+      } catch (storageError) {
+        console.error("Error updating localStorage:", storageError);
+      }
+
       toast.info(`${newStockData.symbol} added to watchlist (local only)`);
     }
   };
@@ -440,6 +515,7 @@ const Watchlist = () => {
 
   return (
     <PageLayout>
+      <style>{additionalStyles}</style>
       <div className="watchlist-container">
         <motion.div
           className="watchlist-header-container"
@@ -559,6 +635,8 @@ const Watchlist = () => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3 }}
                     whileHover={{ backgroundColor: "rgba(0,0,0,0.02)" }}
+                    className="stock-row"
+                    onClick={() => handleStockSelect(stock.symbol)}
                   >
                     <td className="symbol-cell">{stock.symbol}</td>
                     <td>{stock.name}</td>
@@ -573,14 +651,29 @@ const Watchlist = () => {
                     </td>
                     <td>{stock.marketCap}</td>
                     <td>{stock.volume}</td>
-                    <td>
-                      <button
-                        className="remove-btn"
-                        onClick={() => removeFromWatchlist(stock.id)}
-                        title="Remove from watchlist"
-                      >
-                        <FiTrash2 />
-                      </button>
+                    <td onClick={(e) => e.stopPropagation()}>
+                      <div className="action-buttons">
+                        <button
+                          className="view-detail-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStockSelect(stock.symbol);
+                          }}
+                          title="View details"
+                        >
+                          <FiMaximize2 />
+                        </button>
+                        <button
+                          className="remove-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeFromWatchlist(stock.id);
+                          }}
+                          title="Remove from watchlist"
+                        >
+                          <FiTrash2 />
+                        </button>
+                      </div>
                     </td>
                   </motion.tr>
                 ))}
@@ -589,6 +682,31 @@ const Watchlist = () => {
           </motion.div>
         )}
       </div>
+
+      {/* Full-screen stock detail */}
+      <AnimatePresence>
+        {showFullScreenDetail && selectedStock && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <FullScreenStockDetail
+              symbol={selectedStock}
+              onClose={handleCloseFullScreenDetail}
+              onBuySuccess={() => {
+                handleCloseFullScreenDetail();
+                refreshWatchlist();
+              }}
+              onSellSuccess={() => {
+                handleCloseFullScreenDetail();
+                refreshWatchlist();
+              }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </PageLayout>
   );
 };

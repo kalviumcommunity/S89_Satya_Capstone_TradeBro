@@ -12,6 +12,8 @@
 /* Responsive Typography */
 html {
   font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
 }
 
 @media (max-width: 768px) {
@@ -24,6 +26,11 @@ html {
   html {
     font-size: 12px;
   }
+}
+
+/* Ensure all elements respect box-sizing */
+*, *::before, *::after {
+  box-sizing: border-box;
 }
 
 /* Responsive Container */
@@ -105,7 +112,7 @@ html {
   .d-sm-none {
     display: none !important;
   }
-  
+
   .d-sm-block {
     display: block !important;
   }
@@ -115,7 +122,7 @@ html {
   .d-md-none {
     display: none !important;
   }
-  
+
   .d-md-block {
     display: block !important;
   }
@@ -204,7 +211,7 @@ html {
   .p-md-2 {
     padding: 0.5rem !important;
   }
-  
+
   .p-md-3 {
     padding: 1rem !important;
   }
@@ -214,7 +221,7 @@ html {
   .p-sm-1 {
     padding: 0.25rem !important;
   }
-  
+
   .p-sm-2 {
     padding: 0.5rem !important;
   }
@@ -249,7 +256,7 @@ html {
   .m-md-2 {
     margin: 0.5rem !important;
   }
-  
+
   .m-md-3 {
     margin: 1rem !important;
   }
@@ -259,7 +266,7 @@ html {
   .m-sm-1 {
     margin: 0.25rem !important;
   }
-  
+
   .m-sm-2 {
     margin: 0.5rem !important;
   }
@@ -290,10 +297,97 @@ html {
   .gap-md-2 {
     gap: 0.5rem !important;
   }
+
+  .gap-md-1 {
+    gap: 0.25rem !important;
+  }
 }
 
 @media (max-width: 576px) {
   .gap-sm-1 {
     gap: 0.25rem !important;
+  }
+}
+
+/* Responsive Grid */
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 992px) {
+  .grid-container {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+@media (max-width: 576px) {
+  .grid-container {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Responsive Images */
+.img-fluid {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Responsive Tables */
+.table-responsive {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Responsive Cards */
+.card-responsive {
+  width: 100%;
+  transition: all 0.3s ease;
+}
+
+@media (max-width: 768px) {
+  .card-responsive {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .card-responsive {
+    padding: 0.75rem;
+  }
+}
+
+/* Responsive Scrollbar */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(155, 155, 155, 0.5) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(155, 155, 155, 0.5);
+  border-radius: 20px;
+}
+
+/* Hide scrollbar for mobile */
+@media (max-width: 768px) {
+  .hide-scrollbar-mobile {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .hide-scrollbar-mobile::-webkit-scrollbar {
+    display: none;
   }
 }

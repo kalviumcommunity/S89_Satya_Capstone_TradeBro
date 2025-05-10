@@ -1,22 +1,24 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import axios from "axios";
 import { motion } from "framer-motion";
 import { FiMail, FiLock, FiLogIn } from "react-icons/fi";
-import { useToast } from "../context/ToastContext";
-import { useAuth } from "../context/AuthContext";
+import { login } from "../redux/reducers/authReducer";
+import { showErrorToast, showSuccessToast } from "../redux/reducers/toastReducer";
 import Loading from "../components/Loading";
 import "./AuthPages.css";
 import Squares from "../UI/squares";
 
 const Login = () => {
   const navigate = useNavigate();
-  const toast = useToast();
-  const { login: authLogin } = useAuth();
+  const dispatch = useDispatch();
+  const { loading, error } = useSelector(state => state.auth);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
+  const [localLoading, setLocalLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
   const validateForm = () => {
@@ -59,7 +61,7 @@ const Login = () => {
       return;
     }
 
-    setLoading(true);
+    setLocalLoading(true);
     try {
       const response = await axios.post("http://localhost:5000/api/auth/login", {
         email,
@@ -67,10 +69,11 @@ const Login = () => {
       });
       console.log("Login successful:", response.data);
 
-      // Store the token and user data in AuthContext and localStorage
+      // Store the token and user data using Redux
       if (response.data.token) {
-        // Pass both token and user data to the login function
-        authLogin(response.data.token, response.data.user);
+        // Dispatch login action
+        dispatch(login(response.data.token, response.data.user));
+        dispatch(showSuccessToast("Login successful!"));
       }
 
       setSuccess(true);
@@ -80,24 +83,56 @@ const Login = () => {
       setPassword("");
 
       // Redirect after a short delay
-      setTimeout(() => setSuccess(false), 2000);
-      setTimeout(() => navigate("/portfolio"), 1500);
+      setTimeout(() => setSuccess(false), 1000);
+      setTimeout(() => {
+        console.log("Redirecting to portfolio page after login");
+        navigate("/portfolio", { replace: true });
+      }, 1200);
     } catch (error) {
       console.error("Login error:", error.response?.data || error.message);
-      toast.error(error.response?.data?.message || "Login failed. Please try again.");
+      dispatch(showErrorToast(error.response?.data?.message || "Login failed. Please try again."));
 
       // Add shake animation to form
       const form = document.querySelector('.auth-form');
       form.classList.add('shake');
       setTimeout(() => form.classList.remove('shake'), 500);
     } finally {
-      setLoading(false);
+      setLocalLoading(false);
     }
   };
 
   const handleGoogleLogin = () => {
     window.location.href = "http://localhost:5000/api/auth/auth/google";
   };
+
+  // Handle Google login redirect
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const success = urlParams.get('success');
+    const token = urlParams.get('token');
+    const google = urlParams.get('google');
+
+    if (success === 'true' && token && google === 'true') {
+      console.log('Google login successful, processing token');
+
+      // Clear URL parameters
+      window.history.replaceState({}, document.title, '/login');
+
+      // Process the token using Redux
+      dispatch(login(token));
+      dispatch(showSuccessToast("Google login successful!"));
+
+      // Show success message
+      setSuccess(true);
+
+      // Redirect to portfolio
+      setTimeout(() => setSuccess(false), 1000);
+      setTimeout(() => {
+        console.log("Redirecting to portfolio page after Google login");
+        navigate("/portfolio", { replace: true });
+      }, 1200);
+    }
+  }, [dispatch, navigate]);
 
   return (
     <div className="auth-full-bg">
@@ -148,9 +183,9 @@ const Login = () => {
           <button
             type="submit"
             className="auth-btn"
-            disabled={loading}
+            disabled={loading || localLoading}
           >
-            {loading ? (
+            {loading || localLoading ? (
               <Loading size="small" text="" />
             ) : (
               <>
