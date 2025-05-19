@@ -8,8 +8,8 @@ const notificationSchema = new mongoose.Schema({
   },
   userEmail: {
     type: String,
-    required: true,
-    index: true // Add index for faster queries
+    required: true
+    // Removed index: true to avoid duplicate index
   },
   type: {
     type: String,

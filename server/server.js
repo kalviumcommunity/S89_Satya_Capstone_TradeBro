@@ -353,9 +353,10 @@ mongoose.connect(MONGO_URI, {
   retryWrites: true,
   w: 'majority',
   ssl: true,
-  authSource: 'admin',
-  useNewUrlParser: true,
-  useUnifiedTopology: true
+  authSource: 'admin'
+  // Removed deprecated options:
+  // useNewUrlParser: true,
+  // useUnifiedTopology: true
 })
 .then(() => {
   console.log('✅ Connected to MongoDB');

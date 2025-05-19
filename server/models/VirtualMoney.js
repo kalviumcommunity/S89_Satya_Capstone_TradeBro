@@ -9,8 +9,8 @@ const virtualMoneySchema = new mongoose.Schema({
   userEmail: {
     type: String,
     ref: 'User',
-    required: true,
-    index: true // Add index for faster queries
+    required: true
+    // Removed index: true to avoid duplicate index
   },
   balance: {
     type: Number,
