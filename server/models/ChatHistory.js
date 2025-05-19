@@ -22,8 +22,8 @@ const chatHistorySchema = new mongoose.Schema({
   // Unique session identifier
   sessionId: {
     type: String,
-    required: true,
-    index: true
+    required: true
+    // Removed index: true to avoid duplicate index
   },
 
   // Array of messages in the conversation

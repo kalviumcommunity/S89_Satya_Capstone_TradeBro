@@ -295,7 +295,14 @@ router.get('/user', verifyToken, async (req, res) => {
 router.get('/google', (req, res, next) => {
   console.log('Google OAuth login route hit');
   console.log('Request URL:', req.originalUrl);
-  console.log('Full URL:', `${req.protocol}://${req.get('host')}${req.originalUrl}`);
+
+  // Force HTTPS protocol regardless of what req.protocol reports
+  const protocol = 'https';
+  console.log('Protocol from request:', req.protocol);
+  console.log('X-Forwarded-Proto header:', req.headers['x-forwarded-proto']);
+  console.log('Using protocol:', protocol);
+
+  console.log('Full URL:', `${protocol}://${req.get('host')}${req.originalUrl}`);
   console.log('Headers:', req.headers);
 
   // Define the callback URL explicitly to match what's in passport config
@@ -313,7 +320,14 @@ router.get('/google', (req, res, next) => {
 router.get('/google/callback', (req, res, next) => {
   console.log('Google OAuth callback route hit');
   console.log('Request URL:', req.originalUrl);
-  console.log('Full URL:', `${req.protocol}://${req.get('host')}${req.originalUrl}`);
+
+  // Force HTTPS protocol regardless of what req.protocol reports
+  const protocol = 'https';
+  console.log('Protocol from request:', req.protocol);
+  console.log('X-Forwarded-Proto header:', req.headers['x-forwarded-proto']);
+  console.log('Using protocol:', protocol);
+
+  console.log('Full URL:', `${protocol}://${req.get('host')}${req.originalUrl}`);
   console.log('Query params:', req.query);
   console.log('Headers:', req.headers);
 

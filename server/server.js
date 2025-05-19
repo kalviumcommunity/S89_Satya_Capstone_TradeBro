@@ -35,6 +35,9 @@ const MONGO_URI = process.env.MONGO_URI;
 // FMP API key for stock data
 const FMP_API = process.env.FMP_API_KEY;
 
+// Trust proxy - important for detecting HTTPS when behind a proxy like Cloudflare or Render
+app.set('trust proxy', true);
+
 // CORS configuration
 app.use(cors({
   origin: [
