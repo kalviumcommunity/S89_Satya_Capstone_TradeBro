@@ -292,7 +292,7 @@ router.get('/user', verifyToken, async (req, res) => {
 });
 
 // Google OAuth Login Route
-router.get('/auth/google',
+router.get('/google',
   passport.authenticate('google', {
     scope: ['profile', 'email'], // Ensure this is included
     prompt: 'select_account' // Optional: Forces account selection
@@ -300,7 +300,7 @@ router.get('/auth/google',
 );
 
 // Google OAuth Callback Route
-router.get('/auth/google/callback',
+router.get('/google/callback',
   passport.authenticate('google', {
     failureRedirect: '/login',
     failureMessage: true
@@ -312,7 +312,7 @@ router.get('/auth/google/callback',
       // Make sure we have a valid user object
       if (!req.user || !req.user._id) {
         console.error('Invalid user object in Google callback');
-        return res.redirect(`http://localhost:5173/login?error=invalid_user`);
+        return res.redirect(`${process.env.CLIENT_URL || 'https://tradebro-client.vercel.app'}/login?error=invalid_user`);
       }
 
       // Generate JWT Token for Google OAuth with more user data (30 days expiration)
@@ -333,10 +333,10 @@ router.get('/auth/google/callback',
 
       // Redirect to frontend with success message and user data
       // Include token in the URL and set a flag to indicate Google login
-      res.redirect(`http://localhost:5173/login?success=true&token=${token}&google=true`);
+      res.redirect(`${process.env.CLIENT_URL || 'https://tradebro-client.vercel.app'}/login?success=true&token=${token}&google=true`);
     } catch (error) {
       console.error('Error in Google callback:', error);
-      res.redirect(`http://localhost:5173/login?error=authentication_failed`);
+      res.redirect(`${process.env.CLIENT_URL || 'https://tradebro-client.vercel.app'}/login?error=authentication_failed`);
     }
   }
 );

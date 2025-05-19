@@ -41,6 +41,8 @@ app.use(cors({
     "http://localhost:5173",
     "https://tradebro-client.vercel.app",
     "https://tradebro.vercel.app",
+    "https://s89-satya-capstone-tradebro-client.vercel.app",
+    "https://s89-satya-capstone-tradebro.vercel.app",
     // Add any other frontend domains you might use
   ],
   credentials: true,
