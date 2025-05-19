@@ -11,21 +11,21 @@ const chatHistorySchema = new mongoose.Schema({
     required: true,
     index: true
   },
-  
+
   // User email for easier querying
   userEmail: {
     type: String,
     required: true,
     index: true
   },
-  
+
   // Unique session identifier
   sessionId: {
     type: String,
     required: true,
     index: true
   },
-  
+
   // Array of messages in the conversation
   messages: [
     {
@@ -34,14 +34,14 @@ const chatHistorySchema = new mongoose.Schema({
         type: String,
         required: true
       },
-      
+
       // Who sent the message: 'user' or 'bot'
       sender: {
         type: String,
         enum: ['user', 'bot'],
         required: true
       },
-      
+
       // When the message was sent
       timestamp: {
         type: Date,
@@ -49,7 +49,7 @@ const chatHistorySchema = new mongoose.Schema({
       }
     }
   ],
-  
+
   // Session metadata
   metadata: {
     // When the session was created
@@ -57,13 +57,13 @@ const chatHistorySchema = new mongoose.Schema({
       type: Date,
       default: Date.now
     },
-    
+
     // When the session was last active
     lastActiveAt: {
       type: Date,
       default: Date.now
     },
-    
+
     // Whether the session is still active
     isActive: {
       type: Boolean,
@@ -74,6 +74,7 @@ const chatHistorySchema = new mongoose.Schema({
 
 // Create indexes for efficient querying
 chatHistorySchema.index({ 'userId': 1, 'sessionId': 1 }, { unique: true });
+chatHistorySchema.index({ 'sessionId': 1 });
 chatHistorySchema.index({ 'metadata.lastActiveAt': -1 });
 
 const ChatHistory = mongoose.model('ChatHistory', chatHistorySchema);

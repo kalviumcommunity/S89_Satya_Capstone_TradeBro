@@ -19,7 +19,7 @@ class UserDataManager {
     try {
       // Find existing user data or create new one
       let userData = await UserData.findOne({ userId });
-      
+
       if (!userData) {
         // Create new user data document
         userData = new UserData({
@@ -36,14 +36,14 @@ class UserDataManager {
             ...data.preferences
           };
         }
-        
+
         if (data.statistics) {
           userData.statistics = {
             ...userData.statistics,
             ...data.statistics
           };
         }
-        
+
         if (data.virtualMoney) {
           userData.virtualMoney = {
             ...userData.virtualMoney,
@@ -51,7 +51,7 @@ class UserDataManager {
           };
         }
       }
-      
+
       // Save and return the updated document
       await userData.save();
       return userData;
@@ -60,7 +60,7 @@ class UserDataManager {
       throw error;
     }
   }
-  
+
   /**
    * Add a message to chat history
    * @param {string} userId - User ID
@@ -74,7 +74,7 @@ class UserDataManager {
     try {
       // Find existing chat history or create new one
       let chatHistory = await ChatHistory.findOne({ userId, sessionId });
-      
+
       if (!chatHistory) {
         // Create new chat history document
         chatHistory = new ChatHistory({
@@ -84,31 +84,31 @@ class UserDataManager {
           messages: []
         });
       }
-      
+
       // Add new message
       chatHistory.messages.push({
         text,
         sender,
         timestamp: new Date()
       });
-      
+
       // Update metadata
       chatHistory.metadata.lastActiveAt = new Date();
       chatHistory.metadata.isActive = true;
-      
+
       // Save and return the updated document
       await chatHistory.save();
-      
+
       // Update user statistics
       await this.updateChatStatistics(userId, userEmail);
-      
+
       return chatHistory;
     } catch (error) {
       console.error('Error in addChatMessage:', error);
       throw error;
     }
   }
-  
+
   /**
    * Update chat statistics for a user
    * @param {string} userId - User ID
@@ -117,29 +117,35 @@ class UserDataManager {
    */
   static async updateChatStatistics(userId, userEmail) {
     try {
+      // Convert userId to ObjectId if it's not already
+      const userObjectId = typeof userId === 'string' ? mongoose.Types.ObjectId(userId) : userId;
+
       // Get total messages count
       const totalMessages = await ChatHistory.aggregate([
-        { $match: { userId: mongoose.Types.ObjectId(userId) } },
+        { $match: { userId: userObjectId } },
         { $unwind: '$messages' },
         { $count: 'total' }
       ]);
-      
+
       // Get total sessions count
-      const totalSessions = await ChatHistory.countDocuments({ userId });
-      
+      const totalSessions = await ChatHistory.aggregate([
+        { $match: { userId: userObjectId } },
+        { $count: 'total' }
+      ]);
+
       // Get last interaction time
       const lastChat = await ChatHistory.findOne(
-        { userId },
+        { userId: userObjectId },
         {},
         { sort: { 'metadata.lastActiveAt': -1 } }
       );
-      
+
       // Update user data
       await this.createOrUpdateUserData(userId, userEmail, {
         statistics: {
           chatAssistantUsage: {
             totalMessages: totalMessages[0]?.total || 0,
-            totalSessions,
+            totalSessions: totalSessions[0]?.total || 0,
             lastInteraction: lastChat?.metadata.lastActiveAt || null
           }
         }
@@ -149,7 +155,7 @@ class UserDataManager {
       throw error;
     }
   }
-  
+
   /**
    * Get chat history for a user
    * @param {string} userId - User ID
@@ -160,26 +166,26 @@ class UserDataManager {
   static async getChatHistory(userId, sessionId = null, limit = 10) {
     try {
       let query = { userId };
-      
+
       // If session ID is provided, get only that session
       if (sessionId) {
         query.sessionId = sessionId;
       }
-      
+
       // Get chat history
       const chatHistory = await ChatHistory.find(
         query,
         {},
         { sort: { 'metadata.lastActiveAt': -1 }, limit }
       );
-      
+
       return chatHistory;
     } catch (error) {
       console.error('Error in getChatHistory:', error);
       throw error;
     }
   }
-  
+
   /**
    * End a chat session
    * @param {string} userId - User ID
@@ -190,14 +196,14 @@ class UserDataManager {
     try {
       // Find chat history
       const chatHistory = await ChatHistory.findOne({ userId, sessionId });
-      
+
       if (!chatHistory) {
         throw new Error('Chat session not found');
       }
-      
+
       // Update metadata
       chatHistory.metadata.isActive = false;
-      
+
       // Save and return the updated document
       await chatHistory.save();
       return chatHistory;
