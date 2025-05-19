@@ -8,15 +8,15 @@ const chatHistorySchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true,
-    index: true
+    required: true
+    // Removed index: true to avoid duplicate index
   },
 
   // User email for easier querying
   userEmail: {
     type: String,
-    required: true,
-    index: true
+    required: true
+    // Removed index: true to avoid duplicate index
   },
 
   // Unique session identifier
