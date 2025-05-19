@@ -8,6 +8,16 @@ require('dotenv').config();
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 
+// Define the callback URL explicitly without using template literals
+// This prevents any issues with undefined variables
+const CALLBACK_URL = "https://s89-satya-capstone-tradebro.onrender.com/api/auth/google/callback";
+
+// Log configuration for debugging
+console.log('Google OAuth Configuration:');
+console.log('- GOOGLE_CLIENT_ID:', GOOGLE_CLIENT_ID ? 'Set' : 'Not set');
+console.log('- GOOGLE_CLIENT_SECRET:', GOOGLE_CLIENT_SECRET ? 'Set' : 'Not set');
+console.log('- CALLBACK_URL:', CALLBACK_URL);
+
 // Only configure Google strategy if credentials are available
 if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
   passport.use(
@@ -15,7 +25,8 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
       {
         clientID: GOOGLE_CLIENT_ID,
         clientSecret: GOOGLE_CLIENT_SECRET,
-        callbackURL: `${process.env.API_BASE_URL}/api/auth/auth/google/callback`,
+        callbackURL: CALLBACK_URL,
+        proxy: true
       },
 
     async (accessToken, refreshToken, profile, done) => {

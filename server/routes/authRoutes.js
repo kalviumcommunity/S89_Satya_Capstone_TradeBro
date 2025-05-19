@@ -292,19 +292,41 @@ router.get('/user', verifyToken, async (req, res) => {
 });
 
 // Google OAuth Login Route
-router.get('/google',
+router.get('/google', (req, res, next) => {
+  console.log('Google OAuth login route hit');
+  console.log('Request URL:', req.originalUrl);
+  console.log('Full URL:', `${req.protocol}://${req.get('host')}${req.originalUrl}`);
+  console.log('Headers:', req.headers);
+
+  // Define the callback URL explicitly to match what's in passport config
+  const callbackURL = "https://s89-satya-capstone-tradebro.onrender.com/api/auth/google/callback";
+  console.log('Using callback URL:', callbackURL);
+
   passport.authenticate('google', {
-    scope: ['profile', 'email'], // Ensure this is included
-    prompt: 'select_account' // Optional: Forces account selection
-  })
-);
+    scope: ['profile', 'email'],
+    prompt: 'select_account',
+    callbackURL: callbackURL // Pass the callback URL explicitly
+  })(req, res, next);
+});
 
 // Google OAuth Callback Route
-router.get('/google/callback',
+router.get('/google/callback', (req, res, next) => {
+  console.log('Google OAuth callback route hit');
+  console.log('Request URL:', req.originalUrl);
+  console.log('Full URL:', `${req.protocol}://${req.get('host')}${req.originalUrl}`);
+  console.log('Query params:', req.query);
+  console.log('Headers:', req.headers);
+
+  // Define the callback URL explicitly to match what's in passport config
+  const callbackURL = "https://s89-satya-capstone-tradebro.onrender.com/api/auth/google/callback";
+  console.log('Using callback URL:', callbackURL);
+
   passport.authenticate('google', {
+    callbackURL: callbackURL, // Pass the callback URL explicitly
     failureRedirect: '/login',
     failureMessage: true
-  }),
+  })(req, res, next);
+},
   (req, res) => {
     try {
       console.log('Google OAuth callback received, user:', req.user.email);
