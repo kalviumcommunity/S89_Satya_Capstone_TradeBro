@@ -37,7 +37,12 @@ const FMP_API = process.env.FMP_API_KEY;
 
 // CORS configuration
 app.use(cors({
-  origin: ["http://localhost:5173"],
+  origin: [
+    "http://localhost:5173",
+    "https://tradebro-client.vercel.app",
+    "https://tradebro.vercel.app",
+    // Add any other frontend domains you might use
+  ],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
@@ -302,7 +307,11 @@ app.get('/api/stocks/search', async (req, res) => {
     });
   } catch (error) {
     console.error('Error in direct stock search:', error);
-    return res.error('Server error', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
   }
 });
 
@@ -323,7 +332,11 @@ app.use("/api/userdata", userDataRoutes);
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error("Server error:", err);
-  return res.error("Internal Server Error", err);
+  return res.status(500).json({
+    success: false,
+    message: "Internal Server Error",
+    error: err.message
+  });
 });
 
 // Connect to MongoDB with improved options
