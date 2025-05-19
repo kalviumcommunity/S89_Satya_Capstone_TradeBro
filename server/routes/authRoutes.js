@@ -138,7 +138,11 @@ router.post('/login', async (req, res) => {
       profileImage: user.profileImage,
       phoneNumber: user.phoneNumber,
       language: user.language,
-      notifications: user.notifications
+      notifications: user.notifications,
+      tradingExperience: user.tradingExperience || 'Beginner',
+      bio: user.bio || 'No bio provided yet.',
+      preferredMarkets: user.preferredMarkets || ['Stocks'],
+      createdAt: user.createdAt
     };
 
     res.status(200).json({
@@ -278,7 +282,11 @@ router.get('/user', verifyToken, async (req, res) => {
       profileImage: user.profileImage,
       phoneNumber: user.phoneNumber,
       language: user.language,
-      notifications: user.notifications
+      notifications: user.notifications,
+      tradingExperience: user.tradingExperience || 'Beginner',
+      bio: user.bio || 'No bio provided yet.',
+      preferredMarkets: user.preferredMarkets || ['Stocks'],
+      createdAt: user.createdAt
     };
 
     res.status(200).json({

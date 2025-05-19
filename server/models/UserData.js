@@ -1,9 +1,5 @@
 const mongoose = require('mongoose');
 
-/**
- * Comprehensive schema for storing all user-related data
- * This includes user preferences, settings, and statistics
- */
 const userDataSchema = new mongoose.Schema({
   // Reference to the user
   userId: {
@@ -12,15 +8,14 @@ const userDataSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
-  
+
   // User email for easier querying
   userEmail: {
     type: String,
     required: true,
-    unique: true,
-    index: true
+    unique: true
   },
-  
+
   // User preferences
   preferences: {
     // Theme preference
@@ -29,14 +24,14 @@ const userDataSchema = new mongoose.Schema({
       enum: ['light', 'dark', 'system'],
       default: 'system'
     },
-    
+
     // Default dashboard view
     defaultView: {
       type: String,
       enum: ['portfolio', 'watchlist', 'market'],
       default: 'portfolio'
     },
-    
+
     // Chart preferences
     chartPreferences: {
       // Default time period for charts
@@ -45,7 +40,7 @@ const userDataSchema = new mongoose.Schema({
         enum: ['1D', '1W', '1M', '3M', '6M', '1Y', 'YTD', 'ALL'],
         default: '1M'
       },
-      
+
       // Default chart type
       defaultChartType: {
         type: String,
@@ -53,7 +48,7 @@ const userDataSchema = new mongoose.Schema({
         default: 'candle'
       }
     },
-    
+
     // Notification preferences
     notificationPreferences: {
       // Email notifications
@@ -61,19 +56,19 @@ const userDataSchema = new mongoose.Schema({
         type: Boolean,
         default: true
       },
-      
+
       // Push notifications
       push: {
         type: Boolean,
         default: true
       },
-      
+
       // Price alerts
       priceAlerts: {
         type: Boolean,
         default: true
       },
-      
+
       // News alerts
       newsAlerts: {
         type: Boolean,
@@ -81,7 +76,7 @@ const userDataSchema = new mongoose.Schema({
       }
     }
   },
-  
+
   // User statistics
   statistics: {
     // Total login count
@@ -89,19 +84,19 @@ const userDataSchema = new mongoose.Schema({
       type: Number,
       default: 0
     },
-    
+
     // Last login time
     lastLogin: {
       type: Date,
       default: null
     },
-    
+
     // Total time spent on platform (in minutes)
     totalTimeSpent: {
       type: Number,
       default: 0
     },
-    
+
     // Trading statistics
     tradingStats: {
       // Total trades made
@@ -109,20 +104,20 @@ const userDataSchema = new mongoose.Schema({
         type: Number,
         default: 0
       },
-      
+
       // Successful trades (profit)
       successfulTrades: {
         type: Number,
         default: 0
       },
-      
+
       // Total profit/loss
       totalProfitLoss: {
         type: Number,
         default: 0
       }
     },
-    
+
     // Chat assistant usage
     chatAssistantUsage: {
       // Total messages sent to assistant
@@ -130,13 +125,13 @@ const userDataSchema = new mongoose.Schema({
         type: Number,
         default: 0
       },
-      
+
       // Total sessions with assistant
       totalSessions: {
         type: Number,
         default: 0
       },
-      
+
       // Last interaction with assistant
       lastInteraction: {
         type: Date,
@@ -144,7 +139,7 @@ const userDataSchema = new mongoose.Schema({
       }
     }
   },
-  
+
   // Virtual money tracking (summary data)
   virtualMoney: {
     // Current balance
@@ -152,19 +147,19 @@ const userDataSchema = new mongoose.Schema({
       type: Number,
       default: 10000 // Start with 10,000 Indian Rupees (₹)
     },
-    
+
     // Total rewards received
     totalRewards: {
       type: Number,
       default: 0
     },
-    
+
     // Last login reward time
     lastLoginReward: {
       type: Date,
       default: null
     },
-    
+
     // Initial deposit
     initialDeposit: {
       type: Number,
@@ -173,9 +168,7 @@ const userDataSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-// Create indexes for efficient querying
-userDataSchema.index({ 'userId': 1 }, { unique: true });
-userDataSchema.index({ 'userEmail': 1 }, { unique: true });
+// No need for additional indexes as unique: true already creates indexes
 
 const UserData = mongoose.model('UserData', userDataSchema);
 

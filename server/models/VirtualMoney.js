@@ -9,12 +9,11 @@ const virtualMoneySchema = new mongoose.Schema({
   userEmail: {
     type: String,
     ref: 'User',
-    required: true,
-    index: true // Add index for faster queries
+    required: true
   },
   balance: {
     type: Number,
-    default: 10000, // Start with 10,000 Indian Rupees (₹)
+    default: 10000,
     required: true
   },
   lastLoginReward: {

@@ -22,6 +22,7 @@ const orderRoutes = require("./routes/orderRoutes");
 const stockSearchRoutes = require("./routes/stockSearchRoutes");
 const exampleRoutes = require("./routes/exampleRoutes");
 const userDataRoutes = require("./routes/userDataRoutes");
+const newsRoutes = require("./routes/newsRoutes");
 
 // Load environment variables
 dotenv.config();
@@ -37,7 +38,11 @@ const FMP_API = process.env.FMP_API_KEY;
 
 // CORS configuration
 app.use(cors({
-  origin: ["http://localhost:5173"],
+  origin: [
+    "http://localhost:5173",
+    "https://tradebro-client.vercel.app",
+    "https://tradebro.vercel.app"
+  ],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
@@ -319,6 +324,7 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/stock-search", stockSearchRoutes);
 app.use("/api/example", exampleRoutes);
 app.use("/api/userdata", userDataRoutes);
+app.use("/api/news", newsRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -335,9 +341,8 @@ mongoose.connect(MONGO_URI, {
   retryWrites: true,
   w: 'majority',
   ssl: true,
-  authSource: 'admin',
-  useNewUrlParser: true,
-  useUnifiedTopology: true
+  authSource: 'admin'
+  // Removed deprecated options: useNewUrlParser and useUnifiedTopology
 })
 .then(() => {
   console.log('✅ Connected to MongoDB');

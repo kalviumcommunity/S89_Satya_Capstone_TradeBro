@@ -48,7 +48,11 @@ router.get("/", verifyToken, async (req, res) => {
       phoneNumber: user.phoneNumber || "",
       language: user.language || "English",
       profileImage: user.profileImage,
-      notifications: user.notifications !== undefined ? user.notifications : true
+      notifications: user.notifications !== undefined ? user.notifications : true,
+      tradingExperience: user.tradingExperience || "Beginner",
+      bio: user.bio || "No bio provided yet.",
+      preferredMarkets: user.preferredMarkets || ["Stocks"],
+      createdAt: user.createdAt
     };
 
     res.status(200).json({ success: true, userSettings });
@@ -72,6 +76,21 @@ router.put("/", verifyToken, upload.single("profileImage"), async (req, res) => 
     const language = validator.escape(req.body.language || "English");
     const profileImage = req.file ? req.file.filename : user.profileImage;
     const notifications = req.body.notifications !== undefined ? req.body.notifications : user.notifications;
+    const tradingExperience = validator.escape(req.body.tradingExperience || user.tradingExperience || "Beginner");
+    const bio = validator.escape(req.body.bio || user.bio || "");
+
+    // Parse preferredMarkets if it exists
+    let preferredMarkets = user.preferredMarkets || ["Stocks"];
+    if (req.body.preferredMarkets) {
+      try {
+        const parsedMarkets = JSON.parse(req.body.preferredMarkets);
+        if (Array.isArray(parsedMarkets)) {
+          preferredMarkets = parsedMarkets.map(market => validator.escape(market));
+        }
+      } catch (err) {
+        console.error("Error parsing preferredMarkets:", err);
+      }
+    }
 
     // Update user in database
     user.fullName = fullName;
@@ -79,6 +98,9 @@ router.put("/", verifyToken, upload.single("profileImage"), async (req, res) => 
     user.language = language;
     user.profileImage = profileImage;
     user.notifications = notifications;
+    user.tradingExperience = tradingExperience;
+    user.bio = bio;
+    user.preferredMarkets = preferredMarkets;
 
     await user.save();
 
@@ -88,7 +110,11 @@ router.put("/", verifyToken, upload.single("profileImage"), async (req, res) => 
       phoneNumber: user.phoneNumber,
       language: user.language,
       profileImage: user.profileImage,
-      notifications: user.notifications
+      notifications: user.notifications,
+      tradingExperience: user.tradingExperience,
+      bio: user.bio,
+      preferredMarkets: user.preferredMarkets,
+      createdAt: user.createdAt
     };
 
     console.log("Updated Settings:", userSettings);
