@@ -15,7 +15,7 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
       {
         clientID: GOOGLE_CLIENT_ID,
         clientSecret: GOOGLE_CLIENT_SECRET,
-        callbackURL: "https://s89-satya-capstone-tradebro.onrender.com/api/auth/auth/google/callback",
+        callbackURL: `${process.env.API_BASE_URL}/api/auth/google/callback`,
       },
 
     async (accessToken, refreshToken, profile, done) => {

@@ -331,9 +331,8 @@ router.get('/google/callback',
         maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
       });
 
-      // Redirect to frontend with success message and user data
-      // Include token in the URL and set a flag to indicate Google login
-      res.redirect(`${process.env.CLIENT_URL || 'https://tradebro-client.vercel.app'}/login?success=true&token=${token}&google=true`);
+      // Redirect directly to dashboard with token
+      res.redirect(`${process.env.CLIENT_URL || 'https://tradebro-client.vercel.app'}/dashboard?token=${token}&google=true`);
     } catch (error) {
       console.error('Error in Google callback:', error);
       res.redirect(`${process.env.CLIENT_URL || 'https://tradebro-client.vercel.app'}/login?error=authentication_failed`);
