@@ -4,7 +4,7 @@ require("dotenv").config();
 
 const router = express.Router();
 const FMP_API = process.env.FMP_API_KEY;
-const TWELVE_DATA_API_KEY = process.env.TWELVE_DATA_API_KEY || "7ac5c1c1a2d247e797d2f8af686efcd1";
+const TWELVE_DATA_API_KEY = process.env.TWELVE_DATA_API_KEY;
 
 // 1. Get stock price and volume
 router.get("/stocks/price/:symbol", async (req, res) => {

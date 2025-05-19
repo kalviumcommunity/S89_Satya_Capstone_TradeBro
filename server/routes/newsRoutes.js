@@ -6,7 +6,7 @@ const { verifyToken } = require('../middleware/auth');
 // Get all news
 router.get('/', async (req, res) => {
   try {
-    const apiKey = process.env.REACT_APP_NEWS_API_KEY || 'pub_8726914b0e5d77ab2a61bfe13ddf388c91793';
+    const apiKey = process.env.REACT_APP_NEWS_API_KEY;
     const category = req.query.category || 'business';
     const query = req.query.q || 'stocks';
     const language = req.query.language || 'en';
@@ -51,7 +51,7 @@ router.get('/', async (req, res) => {
 router.get('/category/:category', async (req, res) => {
   try {
     const { category } = req.params;
-    const apiKey = process.env.REACT_APP_NEWS_API_KEY || 'pub_8726914b0e5d77ab2a61bfe13ddf388c91793';
+    const apiKey = process.env.REACT_APP_NEWS_API_KEY;
     const query = req.query.q || 'stocks';
     const language = req.query.language || 'en';
     
@@ -103,7 +103,7 @@ router.get('/search', async (req, res) => {
       });
     }
     
-    const apiKey = process.env.REACT_APP_NEWS_API_KEY || 'pub_8726914b0e5d77ab2a61bfe13ddf388c91793';
+    const apiKey = process.env.REACT_APP_NEWS_API_KEY;
     const language = req.query.language || 'en';
     
     const url = `https://newsdata.io/api/1/news?apikey=${apiKey}&q=${q}&language=${language}`;
