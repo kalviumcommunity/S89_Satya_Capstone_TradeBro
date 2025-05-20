@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import "./Settings.css";
+import "../styles/pages/Settings.css";
 import PageLayout from "../components/PageLayout";
 import { useToast } from "../context/ToastContext";
 import { useAuth } from "../context/AuthContext";

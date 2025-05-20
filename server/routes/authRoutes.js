@@ -300,19 +300,55 @@ router.get('/user', verifyToken, async (req, res) => {
 });
 
 // Google OAuth Login Route
-router.get('/auth/google',
+router.get('/google', (req, res, next) => {
+  console.log('Google OAuth login route hit');
+  console.log('Request URL:', req.originalUrl);
+
+  // Force HTTPS protocol regardless of what req.protocol reports
+  const protocol = 'https';
+  console.log('Protocol from request:', req.protocol);
+  console.log('X-Forwarded-Proto header:', req.headers['x-forwarded-proto']);
+  console.log('Using protocol:', protocol);
+
+  console.log('Full URL:', `${protocol}://${req.get('host')}${req.originalUrl}`);
+  console.log('Headers:', req.headers);
+
+  // Define the callback URL using environment variables
+  const callbackURL = process.env.API_BASE_URL + "/api/auth/google/callback";
+  console.log('Using callback URL:', callbackURL);
+
   passport.authenticate('google', {
-    scope: ['profile', 'email'], // Ensure this is included
-    prompt: 'select_account' // Optional: Forces account selection
-  })
-);
+    scope: ['profile', 'email'],
+    prompt: 'select_account',
+    callbackURL: callbackURL // Pass the callback URL explicitly
+  })(req, res, next);
+});
 
 // Google OAuth Callback Route
-router.get('/auth/google/callback',
+router.get('/google/callback', (req, res, next) => {
+  console.log('Google OAuth callback route hit');
+  console.log('Request URL:', req.originalUrl);
+
+  // Force HTTPS protocol regardless of what req.protocol reports
+  const protocol = 'https';
+  console.log('Protocol from request:', req.protocol);
+  console.log('X-Forwarded-Proto header:', req.headers['x-forwarded-proto']);
+  console.log('Using protocol:', protocol);
+
+  console.log('Full URL:', `${protocol}://${req.get('host')}${req.originalUrl}`);
+  console.log('Query params:', req.query);
+  console.log('Headers:', req.headers);
+
+  // Define the callback URL using environment variables
+  const callbackURL = process.env.API_BASE_URL + "/api/auth/google/callback";
+  console.log('Using callback URL:', callbackURL);
+
   passport.authenticate('google', {
+    callbackURL: callbackURL, // Pass the callback URL explicitly
     failureRedirect: '/login',
     failureMessage: true
-  }),
+  })(req, res, next);
+},
   (req, res) => {
     try {
       console.log('Google OAuth callback received, user:', req.user.email);
@@ -320,7 +356,18 @@ router.get('/auth/google/callback',
       // Make sure we have a valid user object
       if (!req.user || !req.user._id) {
         console.error('Invalid user object in Google callback');
-        return res.redirect(`http://localhost:5173/login?error=invalid_user`);
+
+        // Determine the correct protocol based on the client URL
+        let clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+
+        // If it's localhost, force HTTP protocol
+        if (clientUrl.includes('localhost')) {
+          clientUrl = clientUrl.replace('https://', 'http://');
+        }
+
+        console.log(`Redirecting to: ${clientUrl}/login?error=invalid_user`);
+
+        return res.redirect(`${clientUrl}/login?error=invalid_user`);
       }
 
       // Generate JWT Token for Google OAuth with more user data (30 days expiration)
@@ -339,12 +386,32 @@ router.get('/auth/google/callback',
         maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
       });
 
-      // Redirect to frontend with success message and user data
-      // Include token in the URL and set a flag to indicate Google login
-      res.redirect(`http://localhost:5173/login?success=true&token=${token}&google=true`);
+      // Determine the correct protocol based on the client URL
+      let clientUrl = process.env.CLIENT_URL;
+
+      // If it's localhost, force HTTP protocol
+      if (clientUrl.includes('localhost')) {
+        clientUrl = clientUrl.replace('https://', 'http://');
+      }
+
+      console.log(`Redirecting to: ${clientUrl}/dashboard?token=${token}&google=true`);
+
+      // Redirect directly to dashboard with token
+      res.redirect(`${clientUrl}/dashboard?token=${token}&google=true`);
     } catch (error) {
       console.error('Error in Google callback:', error);
-      res.redirect(`http://localhost:5173/login?error=authentication_failed`);
+
+      // Determine the correct protocol based on the client URL
+      let clientUrl = process.env.CLIENT_URL;
+
+      // If it's localhost, force HTTP protocol
+      if (clientUrl.includes('localhost')) {
+        clientUrl = clientUrl.replace('https://', 'http://');
+      }
+
+      console.log(`Redirecting to: ${clientUrl}/login?error=authentication_failed`);
+
+      res.redirect(`${clientUrl}/login?error=authentication_failed`);
     }
   }
 );

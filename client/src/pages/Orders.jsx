@@ -5,7 +5,7 @@ import PageLayout from "../components/PageLayout";
 import { useToast } from "../context/ToastContext";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
-import "./Orders.css";
+import "../styles/pages/Orders.css";
 
 const Orders = () => {
   const { showToast } = useToast();
@@ -95,7 +95,7 @@ const Orders = () => {
       setError(null);
 
       try {
-        const response = await axios.get("http://localhost:5000/api/orders/all");
+        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/orders/all`);
 
         if (response.data.success) {
           // Transform the data to match our frontend format
@@ -156,7 +156,7 @@ const Orders = () => {
     setError(null);
 
     try {
-      const response = await axios.get("http://localhost:5000/api/orders/all");
+      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/orders/all`);
 
       if (response.data.success) {
         // Transform the data to match our frontend format
@@ -198,7 +198,7 @@ const Orders = () => {
     }
 
     try {
-      const response = await axios.post(`http://localhost:5000/api/orders/cancel/${id}`);
+      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/orders/cancel/${id}`);
 
       if (response.data.success) {
         // Update the order in the local state

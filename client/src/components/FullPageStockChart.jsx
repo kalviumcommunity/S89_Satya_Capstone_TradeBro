@@ -1,27 +1,37 @@
-import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { FiX, FiShoppingCart, FiBarChart2, FiTrendingUp, FiTrendingDown, FiCalendar } from "react-icons/fi";
-import axios from "axios";
-import { useToast } from "../context/ToastContext";
-import { useAuth } from "../context/AuthContext";
-import { useVirtualMoney } from "../context/VirtualMoneyContext";
-import { useNavigate } from "react-router-dom";
-import StockChart from "./StockChart";
-import BuySellModal from "./BuySellModal";
-import API_ENDPOINTS from "../config/apiConfig";
-import "../styles/FullPageStockChart.css";
+import React, { useState, useEffect, useContext } from 'react';
+import PropTypes from 'prop-types';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiX, FiTrendingUp, FiTrendingDown, FiCalendar, FiShoppingCart, FiBarChart2 } from 'react-icons/fi';
+import axios from 'axios';
+import { ThemeContext } from '../context/ThemeContext';
+import { useVirtualMoney } from '../context/VirtualMoneyContext';
+import { useToast } from '../context/ToastContext';
+import StockChart from './StockChart';
+import BuySellModal from './BuySellModal';
+import API_ENDPOINTS from '../config/apiConfig';
+import { formatPrice } from '../utils/chartUtils';
+import '../styles/components/FullPageStockChart.css';
+import '../styles/components/BuySellButtons.css';
 
 const FullPageStockChart = ({ symbol, onClose, onTransactionSuccess }) => {
-  const { isAuthenticated } = useAuth();
-  const toast = useToast();
-  const navigate = useNavigate();
-  const { virtualMoney, updateVirtualMoney } = useVirtualMoney();
   const [stockData, setStockData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedTimeRange, setSelectedTimeRange] = useState('1day');
+  const [selectedChartType, setSelectedChartType] = useState('area');
   const [showBuyModal, setShowBuyModal] = useState(false);
   const [showSellModal, setShowSellModal] = useState(false);
-  const [timeRange, setTimeRange] = useState("5min");
+
+  const { theme } = useContext(ThemeContext);
+  const { virtualMoney, updateVirtualMoney } = useVirtualMoney();
+  const toast = useToast();
+
+  // Chart type options
+  const chartTypeOptions = [
+    { label: 'Area', value: 'area' },
+    { label: 'Line', value: 'line' },
+    { label: 'Bar', value: 'bar' }
+  ];
 
   // Fetch stock data
   useEffect(() => {
@@ -30,80 +40,70 @@ const FullPageStockChart = ({ symbol, onClose, onTransactionSuccess }) => {
         setLoading(true);
         setError(null);
 
-        // Get user ID for personalized data if authenticated
-        const userId = isAuthenticated ? localStorage.getItem('userId') || localStorage.getItem('authToken') : null;
-
-        // Use our proxy server to get stock data with personalization
-        const url = userId
-          ? `${API_ENDPOINTS.PROXY.STOCK_BATCH(symbol)}&userId=${userId}`
-          : API_ENDPOINTS.PROXY.STOCK_BATCH(symbol);
-
-        const response = await axios.get(url);
+        const response = await axios.get(API_ENDPOINTS.PROXY.STOCK_BATCH(symbol));
 
         if (response.data && response.data.length > 0) {
           setStockData(response.data[0]);
         } else {
-          setError("No data found for this stock symbol");
+          setError('No data found for this stock symbol');
         }
-      } catch (err) {
-        console.error("Error fetching stock data:", err);
-
-        // Generate mock data as fallback
-        const mockData = {
-          symbol: symbol,
-          name: symbol.replace(/\.[A-Z]+$/, '').replace(/([A-Z])/g, ' $1').trim(),
-          price: 1000 + Math.random() * 2000,
-          change: (Math.random() * 100) - 50,
-          changesPercentage: (Math.random() * 10) - 5,
-          open: 1000 + Math.random() * 2000,
-          dayHigh: 1000 + Math.random() * 2000,
-          dayLow: 1000 + Math.random() * 2000,
-          volume: Math.floor(Math.random() * 10000000),
-          marketCap: Math.floor(Math.random() * 1000000000000),
-          pe: Math.random() * 30,
-          yearHigh: 1000 + Math.random() * 2000,
-          yearLow: 1000 + Math.random() * 2000
-        };
-
-        setStockData(mockData);
-        toast.info("Using simulated data for this stock");
+      } catch (error) {
+        console.error('Error fetching stock data:', error);
+        setError('Failed to load stock data');
       } finally {
         setLoading(false);
       }
     };
 
     fetchStockData();
-  }, [symbol, isAuthenticated]);
+  }, [symbol]);
 
-  // Virtual money data is provided by the VirtualMoneyContext
+  // Handle escape key to close
+  useEffect(() => {
+    const handleEscKey = (event) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
 
+    window.addEventListener('keydown', handleEscKey);
+
+    return () => {
+      window.removeEventListener('keydown', handleEscKey);
+    };
+  }, [onClose]);
+
+  // Handle buy success
   const handleBuySuccess = (data) => {
     updateVirtualMoney(data);
-    toast.success(`Successfully purchased shares of ${symbol}`);
-    // Modal will handle navigation to portfolio page
+    setShowBuyModal(false);
+    toast.success('Stock purchased successfully!');
+
     if (onTransactionSuccess) {
       onTransactionSuccess();
     }
   };
 
+  // Handle sell success
   const handleSellSuccess = (data) => {
     updateVirtualMoney(data);
-    toast.success(`Successfully sold shares of ${symbol}`);
-    // Modal will handle navigation to portfolio page
+    setShowSellModal(false);
+    toast.success('Stock sold successfully!');
+
     if (onTransactionSuccess) {
       onTransactionSuccess();
     }
   };
 
-  // Get current date and time for display
-  const getCurrentDateTime = () => {
-    const now = new Date();
-    const hours = now.getHours().toString().padStart(2, '0');
-    const minutes = now.getMinutes().toString().padStart(2, '0');
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    const displayHours = (hours % 12) || 12;
-
-    return `Today (${displayHours}:${minutes} ${ampm} - 04:00 PM)`;
+  // Format date
+  const formatDate = () => {
+    const date = new Date();
+    return date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
   };
 
   return (
@@ -112,122 +112,113 @@ const FullPageStockChart = ({ symbol, onClose, onTransactionSuccess }) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
+      transition={{ duration: 0.3 }}
     >
-      <motion.div
-        className="fullpage-chart-container"
-        initial={{ y: 50, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: 50, opacity: 0 }}
-        transition={{ type: "spring", damping: 20 }}
-      >
-        <motion.button
-          className="close-fullpage-btn"
-          onClick={onClose}
-          whileHover={{ scale: 1.1, rotate: 90 }}
-          whileTap={{ scale: 0.95 }}
-        >
+      <div className="fullpage-chart-container">
+        <button className="close-fullpage-btn" onClick={onClose}>
           <FiX />
-        </motion.button>
+        </button>
 
-        {stockData && (
-          <motion.div
-            className="fullpage-stock-header"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.5 }}
-          >
-            <div className="fullpage-stock-info">
-              <motion.h1
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.3, duration: 0.5 }}
-              >
-                {symbol} ({symbol})
-              </motion.h1>
-              <div className="fullpage-price-container">
-                <motion.h2
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.4, duration: 0.5 }}
-                >
-                  ₹{stockData.price.toFixed(2)}
-                </motion.h2>
-                <motion.div
-                  className={`price-change ${stockData.change >= 0 ? "positive" : "negative"}`}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.5, duration: 0.5 }}
-                  whileHover={{ y: -5, boxShadow: "0 8px 20px rgba(0, 0, 0, 0.3)" }}
-                >
-                  {stockData.change >= 0 ? <FiTrendingUp /> : <FiTrendingDown />}
-                  <span>{stockData.change >= 0 ? "+" : ""}{stockData.change.toFixed(2)}</span>
-                  <span className="percentage">({stockData.change >= 0 ? "+" : ""}{stockData.changesPercentage.toFixed(2)}%)</span>
-                </motion.div>
+        <div className="chart-time-display">
+          <FiCalendar className="calendar-icon" />
+          <span>{formatDate()}</span>
+        </div>
+
+        {loading ? (
+          <div className="fullpage-loading">
+            <div className="loading-spinner"></div>
+            <p>Loading stock data...</p>
+          </div>
+        ) : error ? (
+          <div className="fullpage-error">
+            <p>{error}</p>
+          </div>
+        ) : stockData && (
+          <>
+            <div className="fullpage-stock-header">
+              <div className="fullpage-stock-info">
+                <h1>{stockData.name} ({stockData.symbol})</h1>
+                <div className="fullpage-price-container">
+                  <h2>{formatPrice(stockData.price)}</h2>
+                  <div className={`price-change ${stockData.change >= 0 ? 'positive' : 'negative'}`}>
+                    {stockData.change >= 0 ? <FiTrendingUp /> : <FiTrendingDown />}
+                    <span>{stockData.change >= 0 ? '+' : ''}{stockData.change.toFixed(2)}</span>
+                    <span className="percentage">({stockData.changesPercentage.toFixed(2)}%)</span>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="chart-time-display">
-              <FiCalendar className="calendar-icon" />
-              <span>{getCurrentDateTime()}</span>
+            <div className="fullpage-chart-wrapper">
+              <div className="chart-controls">
+                <div className="chart-type-selector">
+                  {chartTypeOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      className={selectedChartType === option.value ? 'active' : ''}
+                      onClick={() => setSelectedChartType(option.value)}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <StockChart
+                symbol={symbol}
+                chartType={selectedChartType}
+                timeRange={selectedTimeRange}
+                height={window.innerHeight - 200}
+              />
             </div>
-          </motion.div>
+
+            <div className="action-buttons-container">
+              <button className="action-button buy-button" onClick={() => setShowBuyModal(true)}>
+                <FiShoppingCart /> Buy
+              </button>
+              <button className="action-button sell-button" onClick={() => setShowSellModal(true)}>
+                <FiBarChart2 /> Sell
+              </button>
+            </div>
+          </>
         )}
 
-        <div className="fullpage-chart-wrapper">
-          <StockChart
-            symbol={symbol}
-            chartType="line"
-            timeRange={timeRange}
-            fullscreen={true}
-          />
-        </div>
-
-        <motion.div
-          className="fullpage-action-buttons"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6, duration: 0.5 }}
-        >
-          <motion.button
-            className="fullpage-buy-btn"
-            onClick={() => setShowBuyModal(true)}
-            whileHover={{ y: -5, boxShadow: "0 10px 25px rgba(34, 184, 176, 0.4)" }}
-            whileTap={{ y: 0, boxShadow: "0 5px 15px rgba(34, 184, 176, 0.3)" }}
-          >
-            <FiShoppingCart /> Buy
-          </motion.button>
-          <motion.button
-            className="fullpage-sell-btn"
-            onClick={() => setShowSellModal(true)}
-            whileHover={{ y: -5, boxShadow: "0 10px 25px rgba(231, 76, 60, 0.4)" }}
-            whileTap={{ y: 0, boxShadow: "0 5px 15px rgba(231, 76, 60, 0.3)" }}
-          >
-            <FiBarChart2 /> Sell
-          </motion.button>
-        </motion.div>
-
         {/* Buy Modal */}
-        <BuySellModal
-          isOpen={showBuyModal}
-          onClose={() => setShowBuyModal(false)}
-          type="BUY"
-          stockData={stockData}
-          onSuccess={handleBuySuccess}
-          virtualMoney={virtualMoney}
-        />
+        <AnimatePresence>
+          {showBuyModal && (
+            <BuySellModal
+              isOpen={showBuyModal}
+              onClose={() => setShowBuyModal(false)}
+              type="BUY"
+              stockData={stockData}
+              onSuccess={handleBuySuccess}
+              virtualMoney={virtualMoney}
+            />
+          )}
+        </AnimatePresence>
 
         {/* Sell Modal */}
-        <BuySellModal
-          isOpen={showSellModal}
-          onClose={() => setShowSellModal(false)}
-          type="SELL"
-          stockData={stockData}
-          onSuccess={handleSellSuccess}
-          virtualMoney={virtualMoney}
-        />
-      </motion.div>
+        <AnimatePresence>
+          {showSellModal && (
+            <BuySellModal
+              isOpen={showSellModal}
+              onClose={() => setShowSellModal(false)}
+              type="SELL"
+              stockData={stockData}
+              onSuccess={handleSellSuccess}
+              virtualMoney={virtualMoney}
+            />
+          )}
+        </AnimatePresence>
+      </div>
     </motion.div>
   );
+};
+
+FullPageStockChart.propTypes = {
+  symbol: PropTypes.string.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onTransactionSuccess: PropTypes.func
 };
 
 export default FullPageStockChart;

@@ -1,8 +1,64 @@
-/* Import responsive styles */
-@import url('./responsive.css');
+/* Main Styles Index */
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+/* Base Styles */
+@import url('./base/reset.css');
+@import url('./base/typography.css');
+
+/* Theme Styles */
+@import url('./themes/variables.css');
+@import url('./themes/colors.css');
+@import url('./themes/theme.css');
+
+/* Utility Styles */
+@import url('./utils/responsive.css');
+@import url('./utils/animations.css');
+@import url('./utils/textures.css');
+@import url('./utils/interactions.css');
+@import url('./utils/micro-interactions.css');
+@import url('./utils/scroll-animations.css');
+@import url('./utils/mobile-enhancements.css');
+
+/* Component Styles */
+@import url('./components/buttons.css');
+@import url('./components/cards.css');
+@import url('./components/hero.css');
+
+/* Dashboard Components */
+@import url('./components/dashboard/TradingDashboard.css');
+
+/* Trading Components */
+@import url('./components/trading/BuySellModal.css');
+
+/* Common Components */
+@import url('./components/common/Loading.css');
+@import url('./components/common/Toast.css');
+
+/* App Layout */
+.app-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Poppins', sans-serif;
+  transition: background-color var(--transition-medium), color var(--transition-medium);
+  position: relative;
+}
+
+.app-container {
+  display: flex;
+  flex: 1;
+  height: 100%;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--background-color);
+  transition: background-color var(--transition-medium);
+}
+
+.page-content {
+  flex: 1;
+  padding: var(--spacing-xl);
+  overflow-y: auto;
 }

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useOfflineMode } from '../context/OfflineContext';
 import { useToast } from '../context/ToastContext';
 import { FiWifi, FiWifiOff } from 'react-icons/fi';
-import '../styles/NetworkErrorNotification.css';
+import '../styles/components/NetworkErrorNotification.css';
 
 /**
  * Component to handle network error notifications and provide offline mode toggle
