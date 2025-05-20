@@ -62,6 +62,10 @@ axios.interceptors.request.use(
 // Add a response interceptor
 axios.interceptors.response.use(
   (response) => {
+    // Log successful responses in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`Response from ${response.config.url} successful`);
+    }
     return response;
   },
   (error) => {
@@ -507,6 +511,16 @@ axios.interceptors.response.use(
     // Handle 401 Unauthorized errors
     if (error.response && error.response.status === 401) {
       console.log('Authentication error (401):', error.config.url);
+
+      // Show a toast notification for authentication errors
+      try {
+        // Check if we can access the toast function
+        if (window.showToast) {
+          window.showToast('Authentication required. Please log in.', 'error');
+        }
+      } catch (toastError) {
+        console.error('Failed to show toast notification:', toastError);
+      }
 
       // Get the current token
       const token = localStorage.getItem('authToken');

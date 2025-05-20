@@ -34,21 +34,43 @@ export const OfflineProvider = ({ children }) => {
       // Get the API URL, ensuring HTTP for localhost
       const apiUrl = getApiBaseUrl();
 
+      console.log('Checking backend availability at:', `${apiUrl}/api/health`);
+
       const response = await healthCheckAxios.get(`${apiUrl}/api/health`, {
-        timeout: 2000
+        timeout: 5000 // Increased timeout for deployed backend
       });
 
       if (response.status === 200) {
         if (isOffline) {
           console.log('Backend is available, switching to online mode');
           setIsOffline(false);
+
+          // Show a toast notification if available
+          if (window.showSuccessToast) {
+            window.showSuccessToast('Connected to server successfully', 3000);
+          }
         }
         return;
       }
     } catch (error) {
-      // Don't automatically switch to offline mode
-      // Only log the error
+      // Log the error with more details
       console.log('Backend health check failed:', error.message);
+
+      // If we're not already in offline mode, notify the user but don't automatically switch
+      if (!isOffline) {
+        console.log('Backend connection issue detected');
+
+        // Show a toast notification if available
+        if (window.showWarningToast) {
+          window.showWarningToast('Server connection issue detected. Some features may be limited.', 5000);
+        }
+
+        // Dispatch an event to notify about network error
+        const networkErrorEvent = new CustomEvent('app:network-error', {
+          detail: { error, message: 'Server connection issue detected. Switch to offline mode?' }
+        });
+        window.dispatchEvent(networkErrorEvent);
+      }
 
       // Only switch to offline mode if explicitly requested by the user
       // This ensures we stay in online mode by default

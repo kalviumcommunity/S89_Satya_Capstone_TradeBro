@@ -18,7 +18,17 @@ export default defineConfig(({ mode }) => {
         input: {
           main: path.resolve(__dirname, 'index.html'),
         },
+        output: {
+          // Ensure proper file extensions and formats
+          entryFileNames: 'assets/[name]-[hash].js',
+          chunkFileNames: 'assets/[name]-[hash].js',
+          assetFileNames: 'assets/[name]-[hash].[ext]',
+          // Use system format for better compatibility with Netlify
+          format: 'systemjs',
+        },
       },
+      // Copy Netlify configuration files to the dist folder
+      copyPublicDir: true,
     },
     server: {
       port: 5173, // Use port 5173 for local development

@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 import Toast from '../components/Toast';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -34,6 +34,25 @@ export const ToastProvider = ({ children }) => {
   const warning = (message, duration, position) => {
     return addToast(message, 'warning', duration, position);
   };
+
+  // Make toast functions available globally
+  useEffect(() => {
+    // Add the toast functions to the window object
+    window.showToast = addToast;
+    window.showSuccessToast = success;
+    window.showErrorToast = error;
+    window.showInfoToast = info;
+    window.showWarningToast = warning;
+
+    // Clean up when component unmounts
+    return () => {
+      delete window.showToast;
+      delete window.showSuccessToast;
+      delete window.showErrorToast;
+      delete window.showInfoToast;
+      delete window.showWarningToast;
+    };
+  }, []);
 
   return (
     <ToastContext.Provider value={{ addToast, removeToast, success, error, info, warning }}>

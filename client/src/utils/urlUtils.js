@@ -1,6 +1,6 @@
 /**
  * URL Utilities
- * 
+ *
  * This file contains utility functions for handling URLs in the application.
  */
 
@@ -11,12 +11,12 @@
  */
 export const ensureHttpForLocalhost = (url) => {
   if (!url) return url;
-  
+
   // If the URL includes localhost and starts with https://, replace it with http://
   if (url.includes('localhost') && url.startsWith('https://')) {
     return url.replace('https://', 'http://');
   }
-  
+
   return url;
 };
 
@@ -30,10 +30,10 @@ export const buildUrl = (baseUrl, path) => {
   // Ensure the base URL doesn't end with a slash and the path doesn't start with a slash
   const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  
+
   // Build the full URL
   const fullUrl = `${cleanBaseUrl}${cleanPath}`;
-  
+
   // Ensure HTTP for localhost
   return ensureHttpForLocalhost(fullUrl);
 };
@@ -43,7 +43,8 @@ export const buildUrl = (baseUrl, path) => {
  * @returns {string} - The API base URL with HTTP for localhost
  */
 export const getApiBaseUrl = () => {
-  const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+  // Use the deployed backend URL as default if environment variable is not set
+  const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://s89-satya-capstone-tradebro.onrender.com';
   return ensureHttpForLocalhost(apiUrl);
 };
 
