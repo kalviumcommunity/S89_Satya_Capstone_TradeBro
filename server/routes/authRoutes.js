@@ -305,8 +305,8 @@ router.get('/google', (req, res, next) => {
   console.log('Full URL:', `${protocol}://${req.get('host')}${req.originalUrl}`);
   console.log('Headers:', req.headers);
 
-  // Define the callback URL explicitly to match what's in passport config
-  const callbackURL = "https://s89-satya-capstone-tradebro.onrender.com/api/auth/google/callback";
+  // Define the callback URL using environment variables
+  const callbackURL = process.env.API_BASE_URL + "/api/auth/google/callback";
   console.log('Using callback URL:', callbackURL);
 
   passport.authenticate('google', {
@@ -331,8 +331,8 @@ router.get('/google/callback', (req, res, next) => {
   console.log('Query params:', req.query);
   console.log('Headers:', req.headers);
 
-  // Define the callback URL explicitly to match what's in passport config
-  const callbackURL = "https://s89-satya-capstone-tradebro.onrender.com/api/auth/google/callback";
+  // Define the callback URL using environment variables
+  const callbackURL = process.env.API_BASE_URL + "/api/auth/google/callback";
   console.log('Using callback URL:', callbackURL);
 
   passport.authenticate('google', {
@@ -348,7 +348,18 @@ router.get('/google/callback', (req, res, next) => {
       // Make sure we have a valid user object
       if (!req.user || !req.user._id) {
         console.error('Invalid user object in Google callback');
-        return res.redirect(`${process.env.CLIENT_URL || 'https://tradebro-client.vercel.app'}/login?error=invalid_user`);
+
+        // Determine the correct protocol based on the client URL
+        let clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+
+        // If it's localhost, force HTTP protocol
+        if (clientUrl.includes('localhost')) {
+          clientUrl = clientUrl.replace('https://', 'http://');
+        }
+
+        console.log(`Redirecting to: ${clientUrl}/login?error=invalid_user`);
+
+        return res.redirect(`${clientUrl}/login?error=invalid_user`);
       }
 
       // Generate JWT Token for Google OAuth with more user data (30 days expiration)
@@ -367,11 +378,32 @@ router.get('/google/callback', (req, res, next) => {
         maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
       });
 
+      // Determine the correct protocol based on the client URL
+      let clientUrl = process.env.CLIENT_URL;
+
+      // If it's localhost, force HTTP protocol
+      if (clientUrl.includes('localhost')) {
+        clientUrl = clientUrl.replace('https://', 'http://');
+      }
+
+      console.log(`Redirecting to: ${clientUrl}/dashboard?token=${token}&google=true`);
+
       // Redirect directly to dashboard with token
-      res.redirect(`${process.env.CLIENT_URL || 'https://tradebro-client.vercel.app'}/dashboard?token=${token}&google=true`);
+      res.redirect(`${clientUrl}/dashboard?token=${token}&google=true`);
     } catch (error) {
       console.error('Error in Google callback:', error);
-      res.redirect(`${process.env.CLIENT_URL || 'https://tradebro-client.vercel.app'}/login?error=authentication_failed`);
+
+      // Determine the correct protocol based on the client URL
+      let clientUrl = process.env.CLIENT_URL;
+
+      // If it's localhost, force HTTP protocol
+      if (clientUrl.includes('localhost')) {
+        clientUrl = clientUrl.replace('https://', 'http://');
+      }
+
+      console.log(`Redirecting to: ${clientUrl}/login?error=authentication_failed`);
+
+      res.redirect(`${clientUrl}/login?error=authentication_failed`);
     }
   }
 );

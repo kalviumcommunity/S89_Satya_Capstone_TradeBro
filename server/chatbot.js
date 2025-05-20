@@ -37,7 +37,7 @@ const systemInstruction = [
 const getStockData = async (symbol) => {
   try {
     // Use our proxy server instead of direct API call
-    const url = `https://s89-satya-capstone-tradebro.onrender.com/api/proxy/stock-batch?symbols=${symbol}`;
+    const url = `${process.env.API_BASE_URL}/api/proxy/stock-batch?symbols=${symbol}`;
     const response = await axios.get(url);
 
     if (response.data && response.data.length > 0) {
@@ -63,7 +63,7 @@ const getStockData = async (symbol) => {
 const getTopGainers = async () => {
   try {
     // Use our proxy server instead of direct API call
-    const url = `https://s89-satya-capstone-tradebro.onrender.com/api/proxy/top-gainers`;
+    const url = `${process.env.API_BASE_URL}/api/proxy/top-gainers`;
     const response = await axios.get(url);
 
     if (response.data && response.data.length > 0) {

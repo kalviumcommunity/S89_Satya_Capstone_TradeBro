@@ -22,6 +22,7 @@ const orderRoutes = require("./routes/orderRoutes");
 const stockSearchRoutes = require("./routes/stockSearchRoutes");
 const exampleRoutes = require("./routes/exampleRoutes");
 const userDataRoutes = require("./routes/userDataRoutes");
+const newsRoutes = require("./routes/newsRoutes");
 
 // Load environment variables
 dotenv.config();
@@ -41,12 +42,17 @@ app.set('trust proxy', true);
 // CORS configuration
 app.use(cors({
   origin: [
+    // Prioritize localhost URLs for development
     "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:9090",
+    "http://localhost:9091",
+    "http://localhost:7000",
+    // Production URLs
     "https://tradebro-client.vercel.app",
     "https://tradebro.vercel.app",
     "https://s89-satya-capstone-tradebro-client.vercel.app",
     "https://s89-satya-capstone-tradebro.vercel.app",
-    // Add any other frontend domains you might use
   ],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -333,6 +339,7 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/stock-search", stockSearchRoutes);
 app.use("/api/example", exampleRoutes);
 app.use("/api/userdata", userDataRoutes);
+app.use("/api/news", newsRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

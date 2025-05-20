@@ -8,9 +8,9 @@ require('dotenv').config();
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 
-// Define the callback URL explicitly without using template literals
-// This prevents any issues with undefined variables
-const CALLBACK_URL = "https://s89-satya-capstone-tradebro.onrender.com/api/auth/google/callback";
+// Define the callback URL using environment variables
+// This allows for flexibility between development and production
+const CALLBACK_URL = process.env.API_BASE_URL + "/api/auth/google/callback";
 
 // Log configuration for debugging
 console.log('Google OAuth Configuration:');
