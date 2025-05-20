@@ -11,12 +11,13 @@ import { useVirtualMoney } from "../context/VirtualMoneyContext";
 import { safeApiCall, createDummyData } from "../utils/apiUtils";
 import { getCachedStockSymbols, cacheStockSymbols } from "../utils/stockCache";
 import PageLayout from "../components/PageLayout";
-import Loading from "../components/Loading";
+import EnhancedLoading from "../components/EnhancedLoading";
+import PageTransition from "../components/PageTransition";
 import FullScreenStockDetail from "../components/FullScreenStockDetail";
 import StockSearch from "../components/StockSearch";
 import axios from "axios";
 import API_ENDPOINTS from "../config/apiConfig";
-import "./portfolio.css";
+import "../styles/pages/portfolio.css";
 
 // Add some additional styles for the clickable rows
 const additionalStyles = `
@@ -423,7 +424,7 @@ const PortfolioPage = () => {
       // Fetch user data
       const fetchUserData = async () => {
         try {
-          const response = await axios.get('http://localhost:5000/api/auth/user', {
+          const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/auth/user`, {
             headers: { Authorization: `Bearer ${token}` }
           });
 
@@ -890,12 +891,13 @@ const PortfolioPage = () => {
   return (
     <PageLayout>
       <style>{additionalStyles}</style>
-      <motion.div
-        className="portfolio-container"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
+      <PageTransition
+        showLoading={isLoading}
+        loadingType="gradient"
+        loadingText="Loading portfolio data..."
+        transitionType="fade"
       >
+        <div className="portfolio-container">
         <motion.h1
           className="portfolio-title"
           initial={{ y: -20, opacity: 0 }}
@@ -1204,7 +1206,8 @@ const PortfolioPage = () => {
             </motion.div>
           )}
         </AnimatePresence>
-      </motion.div>
+      </div>
+      </PageTransition>
 
       {/* Full-screen stock detail */}
       <AnimatePresence>

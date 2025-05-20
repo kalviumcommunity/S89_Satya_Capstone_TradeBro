@@ -5,8 +5,12 @@
  * It provides a centralized place to manage the API base URL.
  */
 
-// Base URL for API requests
-export const API_BASE_URL = 'http://localhost:5000';
+// Import the URL utility
+import { getApiBaseUrl } from '../utils/urlUtils';
+
+// Base URL for API requests - use environment variable or fallback to localhost
+// Always ensure HTTP for localhost to avoid SSL issues
+export const API_BASE_URL = getApiBaseUrl();
 
 // API endpoints
 export const API_ENDPOINTS = {
@@ -14,7 +18,7 @@ export const API_ENDPOINTS = {
   AUTH: {
     LOGIN: `${API_BASE_URL}/api/auth/login`,
     SIGNUP: `${API_BASE_URL}/api/auth/signup`,
-    GOOGLE: `${API_BASE_URL}/api/auth/auth/google`,
+    GOOGLE: `${API_BASE_URL}/api/auth/google`,
     FORGOT_PASSWORD: `${API_BASE_URL}/api/auth/forgotpassword`,
     RESET_PASSWORD: `${API_BASE_URL}/api/auth/resetpassword`,
   },
@@ -94,6 +98,13 @@ export const API_ENDPOINTS = {
   // Chart data endpoints
   CHARTS: {
     FIVE_MIN: (symbol) => `${API_BASE_URL}/api/data/chart/5min/${symbol}`,
+  },
+
+  // News endpoints
+  NEWS: {
+    GET_ALL: `${API_BASE_URL}/api/news`,
+    GET_BY_CATEGORY: (category) => `${API_BASE_URL}/api/news/category/${category}`,
+    SEARCH: `${API_BASE_URL}/api/news/search`,
   },
 
   // Health check endpoint

@@ -1,37 +1,39 @@
-import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState, useEffect, useContext } from 'react';
+import PropTypes from 'prop-types';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
-  FiTrendingUp, FiTrendingDown, FiX, FiDollarSign,
-  FiBarChart2, FiShoppingCart, FiAlertCircle, FiMaximize2,
-  FiMinimize2, FiClock, FiInfo, FiActivity
-} from "react-icons/fi";
-import axios from "axios";
-import { useToast } from "../context/ToastContext";
-import { useAuth } from "../context/AuthContext";
-import { useVirtualMoney } from "../context/VirtualMoneyContext";
-import Loading from "./Loading";
-import StockChart from "./StockChart";
-import FixedHeader from "./FixedHeader";
-import BuySellModal from "./BuySellModal";
-import { API_ENDPOINTS } from "../config/apiConfig";
-import { formatIndianRupees, formatLargeIndianRupees } from '../utils/currencyUtils';
-import "../styles/FullScreenStockDetail.css";
+  FiX, FiTrendingUp, FiTrendingDown, FiDollarSign,
+  FiBarChart2, FiShoppingCart, FiInfo, FiClock, FiCalendar
+} from 'react-icons/fi';
+import axios from 'axios';
+import { ThemeContext } from '../context/ThemeContext';
+import { useVirtualMoney } from '../context/VirtualMoneyContext';
+import { useToast } from '../context/ToastContext';
+import StockChart from './StockChart';
+import BuySellModal from './BuySellModal';
+import API_ENDPOINTS from '../config/apiConfig';
+import { formatPrice, formatLargeNumber } from '../utils/chartUtils';
+import '../styles/components/FullScreenStockDetail.css';
+import '../styles/components/BuySellButtons.css';
 
 const FullScreenStockDetail = ({ symbol, onClose, onBuySuccess, onSellSuccess }) => {
-  const { isAuthenticated } = useAuth();
-  const toast = useToast();
-  const { virtualMoney, updateVirtualMoney } = useVirtualMoney();
   const [stockData, setStockData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedChartType, setSelectedChartType] = useState('area');
   const [showBuyModal, setShowBuyModal] = useState(false);
   const [showSellModal, setShowSellModal] = useState(false);
-  const [quantity, setQuantity] = useState(1);
-  const [orderType, setOrderType] = useState("MARKET");
-  const [limitPrice, setLimitPrice] = useState("");
-  const [processingTransaction, setProcessingTransaction] = useState(false);
-  const [chartTimeRange, setChartTimeRange] = useState("1week");
-  const [chartType, setChartType] = useState("line");
+
+  const { theme } = useContext(ThemeContext);
+  const { virtualMoney, updateVirtualMoney } = useVirtualMoney();
+  const toast = useToast();
+
+  // Chart type options
+  const chartTypeOptions = [
+    { label: 'Area', value: 'area' },
+    { label: 'Line', value: 'line' },
+    { label: 'Bar', value: 'bar' }
+  ];
 
   // Fetch stock data
   useEffect(() => {
@@ -40,204 +42,221 @@ const FullScreenStockDetail = ({ symbol, onClose, onBuySuccess, onSellSuccess })
         setLoading(true);
         setError(null);
 
-        // Get user ID for personalized data if authenticated
-        const userId = isAuthenticated ? localStorage.getItem('userId') || localStorage.getItem('authToken') : null;
-
-        // Use our proxy server to get stock data with personalization
-        const url = userId
-          ? `${API_ENDPOINTS.PROXY.STOCK_BATCH(symbol)}&userId=${userId}`
-          : API_ENDPOINTS.PROXY.STOCK_BATCH(symbol);
-
-        const response = await axios.get(url);
+        const response = await axios.get(API_ENDPOINTS.PROXY.STOCK_BATCH(symbol));
 
         if (response.data && response.data.length > 0) {
           setStockData(response.data[0]);
         } else {
-          setError("No data found for this stock symbol");
+          setError('No data found for this stock symbol');
         }
-
-        // No need to fetch virtual money data here as it's handled by the VirtualMoneyContext
-      } catch (err) {
-        console.error("Error fetching stock data:", err);
-        setError("Failed to fetch stock data. Please try again later.");
-
-        // Try to use mock data as fallback
-        const mockData = {
-          [symbol]: {
-            symbol: symbol,
-            name: `${symbol} Inc.`,
-            price: 150 + Math.random() * 50,
-            change: Math.random() * 10 - 5,
-            changesPercentage: Math.random() * 5 - 2.5,
-            open: 145 + Math.random() * 10,
-            dayHigh: 155 + Math.random() * 10,
-            dayLow: 140 + Math.random() * 10,
-            volume: Math.floor(1000000 + Math.random() * 5000000),
-            marketCap: Math.floor(10000000000 + Math.random() * 50000000000),
-            pe: 15 + Math.random() * 10,
-            eps: 5 + Math.random() * 3
-          }
-        };
-
-        if (mockData[symbol]) {
-          setStockData(mockData[symbol]);
-          setError(null);
-          toast.info("Using offline data for this stock", 3000);
-        }
+      } catch (error) {
+        console.error('Error fetching stock data:', error);
+        setError('Failed to load stock data');
       } finally {
         setLoading(false);
       }
     };
 
     fetchStockData();
-  }, [symbol, isAuthenticated, toast]);
+  }, [symbol]);
 
-  // Format large numbers
-  const formatLargeNumber = (num) => {
-    if (num >= 1000000000000) {
-      return `₹${(num / 1000000000000).toFixed(2)}T`;
-    } else if (num >= 1000000000) {
-      return `₹${(num / 1000000000).toFixed(2)}B`;
-    } else if (num >= 1000000) {
-      return `₹${(num / 1000000).toFixed(2)}M`;
-    } else if (num >= 1000) {
-      return `₹${(num / 1000).toFixed(2)}K`;
-    } else {
-      return `₹${num.toFixed(2)}`;
+  // Handle escape key to close
+  useEffect(() => {
+    const handleEscKey = (event) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleEscKey);
+
+    return () => {
+      window.removeEventListener('keydown', handleEscKey);
+    };
+  }, [onClose]);
+
+  // Handle buy success
+  const handleBuySuccess = (data) => {
+    updateVirtualMoney(data);
+    setShowBuyModal(false);
+    toast.success('Stock purchased successfully!');
+
+    if (onBuySuccess) {
+      onBuySuccess(data);
     }
   };
 
+  // Handle sell success
+  const handleSellSuccess = (data) => {
+    updateVirtualMoney(data);
+    setShowSellModal(false);
+    toast.success('Stock sold successfully!');
+
+    if (onSellSuccess) {
+      onSellSuccess(data);
+    }
+  };
+
+  // Format date
+  const formatDate = () => {
+    const date = new Date();
+    return date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
   return (
-    <div className="fullscreen-stock-detail">
-      {/* Fixed header that stays visible when scrolling */}
-      <FixedHeader
-        title={stockData?.name || symbol}
-        symbol={symbol}
-        timeRange={chartTimeRange}
-        setTimeRange={setChartTimeRange}
-        chartType={chartType}
-        setChartType={setChartType}
-        showTimeControls={true}
-      />
+    <motion.div
+      className="fullscreen-detail-overlay"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <div className="fullscreen-detail-container">
+        <button className="close-fullscreen-btn" onClick={onClose}>
+          <FiX />
+        </button>
 
-      {/* Close button */}
-      <button className="close-fullscreen-btn" onClick={onClose}>
-        <FiX />
-      </button>
+        <div className="detail-time-display">
+          <FiCalendar className="calendar-icon" />
+          <span>{formatDate()}</span>
+        </div>
 
-      {/* Stock price info */}
-      <div className="stock-price-info">
         {loading ? (
-          <div className="loading-placeholder">Loading...</div>
-        ) : (
-          <div className="stock-price-container">
-            <div className="current-price">₹{stockData?.price.toFixed(2)}</div>
-            <div className={`price-change ${stockData?.changesPercentage >= 0 ? 'positive' : 'negative'}`}>
-              {stockData?.changesPercentage >= 0 ? <FiTrendingUp /> : <FiTrendingDown />}
-              {stockData?.change.toFixed(2)} ({stockData?.changesPercentage.toFixed(2)}%)
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="fullscreen-content">
-        {loading ? (
-          <div className="loading-container">
-            <Loading size="large" text="Loading stock data..." />
+          <div className="fullscreen-loading">
+            <div className="loading-spinner"></div>
+            <p>Loading stock data...</p>
           </div>
         ) : error ? (
-          <div className="error-container">
-            <FiAlertCircle className="error-icon" />
+          <div className="fullscreen-error">
             <p>{error}</p>
           </div>
-        ) : (
+        ) : stockData && (
           <>
+            <div className="fullscreen-stock-header">
+              <div className="fullscreen-stock-info">
+                <h1>{stockData.name} ({stockData.symbol})</h1>
+                <div className="fullscreen-price-container">
+                  <h2>{formatPrice(stockData.price)}</h2>
+                  <div className={`price-change ${stockData.change >= 0 ? 'positive' : 'negative'}`}>
+                    {stockData.change >= 0 ? <FiTrendingUp /> : <FiTrendingDown />}
+                    <span>{stockData.change >= 0 ? '+' : ''}{stockData.change.toFixed(2)}</span>
+                    <span className="percentage">({stockData.changesPercentage.toFixed(2)}%)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="stock-details-grid">
               <div className="detail-card">
                 <div className="detail-icon"><FiDollarSign /></div>
-                <div className="detail-info">
-                  <div className="detail-label">Open</div>
-                  <div className="detail-value">₹{stockData.open.toFixed(2)}</div>
-                </div>
-              </div>
-              <div className="detail-card">
-                <div className="detail-icon"><FiTrendingUp /></div>
-                <div className="detail-info">
-                  <div className="detail-label">High</div>
-                  <div className="detail-value">₹{stockData.dayHigh.toFixed(2)}</div>
-                </div>
-              </div>
-              <div className="detail-card">
-                <div className="detail-icon"><FiTrendingDown /></div>
-                <div className="detail-info">
-                  <div className="detail-label">Low</div>
-                  <div className="detail-value">₹{stockData.dayLow.toFixed(2)}</div>
-                </div>
-              </div>
-              <div className="detail-card">
-                <div className="detail-icon"><FiActivity /></div>
-                <div className="detail-info">
-                  <div className="detail-label">Volume</div>
-                  <div className="detail-value">{stockData.volume.toLocaleString()}</div>
-                </div>
-              </div>
-              <div className="detail-card">
-                <div className="detail-icon"><FiInfo /></div>
                 <div className="detail-info">
                   <div className="detail-label">Market Cap</div>
                   <div className="detail-value">{formatLargeNumber(stockData.marketCap)}</div>
                 </div>
               </div>
+
+              <div className="detail-card">
+                <div className="detail-icon"><FiBarChart2 /></div>
+                <div className="detail-info">
+                  <div className="detail-label">Volume</div>
+                  <div className="detail-value">{formatLargeNumber(stockData.volume)}</div>
+                </div>
+              </div>
+
+              <div className="detail-card">
+                <div className="detail-icon"><FiClock /></div>
+                <div className="detail-info">
+                  <div className="detail-label">Avg Volume</div>
+                  <div className="detail-value">{formatLargeNumber(stockData.avgVolume)}</div>
+                </div>
+              </div>
+
+              <div className="detail-card">
+                <div className="detail-icon"><FiInfo /></div>
+                <div className="detail-info">
+                  <div className="detail-label">PE Ratio</div>
+                  <div className="detail-value">{stockData.pe ? stockData.pe.toFixed(2) : 'N/A'}</div>
+                </div>
+              </div>
             </div>
 
             <div className="fullscreen-chart-container">
+              <div className="chart-controls">
+                <h3 className="chart-section-title">Price Chart</h3>
+                <div className="chart-type-selector">
+                  {chartTypeOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      className={selectedChartType === option.value ? 'active' : ''}
+                      onClick={() => setSelectedChartType(option.value)}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <StockChart
                 symbol={symbol}
-                timeRange={chartTimeRange}
-                chartType={chartType}
-                fullscreen={true}
+                chartType={selectedChartType}
+                timeRange="1day"
+                height={400}
               />
             </div>
 
-            <div className="action-buttons">
-              <button className="buy-btn" onClick={() => setShowBuyModal(true)}>
+            <div className="action-buttons-container">
+              <button className="action-button buy-button" onClick={() => setShowBuyModal(true)}>
                 <FiShoppingCart /> Buy
               </button>
-              <button className="sell-btn" onClick={() => setShowSellModal(true)}>
+              <button className="action-button sell-button" onClick={() => setShowSellModal(true)}>
                 <FiBarChart2 /> Sell
               </button>
             </div>
+          </>
+        )}
 
-            {/* Buy Modal */}
+        {/* Buy Modal */}
+        <AnimatePresence>
+          {showBuyModal && (
             <BuySellModal
               isOpen={showBuyModal}
               onClose={() => setShowBuyModal(false)}
               type="BUY"
               stockData={stockData}
-              onSuccess={(data) => {
-                updateVirtualMoney(data);
-                if (onBuySuccess) onBuySuccess(data);
-              }}
+              onSuccess={handleBuySuccess}
               virtualMoney={virtualMoney}
             />
+          )}
+        </AnimatePresence>
 
-            {/* Sell Modal */}
+        {/* Sell Modal */}
+        <AnimatePresence>
+          {showSellModal && (
             <BuySellModal
               isOpen={showSellModal}
               onClose={() => setShowSellModal(false)}
               type="SELL"
               stockData={stockData}
-              onSuccess={(data) => {
-                updateVirtualMoney(data);
-                if (onSellSuccess) onSellSuccess(data);
-              }}
+              onSuccess={handleSellSuccess}
               virtualMoney={virtualMoney}
             />
-          </>
-        )}
+          )}
+        </AnimatePresence>
       </div>
-    </div>
+    </motion.div>
   );
+};
+
+FullScreenStockDetail.propTypes = {
+  symbol: PropTypes.string.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onBuySuccess: PropTypes.func,
+  onSellSuccess: PropTypes.func
 };
 
 export default FullScreenStockDetail;

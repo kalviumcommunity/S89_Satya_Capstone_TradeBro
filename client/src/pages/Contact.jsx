@@ -4,7 +4,7 @@ import axios from "axios";
 import { FiMail, FiUser, FiMessageSquare, FiSend, FiCheck } from "react-icons/fi";
 import PageLayout from "../components/PageLayout";
 import { useToast } from "../context/ToastContext";
-import "./Contact.css";
+import "../styles/pages/Contact.css";
 
 const Contact = () => {
   const { toast } = useToast();
@@ -27,42 +27,42 @@ const Contact = () => {
 
   const validateForm = () => {
     const { name, email, message } = formData;
-    
+
     if (!name.trim()) {
       toast.error("Please enter your name");
       return false;
     }
-    
+
     if (!email.trim()) {
       toast.error("Please enter your email");
       return false;
     }
-    
+
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       toast.error("Please enter a valid email address");
       return false;
     }
-    
+
     if (!message.trim()) {
       toast.error("Please enter your message");
       return false;
     }
-    
+
     return true;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
-    
+
     setLoading(true);
-    
+
     try {
-      const response = await axios.post("http://localhost:5000/api/contact/send", formData);
-      
+      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/contact/send`, formData);
+
       if (response.data.success) {
         setSuccess(true);
         setFormData({
@@ -72,7 +72,7 @@ const Contact = () => {
           message: ""
         });
         toast.success("Message sent successfully!");
-        
+
         // Reset success state after 5 seconds
         setTimeout(() => {
           setSuccess(false);
@@ -80,7 +80,7 @@ const Contact = () => {
       }
     } catch (error) {
       console.error("Error sending message:", error);
-      
+
       if (error.response && error.response.data) {
         toast.error(error.response.data.message);
       } else {
@@ -102,7 +102,7 @@ const Contact = () => {
         >
           <FiMail className="title-icon" /> Contact Us
         </motion.h1>
-        
+
         <motion.div
           className="contact-content"
           initial={{ y: 20, opacity: 0 }}
@@ -130,7 +130,7 @@ const Contact = () => {
               </div>
             </div>
           </div>
-          
+
           <motion.form
             className="contact-form glass"
             onSubmit={handleSubmit}
@@ -153,7 +153,7 @@ const Contact = () => {
                 required
               />
             </div>
-            
+
             <div className="form-group">
               <label htmlFor="email">
                 <FiMail /> Email
@@ -169,7 +169,7 @@ const Contact = () => {
                 required
               />
             </div>
-            
+
             <div className="form-group">
               <label htmlFor="subject">
                 <FiMessageSquare /> Subject
@@ -184,7 +184,7 @@ const Contact = () => {
                 disabled={loading || success}
               />
             </div>
-            
+
             <div className="form-group">
               <label htmlFor="message">
                 <FiMessageSquare /> Message
@@ -200,7 +200,7 @@ const Contact = () => {
                 required
               ></textarea>
             </div>
-            
+
             <motion.button
               type="submit"
               className={`submit-btn ${success ? 'success' : ''}`}

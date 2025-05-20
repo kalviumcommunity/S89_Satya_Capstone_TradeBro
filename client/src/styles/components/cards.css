@@ -1,0 +1,357 @@
+/* Professional Finance Card Styles */
+
+/* Base Card Styles */
+.card {
+  background-color: var(--card-bg);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  position: relative;
+  z-index: 1;
+  border: 1px solid rgba(var(--border-color), 0.05);
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08), 0 5px 10px rgba(0, 0, 0, 0.05);
+}
+
+/* Card Sizes */
+.card-sm {
+  padding: 1rem;
+}
+
+.card-md {
+  padding: 1.5rem;
+}
+
+.card-lg {
+  padding: 2rem;
+}
+
+/* Card with Border */
+.card-border {
+  border: 1px solid var(--border-color);
+  box-shadow: none;
+}
+
+.card-border:hover {
+  border-color: var(--primary-color);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+/* Card with Gradient Border */
+.card-gradient-border {
+  position: relative;
+  background-color: var(--card-bg);
+  z-index: 1;
+}
+
+.card-gradient-border::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: var(--gradient-primary);
+  z-index: -1;
+  border-radius: 18px;
+  opacity: 0.7;
+  transition: opacity 0.3s ease;
+}
+
+.card-gradient-border:hover::before {
+  opacity: 1;
+}
+
+/* Card with Gradient Background */
+.card-gradient {
+  background: var(--gradient-primary);
+  color: white;
+}
+
+.card-gradient h1, .card-gradient h2, .card-gradient h3,
+.card-gradient h4, .card-gradient h5, .card-gradient h6,
+.card-gradient p {
+  color: white;
+}
+
+/* Card with Accent */
+.card-accent {
+  position: relative;
+  overflow: visible;
+}
+
+.card-accent::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 20px;
+  width: 50px;
+  height: 10px;
+  background: var(--primary-color);
+  border-radius: 5px;
+}
+
+/* Card with Hover Accent */
+.card-hover-accent {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-hover-accent::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: var(--gradient-primary);
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 0.3s ease;
+}
+
+.card-hover-accent:hover::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+/* Card with Glow Effect */
+.card-glow {
+  position: relative;
+  overflow: visible;
+}
+
+.card-glow::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  left: -20px;
+  right: -20px;
+  bottom: -20px;
+  background: var(--gradient-primary);
+  z-index: -1;
+  border-radius: 24px;
+  opacity: 0;
+  filter: blur(30px);
+  transition: opacity 0.3s ease;
+}
+
+.card-glow:hover::before {
+  opacity: 0.3;
+}
+
+/* Card with Pattern Background */
+.card-pattern {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-pattern::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: radial-gradient(var(--primary-light) 1px, transparent 1px);
+  background-size: 20px 20px;
+  opacity: 0.1;
+  z-index: -1;
+}
+
+/* Card with Hover Reveal */
+.card-reveal {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-reveal-content {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 1.5rem;
+  background: var(--card-bg);
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+}
+
+.card-reveal:hover .card-reveal-content {
+  transform: translateY(0);
+}
+
+/* Card with Image */
+.card-image {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-image img {
+  width: 100%;
+  height: auto;
+  transition: transform 0.5s ease;
+}
+
+.card-image:hover img {
+  transform: scale(1.05);
+}
+
+.card-image-content {
+  padding: 1.5rem;
+}
+
+/* Card Grid */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+/* Card with Icon */
+.card-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.card-icon-top {
+  margin-bottom: 1.5rem;
+}
+
+.card-icon-top svg,
+.card-icon-top img {
+  width: 64px;
+  height: 64px;
+  color: var(--primary-color);
+}
+
+/* Feature Card */
+.feature-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.feature-card-icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 1rem;
+  color: var(--primary-color);
+}
+
+.feature-card-title {
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+}
+
+.feature-card-description {
+  color: var(--text-secondary);
+}
+
+/* Testimonial Card */
+.testimonial-card {
+  position: relative;
+  padding-top: 3rem;
+}
+
+.testimonial-card-avatar {
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 4px solid var(--card-bg);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.testimonial-card-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.testimonial-card-content {
+  text-align: center;
+}
+
+.testimonial-card-quote {
+  font-style: italic;
+  margin-bottom: 1rem;
+}
+
+.testimonial-card-author {
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+/* Dark Mode Adjustments */
+[data-theme="dark"] .card {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2), 0 1px 3px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(75, 85, 99, 0.1);
+}
+
+[data-theme="dark"] .card:hover {
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25), 0 5px 10px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="dark"] .card-border {
+  border-color: rgba(75, 85, 99, 0.5);
+}
+
+[data-theme="dark"] .card-border:hover {
+  border-color: var(--primary-color);
+}
+
+/* Finance-specific Card Styles */
+.finance-card {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.finance-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.finance-card-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.finance-card-value {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0.5rem 0;
+  color: var(--text-primary);
+}
+
+.finance-card-change {
+  display: flex;
+  align-items: center;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.finance-card-change.positive {
+  color: var(--success-color);
+}
+
+.finance-card-change.negative {
+  color: var(--error-color);
+}
+
+.finance-card-change svg {
+  margin-right: 0.25rem;
+}

@@ -17,9 +17,12 @@ import Watchlist from "./pages/Watchlist";
 import History from "./pages/History";
 import Orders from "./pages/Orders";
 import TradingAssistantPage from "./pages/TradingAssistantPage";
+import ModernStockDashboardDemo from "./pages/ModernStockDashboardDemo";
+import ModernTradingDashboardDemo from "./pages/ModernTradingDashboardDemo";
 import PageTransition from "./components/PageTransition";
 import TradingAssistant from "./components/TradingAssistant";
 import ProtectedRoute from "./components/ProtectedRoute";
+import GoogleAuthCallback from "./components/GoogleAuthCallback";
 
 const AppRoutes = () => {
   const location = useLocation();
@@ -128,6 +131,19 @@ const AppRoutes = () => {
               </PageTransition>
             </ProtectedRoute>
           }/>
+          <Route path="/modern-stock-dashboard" element={
+            <PageTransition>
+              <ModernStockDashboardDemo />
+            </PageTransition>
+          }/>
+          <Route path="/modern-trading-dashboard" element={
+            <PageTransition>
+              <ModernTradingDashboardDemo />
+            </PageTransition>
+          }/>
+
+          {/* Google OAuth Callback Route */}
+          <Route path="/api/auth/google/callback" element={<GoogleAuthCallback />} />
         </Routes>
       </AnimatePresence>
 

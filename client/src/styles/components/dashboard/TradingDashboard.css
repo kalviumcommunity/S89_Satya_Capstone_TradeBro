@@ -1,0 +1,374 @@
+/* Trading Dashboard Styles */
+
+/* Dashboard Container */
+.trading-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  font-family: 'Inter', 'Poppins', sans-serif;
+  max-width: 1200px;
+  margin: 0 auto;
+  color: #1F2937; /* Ensure text is visible in light mode */
+}
+
+[data-theme="dark"] .trading-dashboard {
+  color: #F9FAFB; /* Light text for dark mode */
+}
+
+/* Stock Header Section */
+.stock-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1.5rem;
+  background-color: #FFFFFF; /* Explicit white background for light mode */
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 0, 0, 0.05); /* Subtle border for light mode */
+}
+
+[data-theme="dark"] .stock-header {
+  background-color: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.stock-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.stock-name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary, #1F2937);
+  margin: 0;
+}
+
+[data-theme="dark"] .stock-name {
+  color: var(--text-primary, #F9FAFB);
+}
+
+.stock-symbol {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #4B5563; /* Darker gray for better visibility in light mode */
+}
+
+[data-theme="dark"] .stock-symbol {
+  color: var(--text-secondary, #CBD5E1);
+}
+
+.stock-symbol .icon {
+  font-size: 1.25rem;
+}
+
+.price-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.current-price {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary, #1F2937);
+  margin: 0;
+}
+
+[data-theme="dark"] .current-price {
+  color: var(--text-primary, #F9FAFB);
+}
+
+.price-change {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.price-change.positive {
+  background-color: rgba(34, 197, 94, 0.1);
+  color: #22C55E;
+}
+
+[data-theme="dark"] .price-change.positive {
+  background-color: rgba(34, 197, 94, 0.2);
+  color: #4ADE80;
+}
+
+.price-change.negative {
+  background-color: rgba(220, 38, 38, 0.1);
+  color: #DC2626;
+}
+
+[data-theme="dark"] .price-change.negative {
+  background-color: rgba(239, 68, 68, 0.2);
+  color: #F87171;
+}
+
+.trend-icon {
+  font-size: 1.25rem;
+}
+
+/* Chart Section */
+.chart-section {
+  background-color: #FFFFFF; /* Explicit white background for light mode */
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 0, 0, 0.05); /* Subtle border for light mode */
+}
+
+[data-theme="dark"] .chart-section {
+  background-color: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.chart-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.time-range-selector {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.time-range-btn {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background-color: transparent;
+  color: #4B5563; /* Darker gray for better visibility in light mode */
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.time-range-btn:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: var(--text-primary, #1F2937);
+}
+
+[data-theme="dark"] .time-range-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary, #F9FAFB);
+}
+
+.time-range-btn.active {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: #3B82F6;
+  font-weight: 600;
+}
+
+[data-theme="dark"] .time-range-btn.active {
+  background-color: rgba(96, 165, 250, 0.2);
+  color: #60A5FA;
+}
+
+.chart-type-selector {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.chart-type-btn {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+  color: #4B5563; /* Darker gray for better visibility in light mode */
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.chart-type-btn:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: var(--text-primary, #1F2937);
+}
+
+[data-theme="dark"] .chart-type-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary, #F9FAFB);
+}
+
+.chart-type-btn.active {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: #3B82F6;
+}
+
+[data-theme="dark"] .chart-type-btn.active {
+  background-color: rgba(96, 165, 250, 0.2);
+  color: #60A5FA;
+}
+
+.chart-container {
+  height: 300px;
+  width: 100%;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.buy-button, .sell-button {
+  flex: 1;
+  padding: 1rem 1.5rem;
+  border-radius: 4px; /* Changed from 0.75rem to 4px for block shape */
+  font-size: 1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.buy-button {
+  background: linear-gradient(135deg, #22C55E, #16A34A);
+  color: white;
+}
+
+[data-theme="dark"] .buy-button {
+  background: linear-gradient(135deg, #16A34A, #15803D);
+}
+
+.sell-button {
+  background: linear-gradient(135deg, #EF4444, #DC2626);
+  color: white;
+}
+
+[data-theme="dark"] .sell-button {
+  background: linear-gradient(135deg, #DC2626, #B91C1C);
+}
+
+.button-icon {
+  font-size: 1.25rem;
+}
+
+.buy-button:disabled, .sell-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Stock Details */
+.stock-details {
+  margin-top: 1rem;
+}
+
+.details-card {
+  background-color: #FFFFFF; /* Explicit white background for light mode */
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.5rem;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 0, 0, 0.05); /* Subtle border for light mode */
+}
+
+[data-theme="dark"] .details-card {
+  background-color: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.detail-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #4B5563; /* Darker gray for better visibility in light mode */
+}
+
+[data-theme="dark"] .detail-label {
+  color: var(--text-secondary, #CBD5E1);
+}
+
+.detail-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1F2937; /* Explicit dark color for better visibility in light mode */
+}
+
+[data-theme="dark"] .detail-value {
+  color: var(--text-primary, #F9FAFB);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .trading-dashboard {
+    padding: 1rem;
+  }
+
+  .stock-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .price-container {
+    align-items: flex-start;
+    margin-top: 1rem;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+  }
+
+  .details-card {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .chart-controls {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .time-range-selector {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .chart-type-selector {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}

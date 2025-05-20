@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiMail, FiSend } from "react-icons/fi";
 import Squares from "../UI/squares";
-import './AuthPages.css';
+import '../styles/pages/AuthPages.css';
 
 const ForgetPassword = () => {
   const [email, setEmail] = useState('');
@@ -15,7 +15,7 @@ const ForgetPassword = () => {
 
     try {
       // Simulate sending OTP (replace with actual API call)
-      const response = await fetch('http://localhost:5000/api/auth/forgotpassword', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/forgotpassword`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
