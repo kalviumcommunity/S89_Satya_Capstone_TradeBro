@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiCheckCircle, FiAlertCircle, FiInfo, FiX, FiAlertTriangle } from 'react-icons/fi';
-import './Toast.css';
+import '../styles/components/Toast.css';
 
 const toastVariants = {
   initial: { opacity: 0, y: 50, scale: 0.8 },
@@ -12,9 +12,9 @@ const toastVariants = {
 const Toast = ({
   message,
   type = 'success',
-  duration = 3000,
+  duration = 5000, // Increased to 5 seconds as per requirements
   onClose,
-  position = 'top-right'
+  position = 'top-right' // Changed default position to top-right as per requirements
 }) => {
   const [isVisible, setIsVisible] = useState(true);
 

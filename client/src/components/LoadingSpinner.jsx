@@ -1,11 +1,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { FiLoader } from 'react-icons/fi';
-import './LoadingSpinner.css';
+import '../styles/components/LoadingSpinner.css';
 
-const LoadingSpinner = ({ 
-  size = 'medium', 
-  text = 'Loading...', 
+const LoadingSpinner = ({
+  size = 'medium',
+  text = 'Loading...',
   fullScreen = false,
   transparent = false
 }) => {
@@ -16,19 +16,19 @@ const LoadingSpinner = ({
     large: 60,
     xlarge: 80
   };
-  
+
   const iconSize = sizeMap[size] || sizeMap.medium;
-  
+
   // Spinner animation
   const spinTransition = {
     repeat: Infinity,
     ease: "linear",
     duration: 1
   };
-  
+
   // Container classes
   const containerClasses = `loading-spinner-container ${fullScreen ? 'fullscreen' : ''} ${transparent ? 'transparent' : ''}`;
-  
+
   return (
     <div className={containerClasses}>
       <div className="loading-spinner-content">
@@ -39,9 +39,9 @@ const LoadingSpinner = ({
         >
           <FiLoader size={iconSize} />
         </motion.div>
-        
+
         {text && (
-          <motion.p 
+          <motion.p
             className="loading-text"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
+import { getApiBaseUrl } from '../utils/urlUtils';
 
 // Create the context
 const AuthContext = createContext();
@@ -306,7 +307,9 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       // Call the logout endpoint if needed
-      await axios.get('http://localhost:5000/api/auth/logout');
+      // Use the API_BASE_URL from the utility function
+      const apiUrl = getApiBaseUrl();
+      await axios.get(`${apiUrl}/api/auth/logout`);
     } catch (error) {
       console.error('Error during logout:', error);
     } finally {

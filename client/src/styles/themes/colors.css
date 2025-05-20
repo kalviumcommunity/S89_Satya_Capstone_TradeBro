@@ -1,0 +1,172 @@
+/* Color Palette for TradeBro - Bold Modern Kalvium-Inspired Style */
+:root {
+  /* Primary Colors - Bold Purples */
+  --primary-light: #9D4EDD; /* Light Purple */
+  --primary-main: #7B2CBF; /* Vibrant Purple */
+  --primary-dark: #5A189A; /* Deep Purple */
+
+  /* Secondary Colors - Accent Teals */
+  --secondary-light: #64DFDF; /* Light Teal */
+  --secondary-main: #0CCCCC; /* Vibrant Teal */
+  --secondary-dark: #0A9396; /* Deep Teal */
+
+  /* Success Colors - Neon Greens */
+  --success-light: #80FFDB; /* Light Neon Green */
+  --success-main: #4CC9F0; /* Vibrant Cyan */
+  --success-dark: #0077B6; /* Deep Blue */
+
+  /* Error Colors - Vibrant Reds */
+  --error-light: #FF8FA3; /* Light Pink */
+  --error-main: #FF4D6D; /* Vibrant Pink */
+  --error-dark: #C9184A; /* Deep Pink */
+
+  /* Warning Colors - Bold Oranges */
+  --warning-light: #FFD166; /* Light Yellow */
+  --warning-main: #F8961E; /* Vibrant Orange */
+  --warning-dark: #F3722C; /* Deep Orange */
+
+  /* Info Colors - Electric Blues */
+  --info-light: #90E0EF; /* Light Blue */
+  --info-main: #00B4D8; /* Vibrant Blue */
+  --info-dark: #0077B6; /* Deep Blue */
+
+  /* Neutral Colors - Modern Grays */
+  --neutral-light: #F8F9FA; /* Light Gray */
+  --neutral-main: #E9ECEF; /* Medium Gray */
+  --neutral-dark: #6C757D; /* Dark Gray */
+
+  /* Card Colors - Vibrant UI Elements */
+  --card-yellow: #FFD166; /* Vibrant Yellow */
+  --card-blue: #90E0EF; /* Vibrant Blue */
+  --card-green: #80FFDB; /* Neon Green */
+  --card-pink: #FF8FA3; /* Vibrant Pink */
+  --card-purple: #C77DFF; /* Vibrant Purple */
+  --card-orange: #F9844A; /* Vibrant Orange */
+  --card-teal: #64DFDF; /* Vibrant Teal */
+  --card-indigo: #7400B8; /* Deep Indigo */
+
+  /* Border Colors - Clean Borders */
+  --border-light: #E9ECEF;
+  --border-main: #DEE2E6;
+  --border-dark: #ADB5BD;
+
+  /* Gradient Colors */
+  --gradient-purple-pink: linear-gradient(90deg, #7B2CBF, #FF4D6D);
+  --gradient-blue-purple: linear-gradient(90deg, #4CC9F0, #7B2CBF);
+  --gradient-teal-purple: linear-gradient(90deg, #0CCCCC, #7B2CBF);
+  --gradient-orange-pink: linear-gradient(90deg, #F8961E, #FF4D6D);
+
+  /* Progress Bar Colors - Data Visualization */
+  --progress-yellow: #FFD166; /* Vibrant Yellow */
+  --progress-blue: #4CC9F0; /* Vibrant Blue */
+  --progress-green: #80FFDB; /* Neon Green */
+  --progress-red: #FF4D6D; /* Vibrant Pink */
+  --progress-purple: #7B2CBF; /* Vibrant Purple */
+  --progress-orange: #F8961E; /* Vibrant Orange */
+  --progress-teal: #0CCCCC; /* Vibrant Teal */
+  --progress-indigo: #7400B8; /* Deep Indigo */
+}
+
+/* Light Theme (Default) - Professional Finance Palette */
+[data-theme="light"] {
+  --background-color: #F9FAFB; /* Off-white background - clean and easy on the eyes */
+  --card-bg: #FFFFFF; /* Pure white for cards - crisp content areas */
+  --text-primary: #1F2937; /* Dark gray for main text - excellent readability */
+  --text-secondary: #6B7280; /* Medium gray for secondary text - subtle but legible */
+  --border-color: rgba(209, 213, 219, 0.5); /* Light gray border with transparency */
+  --input-bg: #F9FAFB; /* Light gray input background */
+  --hover-color: rgba(59, 130, 246, 0.08); /* Blue hover with transparency */
+  --primary-color: #3B82F6; /* Royal blue - conveys trust and professionalism */
+  --primary-rgb: 59, 130, 246;
+  --secondary-color: #10B981; /* Emerald green - for positive values/gains */
+  --secondary-rgb: 16, 185, 129;
+  --accent-color: #8B5CF6; /* Purple - for interactive elements and highlights */
+  --accent-rgb: 139, 92, 246;
+  --success-color: #10B981; /* Emerald green for success */
+  --success-rgb: 16, 185, 129;
+  --error-color: #EF4444; /* Crimson red for error/losses */
+  --error-rgb: 239, 68, 68;
+  --warning-color: #F59E0B; /* Amber for warnings */
+  --warning-rgb: 245, 158, 11;
+  --info-color: #3B82F6; /* Royal blue for info */
+  --info-rgb: 59, 130, 246;
+  --card-bg-rgb: 255, 255, 255;
+  --shadow-color: rgba(0, 0, 0, 0.08); /* Subtle shadow */
+  --shadow-color-hover: rgba(0, 0, 0, 0.12); /* Slightly stronger shadow for hover states */
+
+  /* Gradient colors */
+  --gradient-primary: linear-gradient(135deg, #3B82F6, #60A5FA); /* Blue gradient */
+  --gradient-secondary: linear-gradient(135deg, #10B981, #34D399); /* Green gradient */
+  --gradient-accent: linear-gradient(135deg, #8B5CF6, #A78BFA); /* Purple gradient */
+
+  /* Enhanced typography for readability */
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  --font-family-heading: 'Poppins', 'Inter', sans-serif;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --line-height: 1.6;
+
+  /* Chart colors */
+  --chart-positive: #10B981; /* Emerald green for positive values */
+  --chart-negative: #EF4444; /* Crimson red for negative values */
+  --chart-grid: rgba(209, 213, 219, 0.5); /* Light gray grid lines */
+  --chart-line: #3B82F6; /* Royal blue for chart lines */
+
+  /* Animation colors */
+  --glow-color: rgba(59, 130, 246, 0.5); /* Blue glow */
+  --highlight-color: rgba(16, 185, 129, 0.2); /* Green highlight */
+}
+
+/* Dark Theme - Professional Finance Dark Palette */
+[data-theme="dark"] {
+  --background-color: #111827; /* Dark blue-gray background - professional and easy on the eyes */
+  --card-bg: #1F2937; /* Dark gray for cards - clear content separation */
+  --text-primary: #F9FAFB; /* Off-white for main text - excellent readability */
+  --text-secondary: #D1D5DB; /* Light gray for secondary text - subtle but legible */
+  --border-color: rgba(75, 85, 99, 0.5); /* Medium gray border with transparency */
+  --input-bg: #374151; /* Medium-dark gray input background */
+  --hover-color: rgba(96, 165, 250, 0.15); /* Blue hover with transparency */
+  --primary-color: #60A5FA; /* Lighter blue - more visible on dark backgrounds */
+  --primary-rgb: 96, 165, 250;
+  --secondary-color: #34D399; /* Lighter green - for positive values/gains */
+  --secondary-rgb: 52, 211, 153;
+  --accent-color: #A78BFA; /* Lighter purple - for interactive elements */
+  --accent-rgb: 167, 139, 250;
+  --success-color: #34D399; /* Lighter green for success */
+  --success-rgb: 52, 211, 153;
+  --error-color: #F87171; /* Lighter red for error/losses */
+  --error-rgb: 248, 113, 113;
+  --warning-color: #FBBF24; /* Lighter amber for warnings */
+  --warning-rgb: 251, 191, 36;
+  --info-color: #60A5FA; /* Lighter blue for info */
+  --info-rgb: 96, 165, 250;
+  --card-bg-rgb: 31, 41, 55;
+  --shadow-color: rgba(0, 0, 0, 0.25); /* Dark shadow */
+  --shadow-color-hover: rgba(0, 0, 0, 0.35); /* Stronger shadow for hover states */
+
+  /* Gradient colors */
+  --gradient-primary: linear-gradient(135deg, #60A5FA, #93C5FD); /* Blue gradient */
+  --gradient-secondary: linear-gradient(135deg, #34D399, #6EE7B7); /* Green gradient */
+  --gradient-accent: linear-gradient(135deg, #A78BFA, #C4B5FD); /* Purple gradient */
+
+  /* Enhanced typography for readability */
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  --font-family-heading: 'Poppins', 'Inter', sans-serif;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --line-height: 1.6;
+
+  /* Chart colors */
+  --chart-positive: #34D399; /* Lighter green for positive values */
+  --chart-negative: #F87171; /* Lighter red for negative values */
+  --chart-grid: rgba(75, 85, 99, 0.5); /* Medium gray grid lines */
+  --chart-line: #60A5FA; /* Lighter blue for chart lines */
+
+  /* Animation colors */
+  --glow-color: rgba(96, 165, 250, 0.5); /* Blue glow */
+  --highlight-color: rgba(52, 211, 153, 0.2); /* Green highlight */
+}

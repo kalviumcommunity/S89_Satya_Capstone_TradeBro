@@ -18,7 +18,7 @@ import ThemeToggle from "./ThemeToggle";
 import { useSidebar } from "../context/SidebarContext";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
-import "./Sidebar.css";
+import "../styles/components/Sidebar.css";
 
 const Sidebar = () => {
   // Use the sidebar context instead of local state
@@ -44,7 +44,7 @@ const Sidebar = () => {
       fullName: localStorage.getItem('userFullName') || localStorage.getItem('userName') || "User",
       email: localStorage.getItem('userEmail') || "",
       profileImage: localStorage.getItem('userProfileImage')
-        ? `http://localhost:5000/uploads/${localStorage.getItem('userProfileImage')}`
+        ? `${import.meta.env.VITE_API_BASE_URL}/uploads/${localStorage.getItem('userProfileImage')}`
         : "https://randomuser.me/api/portraits/lego/1.jpg",
       role: "Member"
     };

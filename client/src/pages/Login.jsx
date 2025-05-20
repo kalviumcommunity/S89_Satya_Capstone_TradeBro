@@ -7,7 +7,7 @@ import { FiMail, FiLock, FiLogIn } from "react-icons/fi";
 import { login } from "../redux/reducers/authReducer";
 import { showErrorToast, showSuccessToast } from "../redux/reducers/toastReducer";
 import Loading from "../components/Loading";
-import "./AuthPages.css";
+import "../styles/pages/AuthPages.css";
 import Squares from "../UI/squares";
 
 const Login = () => {
@@ -63,7 +63,7 @@ const Login = () => {
 
     setLocalLoading(true);
     try {
-      const response = await axios.post("http://localhost:5000/api/auth/login", {
+      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/auth/login`, {
         email,
         password,
       });
@@ -102,7 +102,10 @@ const Login = () => {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:5000/api/auth/auth/google";
+    // Use the API base URL from environment variables
+    const redirectUrl = `${import.meta.env.VITE_API_BASE_URL}/api/auth/google`;
+    console.log("Redirecting to:", redirectUrl);
+    window.location.href = redirectUrl;
   };
 
   // Handle Google login redirect
@@ -180,10 +183,19 @@ const Login = () => {
           </div>
           {errors.password && <div className="error-message">{errors.password}</div>}
 
-          <button
+          <motion.button
             type="submit"
             className="auth-btn"
             disabled={loading || localLoading}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            initial={{ opacity: 0.9 }}
+            animate={{ opacity: 1 }}
+            transition={{
+              type: "spring",
+              stiffness: 500,
+              damping: 30
+            }}
           >
             {loading || localLoading ? (
               <Loading size="small" text="" />
@@ -192,7 +204,7 @@ const Login = () => {
                 <FiLogIn style={{ marginRight: '8px' }} /> Log In
               </>
             )}
-          </button>
+          </motion.button>
         </form>
 
         <p className="auth-option">
@@ -205,9 +217,16 @@ const Login = () => {
 
         <div className="google-signup">
           <p>Or</p>
-          <button
+          <motion.button
             className="google-button"
             onClick={handleGoogleLogin}
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98, y: 1 }}
+            transition={{
+              type: "spring",
+              stiffness: 400,
+              damping: 25
+            }}
           >
             <img
               src="/Google.png"
@@ -220,7 +239,7 @@ const Login = () => {
               }}
             />
             Log In with Google
-          </button>
+          </motion.button>
         </div>
       </div>
       {success &&

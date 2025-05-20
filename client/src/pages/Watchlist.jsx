@@ -9,7 +9,7 @@ import { useOfflineMode } from "../context/OfflineContext";
 import FullScreenStockDetail from "../components/FullScreenStockDetail";
 import axios from "axios";
 import API_ENDPOINTS from "../config/apiConfig";
-import "./Watchlist.css";
+import "../styles/pages/Watchlist.css";
 
 // Add some additional styles for the clickable rows
 const additionalStyles = `
@@ -630,7 +630,7 @@ const Watchlist = () => {
               <tbody>
                 {filteredWatchlist.map((stock) => (
                   <motion.tr
-                    key={stock.id}
+                    key={stock.symbol || stock.id || `${stock.name}-${Math.random()}`}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3 }}

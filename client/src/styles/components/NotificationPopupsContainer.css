@@ -1,0 +1,24 @@
+/* NotificationPopupsContainer.css */
+.notification-popups-container {
+  position: fixed;
+  top: 20px;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.notification-popups-container > * {
+  pointer-events: auto;
+}
+
+@media (max-width: 576px) {
+  .notification-popups-container {
+    top: 10px;
+    gap: 8px;
+  }
+}

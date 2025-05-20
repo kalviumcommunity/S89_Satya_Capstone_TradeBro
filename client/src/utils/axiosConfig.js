@@ -1,10 +1,13 @@
 import axios from 'axios';
 import { setupMockHealthEndpoint } from './mockEndpoints';
 import { API_BASE_URL } from '../config/apiConfig';
+import { ensureHttpForLocalhost } from './urlUtils';
 
 // Configure axios defaults
 axios.defaults.timeout = 10000; // 10 seconds timeout by default
-axios.defaults.baseURL = API_BASE_URL; // Set the base URL for all requests
+
+// Set the base URL for all requests, ensuring HTTP for localhost
+axios.defaults.baseURL = API_BASE_URL;
 
 // Set up global error handling for network errors
 const originalFetch = window.fetch;
@@ -62,9 +65,12 @@ axios.interceptors.response.use(
     return response;
   },
   (error) => {
-    // Only log errors in development environment
+    // Log errors in development environment with more details
     if (process.env.NODE_ENV === 'development') {
       console.error('API Error:', error.config?.url, error.message, error.response?.status);
+    } else {
+      // In production, log minimal error information
+      console.error('API Error:', error.response?.status || 'Network Error');
     }
 
     // Check if this is an offline error

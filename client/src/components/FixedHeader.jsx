@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FiClock, FiInfo } from 'react-icons/fi';
-import '../styles/FixedHeader.css';
+import '../styles/components/FixedHeader.css';
 
 const FixedHeader = ({
   title,

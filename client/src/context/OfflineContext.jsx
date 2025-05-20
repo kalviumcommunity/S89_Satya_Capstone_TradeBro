@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
+import { getApiBaseUrl } from '../utils/urlUtils';
 
 // Create a custom axios instance for health checks
 const healthCheckAxios = axios.create();
@@ -30,7 +31,10 @@ export const OfflineProvider = ({ children }) => {
 
       // Try to ping the backend with a timeout
       // Use the healthCheckAxios instance to avoid interceptor loop
-      const response = await healthCheckAxios.get('http://localhost:5000/api/health', {
+      // Get the API URL, ensuring HTTP for localhost
+      const apiUrl = getApiBaseUrl();
+
+      const response = await healthCheckAxios.get(`${apiUrl}/api/health`, {
         timeout: 2000
       });
 

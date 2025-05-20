@@ -2,8 +2,9 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import { FiUser, FiMail, FiLock, FiUserPlus } from "react-icons/fi";
+import { motion } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
-import "./AuthPages.css";
+import "../styles/pages/AuthPages.css";
 import Squares from "../UI/squares";
 
 const Signup = () => {
@@ -33,7 +34,7 @@ const Signup = () => {
     setLoading(true);
     try {
       const res = await axios.post(
-        "http://localhost:5000/api/auth/signup",
+        `${import.meta.env.VITE_API_BASE_URL}/api/auth/signup`,
         {
           username: form.username,
           email: form.email,
@@ -63,7 +64,10 @@ const Signup = () => {
   };
 
   const handleGoogleSignup = () => {
-    window.location.href = "http://localhost:5000/api/auth/auth/google";
+    // Use the API base URL from environment variables
+    const redirectUrl = `${import.meta.env.VITE_API_BASE_URL}/api/auth/google`;
+    console.log("Redirecting to:", redirectUrl);
+    window.location.href = redirectUrl;
   };
 
   return (
@@ -135,18 +139,42 @@ const Signup = () => {
               required
             />
           </div>
-          <button type="submit" className="auth-btn" disabled={loading}>
+          <motion.button
+            type="submit"
+            className="auth-btn"
+            disabled={loading}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            initial={{ opacity: 0.9 }}
+            animate={{ opacity: 1 }}
+            transition={{
+              type: "spring",
+              stiffness: 500,
+              damping: 30
+            }}
+          >
             {loading ? "Processing..." : <><FiUserPlus style={{ marginRight: '8px' }} /> Sign Up</>}
-          </button>
+          </motion.button>
         </form>
         <p className="auth-option">
           Already have an account? <Link to="/login">Log In</Link>
         </p>
         <div className="google-signup">
           <p>Or</p>
-          <button className="google-button" onClick={handleGoogleSignup}>
+          <motion.button
+            className="google-button"
+            onClick={handleGoogleSignup}
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98, y: 1 }}
+            transition={{
+              type: "spring",
+              stiffness: 400,
+              damping: 25
+            }}
+          >
             <img
               src="/Google.png"
+              alt="Google logo"
               style={{
                 width: "20px",
                 height: "20px",
@@ -156,7 +184,7 @@ const Signup = () => {
               }}
             />
             Sign Up with Google
-          </button>
+          </motion.button>
         </div>
       </div>
       {success &&

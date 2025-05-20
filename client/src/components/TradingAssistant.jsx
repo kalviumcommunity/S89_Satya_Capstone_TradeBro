@@ -500,43 +500,56 @@ Remember that market conditions change quickly, so always verify before making d
   // Update suggested questions based on conversation context
   const updateSuggestedQuestions = (userInput) => {
     const userQuestion = userInput.toLowerCase();
+    let newSuggestions = [];
 
     if (userQuestion.includes("market") || userQuestion.includes("trend")) {
-      setSuggestedQuestions([
+      newSuggestions = [
         "Which sectors are performing well?",
         "How do interest rates affect the market?",
         "What's the outlook for tech stocks?",
-        "Should I invest during market volatility?"
-      ]);
+        "Should I invest during market volatility?",
+        "What are the current market trends in India?"
+      ];
     } else if (userQuestion.includes("analyze") || userQuestion.includes("research")) {
-      setSuggestedQuestions([
+      newSuggestions = [
         "What are key financial ratios to look at?",
         "How do I read a balance sheet?",
         "What is fundamental analysis?",
-        "How important is a company's management team?"
-      ]);
+        "How important is a company's management team?",
+        "Best tools for stock research"
+      ];
     } else if (userQuestion.includes("options")) {
-      setSuggestedQuestions([
+      newSuggestions = [
         "What is a call option?",
         "What is a put option?",
         "How do I calculate options premium?",
-        "What are covered calls?"
-      ]);
+        "What are covered calls?",
+        "Options trading strategies for beginners"
+      ];
     } else if (userQuestion.includes("stock") || userQuestion.includes("share")) {
-      setSuggestedQuestions([
+      newSuggestions = [
         "Show me Zomato stock data",
         "What's the current price of MSFT?",
         "Tell me about AMZN stock",
-        "Show me TSLA performance"
-      ]);
+        "Show me TSLA performance",
+        "Best Indian stocks to invest in"
+      ];
     } else {
-      setSuggestedQuestions([
+      newSuggestions = [
         "Show me today's top gainers",
         "What's the difference between stocks and bonds?",
         "How do dividends work?",
-        "What are ETFs?"
-      ]);
+        "What are ETFs?",
+        "How to start investing with small amounts?"
+      ];
     }
+
+    // Add animation by setting empty array first, then populating after a short delay
+    setSuggestedQuestions([]);
+    setTimeout(() => {
+      setSuggestedQuestions(newSuggestions);
+      setShowSuggestions(true);
+    }, 300);
   };
 
   // Format timestamp
@@ -667,21 +680,43 @@ Remember that market conditions change quickly, so always verify before making d
       <motion.button
         className="chat-toggle-btn"
         onClick={toggleChat}
-        whileHover={{ scale: 1.1 }}
+        aria-label="Toggle chat assistant"
+        whileHover={{ scale: 1.1, rotate: 5 }}
         whileTap={{ scale: 0.9 }}
+        initial={{ scale: 0, rotate: -180 }}
+        animate={{
+          scale: 1,
+          rotate: 0,
+          transition: {
+            type: "spring",
+            stiffness: 260,
+            damping: 20,
+            delay: 1
+          }
+        }}
       >
-        {isOpen ? <FiX /> : <FiMessageSquare />}
+        {isOpen ? <FiX /> : (
+          <>
+            <FiMessageSquare />
+            <span className="chat-notification-dot"></span>
+          </>
+        )}
       </motion.button>
 
       {/* Chat window */}
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {isOpen && (
           <motion.div
             className="chat-window"
             initial={{ opacity: 0, y: 20, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.9 }}
-            transition={{ duration: 0.3 }}
+            transition={{
+              type: "spring",
+              stiffness: 300,
+              damping: 25,
+              duration: 0.4
+            }}
           >
             <div className="chat-header">
               <div className="chat-title">
@@ -757,16 +792,28 @@ Remember that market conditions change quickly, so always verify before making d
             </div>
 
             <form className="chat-input" onSubmit={handleSubmit}>
-              <input
+              <motion.input
                 type="text"
-                placeholder="Type your question here..."
+                placeholder={isTyping ? "Assistant is typing..." : "Type your question here..."}
                 value={inputValue}
                 onChange={handleInputChange}
                 disabled={isTyping || !sessionId}
+                initial={{ scale: 0.98, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.3 }}
+                whileFocus={{ boxShadow: "0 0 0 2px rgba(203, 153, 126, 0.4)" }}
               />
-              <button type="submit" disabled={inputValue.trim() === "" || isTyping || !sessionId}>
+              <motion.button
+                type="submit"
+                disabled={inputValue.trim() === "" || isTyping || !sessionId}
+                whileHover={{ scale: 1.05, backgroundColor: "#55828b" }}
+                whileTap={{ scale: 0.95 }}
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+              >
                 <FiSend />
-              </button>
+              </motion.button>
             </form>
           </motion.div>
         )}

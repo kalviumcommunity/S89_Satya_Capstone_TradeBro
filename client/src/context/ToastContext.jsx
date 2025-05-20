@@ -9,7 +9,7 @@ export const useToast = () => useContext(ToastContext);
 export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
 
-  const addToast = (message, type = 'success', duration = 3000, position = 'top-right') => {
+  const addToast = (message, type = 'success', duration = 5000, position = 'top-right') => {
     const id = uuidv4();
     setToasts(prevToasts => [...prevToasts, { id, message, type, duration, position }]);
     return id;

@@ -9,7 +9,7 @@ import Loading from "../components/Loading";
 import { fetchProfile, fetchProfileSuccess, setEditedUser, updateProfile } from "../redux/reducers/profileReducer";
 import { setIsEditing, setLoading, setError } from "../redux/reducers/uiReducer";
 import { showSuccessToast, showErrorToast } from "../redux/reducers/toastReducer";
-import "./Profile.css";
+import "../styles/pages/Profile.css";
 
 const Profile = () => {
   const dispatch = useDispatch();
@@ -31,7 +31,7 @@ const Profile = () => {
     const fetchUserData = async () => {
       try {
         // Get user settings
-        const response = await axios.get("http://localhost:5000/api/settings", {
+        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/settings`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('authToken')}`
           }
@@ -47,7 +47,7 @@ const Profile = () => {
             phoneNumber: userData.phoneNumber || "",
             joinDate: userData.createdAt || new Date().toISOString(),
             profileImage: userData.profileImage
-              ? `http://localhost:5000/uploads/${userData.profileImage}`
+              ? `${import.meta.env.VITE_API_BASE_URL}/uploads/${userData.profileImage}`
               : "https://randomuser.me/api/portraits/lego/1.jpg",
             tradingExperience: userData.tradingExperience || "Beginner",
             preferredMarkets: userData.preferredMarkets || ["Stocks"],
@@ -189,13 +189,18 @@ const Profile = () => {
       formData.append('tradingExperience', editedUser.tradingExperience);
       formData.append('bio', editedUser.bio);
 
+      // Add preferredMarkets if it exists
+      if (editedUser.preferredMarkets && Array.isArray(editedUser.preferredMarkets)) {
+        formData.append('preferredMarkets', JSON.stringify(editedUser.preferredMarkets));
+      }
+
       // Check if profile image is a File object (new upload) or a string (existing URL)
       if (editedUser.profileImage instanceof File) {
         formData.append('profileImage', editedUser.profileImage);
       }
 
       // Send data to API
-      const response = await axios.put('http://localhost:5000/api/settings', formData, {
+      const response = await axios.put(`${import.meta.env.VITE_API_BASE_URL}/api/settings`, formData, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
           'Content-Type': 'multipart/form-data'
@@ -207,13 +212,23 @@ const Profile = () => {
         const updatedUserData = {
           ...editedUser,
           profileImage: response.data.userSettings.profileImage
-            ? `http://localhost:5000/uploads/${response.data.userSettings.profileImage}`
+            ? `${import.meta.env.VITE_API_BASE_URL}/uploads/${response.data.userSettings.profileImage}`
             : editedUser.profileImage
         };
 
+        // Update the user data in Redux
         dispatch(updateProfileSuccess(updatedUserData));
+
+        // Exit editing mode
         dispatch(setIsEditing(false));
+
+        // Show success message
         dispatch(showSuccessToast('Profile updated successfully!'));
+
+        // Also update the auth state if needed
+        if (dispatch.updateUserData) {
+          dispatch(updateUserData(updatedUserData));
+        }
       } else {
         dispatch(showErrorToast('Failed to update profile. Please try again.'));
       }
@@ -222,6 +237,7 @@ const Profile = () => {
       dispatch(showErrorToast(err.response?.data?.message || 'Failed to update profile. Please try again.'));
 
       // For development, still update the UI
+      // This allows testing the UI without a working backend
       dispatch(updateProfileSuccess(editedUser));
       dispatch(setIsEditing(false));
     } finally {
