@@ -11,6 +11,11 @@ require('dotenv').config();
 // Get API key from environment variables
 const FMP_API_KEY = process.env.FMP_API_KEY;
 
+// Check if API key is available
+if (!FMP_API_KEY) {
+  console.warn('WARNING: FMP_API_KEY environment variable is not set. News API will use mock data.');
+}
+
 // Cache for API responses to reduce redundant calls
 const cache = {
   data: {},
@@ -32,25 +37,32 @@ const isCacheValid = (endpoint) => {
  */
 router.get('/', async (req, res) => {
   try {
-    const cacheKey = 'general-news';
-    
+    // Get query parameter if provided
+    const { q } = req.query;
+
+    // Create a unique cache key that includes the search query
+    const cacheKey = q ? `general-news-${q}` : 'general-news';
+
     // Check cache first
     if (isCacheValid(cacheKey) && cache.data[cacheKey]) {
-      console.log('Returning cached news data');
+      console.log(`Returning cached news data for query: ${q || 'general'}`);
       return res.json({
         success: true,
         source: 'cache',
         data: cache.data[cacheKey]
       });
     }
-    
+
     // Fetch from FMP API
-    console.log('Fetching news from FMP API');
-    const response = await axios.get(
-      `https://financialmodelingprep.com/api/v3/stock_news?limit=50&apikey=${FMP_API_KEY}`,
-      { timeout: 8000 } // 8 second timeout
-    );
-    
+    console.log(`Fetching news from FMP API with query: ${q || 'general'}`);
+
+    // If we have a search query, use it to filter news
+    const apiUrl = q
+      ? `https://financialmodelingprep.com/api/v3/stock_news?tickers=${q}&limit=50&apikey=${FMP_API_KEY}`
+      : `https://financialmodelingprep.com/api/v3/stock_news?limit=50&apikey=${FMP_API_KEY}`;
+
+    const response = await axios.get(apiUrl, { timeout: 8000 }); // 8 second timeout
+
     if (response.data && Array.isArray(response.data)) {
       // Format the news data
       const formattedNews = response.data.map((item, index) => ({
@@ -64,11 +76,11 @@ router.get('/', async (req, res) => {
         category: item.category || 'general',
         symbol: item.symbol
       }));
-      
+
       // Update cache
       cache.data[cacheKey] = formattedNews;
       cache.timestamps[cacheKey] = Date.now();
-      
+
       return res.json({
         success: true,
         source: 'fmp',
@@ -79,16 +91,43 @@ router.get('/', async (req, res) => {
     }
   } catch (error) {
     console.error('Error fetching news:', error.message);
-    
-    // Return mock data if API fails
-    const mockNews = generateMockNews();
-    
-    return res.json({
-      success: true,
-      source: 'mock',
-      data: mockNews,
-      message: 'Using mock data due to API errors'
-    });
+
+    // Get query parameter for mock data filtering
+    const { q } = req.query;
+
+    try {
+      // Return mock data if API fails, filtered by query if provided
+      const mockNews = generateMockNews('general', q);
+
+      return res.json({
+        success: true,
+        source: 'mock',
+        data: mockNews,
+        message: 'Using mock data due to API errors'
+      });
+    } catch (mockError) {
+      console.error('Error generating mock news:', mockError.message);
+
+      // Fallback to a minimal set of news data if even mock generation fails
+      return res.json({
+        success: true,
+        source: 'fallback',
+        data: [
+          {
+            id: 1,
+            title: "Market Update",
+            description: "Latest market news and updates.",
+            source: "TradeBro",
+            url: "#",
+            image: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1470&q=80",
+            publishedAt: new Date().toISOString(),
+            category: "general",
+            symbol: "MARKET"
+          }
+        ],
+        message: 'Using fallback data due to API errors'
+      });
+    }
   }
 });
 
@@ -100,25 +139,36 @@ router.get('/', async (req, res) => {
 router.get('/category/:category', async (req, res) => {
   try {
     const { category } = req.params;
-    const cacheKey = `news-category-${category}`;
-    
+    const { q } = req.query;
+
+    // Create a unique cache key that includes both category and query
+    const cacheKey = q
+      ? `news-category-${category}-query-${q}`
+      : `news-category-${category}`;
+
     // Check cache first
     if (isCacheValid(cacheKey) && cache.data[cacheKey]) {
-      console.log(`Returning cached news data for category: ${category}`);
+      console.log(`Returning cached news data for category: ${category}, query: ${q || 'none'}`);
       return res.json({
         success: true,
         source: 'cache',
         data: cache.data[cacheKey]
       });
     }
-    
+
     // Fetch from FMP API
-    console.log(`Fetching news for category: ${category} from FMP API`);
-    const response = await axios.get(
-      `https://financialmodelingprep.com/api/v3/stock_news?category=${category}&limit=50&apikey=${FMP_API_KEY}`,
-      { timeout: 8000 } // 8 second timeout
-    );
-    
+    console.log(`Fetching news for category: ${category}, query: ${q || 'none'} from FMP API`);
+
+    // Build the API URL based on whether we have a search query
+    let apiUrl = `https://financialmodelingprep.com/api/v3/stock_news?category=${category}&limit=50&apikey=${FMP_API_KEY}`;
+
+    // If we have a search query, add it to the URL
+    if (q) {
+      apiUrl = `https://financialmodelingprep.com/api/v3/stock_news?category=${category}&tickers=${q}&limit=50&apikey=${FMP_API_KEY}`;
+    }
+
+    const response = await axios.get(apiUrl, { timeout: 8000 }); // 8 second timeout
+
     if (response.data && Array.isArray(response.data)) {
       // Format the news data
       const formattedNews = response.data.map((item, index) => ({
@@ -132,11 +182,11 @@ router.get('/category/:category', async (req, res) => {
         category: item.category || category,
         symbol: item.symbol
       }));
-      
+
       // Update cache
       cache.data[cacheKey] = formattedNews;
       cache.timestamps[cacheKey] = Date.now();
-      
+
       return res.json({
         success: true,
         source: 'fmp',
@@ -147,16 +197,44 @@ router.get('/category/:category', async (req, res) => {
     }
   } catch (error) {
     console.error(`Error fetching news for category ${req.params.category}:`, error.message);
-    
-    // Return mock data if API fails
-    const mockNews = generateMockNews(req.params.category);
-    
-    return res.json({
-      success: true,
-      source: 'mock',
-      data: mockNews,
-      message: 'Using mock data due to API errors'
-    });
+
+    // Get query parameter for mock data filtering
+    const { q } = req.query;
+    const { category } = req.params;
+
+    try {
+      // Return mock data if API fails, filtered by category and query if provided
+      const mockNews = generateMockNews(category, q);
+
+      return res.json({
+        success: true,
+        source: 'mock',
+        data: mockNews,
+        message: 'Using mock data due to API errors'
+      });
+    } catch (mockError) {
+      console.error('Error generating mock news:', mockError.message);
+
+      // Fallback to a minimal set of news data if even mock generation fails
+      return res.json({
+        success: true,
+        source: 'fallback',
+        data: [
+          {
+            id: 1,
+            title: `${category.charAt(0).toUpperCase() + category.slice(1)} News`,
+            description: `Latest news from the ${category} category.`,
+            source: "TradeBro",
+            url: "#",
+            image: `https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1470&q=80`,
+            publishedAt: new Date().toISOString(),
+            category: category,
+            symbol: category.toUpperCase().substring(0, 4)
+          }
+        ],
+        message: 'Using fallback data due to API errors'
+      });
+    }
   }
 });
 
@@ -168,16 +246,16 @@ router.get('/category/:category', async (req, res) => {
 router.get('/search', async (req, res) => {
   try {
     const { q } = req.query;
-    
+
     if (!q) {
       return res.status(400).json({
         success: false,
         message: 'Search query is required'
       });
     }
-    
+
     const cacheKey = `news-search-${q}`;
-    
+
     // Check cache first
     if (isCacheValid(cacheKey) && cache.data[cacheKey]) {
       console.log(`Returning cached news search results for: ${q}`);
@@ -187,14 +265,14 @@ router.get('/search', async (req, res) => {
         data: cache.data[cacheKey]
       });
     }
-    
+
     // Fetch from FMP API
     console.log(`Searching news for: ${q} from FMP API`);
     const response = await axios.get(
       `https://financialmodelingprep.com/api/v3/stock_news?tickers=${q}&limit=50&apikey=${FMP_API_KEY}`,
       { timeout: 8000 } // 8 second timeout
     );
-    
+
     if (response.data && Array.isArray(response.data)) {
       // Format the news data
       const formattedNews = response.data.map((item, index) => ({
@@ -208,11 +286,11 @@ router.get('/search', async (req, res) => {
         category: item.category || 'general',
         symbol: item.symbol
       }));
-      
+
       // Update cache
       cache.data[cacheKey] = formattedNews;
       cache.timestamps[cacheKey] = Date.now();
-      
+
       return res.json({
         success: true,
         source: 'fmp',
@@ -223,31 +301,49 @@ router.get('/search', async (req, res) => {
     }
   } catch (error) {
     console.error(`Error searching news for ${req.query.q}:`, error.message);
-    
-    // Return mock data if API fails
-    const mockNews = generateMockNews('general', req.query.q);
-    
-    return res.json({
-      success: true,
-      source: 'mock',
-      data: mockNews,
-      message: 'Using mock data due to API errors'
-    });
+
+    const { q } = req.query;
+
+    try {
+      // Return mock data if API fails
+      const mockNews = generateMockNews('general', q);
+
+      return res.json({
+        success: true,
+        source: 'mock',
+        data: mockNews,
+        message: 'Using mock data due to API errors'
+      });
+    } catch (mockError) {
+      console.error('Error generating mock news:', mockError.message);
+
+      // Fallback to a minimal set of news data if even mock generation fails
+      return res.json({
+        success: true,
+        source: 'fallback',
+        data: [
+          {
+            id: 1,
+            title: `Search Results for "${q}"`,
+            description: `News related to your search for "${q}".`,
+            source: "TradeBro",
+            url: "#",
+            image: "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=1470&q=80",
+            publishedAt: new Date().toISOString(),
+            category: "search",
+            symbol: q ? q.toUpperCase().substring(0, 4) : "SRCH"
+          }
+        ],
+        message: 'Using fallback data due to API errors'
+      });
+    }
   }
 });
 
 // Helper function to generate mock news data
 function generateMockNews(category = 'general', query = null) {
-  const categories = {
-    general: 'General Market News',
-    markets: 'Market Updates',
-    economy: 'Economic News',
-    technology: 'Technology Sector',
-    commodities: 'Commodities Market',
-    finance: 'Financial News',
-    crypto: 'Cryptocurrency News'
-  };
-  
+  // Define mock news data with different categories
+
   const mockNews = [
     {
       id: 1,
@@ -283,23 +379,23 @@ function generateMockNews(category = 'general', query = null) {
       symbol: "AAPL"
     }
   ];
-  
+
   // Filter by category if provided
   let filteredNews = mockNews;
   if (category && category !== 'general') {
     filteredNews = mockNews.filter(item => item.category === category);
   }
-  
+
   // Filter by query if provided
   if (query) {
     const lowerQuery = query.toLowerCase();
-    filteredNews = filteredNews.filter(item => 
-      item.title.toLowerCase().includes(lowerQuery) || 
+    filteredNews = filteredNews.filter(item =>
+      item.title.toLowerCase().includes(lowerQuery) ||
       item.description.toLowerCase().includes(lowerQuery) ||
       (item.symbol && item.symbol.toLowerCase().includes(lowerQuery))
     );
   }
-  
+
   return filteredNews.length > 0 ? filteredNews : mockNews;
 }
 
