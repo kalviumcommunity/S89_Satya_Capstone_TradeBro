@@ -71,6 +71,38 @@ try {
 
   fs.writeFileSync(path.join(__dirname, 'dist', '_headers'), specialHeaders);
 
+  // Process the special index.html file for Netlify
+  console.log('Processing special index.html file for Netlify...');
+
+  try {
+    // Read the built index.html file
+    const builtIndexPath = path.join(__dirname, 'dist', 'index.html');
+    const builtIndexContent = fs.readFileSync(builtIndexPath, 'utf8');
+
+    // Extract the main script path from the built index.html
+    const scriptMatch = builtIndexContent.match(/<script[^>]*src="([^"]+)"/);
+
+    if (scriptMatch && scriptMatch[1]) {
+      const mainScriptPath = scriptMatch[1];
+      console.log(`Found main script path: ${mainScriptPath}`);
+
+      // Read the Netlify index template
+      const netlifyIndexPath = path.join(__dirname, 'netlify-index.html');
+      let netlifyIndexContent = fs.readFileSync(netlifyIndexPath, 'utf8');
+
+      // Replace the placeholder with the actual script path
+      netlifyIndexContent = netlifyIndexContent.replace('/assets/main-[hash].js', mainScriptPath);
+
+      // Write the processed index.html to the dist directory
+      fs.writeFileSync(builtIndexPath, netlifyIndexContent);
+      console.log('Successfully updated index.html for Netlify');
+    } else {
+      console.error('Could not find main script path in built index.html');
+    }
+  } catch (error) {
+    console.error('Error processing index.html for Netlify:', error.message);
+  }
+
   console.log('Netlify build process completed successfully!');
 } catch (error) {
   console.error('Error during Netlify build process:', error.message);

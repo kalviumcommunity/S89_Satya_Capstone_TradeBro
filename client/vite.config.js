@@ -23,8 +23,8 @@ export default defineConfig(({ mode }) => {
           entryFileNames: 'assets/[name]-[hash].js',
           chunkFileNames: 'assets/[name]-[hash].js',
           assetFileNames: 'assets/[name]-[hash].[ext]',
-          // Use system format for better compatibility with Netlify
-          format: 'systemjs',
+          // Use standard ES modules
+          format: 'es',
         },
       },
       // Copy Netlify configuration files to the dist folder
