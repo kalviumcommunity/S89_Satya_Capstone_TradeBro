@@ -7,9 +7,9 @@ const nodemailer = require('nodemailer');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
-const JWT_SECRET = process.env.JWT_SECRET; // Ensure JWT_SECRET is defined
+const JWT_SECRET = process.env.JWT_SECRET;
 
-// Middleware to verify JWT token
+
 const verifyToken = (req, res, next) => {
   const token = req.header('Authorization')?.split(' ')[1];
   if (!token) {
