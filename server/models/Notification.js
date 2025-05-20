@@ -9,7 +9,6 @@ const notificationSchema = new mongoose.Schema({
   userEmail: {
     type: String,
     required: true
-    // Removed index: true to avoid duplicate index
   },
   type: {
     type: String,

@@ -42,6 +42,9 @@ app.set('trust proxy', true);
 // CORS configuration
 app.use(cors({
   origin: [
+    "http://localhost:5173",
+    "https://tradebro-client.vercel.app",
+    "https://tradebro.vercel.app"
     // Prioritize localhost URLs for development
     "http://localhost:5173",
     "http://localhost:5174",
@@ -361,9 +364,6 @@ mongoose.connect(MONGO_URI, {
   w: 'majority',
   ssl: true,
   authSource: 'admin'
-  // Removed deprecated options:
-  // useNewUrlParser: true,
-  // useUnifiedTopology: true
 })
 .then(() => {
   console.log('✅ Connected to MongoDB');

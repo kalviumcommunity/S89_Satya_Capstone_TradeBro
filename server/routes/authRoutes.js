@@ -7,9 +7,9 @@ const nodemailer = require('nodemailer');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
-const JWT_SECRET = process.env.JWT_SECRET; // Ensure JWT_SECRET is defined
+const JWT_SECRET = process.env.JWT_SECRET;
 
-// Middleware to verify JWT token
+
 const verifyToken = (req, res, next) => {
   const token = req.header('Authorization')?.split(' ')[1];
   if (!token) {
@@ -138,7 +138,11 @@ router.post('/login', async (req, res) => {
       profileImage: user.profileImage,
       phoneNumber: user.phoneNumber,
       language: user.language,
-      notifications: user.notifications
+      notifications: user.notifications,
+      tradingExperience: user.tradingExperience || 'Beginner',
+      bio: user.bio || 'No bio provided yet.',
+      preferredMarkets: user.preferredMarkets || ['Stocks'],
+      createdAt: user.createdAt
     };
 
     res.status(200).json({
@@ -278,7 +282,11 @@ router.get('/user', verifyToken, async (req, res) => {
       profileImage: user.profileImage,
       phoneNumber: user.phoneNumber,
       language: user.language,
-      notifications: user.notifications
+      notifications: user.notifications,
+      tradingExperience: user.tradingExperience || 'Beginner',
+      bio: user.bio || 'No bio provided yet.',
+      preferredMarkets: user.preferredMarkets || ['Stocks'],
+      createdAt: user.createdAt
     };
 
     res.status(200).json({

@@ -38,10 +38,42 @@ class UserDataManager {
         }
 
         if (data.statistics) {
-          userData.statistics = {
-            ...userData.statistics,
-            ...data.statistics
-          };
+          // Initialize statistics object if it doesn't exist
+          if (!userData.statistics) {
+            userData.statistics = {};
+          }
+
+          // Handle nested objects within statistics
+          if (data.statistics.chatAssistantUsage) {
+            userData.statistics.chatAssistantUsage = {
+              ...(userData.statistics.chatAssistantUsage || {}),
+              ...data.statistics.chatAssistantUsage
+            };
+          }
+
+          // Ensure tradingStats exists and is preserved
+          if (!userData.statistics.tradingStats) {
+            userData.statistics.tradingStats = {
+              totalTrades: 0,
+              successfulTrades: 0,
+              totalProfitLoss: 0
+            };
+          }
+
+          // Update other top-level properties of statistics
+          Object.keys(data.statistics).forEach(key => {
+            if (key !== 'chatAssistantUsage' && key !== 'tradingStats') {
+              userData.statistics[key] = data.statistics[key];
+            }
+          });
+
+          // Handle tradingStats if it's being updated
+          if (data.statistics.tradingStats) {
+            userData.statistics.tradingStats = {
+              ...userData.statistics.tradingStats,
+              ...data.statistics.tradingStats
+            };
+          }
         }
 
         if (data.virtualMoney) {
@@ -122,12 +154,15 @@ class UserDataManager {
 
       // Get total messages count
       const totalMessages = await ChatHistory.aggregate([
+        { $match: { userId: new mongoose.Types.ObjectId(userId) } },
         { $match: { userId: userObjectId } },
         { $unwind: '$messages' },
         { $count: 'total' }
       ]);
 
-      // Get total sessions count
+
+      const totalSessions = await ChatHistory.countDocuments({ userId });
+
       const totalSessions = await ChatHistory.aggregate([
         { $match: { userId: userObjectId } },
         { $count: 'total' }
@@ -140,6 +175,17 @@ class UserDataManager {
         { sort: { 'metadata.lastActiveAt': -1 } }
       );
 
+
+      // Get existing user data to preserve other statistics
+      let userData = await UserData.findOne({ userId });
+
+      // Prepare statistics object with preserved tradingStats if it exists
+      const statisticsUpdate = {
+        chatAssistantUsage: {
+          totalMessages: totalMessages[0]?.total || 0,
+          totalSessions,
+          lastInteraction: lastChat?.metadata.lastActiveAt || null
+
       // Update user data
       await this.createOrUpdateUserData(userId, userEmail, {
         statistics: {
@@ -148,7 +194,13 @@ class UserDataManager {
             totalSessions: totalSessions[0]?.total || 0,
             lastInteraction: lastChat?.metadata.lastActiveAt || null
           }
+
         }
+      };
+
+      // Update user data with the prepared statistics
+      await this.createOrUpdateUserData(userId, userEmail, {
+        statistics: statisticsUpdate
       });
     } catch (error) {
       console.error('Error in updateChatStatistics:', error);

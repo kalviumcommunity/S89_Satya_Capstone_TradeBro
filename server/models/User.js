@@ -40,6 +40,19 @@ const userSchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
+    tradingExperience: {
+        type: String,
+        enum: ['Beginner', 'Intermediate', 'Advanced', 'Professional'],
+        default: 'Beginner'
+    },
+    preferredMarkets: {
+        type: [String],
+        default: ['Stocks']
+    },
+    bio: {
+        type: String,
+        default: 'No bio provided yet.'
+    },
     code: {
         type: String
     },

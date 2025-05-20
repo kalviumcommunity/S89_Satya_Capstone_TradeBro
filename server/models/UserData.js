@@ -1,9 +1,5 @@
 const mongoose = require('mongoose');
 
-/**
- * Comprehensive schema for storing all user-related data
- * This includes user preferences, settings, and statistics
- */
 const userDataSchema = new mongoose.Schema({
   // Reference to the user
   userId: {
@@ -18,7 +14,6 @@ const userDataSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true
-    // Removed index: true to avoid duplicate index
   },
 
   // User preferences
@@ -173,9 +168,7 @@ const userDataSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-// Create indexes for efficient querying
-userDataSchema.index({ 'userId': 1 }, { unique: true });
-userDataSchema.index({ 'userEmail': 1 }, { unique: true });
+// No need for additional indexes as unique: true already creates indexes
 
 const UserData = mongoose.model('UserData', userDataSchema);
 
