@@ -410,8 +410,9 @@ const PortfolioPage = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
     const success = urlParams.get('success');
+    const google = urlParams.get('google');
 
-    if (token && success === 'true') {
+    if (token && success === 'true' && google === 'true') {
       console.log('Google OAuth token found in URL');
 
       // Remove token from URL to prevent issues on refresh
