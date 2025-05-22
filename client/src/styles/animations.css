@@ -1,4 +1,4 @@
-/* 
+/*
  * TradeBro Animation Styles
  * Inspired by marketmakers.trade animations
  */
@@ -8,13 +8,20 @@
   --animation-speed-slow: 1000ms;
   --animation-speed-medium: 600ms;
   --animation-speed-fast: 300ms;
-  
-  /* Animation Easing Variables */
+
+  /* Animation Easing Variables - Safe for CSS and Web Animations API */
   --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-out: cubic-bezier(0, 0, 0.2, 1);
   --ease-in: cubic-bezier(0.4, 0, 1, 1);
   --ease-bounce: cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  --ease-elastic: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  /* Fixed elastic ease to ensure x values are between 0 and 1 for Web Animations API */
+  --ease-elastic: cubic-bezier(0.68, -0.55, 0.265, 1.55); /* CSS only */
+  --ease-elastic-safe: cubic-bezier(0.68, -0.55, 0.32, 1.55); /* Safe for Web Animations API */
+
+  /* Additional safe easing functions */
+  --ease-in-out-quad: cubic-bezier(0.455, 0.03, 0.515, 0.955);
+  --ease-in-out-cubic: cubic-bezier(0.645, 0.045, 0.355, 1);
+  --ease-in-out-quart: cubic-bezier(0.77, 0, 0.175, 1);
 }
 
 /* ===== Keyframe Animations ===== */
@@ -155,9 +162,9 @@
 }
 
 .animate-shimmer {
-  background: linear-gradient(90deg, 
-    rgba(255, 255, 255, 0) 0%, 
-    rgba(255, 255, 255, 0.2) 50%, 
+  background: linear-gradient(90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.2) 50%,
     rgba(255, 255, 255, 0) 100%
   );
   background-size: 200% 100%;
