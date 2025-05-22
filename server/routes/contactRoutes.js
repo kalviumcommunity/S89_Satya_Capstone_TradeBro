@@ -18,6 +18,11 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+// Check if email credentials are available
+if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+  console.error('WARNING: Email credentials (EMAIL_USER or EMAIL_PASS) are not set in environment variables');
+}
+
 // Send contact form email
 router.post('/send', async (req, res) => {
   try {
@@ -58,7 +63,7 @@ router.post('/send', async (req, res) => {
     // Set up email options
     const mailOptions = {
       from: `"${name}" <${email}>`,
-      to: 'tradebro2025@gmail.com',
+      to: process.env.EMAIL_USER,
       subject: subject || `Contact Form: Message from ${name}`,
       text: `Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}${userInfo}`,
       html: `
@@ -130,7 +135,7 @@ router.post('/send-auth', verifyToken, async (req, res) => {
     // Set up email options
     const mailOptions = {
       from: `"${user.username}" <${user.email}>`,
-      to: 'tradebro2025@gmail.com',
+      to: process.env.EMAIL_USER,
       subject: subject ? `Contact Form: ${subject}` : `Contact Form from ${user.username}`,
       text: `Name: ${user.username}\nEmail: ${user.email}\nUser ID: ${user._id}\n\nMessage:\n${message}`,
       html: `

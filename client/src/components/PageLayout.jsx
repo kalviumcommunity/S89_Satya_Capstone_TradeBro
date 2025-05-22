@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSidebar } from '../context/SidebarContext';
 import Sidebar from './Sidebar';
-import './PageLayout.css';
+import '../styles/components/PageLayout.css';
 
 const PageLayout = ({ children }) => {
   const { isCollapsed, isMobile } = useSidebar();
@@ -9,7 +9,7 @@ const PageLayout = ({ children }) => {
   return (
     <div className="page-layout">
       <Sidebar />
-      <main 
+      <main
         className={`page-content ${isCollapsed ? 'sidebar-collapsed' : 'sidebar-expanded'} ${isMobile ? 'mobile' : ''}`}
       >
         {children}

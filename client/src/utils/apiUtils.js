@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/apiConfig';
+import { createDummyChartData } from './chartUtils';
 
 /**
  * Makes an API call with fallback to dummy data if the call fails
@@ -163,6 +164,15 @@ export const createDummyData = (dummyData) => {
       isFallbackData: true,
     };
   };
+};
+
+/**
+ * Creates dummy chart data for API fallback
+ * @param {string} timeRange - Time range for the chart data
+ * @returns {Array} - Array of chart data points
+ */
+export const createDummyChartDataForAPI = (timeRange) => {
+  return createDummyChartData(timeRange);
 };
 
 /**

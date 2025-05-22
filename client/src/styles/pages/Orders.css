@@ -124,26 +124,6 @@
   margin-bottom: 1rem;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.error-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 3rem;
-  color: #dc3545;
-  text-align: center;
-}
-
-.error-icon {
-  font-size: 48px;
-  margin-bottom: 1rem;
-}
-
 .empty-orders {
   text-align: center;
   padding: 3rem;

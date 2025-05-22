@@ -301,6 +301,42 @@ const setupMockGetEndpoints = (userData = null) => {
       });
     }
 
+    // Notifications endpoint
+    if (url && url.includes('/api/notifications')) {
+      console.log('Using mock notifications data');
+      return Promise.resolve({
+        data: {
+          success: true,
+          data: [
+            {
+              id: '1',
+              title: 'Welcome to TradeBro',
+              message: 'Thank you for joining TradeBro. Start exploring the platform!',
+              type: 'info',
+              read: false,
+              timestamp: new Date(Date.now() - 3600000).toISOString()
+            },
+            {
+              id: '2',
+              title: 'Market Update',
+              message: 'The market has opened. Check the latest trends!',
+              type: 'success',
+              read: true,
+              timestamp: new Date(Date.now() - 86400000).toISOString()
+            },
+            {
+              id: '3',
+              title: 'New Feature',
+              message: 'We\'ve added a new portfolio tracking feature. Try it out!',
+              type: 'info',
+              read: false,
+              timestamp: new Date(Date.now() - 172800000).toISOString()
+            }
+          ]
+        }
+      });
+    }
+
     // Stock search endpoint
     if (url && url.includes('/api/stocks/search')) {
       console.log('Using mock stock search endpoint');

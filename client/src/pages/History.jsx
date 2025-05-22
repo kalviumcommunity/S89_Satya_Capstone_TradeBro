@@ -5,7 +5,7 @@ import PageLayout from "../components/PageLayout";
 import { useToast } from "../context/ToastContext";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
-import "./History.css";
+import "../styles/pages/History.css";
 
 const History = () => {
   const { showToast } = useToast();
@@ -112,7 +112,7 @@ const History = () => {
       setError(null);
 
       try {
-        const response = await axios.get("http://localhost:5000/api/virtual-money/transactions");
+        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/virtual-money/transactions`);
 
         if (response.data.success) {
           // Transform the data to match our frontend format

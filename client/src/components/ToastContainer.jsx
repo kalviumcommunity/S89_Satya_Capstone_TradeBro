@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiCheckCircle, FiAlertCircle, FiInfo, FiAlertTriangle, FiX } from 'react-icons/fi';
 import { removeToast } from '../redux/reducers/toastReducer';
-import './ToastContainer.css';
+import '../styles/components/ToastContainer.css';
 
 const ToastContainer = () => {
   const { toasts } = useSelector(state => state.toast);
@@ -52,9 +52,9 @@ const ToastContainer = () => {
           <motion.div
             key={toast.id}
             className={`toast toast-${toast.type}`}
-            initial={{ opacity: 0, y: 50, scale: 0.3 }}
+            initial={{ opacity: 0, y: -50, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
+            exit={{ opacity: 0, y: -20, scale: 0.9, transition: { duration: 0.2 } }}
             transition={{ type: "spring", stiffness: 500, damping: 30 }}
           >
             <div className="toast-icon">

@@ -63,7 +63,7 @@ const TradingAssistantPage = () => {
           const token = localStorage.getItem('token');
           const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-          const response = await axios.get("http://localhost:5000/api/virtual-money/account", {
+          const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/virtual-money/account`, {
             headers,
             timeout: 5000
           });
@@ -114,7 +114,7 @@ const TradingAssistantPage = () => {
           const token = localStorage.getItem('token');
           const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-          const response = await axios.post("http://localhost:5000/api/virtual-money/claim-reward", {}, {
+          const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/virtual-money/claim-reward`, {}, {
             headers,
             timeout: 5000
           });

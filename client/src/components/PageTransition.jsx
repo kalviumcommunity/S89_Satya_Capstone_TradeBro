@@ -1,6 +1,8 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import PropTypes from 'prop-types';
+import EnhancedLoading from './EnhancedLoading';
+import '../styles/components/PageTransition.css';
 
 // Enhanced page transition variants
 const pageVariants = {
@@ -56,15 +58,31 @@ const childVariants = {
 };
 
 /**
- * Enhanced PageTransition component with staggered children animations
+ * Enhanced PageTransition component with loading animation and staggered children animations
  */
 const PageTransition = ({
   children,
   className = '',
   animateChildren = false,
   transitionType = 'fade',
+  showLoading = false,
+  loadingType = 'gradient',
+  loadingText = 'Loading...',
+  loadingDuration = 800,
   ...props
 }) => {
+  const [isLoading, setIsLoading] = useState(showLoading);
+
+  useEffect(() => {
+    if (showLoading) {
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+      }, loadingDuration);
+
+      return () => clearTimeout(timer);
+    }
+  }, [showLoading, loadingDuration]);
+
   // Different transition types
   const transitionVariants = {
     fade: pageVariants,
@@ -130,16 +148,37 @@ const PageTransition = ({
   };
 
   return (
-    <motion.div
-      className={className}
-      initial="initial"
-      animate="in"
-      exit="out"
-      variants={transitionVariants[transitionType]}
-      {...props}
-    >
-      {renderChildren()}
-    </motion.div>
+    <AnimatePresence mode="wait">
+      {isLoading ? (
+        <motion.div
+          key="loading"
+          className="page-loading-container"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <EnhancedLoading
+            type={loadingType}
+            size="large"
+            text={loadingText}
+            color="#55828b"
+          />
+        </motion.div>
+      ) : (
+        <motion.div
+          key="content"
+          className={className}
+          initial="initial"
+          animate="in"
+          exit="out"
+          variants={transitionVariants[transitionType]}
+          {...props}
+        >
+          {renderChildren()}
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 
@@ -147,7 +186,11 @@ PageTransition.propTypes = {
   children: PropTypes.node.isRequired,
   className: PropTypes.string,
   animateChildren: PropTypes.bool,
-  transitionType: PropTypes.oneOf(['fade', 'slide', 'scale'])
+  transitionType: PropTypes.oneOf(['fade', 'slide', 'scale']),
+  showLoading: PropTypes.bool,
+  loadingType: PropTypes.oneOf(['dots', 'pulse', 'spinner', 'wave', 'gradient']),
+  loadingText: PropTypes.string,
+  loadingDuration: PropTypes.number
 };
 
 export default PageTransition;

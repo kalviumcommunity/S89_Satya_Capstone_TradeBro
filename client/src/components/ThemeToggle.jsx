@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { ThemeContext } from '../context/ThemeContext';
 import { motion } from 'framer-motion';
 import { FiSun, FiMoon } from 'react-icons/fi';
-import './ThemeToggle.css';
+import '../styles/components/ThemeToggle.css';
 
 const ThemeToggle = () => {
   const { darkMode, toggleTheme } = useContext(ThemeContext);

@@ -7,7 +7,7 @@ import { useToast } from '../context/ToastContext';
 import { useVirtualMoney } from '../context/VirtualMoneyContext';
 import Loading from './Loading';
 import { API_ENDPOINTS } from '../config/apiConfig';
-import '../styles/BuySellModal.css';
+import '../styles/components/BuySellModal.css';
 
 const BuySellModal = ({
   isOpen,
@@ -70,7 +70,7 @@ const BuySellModal = ({
     }
   };
 
-  // Validate order
+  // Validate order with improved precision and edge case handling
   const validateOrder = () => {
     if (quantity <= 0) {
       setError('Quantity must be greater than 0');
@@ -83,10 +83,21 @@ const BuySellModal = ({
     }
 
     if (type === 'BUY') {
-      const totalCost = orderType === 'LIMIT' ? parseFloat(limitPrice) * quantity : stockData.price * quantity;
-      if (totalCost > virtualMoney.balance) {
-        setError('Insufficient funds for this purchase');
+      // Calculate total cost with proper precision
+      const price = orderType === 'LIMIT' ? parseFloat(limitPrice) : stockData.price;
+      const totalCost = parseFloat((price * quantity).toFixed(2));
+      const availableBalance = parseFloat(virtualMoney.balance.toFixed(2));
+
+      // Check if user has enough balance with proper precision handling
+      if (totalCost > availableBalance) {
+        setError(`Insufficient funds. You need ₹${totalCost.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})} but have ₹${availableBalance.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`);
         return false;
+      }
+
+      // Handle exact balance match
+      if (totalCost === availableBalance) {
+        console.log('Exact balance match for purchase');
+        // We'll allow this but might want to show a warning
       }
     } else if (type === 'SELL') {
       // Check if user owns enough shares - improved matching logic
@@ -98,25 +109,29 @@ const BuySellModal = ({
         return itemSymbol === dataSymbol;
       });
 
-      console.log('Selling stock check:', {
-        stockDataSymbol: stockData.symbol,
-        portfolioItems: virtualMoney.portfolio.map(item => ({
-          symbol: item.symbol || item.stockSymbol,
-          quantity: item.quantity
-        })),
-        foundStock: ownedStock
-      });
-
-      if (!ownedStock || ownedStock.quantity < quantity) {
-        setError(`You only own ${ownedStock ? ownedStock.quantity : 0} shares of ${stockData.symbol}`);
+      // Handle case where user has no holdings
+      if (!ownedStock || ownedStock.quantity === 0) {
+        setError(`You don't own any shares of ${stockData.symbol}`);
         return false;
+      }
+
+      // Handle case where user doesn't have enough shares
+      if (ownedStock.quantity < quantity) {
+        setError(`You only own ${ownedStock.quantity} shares of ${stockData.symbol}`);
+        return false;
+      }
+
+      // Handle case where user is selling all shares
+      if (ownedStock.quantity === quantity) {
+        console.log('Selling all shares of this stock');
+        // We'll allow this but might want to show a confirmation
       }
     }
 
     return true;
   };
 
-  // Handle order submission
+  // Handle order submission with improved error handling and notifications
   const handleSubmit = async () => {
     if (!validateOrder()) {
       return;
@@ -126,11 +141,12 @@ const BuySellModal = ({
     setError('');
 
     try {
-      // Create transaction data
+      // Create transaction data with proper precision
+      const price = orderType === 'LIMIT' ? parseFloat(limitPrice) : stockData.price;
       const transactionData = {
         stockSymbol: stockData.symbol,
         quantity: parseInt(quantity),
-        price: orderType === 'LIMIT' ? parseFloat(limitPrice) : stockData.price
+        price: parseFloat(price.toFixed(2)) // Ensure price has 2 decimal places
       };
 
       // Call the API directly instead of using Redux
@@ -144,9 +160,20 @@ const BuySellModal = ({
         // Update virtual money state with the new data
         updateVirtualMoney(response.data.data);
 
+        // Format price with proper currency formatting
+        const formattedPrice = price.toLocaleString('en-IN', {
+          style: 'currency',
+          currency: 'INR',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        });
+
+        // Show success toast with detailed information
         showToast({
           type: 'success',
-          message: `Successfully ${type === 'BUY' ? 'purchased' : 'sold'} ${quantity} shares of ${stockData.symbol}`
+          message: `You successfully ${type === 'BUY' ? 'bought' : 'sold'} ${quantity} shares of ${stockData.symbol} at ${formattedPrice} each!`,
+          position: 'top-right', // Ensure it appears at top-right
+          duration: 5000 // 5 seconds as per requirements
         });
 
         if (onSuccess) {
@@ -163,21 +190,53 @@ const BuySellModal = ({
         }, 1000);
       } else {
         setError(response.data.message || 'Transaction failed');
+
+        // Show error toast
+        showToast({
+          type: 'error',
+          message: response.data.message || `Failed to ${type === 'BUY' ? 'buy' : 'sell'} ${stockData.symbol}`,
+          position: 'top-right',
+          duration: 5000
+        });
       }
     } catch (err) {
       console.error(`Error ${type === 'BUY' ? 'buying' : 'selling'} stock:`, err);
 
       // Handle offline mode or API errors
       if (err.response) {
-        setError(err.response.data?.message || 'Transaction failed. Please try again.');
+        const errorMessage = err.response.data?.message || 'Transaction failed. Please try again.';
+        setError(errorMessage);
+
+        // Show error toast
+        showToast({
+          type: 'error',
+          message: errorMessage,
+          position: 'top-right',
+          duration: 5000
+        });
       } else {
         // Simulate a successful transaction for offline mode
-        const updatedVirtualMoney = simulateTransaction(type, transactionData);
+        const transactionPrice = parseFloat(price.toFixed(2));
+        const updatedVirtualMoney = simulateTransaction(type, {
+          ...transactionData,
+          price: transactionPrice
+        });
         updateVirtualMoney(updatedVirtualMoney);
 
+        // Format price with proper currency formatting
+        const formattedPrice = transactionPrice.toLocaleString('en-IN', {
+          style: 'currency',
+          currency: 'INR',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        });
+
+        // Show success toast with detailed information
         showToast({
           type: 'success',
-          message: `Successfully ${type === 'BUY' ? 'purchased' : 'sold'} ${quantity} shares of ${stockData.symbol} (offline mode)`
+          message: `You successfully ${type === 'BUY' ? 'bought' : 'sold'} ${quantity} shares of ${stockData.symbol} at ${formattedPrice} each! (offline mode)`,
+          position: 'top-right',
+          duration: 5000
         });
 
         if (onSuccess) {
@@ -198,30 +257,33 @@ const BuySellModal = ({
     }
   };
 
-  // Helper function to simulate a transaction in offline mode
+  // Helper function to simulate a transaction in offline mode with improved precision
   const simulateTransaction = (type, transactionData) => {
     const { stockSymbol, quantity, price } = transactionData;
-    const totalAmount = quantity * price;
+    // Calculate total with proper precision (2 decimal places)
+    const totalAmount = parseFloat((quantity * price).toFixed(2));
 
     if (type === 'BUY') {
-      // Create a copy of the virtual money object
+      // Create a copy of the virtual money object with precise balance calculation
       const updatedVirtualMoney = {
         ...virtualMoney,
-        balance: virtualMoney.balance - totalAmount,
+        balance: parseFloat((virtualMoney.balance - totalAmount).toFixed(2)),
         portfolio: [...(virtualMoney.portfolio || [])]
       };
 
-      // Check if the stock already exists in the portfolio
-      const existingStockIndex = updatedVirtualMoney.portfolio.findIndex(
-        item => (item.symbol || item.stockSymbol) === stockSymbol
-      );
+      // Check if the stock already exists in the portfolio with improved symbol matching
+      const existingStockIndex = updatedVirtualMoney.portfolio.findIndex(item => {
+        const itemSymbol = (item.symbol || item.stockSymbol || '').replace(/\s+/g, '').toUpperCase();
+        const dataSymbol = stockSymbol.replace(/\s+/g, '').toUpperCase();
+        return itemSymbol === dataSymbol;
+      });
 
       if (existingStockIndex >= 0) {
-        // Update existing stock
+        // Update existing stock with precise average price calculation
         const existingStock = updatedVirtualMoney.portfolio[existingStockIndex];
         const totalShares = existingStock.quantity + quantity;
-        const totalCost = (existingStock.averageBuyPrice * existingStock.quantity) + (price * quantity);
-        const newAveragePrice = totalCost / totalShares;
+        const totalCost = parseFloat(((existingStock.averageBuyPrice * existingStock.quantity) + (price * quantity)).toFixed(2));
+        const newAveragePrice = parseFloat((totalCost / totalShares).toFixed(2));
 
         updatedVirtualMoney.portfolio[existingStockIndex] = {
           ...existingStock,
@@ -233,25 +295,28 @@ const BuySellModal = ({
         // Add new stock to portfolio
         updatedVirtualMoney.portfolio.push({
           stockSymbol: stockSymbol,
+          symbol: stockSymbol, // Add both for compatibility
           quantity: quantity,
-          averageBuyPrice: price,
+          averageBuyPrice: parseFloat(price.toFixed(2)),
           lastUpdated: new Date()
         });
       }
 
       return updatedVirtualMoney;
     } else {
-      // SELL transaction
+      // SELL transaction with precise balance calculation
       const updatedVirtualMoney = {
         ...virtualMoney,
-        balance: virtualMoney.balance + totalAmount,
+        balance: parseFloat((virtualMoney.balance + totalAmount).toFixed(2)),
         portfolio: [...(virtualMoney.portfolio || [])]
       };
 
-      // Find the stock in the portfolio
-      const existingStockIndex = updatedVirtualMoney.portfolio.findIndex(
-        item => (item.symbol || item.stockSymbol) === stockSymbol
-      );
+      // Find the stock in the portfolio with improved symbol matching
+      const existingStockIndex = updatedVirtualMoney.portfolio.findIndex(item => {
+        const itemSymbol = (item.symbol || item.stockSymbol || '').replace(/\s+/g, '').toUpperCase();
+        const dataSymbol = stockSymbol.replace(/\s+/g, '').toUpperCase();
+        return itemSymbol === dataSymbol;
+      });
 
       if (existingStockIndex >= 0) {
         const existingStock = updatedVirtualMoney.portfolio[existingStockIndex];
@@ -311,24 +376,59 @@ const BuySellModal = ({
                 </div>
               ) : confirmation ? (
                 <div className="confirmation-screen">
-                  <div className="confirmation-icon">
-                    <FiInfo />
+                  <div className={`confirmation-icon ${type === 'BUY' ? 'buy' : 'sell'}`}>
+                    {type === 'BUY' ? <FiCheck /> : <FiInfo />}
                   </div>
                   <h3>Confirm {type === 'BUY' ? 'Purchase' : 'Sale'}</h3>
                   <div className="confirmation-details">
-                    <p><strong>Stock:</strong> {stockData?.name} ({stockData?.symbol})</p>
-                    <p><strong>Quantity:</strong> {quantity} shares</p>
-                    <p><strong>Price:</strong> ₹{orderType === 'LIMIT' ? limitPrice : stockData?.price.toFixed(2)} per share</p>
-                    <p><strong>Total:</strong> ₹{estimatedTotal.toFixed(2)}</p>
-                    <p><strong>Order Type:</strong> {orderType}</p>
+                    <p>
+                      <strong>Stock:</strong>
+                      <span>{stockData?.name} ({stockData?.symbol})</span>
+                    </p>
+                    <p>
+                      <strong>Quantity:</strong>
+                      <span>{quantity} shares</span>
+                    </p>
+                    <p>
+                      <strong>Price:</strong>
+                      <span>₹{orderType === 'LIMIT' ? parseFloat(limitPrice).toFixed(2) : stockData?.price.toFixed(2)} per share</span>
+                    </p>
+                    <p>
+                      <strong>Total:</strong>
+                      <span className={type === 'BUY' ? 'negative-amount' : 'positive-amount'}>
+                        {type === 'BUY' ? '-' : '+'}₹{estimatedTotal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                      </span>
+                    </p>
+                    <p>
+                      <strong>Order Type:</strong>
+                      <span>{orderType}</span>
+                    </p>
+                    {type === 'BUY' && (
+                      <p>
+                        <strong>Remaining Balance:</strong>
+                        <span>₹{(virtualMoney.balance - estimatedTotal).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                      </p>
+                    )}
                   </div>
 
                   <div className="confirmation-buttons">
-                    <button className="cancel-btn" onClick={() => setConfirmation(false)}>
+                    <button
+                      className="cancel-btn"
+                      onClick={() => setConfirmation(false)}
+                      disabled={loading}
+                    >
                       Cancel
                     </button>
-                    <button className={`confirm-btn ${type === 'BUY' ? 'buy' : 'sell'}`} onClick={handleSubmit}>
-                      Confirm {type === 'BUY' ? 'Purchase' : 'Sale'}
+                    <button
+                      className={`confirm-btn ${type === 'BUY' ? 'buy' : 'sell'}`}
+                      onClick={handleSubmit}
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <span className="loading-spinner"></span>
+                      ) : (
+                        <>Confirm {type === 'BUY' ? 'Purchase' : 'Sale'}</>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -417,8 +517,13 @@ const BuySellModal = ({
                   <button
                     className={`submit-btn ${type === 'BUY' ? 'buy' : 'sell'}`}
                     onClick={handleConfirmation}
+                    disabled={loading}
                   >
-                    {type === 'BUY' ? 'Buy' : 'Sell'} {stockData?.symbol}
+                    {loading ? (
+                      <span className="loading-spinner"></span>
+                    ) : (
+                      <>{type === 'BUY' ? 'Buy' : 'Sell'} {stockData?.symbol}</>
+                    )}
                   </button>
                 </>
               )}

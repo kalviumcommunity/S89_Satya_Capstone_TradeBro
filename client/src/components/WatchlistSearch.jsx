@@ -5,7 +5,7 @@ import { useToast } from "../hooks/useToast";
 import { useOfflineMode } from "../context/OfflineContext";
 import { addToSearchHistory, getRecentSearches, clearSearchHistory } from "../utils/searchHistoryUtils";
 import API_ENDPOINTS from "../config/apiConfig";
-import "../styles/WatchlistSearch.css";
+import "../styles/components/WatchlistSearch.css";
 
 const WatchlistSearch = ({ onAddStock, watchlistSymbols = [] }) => {
   const toast = useToast();
