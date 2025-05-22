@@ -12,16 +12,22 @@ import { useVirtualMoney } from "../context/VirtualMoneyContext";
 import { safeApiCall, createDummyData } from "../utils/apiUtils";
 import { addToSearchHistory, getRecentSearches, clearSearchHistory } from "../utils/searchHistoryUtils";
 import API_ENDPOINTS from "../config/apiConfig";
+import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { login as reduxLogin } from "../redux/reducers/authReducer";
+import { showSuccessToast } from "../redux/reducers/toastReducer";
 import PageLayout from "../components/PageLayout";
 import Loading from "../components/common/Loading";
 import FullPageStockChart from "../components/charts/FullPageStockChart";
 import "../styles/pages/Dashboard.css";
 
 const Dashboard = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, login } = useAuth();
   const toast = useToast();
   const { virtualMoney, loading: virtualMoneyLoading, fetchVirtualMoney } = useVirtualMoney();
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [marketData, setMarketData] = useState({
     indices: [],
     topGainers: [],
@@ -46,6 +52,37 @@ const Dashboard = () => {
 
   // Debounce timeout reference
   const [searchTimeout, setSearchTimeout] = useState(null);
+
+  // Handle Google OAuth callback with token in URL
+  useEffect(() => {
+    // Check for token in URL (from Google OAuth callback)
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    const success = urlParams.get('success');
+    const google = urlParams.get('google');
+
+    if (token && success === 'true' && google === 'true') {
+      console.log('Google OAuth token found in URL');
+
+      // Remove token from URL to prevent issues on refresh
+      window.history.replaceState({}, document.title, '/dashboard');
+
+      // Show success message
+      toast.success('Successfully logged in with Google!');
+
+      // Process the token using Redux
+      dispatch(reduxLogin(token));
+      dispatch(showSuccessToast("Google login successful!"));
+
+      // Also use the AuthContext login
+      login(token, null, true);
+
+      // Refresh virtual money data
+      setTimeout(() => {
+        fetchVirtualMoney();
+      }, 500);
+    }
+  }, [dispatch, login, toast, fetchVirtualMoney]);
 
   // Fetch market data
   useEffect(() => {

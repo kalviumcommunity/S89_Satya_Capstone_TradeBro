@@ -40,9 +40,7 @@ const FMP_API = process.env.FMP_API_KEY;
 app.use(cors({
   origin: [
     "http://localhost:5173",
-    "https://tradebro.netlify.app",
-    "https://tradebro-client.vercel.app",
-    "https://tradebro.vercel.app"
+    "https://tradebro.netlify.app"
   ],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],

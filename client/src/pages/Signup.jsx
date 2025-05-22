@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import { FiUser, FiMail, FiLock, FiUserPlus } from "react-icons/fi";
 import { useAuth } from "../context/AuthContext";
+import API_ENDPOINTS from "../config/apiConfig";
 import "../styles/pages/AuthPages.css";
 import Squares from "../UI/squares";
 
@@ -33,7 +34,7 @@ const Signup = () => {
     setLoading(true);
     try {
       const res = await axios.post(
-        "https://s89-satya-capstone-tradebro.onrender.com/api/auth/signup",
+        API_ENDPOINTS.AUTH.SIGNUP,
         {
           username: form.username,
           email: form.email,
@@ -63,7 +64,7 @@ const Signup = () => {
   };
 
   const handleGoogleSignup = () => {
-    window.location.href = "https://s89-satya-capstone-tradebro.onrender.com/api/auth/google";
+    window.location.href = API_ENDPOINTS.AUTH.GOOGLE;
   };
 
   return (

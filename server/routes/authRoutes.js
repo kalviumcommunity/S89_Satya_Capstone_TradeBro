@@ -341,7 +341,7 @@ router.get('/google/callback',
 
       // Redirect to frontend with success message and user data
       // Include token in the URL and set a flag to indicate Google login
-      res.redirect(`https://tradebro.netlify.app/login?success=true&token=${token}&google=true`);
+      res.redirect(`https://tradebro.netlify.app/dashboard?token=${token}&success=true&google=true`);
     } catch (error) {
       console.error('Error in Google callback:', error);
       res.redirect(`https://tradebro.netlify.app/login?error=authentication_failed`);
