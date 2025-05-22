@@ -33,7 +33,7 @@ const Signup = () => {
     setLoading(true);
     try {
       const res = await axios.post(
-        "http://localhost:5000/api/auth/signup",
+        "https://s89-satya-capstone-tradebro.onrender.com/api/auth/signup",
         {
           username: form.username,
           email: form.email,
@@ -63,7 +63,7 @@ const Signup = () => {
   };
 
   const handleGoogleSignup = () => {
-    window.location.href = "http://localhost:5000/api/auth/auth/google";
+    window.location.href = "https://s89-satya-capstone-tradebro.onrender.com/api/auth/auth/google";
   };
 
   return (

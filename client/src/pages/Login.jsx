@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { FiMail, FiLock, FiLogIn } from "react-icons/fi";
 import { login } from "../redux/reducers/authReducer";
 import { showErrorToast, showSuccessToast } from "../redux/reducers/toastReducer";
-import Loading from "../components/Loading";
+import Loading from "../components/common/Loading";
 import "./AuthPages.css";
 import Squares from "../UI/squares";
 
@@ -63,7 +63,7 @@ const Login = () => {
 
     setLocalLoading(true);
     try {
-      const response = await axios.post("http://localhost:5000/api/auth/login", {
+      const response = await axios.post("https://s89-satya-capstone-tradebro.onrender.com/api/auth/login", {
         email,
         password,
       });
@@ -102,7 +102,7 @@ const Login = () => {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:5000/api/auth/auth/google";
+    window.location.href = "https://s89-satya-capstone-tradebro.onrender.com/api/auth/auth/google";
   };
 
   // Handle Google login redirect

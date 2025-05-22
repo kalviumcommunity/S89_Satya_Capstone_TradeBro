@@ -2,7 +2,7 @@ import React, { useState, memo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { FiMenu, FiX, FiBarChart2, FiPieChart, FiTrendingUp, FiArrowRight } from "react-icons/fi";
-import "./landingPage.css";
+import "../styles/pages/landingPage.css";
 
 // Import animation components
 import {

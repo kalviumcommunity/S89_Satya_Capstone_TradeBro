@@ -5,7 +5,7 @@ import { FiUser, FiMail, FiPhone, FiEdit2, FiCamera, FiCheckCircle, FiBarChart2,
 import PageLayout from "../components/PageLayout";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
-import Loading from "../components/Loading";
+import Loading from "../components/common/Loading";
 import { fetchProfile, fetchProfileSuccess, setEditedUser, updateProfile } from "../redux/reducers/profileReducer";
 import { setIsEditing, setLoading, setError } from "../redux/reducers/uiReducer";
 import { showSuccessToast, showErrorToast } from "../redux/reducers/toastReducer";

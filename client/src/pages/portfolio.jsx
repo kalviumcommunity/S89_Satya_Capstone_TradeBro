@@ -11,7 +11,7 @@ import { useVirtualMoney } from "../context/VirtualMoneyContext";
 import { safeApiCall, createDummyData } from "../utils/apiUtils";
 import { getCachedStockSymbols, cacheStockSymbols } from "../utils/stockCache";
 import PageLayout from "../components/PageLayout";
-import Loading from "../components/Loading";
+import Loading from "../components/common/Loading";
 import FullScreenStockDetail from "../components/FullScreenStockDetail";
 import StockSearch from "../components/StockSearch";
 import axios from "axios";

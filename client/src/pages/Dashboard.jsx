@@ -13,8 +13,8 @@ import { safeApiCall, createDummyData } from "../utils/apiUtils";
 import { addToSearchHistory, getRecentSearches, clearSearchHistory } from "../utils/searchHistoryUtils";
 import API_ENDPOINTS from "../config/apiConfig";
 import PageLayout from "../components/PageLayout";
-import Loading from "../components/Loading";
-import FullPageStockChart from "../components/FullPageStockChart";
+import Loading from "../components/common/Loading";
+import FullPageStockChart from "../components/charts/FullPageStockChart";
 import "./Dashboard.css";
 
 const Dashboard = () => {

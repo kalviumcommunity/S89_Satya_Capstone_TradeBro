@@ -18,8 +18,8 @@ import { initializeTheme } from "./redux/reducers/themeReducer";
 import { checkAuth } from "./redux/reducers/authReducer";
 import "./styles/theme.css";
 import "./styles/DarkMode.css";
-import "./App.css";
-import "./components/ErrorBoundary.css";
+import "./styles/App.css";
+import "./styles/components/ErrorBoundary.css";
 import ToastContainer from "./components/ToastContainer";
 
 const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;

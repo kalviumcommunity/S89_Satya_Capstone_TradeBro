@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import Loading from './Loading';
+import Loading from './common/Loading';
 
 /**
  * ProtectedRoute component that checks if the user is authenticated
@@ -22,7 +22,7 @@ const ProtectedRoute = ({ children }) => {
       const timer = setTimeout(() => {
         setIsChecking(false);
       }, 300);
-      
+
       return () => clearTimeout(timer);
     }
   }, [loading]);
@@ -30,10 +30,10 @@ const ProtectedRoute = ({ children }) => {
   // Show loading spinner while checking authentication
   if (loading || isChecking) {
     return (
-      <div className="loading-container" style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
+      <div className="loading-container" style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
         height: '100vh',
         flexDirection: 'column',
         background: 'var(--background-gradient, linear-gradient(135deg, #e0f7fa, #fdfbfb))'

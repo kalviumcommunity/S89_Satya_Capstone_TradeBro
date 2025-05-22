@@ -1,5 +1,4 @@
-/* Import responsive styles */
-@import url('./responsive.css');
+/* Clean styles already imported in main index.css */
 
 * {
     margin: 0;
