@@ -16,7 +16,7 @@ import FullScreenStockDetail from "../components/FullScreenStockDetail";
 import StockSearch from "../components/StockSearch";
 import axios from "axios";
 import API_ENDPOINTS from "../config/apiConfig";
-import "../styles/pages/Portfolio.css";
+import "../styles/pages/portfolio.css";
 
 // Add some additional styles for the clickable rows
 const additionalStyles = `
