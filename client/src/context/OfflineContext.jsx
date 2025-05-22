@@ -30,7 +30,10 @@ export const OfflineProvider = ({ children }) => {
 
       // Try to ping the backend with a timeout
       // Use the healthCheckAxios instance to avoid interceptor loop
-      const response = await healthCheckAxios.get('http://localhost:5000/api/health', {
+      // Use relative URL for development to work with the proxy
+      const isDevelopment = import.meta.env.DEV;
+      const healthUrl = isDevelopment ? '/api/health' : 'https://s89-satya-capstone-tradebro.onrender.com/api/health';
+      const response = await healthCheckAxios.get(healthUrl, {
         timeout: 2000
       });
 

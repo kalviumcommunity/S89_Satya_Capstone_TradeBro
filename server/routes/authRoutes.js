@@ -320,7 +320,7 @@ router.get('/auth/google/callback',
       // Make sure we have a valid user object
       if (!req.user || !req.user._id) {
         console.error('Invalid user object in Google callback');
-        return res.redirect(`http://localhost:5173/login?error=invalid_user`);
+        return res.redirect(`https://tradebro.netlify.app/login?error=invalid_user`);
       }
 
       // Generate JWT Token for Google OAuth with more user data (30 days expiration)
@@ -341,10 +341,10 @@ router.get('/auth/google/callback',
 
       // Redirect to frontend with success message and user data
       // Include token in the URL and set a flag to indicate Google login
-      res.redirect(`http://localhost:5173/login?success=true&token=${token}&google=true`);
+      res.redirect(`https://tradebro.netlify.app/login?success=true&token=${token}&google=true`);
     } catch (error) {
       console.error('Error in Google callback:', error);
-      res.redirect(`http://localhost:5173/login?error=authentication_failed`);
+      res.redirect(`https://tradebro.netlify.app/login?error=authentication_failed`);
     }
   }
 );

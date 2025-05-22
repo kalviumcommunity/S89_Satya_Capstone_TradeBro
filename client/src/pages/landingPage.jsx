@@ -117,9 +117,6 @@ const HeroSection = memo(({ handleGetStarted }) => {
               Get Started <FiArrowRight style={{ marginLeft: '8px', verticalAlign: 'middle' }} />
             </button>
           </HoverElement>
-          <HoverElement effect="lift">
-            <button className="secondary-btn">View Demo</button>
-          </HoverElement>
         </motion.div>
       </motion.div>
       <FloatingElement amplitude={15} duration={4}>
@@ -130,7 +127,11 @@ const HeroSection = memo(({ handleGetStarted }) => {
           transition={{ duration: 0.8, delay: 0.2 }}
           style={{ y }}
         >
-          <img src="https://i.pinimg.com/736x/51/bd/0f/51bd0f73220b38ec9066cab7b1df517c.jpg" alt="Stock Market Dashboard" loading="eager" />
+          <img
+            src="https://i.pinimg.com/736x/51/bd/0f/51bd0f73220b38ec9066cab7b1df517c.jpg"
+            alt="Stock Market Dashboard"
+            loading="eager"
+          />
         </motion.div>
       </FloatingElement>
     </section>

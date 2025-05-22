@@ -12,7 +12,7 @@ const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
   // Determine callback URL based on environment
   const callbackURL = process.env.NODE_ENV === 'production'
-    ? "https://tradebro-server.onrender.com/api/auth/auth/google/callback"
+    ? "https://s89-satya-capstone-tradebro.onrender.com/api/auth/auth/google/callback"
     : "http://localhost:5000/api/auth/auth/google/callback";
 
   passport.use(

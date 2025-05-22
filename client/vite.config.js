@@ -23,6 +23,13 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
-    host: true
+    host: true,
+    proxy: {
+      '/api': {
+        target: 'https://s89-satya-capstone-tradebro.onrender.com',
+        changeOrigin: true,
+        secure: false
+      }
+    }
   }
 })

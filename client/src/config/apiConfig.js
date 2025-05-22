@@ -5,8 +5,9 @@
  * It provides a centralized place to manage the API base URL.
  */
 
-// Base URL for API requests
-export const API_BASE_URL = 'http://localhost:5000';
+// Base URL for API requests - use relative URLs in development for proxy support
+const isDevelopment = import.meta.env.DEV;
+export const API_BASE_URL = isDevelopment ? '' : 'https://s89-satya-capstone-tradebro.onrender.com';
 
 // API endpoints
 export const API_ENDPOINTS = {

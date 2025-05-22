@@ -40,6 +40,7 @@ const FMP_API = process.env.FMP_API_KEY;
 app.use(cors({
   origin: [
     "http://localhost:5173",
+    "https://tradebro.netlify.app",
     "https://tradebro-client.vercel.app",
     "https://tradebro.vercel.app"
   ],
@@ -349,8 +350,8 @@ mongoose.connect(MONGO_URI, {
 
   // Start server after successful MongoDB connection
   app.listen(PORT, () => {
-    console.log(`🚀 Server running at http://localhost:${PORT}`);
-    console.log(`Health check endpoint: http://localhost:${PORT}/api/health`);
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`Health check endpoint: https://s89-satya-capstone-tradebro.onrender.com/api/health`);
   });
 })
 .catch(err => {
@@ -373,7 +374,7 @@ mongoose.connect(MONGO_URI, {
 
   // Start server anyway to allow non-database features to work
   app.listen(PORT, () => {
-    console.log(`🚀 Server running at http://localhost:${PORT} (without MongoDB)`);
-    console.log(`Health check endpoint: http://localhost:${PORT}/api/health`);
+    console.log(`🚀 Server running on port ${PORT} (without MongoDB)`);
+    console.log(`Health check endpoint: https://s89-satya-capstone-tradebro.onrender.com/api/health`);
   });
 });
