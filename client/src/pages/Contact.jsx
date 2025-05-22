@@ -4,7 +4,7 @@ import axios from "axios";
 import { FiMail, FiUser, FiMessageSquare, FiSend, FiCheck } from "react-icons/fi";
 import PageLayout from "../components/PageLayout";
 import { useToast } from "../context/ToastContext";
-import "./Contact.css";
+import "../styles/pages/Contact.css";
 
 const Contact = () => {
   const { toast } = useToast();

@@ -9,7 +9,7 @@ import Loading from "../components/common/Loading";
 import { fetchProfile, fetchProfileSuccess, setEditedUser, updateProfile } from "../redux/reducers/profileReducer";
 import { setIsEditing, setLoading, setError } from "../redux/reducers/uiReducer";
 import { showSuccessToast, showErrorToast } from "../redux/reducers/toastReducer";
-import "./Profile.css";
+import "../styles/pages/Profile.css";
 
 const Profile = () => {
   const dispatch = useDispatch();

@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import { FiUser, FiMail, FiLock, FiUserPlus } from "react-icons/fi";
 import { useAuth } from "../context/AuthContext";
-import "./AuthPages.css";
+import "../styles/pages/AuthPages.css";
 import Squares from "../UI/squares";
 
 const Signup = () => {

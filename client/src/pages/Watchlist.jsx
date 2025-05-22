@@ -9,7 +9,7 @@ import { useOfflineMode } from "../context/OfflineContext";
 import FullScreenStockDetail from "../components/FullScreenStockDetail";
 import axios from "axios";
 import API_ENDPOINTS from "../config/apiConfig";
-import "./Watchlist.css";
+import "../styles/pages/Watchlist.css";
 
 // Add some additional styles for the clickable rows
 const additionalStyles = `

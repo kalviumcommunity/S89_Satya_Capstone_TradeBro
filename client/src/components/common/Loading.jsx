@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import '../../styles/components/loading.css';
+import '../../styles/components/Loading.css';
 
 const loadingContainerVariants = {
   start: {

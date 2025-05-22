@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiMail, FiSend } from "react-icons/fi";
 import Squares from "../UI/squares";
-import './AuthPages.css';
+import '../styles/pages/AuthPages.css';
 
 const ForgetPassword = () => {
   const [email, setEmail] = useState('');

@@ -3,7 +3,7 @@ import axios from "axios";
 import { motion } from "framer-motion";
 import { FiSearch, FiExternalLink, FiClock, FiFilter } from "react-icons/fi";
 import PageLayout from "../components/PageLayout";
-import "./News.css";
+import "../styles/pages/News.css";
 
 const News = () => {
   const [newsItems, setNewsItems] = useState([]);

@@ -15,7 +15,7 @@ import API_ENDPOINTS from "../config/apiConfig";
 import PageLayout from "../components/PageLayout";
 import Loading from "../components/common/Loading";
 import FullPageStockChart from "../components/charts/FullPageStockChart";
-import "./Dashboard.css";
+import "../styles/pages/Dashboard.css";
 
 const Dashboard = () => {
   const { isAuthenticated } = useAuth();

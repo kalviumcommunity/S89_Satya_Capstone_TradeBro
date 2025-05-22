@@ -5,7 +5,7 @@ import PageLayout from "../components/PageLayout";
 import { useToast } from "../context/ToastContext";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
-import "./Orders.css";
+import "../styles/pages/Orders.css";
 
 const Orders = () => {
   const { showToast } = useToast();

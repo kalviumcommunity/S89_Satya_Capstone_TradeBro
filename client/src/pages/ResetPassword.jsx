@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './AuthPages.css';
+import '../styles/pages/AuthPages.css';
 import Squares from "../UI/squares";
 
 const ResetPassword = () => {

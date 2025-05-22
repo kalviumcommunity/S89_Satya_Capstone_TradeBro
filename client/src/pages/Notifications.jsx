@@ -7,7 +7,7 @@ import { useAuth } from "../context/AuthContext";
 import { usePusher } from "../context/PusherContext.jsx";
 import { useToast } from "../hooks/useToast";
 import PageLayout from "../components/PageLayout";
-import "./Notifications.css";
+import "../styles/pages/Notifications.css";
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);

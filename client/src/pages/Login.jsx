@@ -7,7 +7,7 @@ import { FiMail, FiLock, FiLogIn } from "react-icons/fi";
 import { login } from "../redux/reducers/authReducer";
 import { showErrorToast, showSuccessToast } from "../redux/reducers/toastReducer";
 import Loading from "../components/common/Loading";
-import "./AuthPages.css";
+import "../styles/pages/AuthPages.css";
 import Squares from "../UI/squares";
 
 const Login = () => {
