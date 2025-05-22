@@ -27,7 +27,7 @@ export const AuthProvider = ({ children }) => {
           setLoading(false);
 
           // Check if we're on a page that requires authentication
-          const authRequiredPaths = ['/portfolio', '/dashboard', '/settings', '/watchlist', '/orders'];
+          const authRequiredPaths = ['/dashboard', '/portfolio', '/settings', '/watchlist', '/orders'];
           if (authRequiredPaths.includes(currentPath)) {
             console.warn('Authentication required for this page. Redirecting to login...');
             window.location.href = '/login';
@@ -65,7 +65,7 @@ export const AuthProvider = ({ children }) => {
 
         setIsAuthenticated(true);
 
-        // Redirect to portfolio if last login was within 7 days
+        // Redirect to dashboard if last login was within 7 days
         const lastLogin = localStorage.getItem('lastLogin');
         if (lastLogin) {
           const lastLoginDate = new Date(lastLogin);
@@ -76,10 +76,10 @@ export const AuthProvider = ({ children }) => {
           localStorage.setItem('lastLogin', now.toISOString());
           console.log('Updated last login time');
 
-          // If last login was within 7 days and we're on the login page, redirect to portfolio
+          // If last login was within 7 days and we're on the login page, redirect to dashboard
           if (daysSinceLastLogin < 7 && currentPath === '/login') {
-            console.log('Recent login detected, redirecting to portfolio');
-            window.location.href = '/portfolio';
+            console.log('Recent login detected, redirecting to dashboard');
+            window.location.href = '/dashboard';
             return;
           }
         }
@@ -161,6 +161,35 @@ export const AuthProvider = ({ children }) => {
     if (!token) {
       console.error('Login failed: No token provided');
       return;
+    }
+
+    // Set authenticated state immediately
+    setIsAuthenticated(true);
+
+    // Set user data if provided
+    if (userData) {
+      setUser(userData);
+      console.log('User data set in AuthContext:', userData);
+    } else {
+      // Try to extract user data from token
+      try {
+        const tokenParts = token.split('.');
+        if (tokenParts.length === 3) {
+          const payload = JSON.parse(atob(tokenParts[1]));
+          if (payload.email) {
+            const extractedUserData = {
+              email: payload.email,
+              id: payload.id,
+              username: payload.username || payload.email.split('@')[0],
+              fullName: payload.fullName || payload.username || payload.email.split('@')[0]
+            };
+            setUser(extractedUserData);
+            console.log('User data extracted from token in login function:', extractedUserData);
+          }
+        }
+      } catch (e) {
+        console.error('Error extracting user data from token in login function:', e);
+      }
     }
 
     try {

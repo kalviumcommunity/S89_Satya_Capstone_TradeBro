@@ -52,9 +52,21 @@ const Signup = () => {
       setSuccess(true);
       setTimeout(() => setSuccess(false), 1000);
       setTimeout(() => {
-        console.log("Redirecting to portfolio page after signup");
-        navigate("/portfolio", { replace: true });
-      }, 1200);
+        console.log("Redirecting to dashboard page after signup");
+        // Check if token is in localStorage before redirecting
+        const storedToken = localStorage.getItem('authToken');
+        if (storedToken) {
+          console.log("Token found in localStorage, redirecting to dashboard");
+          navigate("/dashboard", { replace: true });
+        } else {
+          console.warn("Token not found in localStorage, delaying redirect");
+          // Try again after a short delay
+          setTimeout(() => {
+            console.log("Attempting redirect again");
+            navigate("/dashboard", { replace: true });
+          }, 1000);
+        }
+      }, 2000);
     } catch (err) {
       console.error("Signup error:", err.response?.data || err.message);
       alert("Signup failed. Please try again.");

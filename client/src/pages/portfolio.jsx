@@ -416,7 +416,7 @@ const PortfolioPage = () => {
       console.log('Google OAuth token found in URL');
 
       // Remove token from URL to prevent issues on refresh
-      window.history.replaceState({}, document.title, '/portfolio');
+      window.history.replaceState({}, document.title, '/dashboard');
 
       // Show success message
       toast.success('Successfully logged in with Google!');

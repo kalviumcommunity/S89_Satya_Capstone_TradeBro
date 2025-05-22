@@ -18,10 +18,11 @@ const ProtectedRoute = ({ children }) => {
   useEffect(() => {
     // Check if authentication state is loaded
     if (!loading) {
-      // Add a small delay to ensure auth state is properly set
+      // Add a longer delay to ensure auth state is properly set
       const timer = setTimeout(() => {
+        console.log('Auth check completed, isAuthenticated:', isAuthenticated);
         setIsChecking(false);
-      }, 300);
+      }, 1500);
 
       return () => clearTimeout(timer);
     }
@@ -47,6 +48,14 @@ const ProtectedRoute = ({ children }) => {
   // If not authenticated, redirect to login page
   if (!isAuthenticated) {
     console.log('User not authenticated, redirecting to login page from:', location.pathname);
+    console.log('Auth state:', { isAuthenticated, loading, isChecking });
+    console.log('Auth token in localStorage:', localStorage.getItem('authToken'));
+
+    // Add a small delay before redirecting
+    setTimeout(() => {
+      console.log('Redirecting to login page after delay');
+    }, 500);
+
     return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
 

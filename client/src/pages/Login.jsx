@@ -86,9 +86,21 @@ const Login = () => {
       // Redirect after a short delay
       setTimeout(() => setSuccess(false), 1000);
       setTimeout(() => {
-        console.log("Redirecting to portfolio page after login");
-        navigate("/portfolio", { replace: true });
-      }, 1200);
+        console.log("Redirecting to dashboard page after login");
+        // Check if token is in localStorage before redirecting
+        const storedToken = localStorage.getItem('authToken');
+        if (storedToken) {
+          console.log("Token found in localStorage, redirecting to dashboard");
+          navigate("/dashboard", { replace: true });
+        } else {
+          console.warn("Token not found in localStorage, delaying redirect");
+          // Try again after a short delay
+          setTimeout(() => {
+            console.log("Attempting redirect again");
+            navigate("/dashboard", { replace: true });
+          }, 1000);
+        }
+      }, 2000);
     } catch (error) {
       console.error("Login error:", error.response?.data || error.message);
       dispatch(showErrorToast(error.response?.data?.message || "Login failed. Please try again."));
@@ -129,9 +141,21 @@ const Login = () => {
       // Redirect to portfolio
       setTimeout(() => setSuccess(false), 1000);
       setTimeout(() => {
-        console.log("Redirecting to portfolio page after Google login");
-        navigate("/portfolio", { replace: true });
-      }, 1200);
+        console.log("Redirecting to dashboard page after Google login");
+        // Check if token is in localStorage before redirecting
+        const storedToken = localStorage.getItem('authToken');
+        if (storedToken) {
+          console.log("Token found in localStorage, redirecting to dashboard");
+          navigate("/dashboard", { replace: true });
+        } else {
+          console.warn("Token not found in localStorage, delaying redirect");
+          // Try again after a short delay
+          setTimeout(() => {
+            console.log("Attempting redirect again");
+            navigate("/dashboard", { replace: true });
+          }, 1000);
+        }
+      }, 2000);
     }
   }, [dispatch, navigate]);
 

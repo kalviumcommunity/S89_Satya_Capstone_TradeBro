@@ -77,6 +77,25 @@ const Dashboard = () => {
       // Also use the AuthContext login
       login(token, null, true);
 
+      // Fetch user data
+      const fetchUserData = async () => {
+        try {
+          const response = await axios.get(API_ENDPOINTS.AUTH.USER, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+
+          if (response.data && response.data.user) {
+            console.log('User data fetched successfully:', response.data.user);
+            // Update login with user data
+            login(token, response.data.user, true);
+          }
+        } catch (error) {
+          console.error('Error fetching user data after Google login:', error);
+        }
+      };
+
+      fetchUserData();
+
       // Refresh virtual money data
       setTimeout(() => {
         fetchVirtualMoney();
