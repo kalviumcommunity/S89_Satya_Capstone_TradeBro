@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import { FiUser, FiMail, FiLock, FiUserPlus } from "react-icons/fi";
@@ -9,7 +9,7 @@ import Squares from "../UI/squares";
 
 const Signup = () => {
   const navigate = useNavigate();
-  const { register } = useAuth();
+  const { register, isAuthenticated } = useAuth();
   const [form, setForm] = useState({
     username: "",
     email: "",
@@ -51,22 +51,22 @@ const Signup = () => {
 
       setSuccess(true);
       setTimeout(() => setSuccess(false), 1000);
-      setTimeout(() => {
-        console.log("Redirecting to dashboard page after signup");
-        // Check if token is in localStorage before redirecting
+      // Wait for authentication state to be set before redirecting
+      const checkAuthAndRedirect = () => {
         const storedToken = localStorage.getItem('authToken');
-        if (storedToken) {
-          console.log("Token found in localStorage, redirecting to dashboard");
+        if (storedToken && isAuthenticated) {
+          console.log("Signup authentication confirmed, redirecting to dashboard");
           navigate("/dashboard", { replace: true });
+        } else if (storedToken) {
+          console.log("Signup token found but auth state not updated yet, waiting...");
+          setTimeout(checkAuthAndRedirect, 500);
         } else {
-          console.warn("Token not found in localStorage, delaying redirect");
-          // Try again after a short delay
-          setTimeout(() => {
-            console.log("Attempting redirect again");
-            navigate("/dashboard", { replace: true });
-          }, 1000);
+          console.warn("No signup token found, forcing redirect anyway");
+          navigate("/dashboard", { replace: true });
         }
-      }, 2000);
+      };
+
+      setTimeout(checkAuthAndRedirect, 1500);
     } catch (err) {
       console.error("Signup error:", err.response?.data || err.message);
       alert("Signup failed. Please try again.");
@@ -148,16 +148,48 @@ const Signup = () => {
               required
             />
           </div>
-          <button type="submit" className="auth-btn" disabled={loading}>
-            {loading ? "Processing..." : <><FiUserPlus style={{ marginRight: '8px' }} /> Sign Up</>}
-          </button>
+          <motion.button
+            type="submit"
+            className="auth-btn"
+            disabled={loading}
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            animate={success ? {
+              scale: [1, 1.1, 1],
+              backgroundColor: ["#55828b", "#4CAF50", "#55828b"],
+              transition: { duration: 0.6 }
+            } : {}}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+          >
+            {loading ? (
+              "Processing..."
+            ) : success ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3 }}
+              >
+                ✓ Success!
+              </motion.div>
+            ) : (
+              <>
+                <FiUserPlus style={{ marginRight: '8px' }} /> Sign Up
+              </>
+            )}
+          </motion.button>
         </form>
         <p className="auth-option">
           Already have an account? <Link to="/login">Log In</Link>
         </p>
         <div className="google-signup">
           <p>Or</p>
-          <button className="google-button" onClick={handleGoogleSignup}>
+          <motion.button
+            className="google-button"
+            onClick={handleGoogleSignup}
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+          >
             <img
               src="/Google.png"
               style={{
@@ -169,7 +201,7 @@ const Signup = () => {
               }}
             />
             Sign Up with Google
-          </button>
+          </motion.button>
         </div>
       </div>
       {success &&

@@ -186,7 +186,7 @@ html {
 }
 
 .hero-content h1 {
-  font-size: 4rem;
+  font-size: 5.5rem;
   font-weight: 800;
   margin-bottom: 2rem;
   color: var(--text-color);
@@ -199,13 +199,13 @@ html {
 
 @media (max-width: 768px) {
   .hero-content h1 {
-    font-size: 3.2rem;
+    font-size: 4.5rem;
   }
 }
 
 @media (max-width: 576px) {
   .hero-content h1 {
-    font-size: 2.5rem;
+    font-size: 3.5rem;
     margin-bottom: 1.5rem;
   }
 }
@@ -374,7 +374,7 @@ html {
 }
 
 .section-title {
-  font-size: 2.8rem;
+  font-size: 3.8rem;
   text-align: center;
   margin-bottom: var(--spacing-xl);
   color: var(--text-color);
@@ -400,7 +400,7 @@ html {
 
 @media (max-width: 768px) {
   .section-title {
-    font-size: 2.4rem;
+    font-size: 3.2rem;
     margin-bottom: var(--spacing-lg);
   }
 
@@ -412,7 +412,7 @@ html {
 
 @media (max-width: 576px) {
   .section-title {
-    font-size: 2rem;
+    font-size: 2.8rem;
     margin-bottom: var(--spacing-md);
   }
 

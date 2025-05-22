@@ -10,8 +10,7 @@ import {
   StaggerContainer,
   FloatingElement,
   AnimatedText,
-  ParallaxSection,
-  HoverElement
+  ParallaxSection
 } from "../components/animations";
 
 // Memoized components for better performance
@@ -70,11 +69,15 @@ const NavBar = memo(({ mobileMenuOpen, toggleMobileMenu, handleGetStarted }) => 
         >
           Contact
         </motion.a>
-        <HoverElement effect="both">
-          <button className="cta-button" onClick={handleGetStarted}>
-            Get Started
-          </button>
-        </HoverElement>
+        <motion.button
+          className="cta-button"
+          onClick={handleGetStarted}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          transition={{ type: "spring", stiffness: 400, damping: 17 }}
+        >
+          Get Started
+        </motion.button>
       </nav>
     </motion.header>
   );
@@ -112,11 +115,15 @@ const HeroSection = memo(({ handleGetStarted }) => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.6 }}
         >
-          <HoverElement effect="both">
-            <button className="primary-btn" onClick={handleGetStarted}>
-              Get Started <FiArrowRight style={{ marginLeft: '8px', verticalAlign: 'middle' }} />
-            </button>
-          </HoverElement>
+          <motion.button
+            className="primary-btn"
+            onClick={handleGetStarted}
+            whileHover={{ scale: 1.05, y: -2 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+          >
+            Get Started <FiArrowRight style={{ marginLeft: '8px', verticalAlign: 'middle' }} />
+          </motion.button>
         </motion.div>
       </motion.div>
       <FloatingElement amplitude={15} duration={4}>
@@ -140,19 +147,29 @@ const HeroSection = memo(({ handleGetStarted }) => {
 
 // Feature component with animations
 const Feature = ({ icon: Icon, title, description }) => (
-  <HoverElement effect="lift" className="feature">
+  <motion.div
+    className="feature"
+    whileHover={{ y: -5, scale: 1.02 }}
+    whileTap={{ scale: 0.98 }}
+    transition={{ type: "spring", stiffness: 400, damping: 17 }}
+  >
     <span className="feature-highlight"></span>
     <FloatingElement amplitude={5} duration={3} className="feature-icon-wrapper">
       <Icon className="feature-icon" />
     </FloatingElement>
     <h3>{title}</h3>
     <p>{description}</p>
-  </HoverElement>
+  </motion.div>
 );
 
 // Gallery item component with animations
 const GalleryItem = ({ src, alt, caption }) => (
-  <HoverElement effect="both" className="gallery-item">
+  <motion.div
+    className="gallery-item"
+    whileHover={{ y: -5, scale: 1.02 }}
+    whileTap={{ scale: 0.98 }}
+    transition={{ type: "spring", stiffness: 400, damping: 17 }}
+  >
     <img src={src} alt={alt} loading="lazy" />
     <motion.div
       className="gallery-caption"
@@ -162,15 +179,20 @@ const GalleryItem = ({ src, alt, caption }) => (
     >
       <h4>{caption}</h4>
     </motion.div>
-  </HoverElement>
+  </motion.div>
 );
 
 // Testimonial component with animations
 const Testimonial = ({ quote, author }) => (
-  <HoverElement effect="lift" className="testimonial">
+  <motion.div
+    className="testimonial"
+    whileHover={{ y: -5, scale: 1.02 }}
+    whileTap={{ scale: 0.98 }}
+    transition={{ type: "spring", stiffness: 400, damping: 17 }}
+  >
     <p>"{quote}"</p>
     <h4>- {author}</h4>
-  </HoverElement>
+  </motion.div>
 );
 
 const LandingPage = () => {
@@ -348,9 +370,15 @@ const LandingPage = () => {
               aria-label="Your Message"
               whileFocus={{ scale: 1.02, boxShadow: "0 0 0 3px rgba(27, 142, 153, 0.2)" }}
             ></motion.textarea>
-            <HoverElement effect="both">
-              <button type="submit" className="primary-btn">Send Message</button>
-            </HoverElement>
+            <motion.button
+              type="submit"
+              className="primary-btn"
+              whileHover={{ scale: 1.05, y: -2 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 400, damping: 17 }}
+            >
+              Send Message
+            </motion.button>
           </motion.form>
         </section>
       </ScrollReveal>

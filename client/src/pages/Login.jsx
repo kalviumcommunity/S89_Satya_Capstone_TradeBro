@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import axios from "axios";
@@ -85,22 +85,22 @@ const Login = () => {
 
       // Redirect after a short delay
       setTimeout(() => setSuccess(false), 1000);
-      setTimeout(() => {
-        console.log("Redirecting to dashboard page after login");
-        // Check if token is in localStorage before redirecting
+      // Wait for authentication state to be set before redirecting
+      const checkAuthAndRedirect = () => {
         const storedToken = localStorage.getItem('authToken');
-        if (storedToken) {
-          console.log("Token found in localStorage, redirecting to dashboard");
+        if (storedToken && isAuthenticated) {
+          console.log("Authentication confirmed, redirecting to dashboard");
           navigate("/dashboard", { replace: true });
+        } else if (storedToken) {
+          console.log("Token found but auth state not updated yet, waiting...");
+          setTimeout(checkAuthAndRedirect, 500);
         } else {
-          console.warn("Token not found in localStorage, delaying redirect");
-          // Try again after a short delay
-          setTimeout(() => {
-            console.log("Attempting redirect again");
-            navigate("/dashboard", { replace: true });
-          }, 1000);
+          console.warn("No token found, forcing redirect anyway");
+          navigate("/dashboard", { replace: true });
         }
-      }, 2000);
+      };
+
+      setTimeout(checkAuthAndRedirect, 1500);
     } catch (error) {
       console.error("Login error:", error.response?.data || error.message);
       dispatch(showErrorToast(error.response?.data?.message || "Login failed. Please try again."));
@@ -140,22 +140,22 @@ const Login = () => {
 
       // Redirect to portfolio
       setTimeout(() => setSuccess(false), 1000);
-      setTimeout(() => {
-        console.log("Redirecting to dashboard page after Google login");
-        // Check if token is in localStorage before redirecting
+      // Wait for authentication state to be set before redirecting
+      const checkAuthAndRedirect = () => {
         const storedToken = localStorage.getItem('authToken');
-        if (storedToken) {
-          console.log("Token found in localStorage, redirecting to dashboard");
+        if (storedToken && isAuthenticated) {
+          console.log("Google authentication confirmed, redirecting to dashboard");
           navigate("/dashboard", { replace: true });
+        } else if (storedToken) {
+          console.log("Google token found but auth state not updated yet, waiting...");
+          setTimeout(checkAuthAndRedirect, 500);
         } else {
-          console.warn("Token not found in localStorage, delaying redirect");
-          // Try again after a short delay
-          setTimeout(() => {
-            console.log("Attempting redirect again");
-            navigate("/dashboard", { replace: true });
-          }, 1000);
+          console.warn("No Google token found, forcing redirect anyway");
+          navigate("/dashboard", { replace: true });
         }
-      }, 2000);
+      };
+
+      setTimeout(checkAuthAndRedirect, 1500);
     }
   }, [dispatch, navigate]);
 
@@ -205,19 +205,35 @@ const Login = () => {
           </div>
           {errors.password && <div className="error-message">{errors.password}</div>}
 
-          <button
+          <motion.button
             type="submit"
             className="auth-btn"
             disabled={loading || localLoading}
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            animate={success ? {
+              scale: [1, 1.1, 1],
+              backgroundColor: ["#55828b", "#4CAF50", "#55828b"],
+              transition: { duration: 0.6 }
+            } : {}}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
             {loading || localLoading ? (
               <Loading size="small" text="" />
+            ) : success ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3 }}
+              >
+                ✓ Success!
+              </motion.div>
             ) : (
               <>
                 <FiLogIn style={{ marginRight: '8px' }} /> Log In
               </>
             )}
-          </button>
+          </motion.button>
         </form>
 
         <p className="auth-option">
@@ -230,9 +246,12 @@ const Login = () => {
 
         <div className="google-signup">
           <p>Or</p>
-          <button
+          <motion.button
             className="google-button"
             onClick={handleGoogleLogin}
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
             <img
               src="/Google.png"
@@ -245,7 +264,7 @@ const Login = () => {
               }}
             />
             Log In with Google
-          </button>
+          </motion.button>
         </div>
       </div>
       {success &&

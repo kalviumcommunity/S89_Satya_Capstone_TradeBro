@@ -18,15 +18,29 @@ const ProtectedRoute = ({ children }) => {
   useEffect(() => {
     // Check if authentication state is loaded
     if (!loading) {
-      // Add a longer delay to ensure auth state is properly set
-      const timer = setTimeout(() => {
-        console.log('Auth check completed, isAuthenticated:', isAuthenticated);
-        setIsChecking(false);
-      }, 1500);
+      // Check if there's a token in localStorage
+      const token = localStorage.getItem('authToken');
 
-      return () => clearTimeout(timer);
+      if (token && !isAuthenticated) {
+        // If token exists but not authenticated yet, give more time
+        const timer = setTimeout(() => {
+          console.log('Auth check completed after token found, isAuthenticated:', isAuthenticated);
+          setIsChecking(false);
+        }, 3000);
+        return () => clearTimeout(timer);
+      } else if (isAuthenticated) {
+        // If already authenticated, no delay needed
+        setIsChecking(false);
+      } else {
+        // No token, shorter delay
+        const timer = setTimeout(() => {
+          console.log('Auth check completed, no token found, isAuthenticated:', isAuthenticated);
+          setIsChecking(false);
+        }, 1000);
+        return () => clearTimeout(timer);
+      }
     }
-  }, [loading]);
+  }, [loading, isAuthenticated]);
 
   // Show loading spinner while checking authentication
   if (loading || isChecking) {
