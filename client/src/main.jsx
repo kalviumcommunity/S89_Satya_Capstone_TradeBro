@@ -10,40 +10,10 @@ import App from './App.jsx'
 import { AnimatePresence } from 'framer-motion'
 
 // Import animation helpers
-import { validateCubicBezier, parseCubicBezier } from './utils/animationHelpers'
+import { safeAnimate } from './utils/animationHelpers'
 
-// Fix Web Animations API cubic-bezier issues
-if (typeof Element !== 'undefined' && Element.prototype.animate) {
-  // Store the original animate method
-  const originalAnimate = Element.prototype.animate;
-
-  // Override the animate method with our safe version
-  Element.prototype.animate = function(keyframes, options) {
-    // Clone options to avoid modifying the original
-    if (options && typeof options === 'object') {
-      const safeOptions = { ...options };
-
-      // Fix easing if it's a cubic-bezier
-      if (safeOptions.easing && typeof safeOptions.easing === 'string' &&
-          safeOptions.easing.includes('cubic-bezier')) {
-        const params = parseCubicBezier(safeOptions.easing);
-        if (params) {
-          const validParams = validateCubicBezier(params);
-          safeOptions.easing = `cubic-bezier(${validParams.join(', ')})`;
-        } else {
-          // Fallback to a safe easing if parsing fails
-          safeOptions.easing = 'ease';
-        }
-      }
-
-      // Call the original method with safe options
-      return originalAnimate.call(this, keyframes, safeOptions);
-    }
-
-    // Call the original method if no options or not an object
-    return originalAnimate.apply(this, arguments);
-  };
-}
+// Initialize animation utilities
+import './utils/initAnimations'
 
 // Store cleanup function reference
 let cleanupMockEndpoints = null;

@@ -12,45 +12,5 @@
   to = "/index.html"
   status = 200
 
-# Headers to ensure proper MIME types for JavaScript modules
-[[headers]]
-  for = "/assets/*.js"
-  [headers.values]
-    Content-Type = "application/javascript; charset=utf-8"
-    X-Content-Type-Options = "nosniff"
-
-[[headers]]
-  for = "/*.js"
-  [headers.values]
-    Content-Type = "application/javascript; charset=utf-8"
-    X-Content-Type-Options = "nosniff"
-
-[[headers]]
-  for = "/assets/*.mjs"
-  [headers.values]
-    Content-Type = "application/javascript; charset=utf-8"
-    X-Content-Type-Options = "nosniff"
-
-[[headers]]
-  for = "/*.mjs"
-  [headers.values]
-    Content-Type = "application/javascript; charset=utf-8"
-    X-Content-Type-Options = "nosniff"
-
-[[headers]]
-  for = "/assets/*.css"
-  [headers.values]
-    Content-Type = "text/css; charset=utf-8"
-    X-Content-Type-Options = "nosniff"
-
-[[headers]]
-  for = "/*.css"
-  [headers.values]
-    Content-Type = "text/css; charset=utf-8"
-    X-Content-Type-Options = "nosniff"
-
-# Cache control for static assets
-[[headers]]
-  for = "/assets/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
+# Note: Headers are defined in the _headers file
+# This approach avoids duplication and makes maintenance easier

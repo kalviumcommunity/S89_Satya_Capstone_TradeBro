@@ -2,7 +2,7 @@ import React, { useState, memo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { FiMenu, FiX, FiBarChart2, FiPieChart, FiTrendingUp, FiArrowRight } from "react-icons/fi";
-import "./LandingPage.css";
+import "./landingPage.css";
 
 // Import animation components
 import {
@@ -33,7 +33,7 @@ const NavBar = memo(({ mobileMenuOpen, toggleMobileMenu, handleGetStarted }) => 
       className={`navbar ${scrolled ? 'scrolled' : ''}`}
       initial={{ y: -100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.5, ease: [0.6, 0.05, -0.01, 0.9] }}
+      transition={{ duration: 0.5, ease: [0.6, 0.05, 0.01, 0.9] }}
     >
       <motion.div
         className="logo"
@@ -91,7 +91,7 @@ const HeroSection = memo(({ handleGetStarted }) => {
         className="hero-content"
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, ease: [0.6, 0.05, -0.01, 0.9] }}
+        transition={{ duration: 0.8, ease: [0.6, 0.05, 0.01, 0.9] }}
       >
         <AnimatedText
           text="Master the Markets with Confidence"
