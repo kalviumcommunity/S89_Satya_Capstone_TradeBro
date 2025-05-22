@@ -13,7 +13,7 @@ import Loading from "./common/Loading";
 import StockChart from "./charts/StockChart";
 import FixedHeader from "./FixedHeader";
 import BuySellModal from "./forms/BuySellModal";
-import { API_ENDPOINTS } from "../config/apiConfig";
+import API_ENDPOINTS from "../config/apiConfig";
 import { formatIndianRupees, formatLargeIndianRupees } from '../utils/currencyUtils';
 import "../styles/FullScreenStockDetail.css";
 

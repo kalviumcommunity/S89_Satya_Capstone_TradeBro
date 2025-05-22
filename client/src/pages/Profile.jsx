@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { motion } from "framer-motion";
 import { FiUser, FiMail, FiPhone, FiEdit2, FiCamera, FiCheckCircle, FiBarChart2, FiDollarSign, FiClock, FiAlertCircle } from "react-icons/fi";
@@ -6,7 +6,7 @@ import PageLayout from "../components/PageLayout";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
 import Loading from "../components/common/Loading";
-import { fetchProfile, fetchProfileSuccess, setEditedUser, updateProfile } from "../redux/reducers/profileReducer";
+import { fetchProfileSuccess, setEditedUser } from "../redux/reducers/profileReducer";
 import { setIsEditing, setLoading, setError } from "../redux/reducers/uiReducer";
 import { showSuccessToast, showErrorToast } from "../redux/reducers/toastReducer";
 import API_ENDPOINTS from "../config/apiConfig";
@@ -208,11 +208,15 @@ const Profile = () => {
         const updatedUserData = {
           ...editedUser,
           profileImage: response.data.userSettings.profileImage
-            ? `http://localhost:5000/uploads/${response.data.userSettings.profileImage}`
+            ? API_ENDPOINTS.UPLOADS(response.data.userSettings.profileImage)
             : editedUser.profileImage
         };
 
-        dispatch(updateProfileSuccess(updatedUserData));
+        dispatch(fetchProfileSuccess({
+          userData: updatedUserData,
+          stats,
+          recentActivity
+        }));
         dispatch(setIsEditing(false));
         dispatch(showSuccessToast('Profile updated successfully!'));
       } else {
@@ -223,7 +227,11 @@ const Profile = () => {
       dispatch(showErrorToast(err.response?.data?.message || 'Failed to update profile. Please try again.'));
 
       // For development, still update the UI
-      dispatch(updateProfileSuccess(editedUser));
+      dispatch(fetchProfileSuccess({
+        userData: editedUser,
+        stats,
+        recentActivity
+      }));
       dispatch(setIsEditing(false));
     } finally {
       dispatch(setLoading(false));
@@ -236,7 +244,7 @@ const Profile = () => {
         <div className="profile-header">
           <h1>My Profile</h1>
           {!isEditing && !loading && (
-            <button className="edit-profile-btn" onClick={() => setIsEditing(true)}>
+            <button className="edit-profile-btn" onClick={() => dispatch(setIsEditing(true))}>
               <FiEdit2 /> Edit Profile
             </button>
           )}

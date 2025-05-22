@@ -361,8 +361,11 @@ const Dashboard = () => {
     }
 
     try {
-      // Use axios to claim the reward
-      const response = await axios.post(API_ENDPOINTS.VIRTUAL_MONEY.CLAIM_REWARD);
+      // Use axios to claim the reward with authentication header
+      const token = localStorage.getItem('authToken');
+      const response = await axios.post(API_ENDPOINTS.VIRTUAL_MONEY.CLAIM_REWARD, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
       if (response.data && response.data.success) {
         // Show animation and toast

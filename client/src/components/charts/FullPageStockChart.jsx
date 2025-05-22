@@ -167,7 +167,7 @@ const FullPageStockChart = ({ symbol, onClose }) => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <FiShoppingCart /> Sell
+              <FiBarChart2 /> Sell
             </motion.button>
 
             <motion.button
