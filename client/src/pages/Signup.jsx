@@ -63,7 +63,7 @@ const Signup = () => {
   };
 
   const handleGoogleSignup = () => {
-    window.location.href = "https://s89-satya-capstone-tradebro.onrender.com/api/auth/auth/google";
+    window.location.href = "https://s89-satya-capstone-tradebro.onrender.com/api/auth/google";
   };
 
   return (

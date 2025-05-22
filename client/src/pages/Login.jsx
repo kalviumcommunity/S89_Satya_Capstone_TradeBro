@@ -102,7 +102,7 @@ const Login = () => {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = "https://s89-satya-capstone-tradebro.onrender.com/api/auth/auth/google";
+    window.location.href = "https://s89-satya-capstone-tradebro.onrender.com/api/auth/google";
   };
 
   // Handle Google login redirect

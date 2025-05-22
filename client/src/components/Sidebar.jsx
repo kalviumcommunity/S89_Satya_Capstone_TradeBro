@@ -18,6 +18,7 @@ import ThemeToggle from "./ThemeToggle";
 import { useSidebar } from "../context/SidebarContext";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
+import API_ENDPOINTS from "../config/apiConfig";
 import "../styles/components/Sidebar.css";
 
 const Sidebar = () => {
@@ -44,7 +45,7 @@ const Sidebar = () => {
       fullName: localStorage.getItem('userFullName') || localStorage.getItem('userName') || "User",
       email: localStorage.getItem('userEmail') || "",
       profileImage: localStorage.getItem('userProfileImage')
-        ? `http://localhost:5000/uploads/${localStorage.getItem('userProfileImage')}`
+        ? API_ENDPOINTS.UPLOADS(localStorage.getItem('userProfileImage'))
         : "https://randomuser.me/api/portraits/lego/1.jpg",
       role: "Member"
     };

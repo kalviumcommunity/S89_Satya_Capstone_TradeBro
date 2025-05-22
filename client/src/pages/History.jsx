@@ -112,7 +112,7 @@ const History = () => {
       setError(null);
 
       try {
-        const response = await axios.get("http://localhost:5000/api/virtual-money/transactions");
+        const response = await axios.get(API_ENDPOINTS.VIRTUAL_MONEY.TRANSACTIONS);
 
         if (response.data.success) {
           // Transform the data to match our frontend format

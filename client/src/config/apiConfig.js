@@ -15,9 +15,10 @@ export const API_ENDPOINTS = {
   AUTH: {
     LOGIN: `${API_BASE_URL}/api/auth/login`,
     SIGNUP: `${API_BASE_URL}/api/auth/signup`,
-    GOOGLE: `${API_BASE_URL}/api/auth/auth/google`,
+    GOOGLE: `${API_BASE_URL}/api/auth/google`,
     FORGOT_PASSWORD: `${API_BASE_URL}/api/auth/forgotpassword`,
     RESET_PASSWORD: `${API_BASE_URL}/api/auth/resetpassword`,
+    USER: `${API_BASE_URL}/api/auth/user`,
   },
 
   // Settings endpoints

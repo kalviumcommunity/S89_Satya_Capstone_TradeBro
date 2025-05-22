@@ -300,7 +300,7 @@ router.get('/user', verifyToken, async (req, res) => {
 });
 
 // Google OAuth Login Route
-router.get('/auth/google',
+router.get('/google',
   passport.authenticate('google', {
     scope: ['profile', 'email'], // Ensure this is included
     prompt: 'select_account' // Optional: Forces account selection
@@ -308,7 +308,7 @@ router.get('/auth/google',
 );
 
 // Google OAuth Callback Route
-router.get('/auth/google/callback',
+router.get('/google/callback',
   passport.authenticate('google', {
     failureRedirect: '/login',
     failureMessage: true

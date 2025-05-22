@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiMail, FiSend } from "react-icons/fi";
 import Squares from "../UI/squares";
+import axios from 'axios';
+import API_ENDPOINTS from "../config/apiConfig";
 import '../styles/pages/AuthPages.css';
 
 const ForgetPassword = () => {
@@ -14,17 +16,11 @@ const ForgetPassword = () => {
     console.log("Requesting OTP for:", email);
 
     try {
-      // Simulate sending OTP (replace with actual API call)
-      const response = await fetch('http://localhost:5000/api/auth/forgotpassword', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
-      });
+      // Send OTP request
+      const response = await axios.post(API_ENDPOINTS.AUTH.FORGOT_PASSWORD, { email });
 
-      if (response.ok) {
-        await setSuccess(true);
+      if (response.data.success) {
+        setSuccess(true);
         setTimeout(() => {
           setSuccess(false);
         }, 2000);
@@ -32,8 +28,7 @@ const ForgetPassword = () => {
           navigate('/resetpassword');
         }, 1000);
       } else {
-        const errorData = await response.json();
-        alert(errorData.message || 'Failed to send OTP. Please try again.');
+        alert(response.data.message || 'Failed to send OTP. Please try again.');
       }
     } catch (error) {
       console.error('Error sending OTP:', error);

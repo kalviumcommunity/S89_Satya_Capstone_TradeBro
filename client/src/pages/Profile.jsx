@@ -9,6 +9,7 @@ import Loading from "../components/common/Loading";
 import { fetchProfile, fetchProfileSuccess, setEditedUser, updateProfile } from "../redux/reducers/profileReducer";
 import { setIsEditing, setLoading, setError } from "../redux/reducers/uiReducer";
 import { showSuccessToast, showErrorToast } from "../redux/reducers/toastReducer";
+import API_ENDPOINTS from "../config/apiConfig";
 import "../styles/pages/Profile.css";
 
 const Profile = () => {
@@ -31,7 +32,7 @@ const Profile = () => {
     const fetchUserData = async () => {
       try {
         // Get user settings
-        const response = await axios.get("http://localhost:5000/api/settings", {
+        const response = await axios.get(API_ENDPOINTS.SETTINGS.BASE, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('authToken')}`
           }
@@ -47,7 +48,7 @@ const Profile = () => {
             phoneNumber: userData.phoneNumber || "",
             joinDate: userData.createdAt || new Date().toISOString(),
             profileImage: userData.profileImage
-              ? `http://localhost:5000/uploads/${userData.profileImage}`
+              ? API_ENDPOINTS.UPLOADS(userData.profileImage)
               : "https://randomuser.me/api/portraits/lego/1.jpg",
             tradingExperience: userData.tradingExperience || "Beginner",
             preferredMarkets: userData.preferredMarkets || ["Stocks"],
@@ -195,7 +196,7 @@ const Profile = () => {
       }
 
       // Send data to API
-      const response = await axios.put('http://localhost:5000/api/settings', formData, {
+      const response = await axios.put(API_ENDPOINTS.SETTINGS.BASE, formData, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
           'Content-Type': 'multipart/form-data'

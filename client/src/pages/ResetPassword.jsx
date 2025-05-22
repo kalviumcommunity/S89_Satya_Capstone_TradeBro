@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/pages/AuthPages.css';
 import Squares from "../UI/squares";
+import axios from 'axios';
+import API_ENDPOINTS from "../config/apiConfig";
 
 const ResetPassword = () => {
   const [otp, setOtp] = useState('');
@@ -13,26 +15,18 @@ const ResetPassword = () => {
     e.preventDefault();
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/resetpassword', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ otp, newPassword }),
-      });
+      const response = await axios.put(API_ENDPOINTS.AUTH.RESET_PASSWORD, { otp, newPassword });
 
-      if (response.ok) {
-        const data = await response.json();
-        await setSuccess(true);
-      setTimeout(() => {
-        setSuccess(false);
-      }, 2000);
-      setTimeout(() => {
-        navigate('/login');
-      }, 1000);
+      if (response.data.success) {
+        setSuccess(true);
+        setTimeout(() => {
+          setSuccess(false);
+        }, 2000);
+        setTimeout(() => {
+          navigate('/login');
+        }, 1000);
       } else {
-        const errorData = await response.json();
-        alert(errorData.message || 'Failed to reset password. Please try again.');
+        alert(response.data.message || 'Failed to reset password. Please try again.');
       }
     } catch (error) {
       console.error('Error resetting password:', error);
