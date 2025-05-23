@@ -5,6 +5,7 @@ import PageLayout from "../components/PageLayout";
 import { useToast } from "../context/ToastContext";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
+import API_ENDPOINTS from "../config/apiConfig";
 import "../styles/pages/History.css";
 
 const History = () => {

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
+import { motion } from "framer-motion";
 import { FiUser, FiMail, FiLock, FiUserPlus } from "react-icons/fi";
 import { useAuth } from "../context/AuthContext";
 import API_ENDPOINTS from "../config/apiConfig";
@@ -62,6 +63,8 @@ const Signup = () => {
           navigate("/dashboard", { replace: true });
         } else if (storedToken) {
           console.log("Signup token found but auth state not updated yet, waiting...");
+          // Force authentication state update
+          register(storedToken, res.data.user);
           setTimeout(checkAuthAndRedirect, 500);
         } else {
           console.warn("No signup token found, forcing redirect anyway");
@@ -69,7 +72,8 @@ const Signup = () => {
         }
       };
 
-      setTimeout(checkAuthAndRedirect, 1500);
+      // Start checking sooner
+      setTimeout(checkAuthAndRedirect, 500);
     } catch (err) {
       console.error("Signup error:", err.response?.data || err.message);
       alert("Signup failed. Please try again.");

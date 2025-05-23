@@ -96,6 +96,8 @@ const Login = () => {
           navigate("/dashboard", { replace: true });
         } else if (storedToken) {
           console.log("Token found but auth state not updated yet, waiting...");
+          // Force authentication state update
+          login(storedToken, response.data.user, true);
           setTimeout(checkAuthAndRedirect, 500);
         } else {
           console.warn("No token found, forcing redirect anyway");
@@ -103,7 +105,8 @@ const Login = () => {
         }
       };
 
-      setTimeout(checkAuthAndRedirect, 1500);
+      // Start checking sooner
+      setTimeout(checkAuthAndRedirect, 500);
     } catch (error) {
       console.error("Login error:", error.response?.data || error.message);
       dispatch(showErrorToast(error.response?.data?.message || "Login failed. Please try again."));
@@ -154,6 +157,8 @@ const Login = () => {
           navigate("/dashboard", { replace: true });
         } else if (storedToken) {
           console.log("Google token found but auth state not updated yet, waiting...");
+          // Force authentication state update
+          login(storedToken, null, true);
           setTimeout(checkAuthAndRedirect, 500);
         } else {
           console.warn("No Google token found, forcing redirect anyway");
@@ -161,7 +166,8 @@ const Login = () => {
         }
       };
 
-      setTimeout(checkAuthAndRedirect, 1500);
+      // Start checking sooner
+      setTimeout(checkAuthAndRedirect, 500);
     }
   }, [dispatch, navigate]);
 

@@ -96,12 +96,14 @@ const HeroSection = memo(({ handleGetStarted }) => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: [0.6, 0.05, 0.01, 0.9] }}
       >
-        <h1><AnimatedText
-          text="Master the Markets with Confidence"
-          type="words"
-          animation="fadeUp"
-          className="hero-title"
-        />
+        <h1>
+          <AnimatedText
+            text="Master the Markets with Confidence"
+            type="words"
+            animation="fadeUp"
+            className="hero-title"
+            style={{ fontSize: '3rem', lineHeight: '1.2',  maxWidth: '90%' }}
+          />
         </h1>
         <motion.p
           initial={{ opacity: 0 }}

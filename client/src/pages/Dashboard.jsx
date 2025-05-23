@@ -77,8 +77,16 @@ const Dashboard = () => {
       dispatch(reduxLogin(token));
       dispatch(showSuccessToast("Google login successful!"));
 
-      // Also use the AuthContext login
+      // Also use the AuthContext login with force flag
       login(token, null, true);
+
+      // Force authentication state update
+      setTimeout(() => {
+        if (!isAuthenticated) {
+          console.log('Forcing authentication state update after Google login');
+          login(token, null, true);
+        }
+      }, 1000);
 
       // Fetch user data
       const fetchUserData = async () => {
