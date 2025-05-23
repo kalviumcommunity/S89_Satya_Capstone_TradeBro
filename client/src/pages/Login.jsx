@@ -72,6 +72,9 @@ const Login = () => {
 
       // Store the token and user data using Redux
       if (response.data.token) {
+        // Store token in localStorage first to ensure it's available
+        localStorage.setItem('authToken', response.data.token);
+
         // Dispatch login action
         dispatch(login(response.data.token, response.data.user));
         dispatch(showSuccessToast("Login successful!"));
@@ -130,6 +133,9 @@ const Login = () => {
 
       // Clear URL parameters
       window.history.replaceState({}, document.title, '/login');
+
+      // Store token in localStorage first to ensure it's available
+      localStorage.setItem('authToken', token);
 
       // Process the token using Redux
       dispatch(login(token));

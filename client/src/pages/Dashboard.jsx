@@ -70,6 +70,9 @@ const Dashboard = () => {
       // Show success message
       toast.success('Successfully logged in with Google!');
 
+      // Store token in localStorage first to ensure it's available
+      localStorage.setItem('authToken', token);
+
       // Process the token using Redux
       dispatch(reduxLogin(token));
       dispatch(showSuccessToast("Google login successful!"));

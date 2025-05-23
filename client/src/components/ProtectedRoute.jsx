@@ -22,7 +22,20 @@ const ProtectedRoute = ({ children }) => {
       const token = localStorage.getItem('authToken');
 
       if (token && !isAuthenticated) {
-        // If token exists but not authenticated yet, give more time
+        // If token exists but not authenticated yet, give more time and try to force authentication
+        console.log('Token found but not authenticated yet, waiting for auth state to update...');
+
+        // Check URL parameters for Google login
+        const urlParams = new URLSearchParams(window.location.search);
+        const googleToken = urlParams.get('token');
+        const success = urlParams.get('success');
+        const google = urlParams.get('google');
+
+        if (googleToken && success === 'true' && google === 'true') {
+          console.log('Google login parameters detected in URL');
+          // URL will be cleaned up by the Dashboard component
+        }
+
         const timer = setTimeout(() => {
           console.log('Auth check completed after token found, isAuthenticated:', isAuthenticated);
           setIsChecking(false);

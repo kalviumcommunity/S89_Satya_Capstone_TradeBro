@@ -45,6 +45,9 @@ const Signup = () => {
 
       // Store the token and user data in AuthContext and localStorage
       if (res.data.token) {
+        // Store token in localStorage first to ensure it's available
+        localStorage.setItem('authToken', res.data.token);
+
         // Pass both token and user data to the register function
         register(res.data.token, res.data.user);
       }

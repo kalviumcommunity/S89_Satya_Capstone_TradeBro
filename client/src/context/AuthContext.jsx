@@ -163,6 +163,14 @@ export const AuthProvider = ({ children }) => {
       return;
     }
 
+    // Store token in localStorage first to ensure it's available
+    try {
+      localStorage.setItem('authToken', token);
+      console.log('Auth token stored in localStorage during login initialization');
+    } catch (e) {
+      console.error('Error storing auth token in localStorage:', e);
+    }
+
     // Set authenticated state immediately
     setIsAuthenticated(true);
 
@@ -363,6 +371,14 @@ export const AuthProvider = ({ children }) => {
   const register = (token, userData = null) => {
     console.log('Registering new user with token and data:', { token: !!token, userData: userData ? 'provided' : 'not provided' });
 
+    // Store token in localStorage first to ensure it's available
+    try {
+      localStorage.setItem('authToken', token);
+      console.log('Auth token stored in localStorage during registration initialization');
+    } catch (e) {
+      console.error('Error storing auth token in localStorage during registration:', e);
+    }
+
     // If userData is provided but missing email, try to extract from token
     if (userData && !userData.email) {
       try {
@@ -378,6 +394,9 @@ export const AuthProvider = ({ children }) => {
         console.error('Error extracting email from token during registration:', e);
       }
     }
+
+    // Set authenticated state immediately
+    setIsAuthenticated(true);
 
     // Use the login function with remember me enabled
     login(token, userData, true);
