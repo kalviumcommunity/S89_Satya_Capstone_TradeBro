@@ -1,14 +1,18 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { motion } from "framer-motion";
 import { FiUser, FiMail, FiPhone, FiEdit2, FiCamera, FiCheckCircle, FiBarChart2, FiDollarSign, FiClock, FiAlertCircle } from "react-icons/fi";
 import PageLayout from "../components/PageLayout";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
-import Loading from "../components/Loading";
-import { fetchProfile, fetchProfileSuccess, setEditedUser, updateProfile } from "../redux/reducers/profileReducer";
+import Loading from "../components/common/Loading";
+import { fetchProfileSuccess, setEditedUser } from "../redux/reducers/profileReducer";
 import { setIsEditing, setLoading, setError } from "../redux/reducers/uiReducer";
 import { showSuccessToast, showErrorToast } from "../redux/reducers/toastReducer";
+<<<<<<< HEAD
+import API_ENDPOINTS from "../config/apiConfig";
+=======
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
 import "../styles/pages/Profile.css";
 
 const Profile = () => {
@@ -31,7 +35,11 @@ const Profile = () => {
     const fetchUserData = async () => {
       try {
         // Get user settings
+<<<<<<< HEAD
+        const response = await axios.get(API_ENDPOINTS.SETTINGS.BASE, {
+=======
         const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/settings`, {
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
           headers: {
             Authorization: `Bearer ${localStorage.getItem('authToken')}`
           }
@@ -47,7 +55,11 @@ const Profile = () => {
             phoneNumber: userData.phoneNumber || "",
             joinDate: userData.createdAt || new Date().toISOString(),
             profileImage: userData.profileImage
+<<<<<<< HEAD
+              ? API_ENDPOINTS.UPLOADS(userData.profileImage)
+=======
               ? `${import.meta.env.VITE_API_BASE_URL}/uploads/${userData.profileImage}`
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
               : "https://randomuser.me/api/portraits/lego/1.jpg",
             tradingExperience: userData.tradingExperience || "Beginner",
             preferredMarkets: userData.preferredMarkets || ["Stocks"],
@@ -163,6 +175,20 @@ const Profile = () => {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Validate file type and size
+      const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+      const maxSize = 2 * 1024 * 1024; // 2MB
+
+      if (!validTypes.includes(file.type)) {
+        dispatch(showErrorToast('Please select a valid image file (JPEG, PNG, GIF, or WebP)'));
+        return;
+      }
+
+      if (file.size > maxSize) {
+        dispatch(showErrorToast('Image size should be less than 2MB'));
+        return;
+      }
+
       // Store the file object directly for form submission
       dispatch(setEditedUser({ ...editedUser, profileImage: file }));
 
@@ -173,6 +199,9 @@ const Profile = () => {
         dispatch(setEditedUser({ ...editedUser, profileImagePreview: reader.result }));
       };
       reader.readAsDataURL(file);
+
+      // Show success message
+      dispatch(showSuccessToast('Image selected successfully. Click Save Changes to update your profile.'));
     }
   };
 
@@ -182,12 +211,19 @@ const Profile = () => {
     dispatch(setLoading(true));
 
     try {
+      // Validate form data
+      if (!editedUser.fullName.trim()) {
+        dispatch(showErrorToast('Full name is required'));
+        dispatch(setLoading(false));
+        return;
+      }
+
       // Prepare form data for API
       const formData = new FormData();
-      formData.append('fullName', editedUser.fullName);
-      formData.append('phoneNumber', editedUser.phoneNumber);
+      formData.append('fullName', editedUser.fullName.trim());
+      formData.append('phoneNumber', editedUser.phoneNumber.trim());
       formData.append('tradingExperience', editedUser.tradingExperience);
-      formData.append('bio', editedUser.bio);
+      formData.append('bio', editedUser.bio.trim());
 
       // Add preferredMarkets if it exists
       if (editedUser.preferredMarkets && Array.isArray(editedUser.preferredMarkets)) {
@@ -197,8 +233,16 @@ const Profile = () => {
       // Check if profile image is a File object (new upload) or a string (existing URL)
       if (editedUser.profileImage instanceof File) {
         formData.append('profileImage', editedUser.profileImage);
+        console.log('Uploading new profile image:', editedUser.profileImage.name);
       }
 
+<<<<<<< HEAD
+      // Send data to API with timeout and retry logic
+      const maxRetries = 2;
+      let retries = 0;
+      let success = false;
+      let response;
+=======
       // Send data to API
       const response = await axios.put(`${import.meta.env.VITE_API_BASE_URL}/api/settings`, formData, {
         headers: {
@@ -206,12 +250,46 @@ const Profile = () => {
           'Content-Type': 'multipart/form-data'
         }
       });
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
 
-      if (response.data.success) {
+      while (retries <= maxRetries && !success) {
+        try {
+          response = await axios.put(API_ENDPOINTS.SETTINGS.BASE, formData, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+              'Content-Type': 'multipart/form-data'
+            },
+            timeout: 15000 // 15 seconds timeout
+          });
+          success = true;
+        } catch (error) {
+          retries++;
+          console.log(`Attempt ${retries} failed. ${retries <= maxRetries ? 'Retrying...' : 'Giving up.'}`);
+          if (retries > maxRetries) throw error;
+          // Wait before retrying
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+
+      if (response && response.data.success) {
         // Update user state with new data
         const updatedUserData = {
           ...editedUser,
           profileImage: response.data.userSettings.profileImage
+<<<<<<< HEAD
+            ? API_ENDPOINTS.UPLOADS(response.data.userSettings.profileImage)
+            : editedUser.profileImage
+        };
+
+        // Remove the preview URL as we now have the actual URL
+        delete updatedUserData.profileImagePreview;
+
+        dispatch(fetchProfileSuccess({
+          userData: updatedUserData,
+          stats,
+          recentActivity
+        }));
+=======
             ? `${import.meta.env.VITE_API_BASE_URL}/uploads/${response.data.userSettings.profileImage}`
             : editedUser.profileImage
         };
@@ -220,6 +298,7 @@ const Profile = () => {
         dispatch(updateProfileSuccess(updatedUserData));
 
         // Exit editing mode
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
         dispatch(setIsEditing(false));
 
         // Show success message
@@ -237,9 +316,31 @@ const Profile = () => {
       dispatch(showErrorToast(err.response?.data?.message || 'Failed to update profile. Please try again.'));
 
       // For development, still update the UI
+<<<<<<< HEAD
+      if (process.env.NODE_ENV === 'development') {
+        const updatedUserData = { ...editedUser };
+
+        // If there's a preview URL, use it as the profile image in development
+        if (editedUser.profileImagePreview) {
+          updatedUserData.profileImage = editedUser.profileImagePreview;
+        }
+
+        // Remove the preview URL property
+        delete updatedUserData.profileImagePreview;
+
+        dispatch(fetchProfileSuccess({
+          userData: updatedUserData,
+          stats,
+          recentActivity
+        }));
+        dispatch(setIsEditing(false));
+        dispatch(showSuccessToast('Profile updated in development mode'));
+      }
+=======
       // This allows testing the UI without a working backend
       dispatch(updateProfileSuccess(editedUser));
       dispatch(setIsEditing(false));
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
     } finally {
       dispatch(setLoading(false));
     }
@@ -251,7 +352,7 @@ const Profile = () => {
         <div className="profile-header">
           <h1>My Profile</h1>
           {!isEditing && !loading && (
-            <button className="edit-profile-btn" onClick={() => setIsEditing(true)}>
+            <button className="edit-profile-btn" onClick={() => dispatch(setIsEditing(true))}>
               <FiEdit2 /> Edit Profile
             </button>
           )}
@@ -278,20 +379,32 @@ const Profile = () => {
             {isEditing ? (
               <form onSubmit={handleSubmit} className="edit-form">
                 <div className="profile-image-container edit-mode">
-                  <img
+                  <motion.img
                     src={editedUser.profileImagePreview || editedUser.profileImage}
                     alt={editedUser.fullName}
                     className="profile-image"
+                    initial={{ scale: 1 }}
+                    whileHover={{ scale: 1.05 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 15 }}
                   />
-                  <label className="image-upload-label">
+                  <motion.label
+                    className="image-upload-label"
+                    whileHover={{ scale: 1.1, backgroundColor: "rgba(85, 130, 139, 0.9)" }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                  >
                     <FiCamera />
+                    <span className="upload-text">Change Photo</span>
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/jpeg,image/png,image/gif,image/webp"
                       onChange={handleImageChange}
                       className="image-upload-input"
                     />
-                  </label>
+                  </motion.label>
+                  <div className="image-upload-help">
+                    Click to upload a new profile photo (max 2MB)
+                  </div>
                 </div>
 
                 <div className="form-group">

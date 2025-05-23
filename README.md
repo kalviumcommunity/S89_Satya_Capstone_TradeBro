@@ -16,11 +16,11 @@
 - Track portfolio performance and improve decision-making skills
 
 The platform includes features such as:
-- Stock search & trading using virtual currency  
-- Portfolio tracking with charts and analytics  
-- Real-time price updates and historical data  
-- Stock screener with key financial metrics  
-- Educational modules and gamified challenges  
+- Stock search & trading using virtual currency
+- Portfolio tracking with charts and analytics
+- Real-time price updates and historical data
+- Stock screener with key financial metrics
+- Educational modules and gamified challenges
 
 ---
 
@@ -28,10 +28,10 @@ The platform includes features such as:
 
 - **Frontend:** React.js, Tailwind CSS, Recharts
 - **Backend:** Node.js, Express
-- **Database:** Firebase or PostgreSQL
+- **Database:** MongoDB
 - **Authentication:** Firebase Auth or JWT
 - **APIs:** Financial Modeling Prep / Yahoo Finance API
-- **Hosting:** Vercel (Frontend), Render (Backend), Firebase (DB)
+- **Hosting:** Netlify (Frontend), Render (Backend), MongoDB Atlas (DB)
 
 ---
 
@@ -60,7 +60,7 @@ The platform includes features such as:
 | Day 19  | Implement notification system (mock earnings alerts, reminders)                  |
 | Day 20  | Test app: unit testing, user flow testing                                         |
 | Day 21  | Fix bugs and handle edge cases                                                    |
-| Day 22  | Deploy frontend (Vercel) and backend (Render or Firebase)                        |
+| Day 22  | Deploy frontend (Netlify) and backend (Render or Firebase)                        |
 | Day 23  | Write in-app help section and tooltips                                            |
 | Day 24  | Final bug fixes, cleanup, and prepare for presentation                           |
 | Day 25  | Deliver final demo and submit capstone project                                    |

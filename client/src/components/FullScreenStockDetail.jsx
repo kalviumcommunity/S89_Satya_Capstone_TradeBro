@@ -2,6 +2,23 @@ import React, { useState, useEffect, useContext } from 'react';
 import PropTypes from 'prop-types';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
+<<<<<<< HEAD
+  FiTrendingUp, FiTrendingDown, FiX, FiDollarSign,
+  FiBarChart2, FiShoppingCart, FiAlertCircle, FiMaximize2,
+  FiMinimize2, FiClock, FiInfo, FiActivity
+} from "react-icons/fi";
+import axios from "axios";
+import { useToast } from "../context/ToastContext";
+import { useAuth } from "../context/AuthContext";
+import { useVirtualMoney } from "../context/VirtualMoneyContext";
+import Loading from "./common/Loading";
+import StockChart from "./charts/StockChart";
+import FixedHeader from "./FixedHeader";
+import BuySellModal from "./forms/BuySellModal";
+import API_ENDPOINTS from "../config/apiConfig";
+import { formatIndianRupees, formatLargeIndianRupees } from '../utils/currencyUtils';
+import "../styles/FullScreenStockDetail.css";
+=======
   FiX, FiTrendingUp, FiTrendingDown, FiDollarSign,
   FiBarChart2, FiShoppingCart, FiInfo, FiClock, FiCalendar
 } from 'react-icons/fi';
@@ -15,6 +32,7 @@ import API_ENDPOINTS from '../config/apiConfig';
 import { formatPrice, formatLargeNumber } from '../utils/chartUtils';
 import '../styles/components/FullScreenStockDetail.css';
 import '../styles/components/BuySellButtons.css';
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
 
 const FullScreenStockDetail = ({ symbol, onClose, onBuySuccess, onSellSuccess }) => {
   const [stockData, setStockData] = useState(null);

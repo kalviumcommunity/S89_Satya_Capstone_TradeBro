@@ -527,7 +527,7 @@ axios.interceptors.response.use(
 
       // Check if we're on a page that requires authentication
       const currentPath = window.location.pathname;
-      const authRequiredPaths = ['/portfolio', '/dashboard', '/settings', '/watchlist', '/orders'];
+      const authRequiredPaths = ['/dashboard', '/portfolio', '/settings', '/watchlist', '/orders'];
       const isAuthRequiredPage = authRequiredPaths.includes(currentPath);
 
       // Check if this is a login/signup request

@@ -31,6 +31,13 @@ export const OfflineProvider = ({ children }) => {
 
       // Try to ping the backend with a timeout
       // Use the healthCheckAxios instance to avoid interceptor loop
+<<<<<<< HEAD
+      // Use relative URL for development to work with the proxy
+      const isDevelopment = import.meta.env.DEV;
+      const healthUrl = isDevelopment ? '/api/health' : 'https://s89-satya-capstone-tradebro.onrender.com/api/health';
+      const response = await healthCheckAxios.get(healthUrl, {
+        timeout: 2000
+=======
       // Get the API URL, ensuring HTTP for localhost
       const apiUrl = getApiBaseUrl();
 
@@ -38,6 +45,7 @@ export const OfflineProvider = ({ children }) => {
 
       const response = await healthCheckAxios.get(`${apiUrl}/api/health`, {
         timeout: 5000 // Increased timeout for deployed backend
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
       });
 
       if (response.status === 200) {

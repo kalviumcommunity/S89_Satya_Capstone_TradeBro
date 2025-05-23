@@ -10,8 +10,7 @@ import {
   StaggerContainer,
   FloatingElement,
   AnimatedText,
-  ParallaxSection,
-  HoverElement
+  ParallaxSection
 } from "../components/animations";
 
 // Import TradingAssistant component
@@ -73,11 +72,15 @@ const NavBar = memo(({ mobileMenuOpen, toggleMobileMenu, handleGetStarted }) => 
         >
           Contact
         </motion.a>
-        <HoverElement effect="both">
-          <button className="cta-button" onClick={handleGetStarted}>
-            Get Started
-          </button>
-        </HoverElement>
+        <motion.button
+          className="cta-button"
+          onClick={handleGetStarted}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          transition={{ type: "spring", stiffness: 400, damping: 17 }}
+        >
+          Get Started
+        </motion.button>
       </nav>
     </motion.header>
   );
@@ -96,7 +99,19 @@ const HeroSection = memo(({ handleGetStarted }) => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: [0.6, 0.05, 0.01, 0.9] }}
       >
+<<<<<<< HEAD
+        <h1>
+          <AnimatedText
+            text="Master the Markets with Confidence"
+            type="words"
+            animation="fadeUp"
+            className="hero-title"
+            style={{ fontSize: '3rem', lineHeight: '1.2',  maxWidth: '90%' }}
+          />
+        </h1>
+=======
         <h1 className="hero-title">Master the Markets with Confidence</h1>
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -110,16 +125,34 @@ const HeroSection = memo(({ handleGetStarted }) => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.6 }}
         >
-          <HoverElement effect="both">
-            <button className="primary-btn" onClick={handleGetStarted}>
-              Get Started <FiArrowRight style={{ marginLeft: '8px', verticalAlign: 'middle' }} />
-            </button>
-          </HoverElement>
-          <HoverElement effect="lift">
-            <button className="secondary-btn">View Demo</button>
-          </HoverElement>
+          <motion.button
+            className="primary-btn"
+            onClick={handleGetStarted}
+            whileHover={{ scale: 1.05, y: -2 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+          >
+            Get Started <FiArrowRight style={{ marginLeft: '8px', verticalAlign: 'middle' }} />
+          </motion.button>
         </motion.div>
       </motion.div>
+<<<<<<< HEAD
+      <FloatingElement amplitude={15} duration={4}>
+        <motion.div
+          className="hero-visual"
+          initial={{ opacity: 0, scale: 0.8, x: 100 }}
+          animate={{ opacity: 1, scale: 1, x: 0 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          style={{ y }}
+        >
+          <img
+            src="https://i.pinimg.com/736x/51/bd/0f/51bd0f73220b38ec9066cab7b1df517c.jpg"
+            alt="Stock Market Dashboard"
+            loading="eager"
+          />
+        </motion.div>
+      </FloatingElement>
+=======
       <motion.div
         className="hero-visual"
         initial={{ opacity: 0 }}
@@ -132,25 +165,36 @@ const HeroSection = memo(({ handleGetStarted }) => {
           loading="eager"
         />
       </motion.div>
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
     </section>
   );
 });
 
 // Feature component with animations
 const Feature = ({ icon: Icon, title, description }) => (
-  <HoverElement effect="lift" className="feature">
+  <motion.div
+    className="feature"
+    whileHover={{ y: -5, scale: 1.02 }}
+    whileTap={{ scale: 0.98 }}
+    transition={{ type: "spring", stiffness: 400, damping: 17 }}
+  >
     <span className="feature-highlight"></span>
     <FloatingElement amplitude={5} duration={3} className="feature-icon-wrapper">
       <Icon className="feature-icon" />
     </FloatingElement>
     <h3>{title}</h3>
     <p>{description}</p>
-  </HoverElement>
+  </motion.div>
 );
 
 // Gallery item component with animations
 const GalleryItem = ({ src, alt, caption }) => (
-  <HoverElement effect="both" className="gallery-item">
+  <motion.div
+    className="gallery-item"
+    whileHover={{ y: -5, scale: 1.02 }}
+    whileTap={{ scale: 0.98 }}
+    transition={{ type: "spring", stiffness: 400, damping: 17 }}
+  >
     <img src={src} alt={alt} loading="lazy" />
     <motion.div
       className="gallery-caption"
@@ -160,15 +204,20 @@ const GalleryItem = ({ src, alt, caption }) => (
     >
       <h4>{caption}</h4>
     </motion.div>
-  </HoverElement>
+  </motion.div>
 );
 
 // Testimonial component with animations
 const Testimonial = ({ quote, author }) => (
-  <HoverElement effect="lift" className="testimonial">
+  <motion.div
+    className="testimonial"
+    whileHover={{ y: -5, scale: 1.02 }}
+    whileTap={{ scale: 0.98 }}
+    transition={{ type: "spring", stiffness: 400, damping: 17 }}
+  >
     <p>"{quote}"</p>
     <h4>- {author}</h4>
-  </HoverElement>
+  </motion.div>
 );
 
 const LandingPage = () => {
@@ -346,9 +395,15 @@ const LandingPage = () => {
               aria-label="Your Message"
               whileFocus={{ scale: 1.02, boxShadow: "0 0 0 3px rgba(27, 142, 153, 0.2)" }}
             ></motion.textarea>
-            <HoverElement effect="both">
-              <button type="submit" className="primary-btn">Send Message</button>
-            </HoverElement>
+            <motion.button
+              type="submit"
+              className="primary-btn"
+              whileHover={{ scale: 1.05, y: -2 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 400, damping: 17 }}
+            >
+              Send Message
+            </motion.button>
           </motion.form>
         </section>
       </ScrollReveal>

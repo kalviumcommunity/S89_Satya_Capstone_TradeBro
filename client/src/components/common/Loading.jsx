@@ -1,6 +1,14 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+<<<<<<< HEAD
+<<<<<<<< HEAD:client/src/components/common/Loading.jsx
+import '../../styles/components/Loading.css';
+========
+import '../styles/components/Loading.css';
+>>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40:client/src/components/Loading.jsx
+=======
 import '../../styles/components/common/Loading.css';
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
 
 const loadingContainerVariants = {
   start: {

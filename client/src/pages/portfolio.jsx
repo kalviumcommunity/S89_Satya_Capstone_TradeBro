@@ -11,8 +11,12 @@ import { useVirtualMoney } from "../context/VirtualMoneyContext";
 import { safeApiCall, createDummyData } from "../utils/apiUtils";
 import { getCachedStockSymbols, cacheStockSymbols } from "../utils/stockCache";
 import PageLayout from "../components/PageLayout";
+<<<<<<< HEAD
+import Loading from "../components/common/Loading";
+=======
 import EnhancedLoading from "../components/EnhancedLoading";
 import PageTransition from "../components/PageTransition";
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
 import FullScreenStockDetail from "../components/FullScreenStockDetail";
 import StockSearch from "../components/StockSearch";
 import axios from "axios";
@@ -411,12 +415,13 @@ const PortfolioPage = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
     const success = urlParams.get('success');
+    const google = urlParams.get('google');
 
-    if (token && success === 'true') {
+    if (token && success === 'true' && google === 'true') {
       console.log('Google OAuth token found in URL');
 
       // Remove token from URL to prevent issues on refresh
-      window.history.replaceState({}, document.title, '/portfolio');
+      window.history.replaceState({}, document.title, '/dashboard');
 
       // Show success message
       toast.success('Successfully logged in with Google!');
@@ -424,7 +429,11 @@ const PortfolioPage = () => {
       // Fetch user data
       const fetchUserData = async () => {
         try {
+<<<<<<< HEAD
+          const response = await axios.get(API_ENDPOINTS.AUTH.USER, {
+=======
           const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/auth/user`, {
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
             headers: { Authorization: `Bearer ${token}` }
           });
 

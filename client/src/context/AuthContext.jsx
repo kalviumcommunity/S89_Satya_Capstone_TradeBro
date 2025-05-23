@@ -1,6 +1,10 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
+<<<<<<< HEAD
+import API_ENDPOINTS, { API_BASE_URL } from '../config/apiConfig';
+=======
 import { getApiBaseUrl } from '../utils/urlUtils';
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
 
 // Create the context
 const AuthContext = createContext();
@@ -27,7 +31,7 @@ export const AuthProvider = ({ children }) => {
           setLoading(false);
 
           // Check if we're on a page that requires authentication
-          const authRequiredPaths = ['/portfolio', '/dashboard', '/settings', '/watchlist', '/orders'];
+          const authRequiredPaths = ['/dashboard', '/portfolio', '/settings', '/watchlist', '/orders'];
           if (authRequiredPaths.includes(currentPath)) {
             console.warn('Authentication required for this page. Redirecting to login...');
             window.location.href = '/login';
@@ -65,7 +69,7 @@ export const AuthProvider = ({ children }) => {
 
         setIsAuthenticated(true);
 
-        // Redirect to portfolio if last login was within 7 days
+        // Redirect to dashboard if last login was within 7 days
         const lastLogin = localStorage.getItem('lastLogin');
         if (lastLogin) {
           const lastLoginDate = new Date(lastLogin);
@@ -76,10 +80,10 @@ export const AuthProvider = ({ children }) => {
           localStorage.setItem('lastLogin', now.toISOString());
           console.log('Updated last login time');
 
-          // If last login was within 7 days and we're on the login page, redirect to portfolio
+          // If last login was within 7 days and we're on the login page, redirect to dashboard
           if (daysSinceLastLogin < 7 && currentPath === '/login') {
-            console.log('Recent login detected, redirecting to portfolio');
-            window.location.href = '/portfolio';
+            console.log('Recent login detected, redirecting to dashboard');
+            window.location.href = '/dashboard';
             return;
           }
         }
@@ -161,6 +165,43 @@ export const AuthProvider = ({ children }) => {
     if (!token) {
       console.error('Login failed: No token provided');
       return;
+    }
+
+    // Store token in localStorage first to ensure it's available
+    try {
+      localStorage.setItem('authToken', token);
+      console.log('Auth token stored in localStorage during login initialization');
+    } catch (e) {
+      console.error('Error storing auth token in localStorage:', e);
+    }
+
+    // Set authenticated state immediately
+    setIsAuthenticated(true);
+
+    // Set user data if provided
+    if (userData) {
+      setUser(userData);
+      console.log('User data set in AuthContext:', userData);
+    } else {
+      // Try to extract user data from token
+      try {
+        const tokenParts = token.split('.');
+        if (tokenParts.length === 3) {
+          const payload = JSON.parse(atob(tokenParts[1]));
+          if (payload.email) {
+            const extractedUserData = {
+              email: payload.email,
+              id: payload.id,
+              username: payload.username || payload.email.split('@')[0],
+              fullName: payload.fullName || payload.username || payload.email.split('@')[0]
+            };
+            setUser(extractedUserData);
+            console.log('User data extracted from token in login function:', extractedUserData);
+          }
+        }
+      } catch (e) {
+        console.error('Error extracting user data from token in login function:', e);
+      }
     }
 
     try {
@@ -307,9 +348,13 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       // Call the logout endpoint if needed
+<<<<<<< HEAD
+      await axios.get(`${API_BASE_URL}/api/auth/logout`);
+=======
       // Use the API_BASE_URL from the utility function
       const apiUrl = getApiBaseUrl();
       await axios.get(`${apiUrl}/api/auth/logout`);
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
     } catch (error) {
       console.error('Error during logout:', error);
     } finally {
@@ -336,6 +381,14 @@ export const AuthProvider = ({ children }) => {
   const register = (token, userData = null) => {
     console.log('Registering new user with token and data:', { token: !!token, userData: userData ? 'provided' : 'not provided' });
 
+    // Store token in localStorage first to ensure it's available
+    try {
+      localStorage.setItem('authToken', token);
+      console.log('Auth token stored in localStorage during registration initialization');
+    } catch (e) {
+      console.error('Error storing auth token in localStorage during registration:', e);
+    }
+
     // If userData is provided but missing email, try to extract from token
     if (userData && !userData.email) {
       try {
@@ -351,6 +404,9 @@ export const AuthProvider = ({ children }) => {
         console.error('Error extracting email from token during registration:', e);
       }
     }
+
+    // Set authenticated state immediately
+    setIsAuthenticated(true);
 
     // Use the login function with remember me enabled
     login(token, userData, true);

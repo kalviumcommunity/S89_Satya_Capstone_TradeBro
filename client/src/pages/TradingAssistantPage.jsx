@@ -63,7 +63,11 @@ const TradingAssistantPage = () => {
           const token = localStorage.getItem('token');
           const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
+<<<<<<< HEAD
+          const response = await axios.get(API_ENDPOINTS.VIRTUAL_MONEY.ACCOUNT, {
+=======
           const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/virtual-money/account`, {
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
             headers,
             timeout: 5000
           });
@@ -114,7 +118,11 @@ const TradingAssistantPage = () => {
           const token = localStorage.getItem('token');
           const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
+<<<<<<< HEAD
+          const response = await axios.post(API_ENDPOINTS.VIRTUAL_MONEY.CLAIM_REWARD, {}, {
+=======
           const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/virtual-money/claim-reward`, {}, {
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
             headers,
             timeout: 5000
           });

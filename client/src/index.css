@@ -1,2 +1,29 @@
+<<<<<<< HEAD
+/* Import clean styles */
+@import url('./styles/theme.css');
+@import url('./styles/responsive.css');
+@import url('./styles/animations.css');
+
+/* Global reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    font-family: 'Inter', 'Poppins', system-ui, sans-serif;
+    line-height: 1.6;
+    color: var(--text-color);
+    background-color: var(--background-color);
+}
+=======
 /* Import main styles */
 @import url('./styles/index.css');
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40

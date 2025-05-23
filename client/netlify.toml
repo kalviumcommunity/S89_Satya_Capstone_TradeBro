@@ -2,8 +2,14 @@
 
 # Build settings
 [build]
+<<<<<<< HEAD
+  base = "client"
+  publish = "dist"
+  command = "npm run build"
+=======
   publish = "dist"
   command = "npm run netlify-build"
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
 
 # SPA redirect rule - All routes should be handled by index.html
 [[redirects]]
@@ -11,6 +17,10 @@
   to = "/index.html"
   status = 200
 
+<<<<<<< HEAD
+# Note: Headers are defined in the _headers file
+# This approach avoids duplication and makes maintenance easier
+=======
 # Headers to ensure proper MIME types for JavaScript modules
 [[headers]]
   for = "/assets/*.js"
@@ -47,3 +57,4 @@
   for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40

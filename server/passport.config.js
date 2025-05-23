@@ -21,9 +21,7 @@ console.log('- CALLBACK_URL:', CALLBACK_URL);
 // Only configure Google strategy if credentials are available
 if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
   // Determine callback URL based on environment
-  const callbackURL = process.env.NODE_ENV === 'production'
-    ? "https://tradebro-server.onrender.com/api/auth/auth/google/callback"
-    : "http://localhost:5000/api/auth/auth/google/callback";
+  const callbackURL = "https://s89-satya-capstone-tradebro.onrender.com/api/auth/google/callback";
 
   passport.use(
     new GoogleStrategy(

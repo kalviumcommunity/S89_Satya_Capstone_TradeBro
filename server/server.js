@@ -43,6 +43,9 @@ app.set('trust proxy', true);
 app.use(cors({
   origin: [
     "http://localhost:5173",
+<<<<<<< HEAD
+    "https://tradebro.netlify.app"
+=======
     "https://tradebro-client.vercel.app",
     "https://tradebro.vercel.app"
     // Prioritize localhost URLs for development
@@ -56,6 +59,7 @@ app.use(cors({
     "https://tradebro.vercel.app",
     "https://s89-satya-capstone-tradebro-client.vercel.app",
     "https://s89-satya-capstone-tradebro.vercel.app",
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
   ],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -370,8 +374,8 @@ mongoose.connect(MONGO_URI, {
 
   // Start server after successful MongoDB connection
   app.listen(PORT, () => {
-    console.log(`🚀 Server running at http://localhost:${PORT}`);
-    console.log(`Health check endpoint: http://localhost:${PORT}/api/health`);
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`Health check endpoint: https://s89-satya-capstone-tradebro.onrender.com/api/health`);
   });
 })
 .catch(err => {
@@ -394,7 +398,7 @@ mongoose.connect(MONGO_URI, {
 
   // Start server anyway to allow non-database features to work
   app.listen(PORT, () => {
-    console.log(`🚀 Server running at http://localhost:${PORT} (without MongoDB)`);
-    console.log(`Health check endpoint: http://localhost:${PORT}/api/health`);
+    console.log(`🚀 Server running on port ${PORT} (without MongoDB)`);
+    console.log(`Health check endpoint: https://s89-satya-capstone-tradebro.onrender.com/api/health`);
   });
 });

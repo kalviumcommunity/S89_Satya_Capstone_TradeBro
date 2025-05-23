@@ -1,4 +1,39 @@
 :root {
+<<<<<<< HEAD:client/src/styles/theme.css
+  /* Light Theme Colors - Updated Aesthetic Palette */
+  --primary-color: #55828b;
+  --primary-light: #6b9aa3;
+  --primary-dark: #4a6b73;
+  --secondary-color: #cb997e;
+  --secondary-light: #d4a68a;
+  --secondary-dark: #b8896f;
+  --accent-color: #87bba2;
+  --accent-light: #9bc7ae;
+  --accent-dark: #7aab96;
+
+  /* Light Theme Backgrounds */
+  --background-color: #fefae0;
+  --background-secondary: #e9edc9;
+  --background-gradient: linear-gradient(135deg, #fefae0, #e9edc9);
+  --card-background: #ffffff;
+  --card-shadow: 0 10px 30px rgba(85, 130, 139, 0.08);
+
+  /* Light Theme Text */
+  --text-color: #283618;
+  --text-secondary: #606c38;
+  --text-muted: #87bba2;
+
+  /* Light Theme Borders & Inputs */
+  --border-color: rgba(85, 130, 139, 0.15);
+  --input-background: rgba(255, 255, 255, 0.8);
+  --input-border: rgba(85, 130, 139, 0.2);
+
+  /* Status Colors */
+  --success-color: #c9e4ca;
+  --warning-color: #dda15e;
+  --danger-color: #bc6c25;
+  --info-color: #87bba2;
+=======
   /* Light Theme Colors - Updated Palette */
   --primary-color: #cb997e; /* Updated primary color */
   --primary-light: #dda15e; /* Light amber/tan */
@@ -24,6 +59,7 @@
   --warning-color: #dda15e; /* Updated warning color */
   --danger-color: #bc6c25; /* Updated danger color */
   --info-color: #55828b; /* Updated info color */
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40:client/src/styles/components/theme.css
 
   /* Animation Speeds */
   --transition-slow: 0.5s;
@@ -63,6 +99,42 @@
   --font-weight-extrabold: 800;
 }
 
+<<<<<<< HEAD:client/src/styles/theme.css
+/* Dark Theme - Updated Aesthetic Palette */
+[data-theme="dark"] {
+  --primary-color: #55828b;
+  --primary-light: #6b9aa3;
+  --primary-dark: #4a6b73;
+  --secondary-color: #cb997e;
+  --secondary-light: #d4a68a;
+  --secondary-dark: #b8896f;
+  --accent-color: #87bba2;
+  --accent-light: #9bc7ae;
+  --accent-dark: #7aab96;
+
+  /* Dark Theme Backgrounds */
+  --background-color: #4a4e69;
+  --background-secondary: #22223b;
+  --background-gradient: linear-gradient(135deg, #4a4e69, #364958);
+  --card-background: #364958;
+  --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+
+  /* Dark Theme Text */
+  --text-color: #ffffff;
+  --text-secondary: #c9c9c9;
+  --text-muted: #87bba2;
+
+  /* Dark Theme Borders & Inputs */
+  --border-color: rgba(255, 255, 255, 0.15);
+  --input-background: rgba(255, 255, 255, 0.08);
+  --input-border: rgba(255, 255, 255, 0.2);
+
+  /* Status Colors for Dark Theme */
+  --success-color: #87bba2;
+  --warning-color: #dda15e;
+  --danger-color: #bc6c25;
+  --info-color: #55828b;
+=======
 /* Dark Theme - Updated Palette */
 [data-theme="dark"] {
   --primary-color: #cb997e; /* Updated primary color */
@@ -89,6 +161,7 @@
   --warning-color: #dda15e; /* Updated warning color */
   --danger-color: #bc6c25; /* Updated danger color */
   --info-color: #55828b; /* Updated info color */
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40:client/src/styles/components/theme.css
 }
 
 /* Global Styles */

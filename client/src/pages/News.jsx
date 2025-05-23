@@ -3,7 +3,10 @@ import axios from "axios";
 import { motion } from "framer-motion";
 import { FiSearch, FiExternalLink, FiClock, FiFilter, FiRefreshCw } from "react-icons/fi";
 import PageLayout from "../components/PageLayout";
+<<<<<<< HEAD
+=======
 import API_ENDPOINTS from "../config/apiConfig";
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
 import "../styles/pages/News.css";
 
 const News = () => {

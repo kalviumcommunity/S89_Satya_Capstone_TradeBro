@@ -16,14 +16,23 @@ import { safeApiCall, createDummyData } from "../utils/apiUtils";
 import { formatPrice, formatLargeNumber } from "../utils/chartUtils";
 import { addToSearchHistory, getRecentSearches, clearSearchHistory } from "../utils/searchHistoryUtils";
 import API_ENDPOINTS from "../config/apiConfig";
+import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { login as reduxLogin } from "../redux/reducers/authReducer";
+import { showSuccessToast } from "../redux/reducers/toastReducer";
 import PageLayout from "../components/PageLayout";
+<<<<<<< HEAD
+import Loading from "../components/common/Loading";
+import FullPageStockChart from "../components/charts/FullPageStockChart";
+=======
 import EnhancedLoading from "../components/EnhancedLoading";
 import PageTransition from "../components/PageTransition";
 import FullScreenStockDetail from "../components/FullScreenStockDetail";
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
 import "../styles/pages/Dashboard.css";
 
 const Dashboard = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, login } = useAuth();
   const toast = useToast();
   const { virtualMoney, loading: virtualMoneyLoading, fetchVirtualMoney } = useVirtualMoney();
   const navigate = useNavigate();
@@ -70,6 +79,8 @@ const Dashboard = () => {
     }
   }, [location.search, dispatch, toast, fetchVirtualMoney]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [marketData, setMarketData] = useState({
     indices: [],
     topGainers: [],
@@ -94,6 +105,67 @@ const Dashboard = () => {
 
   // Debounce timeout reference
   const [searchTimeout, setSearchTimeout] = useState(null);
+
+  // Handle Google OAuth callback with token in URL
+  useEffect(() => {
+    // Check for token in URL (from Google OAuth callback)
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    const success = urlParams.get('success');
+    const google = urlParams.get('google');
+
+    if (token && success === 'true' && google === 'true') {
+      console.log('Google OAuth token found in URL');
+
+      // Remove token from URL to prevent issues on refresh
+      window.history.replaceState({}, document.title, '/dashboard');
+
+      // Show success message
+      toast.success('Successfully logged in with Google!');
+
+      // Store token in localStorage first to ensure it's available
+      localStorage.setItem('authToken', token);
+
+      // Process the token using Redux
+      dispatch(reduxLogin(token));
+      dispatch(showSuccessToast("Google login successful!"));
+
+      // Also use the AuthContext login with force flag
+      login(token, null, true);
+
+      // Force authentication state update
+      setTimeout(() => {
+        if (!isAuthenticated) {
+          console.log('Forcing authentication state update after Google login');
+          login(token, null, true);
+        }
+      }, 1000);
+
+      // Fetch user data
+      const fetchUserData = async () => {
+        try {
+          const response = await axios.get(API_ENDPOINTS.AUTH.USER, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+
+          if (response.data && response.data.user) {
+            console.log('User data fetched successfully:', response.data.user);
+            // Update login with user data
+            login(token, response.data.user, true);
+          }
+        } catch (error) {
+          console.error('Error fetching user data after Google login:', error);
+        }
+      };
+
+      fetchUserData();
+
+      // Refresh virtual money data
+      setTimeout(() => {
+        fetchVirtualMoney();
+      }, 500);
+    }
+  }, [dispatch, login, toast, fetchVirtualMoney]);
 
   // Fetch market data
   useEffect(() => {
@@ -377,11 +449,19 @@ const Dashboard = () => {
     }
 
     try {
+<<<<<<< HEAD
+      // Use axios to claim the reward with authentication header
+      const token = localStorage.getItem('authToken');
+      const response = await axios.post(API_ENDPOINTS.VIRTUAL_MONEY.CLAIM_REWARD, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+=======
       // Show a loading toast
       toast.info("Claiming your daily reward...");
 
       // Use axios to claim the reward
       const response = await axios.post(API_ENDPOINTS.VIRTUAL_MONEY.CLAIM_REWARD);
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
 
       if (response.data && response.data.success) {
         // Show animation and toast

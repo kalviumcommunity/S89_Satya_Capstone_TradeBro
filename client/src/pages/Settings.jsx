@@ -20,7 +20,7 @@ const SettingsPage = () => {
   useEffect(() => {
     const fetchNotificationSettings = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/api/settings/notifications");
+        const response = await axios.get(API_ENDPOINTS.SETTINGS.NOTIFICATIONS);
         if (response.data.success) {
           // Ensure we're setting a boolean value
           setNotifications(response.data.notifications === true);
@@ -42,7 +42,7 @@ const SettingsPage = () => {
     setIsUpdating(true);
 
     try {
-      const response = await axios.put("http://localhost:5000/api/settings/notifications", {
+      const response = await axios.put(API_ENDPOINTS.SETTINGS.NOTIFICATIONS, {
         notifications: newValue
       });
 

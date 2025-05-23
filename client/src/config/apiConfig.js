@@ -5,12 +5,18 @@
  * It provides a centralized place to manage the API base URL.
  */
 
+<<<<<<< HEAD
+// Base URL for API requests - use relative URLs in development for proxy support
+const isDevelopment = import.meta.env.DEV;
+export const API_BASE_URL = isDevelopment ? '' : 'https://s89-satya-capstone-tradebro.onrender.com';
+=======
 // Import the URL utility
 import { getApiBaseUrl } from '../utils/urlUtils';
 
 // Base URL for API requests - use environment variable or fallback to localhost
 // Always ensure HTTP for localhost to avoid SSL issues
 export const API_BASE_URL = getApiBaseUrl();
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
 
 // API endpoints
 export const API_ENDPOINTS = {
@@ -21,6 +27,7 @@ export const API_ENDPOINTS = {
     GOOGLE: `${API_BASE_URL}/api/auth/google`,
     FORGOT_PASSWORD: `${API_BASE_URL}/api/auth/forgotpassword`,
     RESET_PASSWORD: `${API_BASE_URL}/api/auth/resetpassword`,
+    USER: `${API_BASE_URL}/api/auth/user`,
   },
 
   // Settings endpoints

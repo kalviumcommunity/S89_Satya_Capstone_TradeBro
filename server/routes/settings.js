@@ -152,6 +152,33 @@ router.delete("/", verifyToken, async (req, res) => {
   }
 });
 
+// Get notification settings
+router.get("/notifications", verifyToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // Return notification settings
+    res.status(200).json({
+      success: true,
+      notifications: user.notifications !== undefined ? user.notifications : true,
+      notificationPreferences: user.notificationPreferences || {
+        email: true,
+        push: true,
+        priceAlerts: true,
+        newsAlerts: true,
+        orderUpdates: true
+      }
+    });
+  } catch (error) {
+    console.error("Error fetching notification settings:", error.message);
+    res.status(500).json({ success: false, message: `Failed to fetch notification settings: ${error.message}` });
+  }
+});
+
 // Update notification settings
 router.put("/notifications", verifyToken, async (req, res) => {
   try {
@@ -164,6 +191,14 @@ router.put("/notifications", verifyToken, async (req, res) => {
     // Update notifications setting
     user.notifications = req.body.notifications;
 
+    // Update notification preferences if provided
+    if (req.body.notificationPreferences) {
+      user.notificationPreferences = {
+        ...user.notificationPreferences || {},
+        ...req.body.notificationPreferences
+      };
+    }
+
     await user.save();
 
     console.log("Notification settings updated:", user.notifications);
@@ -171,7 +206,8 @@ router.put("/notifications", verifyToken, async (req, res) => {
     res.status(200).json({
       success: true,
       message: "Notification settings updated successfully!",
-      notifications: user.notifications
+      notifications: user.notifications,
+      notificationPreferences: user.notificationPreferences
     });
   } catch (error) {
     console.error("Error updating notification settings:", error.message);

@@ -1,5 +1,38 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+<<<<<<< HEAD
+import { resolve } from 'path'
+
+// https://vitejs.dev/config/
+export default defineConfig({
+  plugins: [react()],
+  build: {
+    outDir: 'dist',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+        },
+        // Ensure proper MIME types for ES modules
+        format: 'es',
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]'
+      }
+    }
+  },
+  server: {
+    port: 5173,
+    strictPort: true,
+    host: true,
+    proxy: {
+      '/api': {
+        target: 'https://s89-satya-capstone-tradebro.onrender.com',
+        changeOrigin: true,
+        secure: false
+      }
+    }
+=======
 import path from 'path'
 
 // https://vite.dev/config/
@@ -37,5 +70,6 @@ export default defineConfig(({ mode }) => {
       host: 'localhost',
       force: true, // Force the server to serve as specified (HTTP)
     },
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
   }
 })

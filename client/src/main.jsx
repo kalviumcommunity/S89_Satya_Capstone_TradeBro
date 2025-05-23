@@ -1,13 +1,18 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import './responsive.css'
 import './utils/axiosConfig'  // Import axios config
 import { setupAllMockEndpoints } from './utils/mockEndpoints'
 import App from './App.jsx'
 
 // Import animation libraries
 import { AnimatePresence } from 'framer-motion'
+
+// Import animation helpers
+import { safeAnimate } from './utils/animationHelpers'
+
+// Initialize animation utilities
+import './utils/initAnimations'
 
 // Store cleanup function reference
 let cleanupMockEndpoints = null;

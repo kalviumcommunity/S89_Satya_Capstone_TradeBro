@@ -11,7 +11,8 @@
     "postbuild": "node copy-netlify-config.js",
     "netlify-build": "node netlify-build.js",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "netlify-build": "vite build && cp -f _redirects dist/ && cp -f _headers dist/"
   },
   "dependencies": {
     "@fortawesome/free-solid-svg-icons": "^6.7.2",
