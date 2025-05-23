@@ -222,15 +222,17 @@ class UserDataManager {
    * End a chat session
    * @param {string} userId - User ID
    * @param {string} sessionId - Chat session ID
-   * @returns {Promise<Object>} - Updated ChatHistory document
+   * @returns {Promise<Object>} - Updated ChatHistory document or null if not found
    */
   static async endChatSession(userId, sessionId) {
     try {
       // Find chat history
       const chatHistory = await ChatHistory.findOne({ userId, sessionId });
 
+      // If no chat history found, return null instead of throwing an error
       if (!chatHistory) {
-        throw new Error('Chat session not found');
+        console.log(`No chat session found for userId: ${userId}, sessionId: ${sessionId}`);
+        return null;
       }
 
       // Update metadata

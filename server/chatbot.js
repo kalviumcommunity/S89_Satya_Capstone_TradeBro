@@ -782,8 +782,17 @@ router.post('/end', async (req, res) => {
 
         // Mark chat session as ended in the database
         if (userId) {
-          await UserDataManager.endChatSession(userId, sessionId);
-          console.log(`Marked chat session ${sessionId} as ended for user ${userId}`);
+          try {
+            const result = await UserDataManager.endChatSession(userId, sessionId);
+            if (result) {
+              console.log(`Marked chat session ${sessionId} as ended for user ${userId}`);
+            } else {
+              console.log(`No active chat session ${sessionId} found for user ${userId}`);
+            }
+          } catch (endSessionError) {
+            console.error(`Error ending chat session ${sessionId}:`, endSessionError);
+            // Continue execution even if there's an error
+          }
         }
       } catch (tokenError) {
         console.error('Error verifying token:', tokenError);

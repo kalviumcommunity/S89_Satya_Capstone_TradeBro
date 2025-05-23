@@ -341,10 +341,22 @@ router.get('/google/callback',
 
       // Redirect to frontend with success message and user data
       // Include token in the URL and set a flag to indicate Google login
-      res.redirect(`https://tradebro.netlify.app/dashboard?token=${token}&success=true&google=true`);
+      // Check if we're in development or production
+      const redirectUrl = process.env.NODE_ENV === 'production'
+        ? `https://tradebro.netlify.app/dashboard?token=${token}&success=true&google=true`
+        : `http://localhost:5173/dashboard?token=${token}&success=true&google=true`;
+
+      console.log('Redirecting to:', redirectUrl);
+      res.redirect(redirectUrl);
     } catch (error) {
       console.error('Error in Google callback:', error);
-      res.redirect(`https://tradebro.netlify.app/login?error=authentication_failed`);
+      // Check if we're in development or production
+      const errorRedirectUrl = process.env.NODE_ENV === 'production'
+        ? `https://tradebro.netlify.app/login?error=authentication_failed`
+        : `http://localhost:5173/login?error=authentication_failed`;
+
+      console.log('Redirecting to error URL:', errorRedirectUrl);
+      res.redirect(errorRedirectUrl);
     }
   }
 );
