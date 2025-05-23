@@ -1,10 +1,13 @@
 import axios from 'axios';
 import { setupMockHealthEndpoint } from './mockEndpoints';
 import { API_BASE_URL } from '../config/apiConfig';
+import { ensureHttpForLocalhost } from './urlUtils';
 
 // Configure axios defaults
 axios.defaults.timeout = 10000; // 10 seconds timeout by default
-axios.defaults.baseURL = API_BASE_URL; // Set the base URL for all requests
+
+// Set the base URL for all requests, ensuring HTTP for localhost
+axios.defaults.baseURL = API_BASE_URL;
 
 // Set up global error handling for network errors
 const originalFetch = window.fetch;
@@ -59,12 +62,19 @@ axios.interceptors.request.use(
 // Add a response interceptor
 axios.interceptors.response.use(
   (response) => {
+    // Log successful responses in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`Response from ${response.config.url} successful`);
+    }
     return response;
   },
   (error) => {
-    // Only log errors in development environment
+    // Log errors in development environment with more details
     if (process.env.NODE_ENV === 'development') {
       console.error('API Error:', error.config?.url, error.message, error.response?.status);
+    } else {
+      // In production, log minimal error information
+      console.error('API Error:', error.response?.status || 'Network Error');
     }
 
     // Check if this is an offline error
@@ -501,6 +511,16 @@ axios.interceptors.response.use(
     // Handle 401 Unauthorized errors
     if (error.response && error.response.status === 401) {
       console.log('Authentication error (401):', error.config.url);
+
+      // Show a toast notification for authentication errors
+      try {
+        // Check if we can access the toast function
+        if (window.showToast) {
+          window.showToast('Authentication required. Please log in.', 'error');
+        }
+      } catch (toastError) {
+        console.error('Failed to show toast notification:', toastError);
+      }
 
       // Get the current token
       const token = localStorage.getItem('authToken');

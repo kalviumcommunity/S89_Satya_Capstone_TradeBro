@@ -6,7 +6,7 @@ import FullPageStockChart from "./charts/FullPageStockChart";
 import Loading from "./common/Loading";
 import { useOfflineMode } from "../context/OfflineContext";
 import { API_ENDPOINTS } from "../config/apiConfig";
-import "../styles/StockSearch.css";
+import "../styles/components/StockSearch.css";
 
 const StockSearch = ({ onStockSelect, placeholder = "Search for stocks..." }) => {
   const { isOffline } = useOfflineMode();

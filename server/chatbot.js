@@ -36,9 +36,14 @@ const systemInstruction = [
 // Function to get stock data using our proxy server
 const getStockData = async (symbol) => {
   try {
+<<<<<<< HEAD
     // Use our API URL from environment variable or fallback to the deployed URL
     const baseUrl = process.env.API_BASE_URL || 'https://s89-satya-capstone-tradebro.onrender.com';
     const url = `${baseUrl}/api/proxy/stock-batch?symbols=${symbol}`;
+=======
+    // Use our proxy server instead of direct API call
+    const url = `${process.env.API_BASE_URL}/api/proxy/stock-batch?symbols=${symbol}`;
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
     const response = await axios.get(url);
 
     if (response.data && response.data.length > 0) {
@@ -63,9 +68,14 @@ const getStockData = async (symbol) => {
 // Function to get top gainers using our proxy server
 const getTopGainers = async () => {
   try {
+<<<<<<< HEAD
     // Use our API URL from environment variable or fallback to the deployed URL
     const baseUrl = process.env.API_BASE_URL || 'https://s89-satya-capstone-tradebro.onrender.com';
     const url = `${baseUrl}/api/proxy/top-gainers`;
+=======
+    // Use our proxy server instead of direct API call
+    const url = `${process.env.API_BASE_URL}/api/proxy/top-gainers`;
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
     const response = await axios.get(url);
 
     if (response.data && response.data.length > 0) {

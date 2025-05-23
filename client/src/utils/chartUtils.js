@@ -1,121 +1,163 @@
-import axios from 'axios';
-import { API_ENDPOINTS } from '../config/apiConfig';
+/**
+ * Chart Utility Functions
+ * 
+ * This file contains utility functions for chart data processing and visualization.
+ */
 
 /**
- * Fetch 5-minute chart data for a given symbol
- * @param {string} symbol - Stock symbol
- * @returns {Promise<Object>} - Chart data
+ * Generate dummy chart data for testing and fallback
+ * @param {string} timeRange - Time range for the chart data
+ * @returns {Array} Array of chart data points
  */
-export const fetch5MinChartData = async (symbol) => {
-  try {
-    const response = await axios.get(API_ENDPOINTS.CHARTS.FIVE_MIN(symbol));
-    
-    if (response.data && response.data.success) {
-      return {
-        success: true,
-        source: response.data.source,
-        data: response.data.data,
-        message: response.data.message
-      };
-    } else {
-      throw new Error('Invalid response format');
-    }
-  } catch (error) {
-    console.error(`Error fetching 5-minute chart data for ${symbol}:`, error);
-    
-    // Return empty data
-    return {
-      success: false,
-      source: 'error',
-      data: [],
-      message: error.message
-    };
-  }
-};
-
-/**
- * Format chart data for different time periods
- * @param {Array} data - Raw chart data
- * @param {string} period - Time period ('1d', '1w', '1m', '1y')
- * @returns {Array} - Filtered chart data
- */
-export const filterChartDataByPeriod = (data, period) => {
-  if (!data || !Array.isArray(data) || data.length === 0) {
-    return [];
-  }
+export const createDummyChartData = (timeRange = '1day') => {
+  const now = new Date();
+  const data = [];
   
-  const now = new Date().getTime();
-  let cutoffTime;
+  let points = 20;
+  let startPrice = 100 + Math.random() * 100;
+  let volatility = 2;
   
-  switch (period) {
-    case '1d':
-      // Last 24 hours
-      cutoffTime = now - (24 * 60 * 60 * 1000);
+  // Adjust parameters based on time range
+  switch (timeRange) {
+    case '5min':
+      points = 60;
+      volatility = 0.5;
       break;
-    case '1w':
-      // Last 7 days
-      cutoffTime = now - (7 * 24 * 60 * 60 * 1000);
+    case '1day':
+      points = 24;
+      volatility = 1;
       break;
-    case '1m':
-      // Last 30 days
-      cutoffTime = now - (30 * 24 * 60 * 60 * 1000);
+    case '1week':
+      points = 7;
+      volatility = 2;
       break;
-    case '1y':
-      // Last 365 days
-      cutoffTime = now - (365 * 24 * 60 * 60 * 1000);
+    case '1month':
+      points = 30;
+      volatility = 3;
+      break;
+    case '3months':
+      points = 90;
+      volatility = 5;
+      break;
+    case '1year':
+      points = 365;
+      volatility = 10;
       break;
     default:
-      // Return all data
-      return data;
+      points = 30;
+      volatility = 3;
   }
   
-  return data.filter(candle => candle.time >= cutoffTime);
+  // Generate data points
+  for (let i = 0; i < points; i++) {
+    // Calculate time based on range
+    let timestamp;
+    switch (timeRange) {
+      case '5min':
+        timestamp = new Date(now.getTime() - (points - i) * 5 * 60 * 1000);
+        break;
+      case '1day':
+        timestamp = new Date(now.getTime() - (points - i) * 60 * 60 * 1000);
+        break;
+      case '1week':
+        timestamp = new Date(now.getTime() - (points - i) * 24 * 60 * 60 * 1000);
+        break;
+      case '1month':
+        timestamp = new Date(now.getTime() - (points - i) * 24 * 60 * 60 * 1000);
+        break;
+      case '3months':
+        timestamp = new Date(now.getTime() - (points - i) * 24 * 60 * 60 * 1000);
+        break;
+      case '1year':
+        timestamp = new Date(now.getTime() - (points - i) * 24 * 60 * 60 * 1000);
+        break;
+      default:
+        timestamp = new Date(now.getTime() - (points - i) * 24 * 60 * 60 * 1000);
+    }
+    
+    // Generate price movement
+    const change = (Math.random() - 0.5) * volatility;
+    const newPrice = startPrice + change;
+    startPrice = newPrice;
+    
+    // Generate OHLC data
+    const open = newPrice;
+    const high = open + Math.random() * volatility;
+    const low = open - Math.random() * volatility;
+    const close = low + Math.random() * (high - low);
+    
+    // Generate volume
+    const volume = Math.floor(100000 + Math.random() * 900000);
+    
+    data.push({
+      timestamp: timestamp.getTime(),
+      open,
+      high,
+      low,
+      close,
+      volume
+    });
+  }
+  
+  return data;
 };
 
 /**
- * Calculate chart statistics
- * @param {Array} data - Chart data
- * @returns {Object} - Statistics
+ * Format price with currency symbol
+ * @param {number} price - Price to format
+ * @param {string} currency - Currency code (default: USD)
+ * @returns {string} Formatted price
  */
-export const calculateChartStatistics = (data) => {
-  if (!data || !Array.isArray(data) || data.length === 0) {
-    return {
-      open: 0,
-      close: 0,
-      high: 0,
-      low: 0,
-      change: 0,
-      changePercent: 0
-    };
+export const formatPrice = (price, currency = 'USD') => {
+  if (price === undefined || price === null) return '$0.00';
+  
+  const formatter = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+  
+  return formatter.format(price);
+};
+
+/**
+ * Format large numbers with abbreviations (K, M, B)
+ * @param {number} num - Number to format
+ * @returns {string} Formatted number
+ */
+export const formatLargeNumber = (num) => {
+  if (num === undefined || num === null) return '0';
+  
+  if (num >= 1000000000) {
+    return (num / 1000000000).toFixed(1) + 'B';
   }
   
-  // Sort data by time
-  const sortedData = [...data].sort((a, b) => a.time - b.time);
+  if (num >= 1000000) {
+    return (num / 1000000).toFixed(1) + 'M';
+  }
   
-  // Get first and last candles
-  const firstCandle = sortedData[0];
-  const lastCandle = sortedData[sortedData.length - 1];
+  if (num >= 1000) {
+    return (num / 1000).toFixed(1) + 'K';
+  }
   
-  // Calculate high and low
-  const high = Math.max(...sortedData.map(candle => candle.high));
-  const low = Math.min(...sortedData.map(candle => candle.low));
-  
-  // Calculate change and change percent
-  const change = lastCandle.close - firstCandle.open;
-  const changePercent = (change / firstCandle.open) * 100;
-  
-  return {
-    open: firstCandle.open,
-    close: lastCandle.close,
-    high,
-    low,
-    change,
-    changePercent
-  };
+  return num.toString();
+};
+
+/**
+ * Calculate percentage change between two values
+ * @param {number} oldValue - Original value
+ * @param {number} newValue - New value
+ * @returns {number} Percentage change
+ */
+export const calculatePercentageChange = (oldValue, newValue) => {
+  if (oldValue === 0) return 0;
+  return ((newValue - oldValue) / Math.abs(oldValue)) * 100;
 };
 
 export default {
-  fetch5MinChartData,
-  filterChartDataByPeriod,
-  calculateChartStatistics
+  createDummyChartData,
+  formatPrice,
+  formatLargeNumber,
+  calculatePercentageChange
 };

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   FiTrendingUp, FiTrendingDown, FiDollarSign, FiBarChart2,
   FiCreditCard, FiGift, FiRefreshCw, FiInfo, FiAlertCircle,
@@ -8,8 +9,11 @@ import {
 import axios from "axios";
 import { useToast } from "../context/ToastContext";
 import { useAuth } from "../context/AuthContext";
+import { useDispatch } from "react-redux";
+import { login } from "../redux/reducers/authReducer";
 import { useVirtualMoney } from "../context/VirtualMoneyContext";
 import { safeApiCall, createDummyData } from "../utils/apiUtils";
+import { formatPrice, formatLargeNumber } from "../utils/chartUtils";
 import { addToSearchHistory, getRecentSearches, clearSearchHistory } from "../utils/searchHistoryUtils";
 import API_ENDPOINTS from "../config/apiConfig";
 import { useNavigate } from "react-router-dom";
@@ -17,14 +21,63 @@ import { useDispatch } from "react-redux";
 import { login as reduxLogin } from "../redux/reducers/authReducer";
 import { showSuccessToast } from "../redux/reducers/toastReducer";
 import PageLayout from "../components/PageLayout";
+<<<<<<< HEAD
 import Loading from "../components/common/Loading";
 import FullPageStockChart from "../components/charts/FullPageStockChart";
+=======
+import EnhancedLoading from "../components/EnhancedLoading";
+import PageTransition from "../components/PageTransition";
+import FullScreenStockDetail from "../components/FullScreenStockDetail";
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
 import "../styles/pages/Dashboard.css";
 
 const Dashboard = () => {
   const { isAuthenticated, login } = useAuth();
   const toast = useToast();
   const { virtualMoney, loading: virtualMoneyLoading, fetchVirtualMoney } = useVirtualMoney();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const dispatch = useDispatch();
+
+  // Handle Google OAuth token from URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const token = urlParams.get('token');
+    const google = urlParams.get('google');
+
+    if (token && google === 'true') {
+      console.log('Google login successful, processing token from dashboard');
+
+      // Clear URL parameters
+      window.history.replaceState({}, document.title, '/dashboard');
+
+      // Process the token using Redux
+      dispatch(login(token));
+      toast.success("Google login successful!");
+
+      // Fetch user data
+      const fetchUserData = async () => {
+        try {
+          const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/auth/user`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+
+          if (response.data && response.data.user) {
+            console.log('User data fetched successfully:', response.data.user);
+
+            // Force a refresh of virtual money data
+            setTimeout(() => {
+              fetchVirtualMoney();
+            }, 500);
+          }
+        } catch (error) {
+          console.error('Error fetching user data after Google login:', error);
+        }
+      };
+
+      fetchUserData();
+    }
+  }, [location.search, dispatch, toast, fetchVirtualMoney]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -315,26 +368,50 @@ const Dashboard = () => {
       console.log('Reward status result:', result);
 
       if (result) {
-        // Check if the result has the expected structure
-        if (result.success && result.canClaim !== undefined) {
-          // Direct structure from API
-          console.log('Using direct structure for reward status');
-          setRewardStatus({
-            canClaim: result.canClaim,
-            message: result.message,
-            timeRemaining: result.timeRemaining
-          });
-        } else if (result.success && result.data && result.data.canClaim !== undefined) {
-          // Nested structure from mock data
-          console.log('Using nested structure for reward status');
-          setRewardStatus({
-            canClaim: result.data.canClaim,
-            message: result.data.message,
-            timeRemaining: result.data.timeRemaining
-          });
-        } else {
-          // Unexpected structure, use fallback
-          console.log('Unexpected reward status structure, using fallback');
+        try {
+          // Check if the result has the expected structure
+          if (result.success && result.canClaim !== undefined) {
+            // Direct structure from API
+            console.log('Using direct structure for reward status');
+            setRewardStatus({
+              canClaim: result.canClaim,
+              message: result.message,
+              timeRemaining: result.timeRemaining
+            });
+          } else if (result.success && result.data && result.data.canClaim !== undefined) {
+            // Nested structure from mock data
+            console.log('Using nested structure for reward status');
+            setRewardStatus({
+              canClaim: result.data.canClaim,
+              message: result.data.message,
+              timeRemaining: result.data.timeRemaining
+            });
+          } else if (result.success === true) {
+            // Handle the structure seen in the console log
+            console.log('Using simplified structure for reward status');
+            setRewardStatus({
+              canClaim: result.canClaim === undefined ? true : result.canClaim,
+              message: result.message || 'You can claim your daily reward!',
+              timeRemaining: result.timeRemaining || null
+            });
+
+            // Force a UI update by triggering a state change
+            setTimeout(() => {
+              setRewardStatus(prev => ({...prev}));
+            }, 100);
+          } else {
+            // Unexpected structure, use fallback
+            console.log('Unexpected reward status structure, using fallback');
+            const fallbackStatus = fallbackData();
+            setRewardStatus({
+              canClaim: fallbackStatus.canClaim,
+              message: fallbackStatus.message,
+              timeRemaining: fallbackStatus.timeRemaining
+            });
+          }
+        } catch (parseError) {
+          console.error('Error parsing reward status:', parseError);
+          // Use fallback on parse error
           const fallbackStatus = fallbackData();
           setRewardStatus({
             canClaim: fallbackStatus.canClaim,
@@ -372,11 +449,19 @@ const Dashboard = () => {
     }
 
     try {
+<<<<<<< HEAD
       // Use axios to claim the reward with authentication header
       const token = localStorage.getItem('authToken');
       const response = await axios.post(API_ENDPOINTS.VIRTUAL_MONEY.CLAIM_REWARD, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
+=======
+      // Show a loading toast
+      toast.info("Claiming your daily reward...");
+
+      // Use axios to claim the reward
+      const response = await axios.post(API_ENDPOINTS.VIRTUAL_MONEY.CLAIM_REWARD);
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
 
       if (response.data && response.data.success) {
         // Show animation and toast
@@ -388,10 +473,19 @@ const Dashboard = () => {
         toast.success(`Daily reward claimed: +₹1`);
 
         // Refresh virtual money data
-        fetchVirtualMoney(true);
+        await fetchVirtualMoney(true);
 
-        // Update reward status
-        checkRewardStatus();
+        // Update reward status with a slight delay to ensure the UI updates
+        setTimeout(() => {
+          checkRewardStatus();
+        }, 500);
+
+        // Update the reward status immediately to provide instant feedback
+        setRewardStatus(prev => ({
+          ...prev,
+          canClaim: false,
+          message: "Reward claimed! Come back tomorrow for more."
+        }));
 
         // Save the claim time to localStorage
         localStorage.setItem('lastRewardClaim', new Date().getTime().toString());
@@ -639,16 +733,17 @@ const Dashboard = () => {
 
   return (
     <PageLayout>
-      <div className="dashboard-container">
-        <div className="dashboard-header">
-          <motion.h1
-            className="dashboard-title"
-            initial={{ y: -20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.5 }}
-          >
-            <FiBarChart2 className="title-icon" /> Market Dashboard
-          </motion.h1>
+      <PageTransition showLoading={loading} loadingType="gradient" loadingText="Loading market data..." transitionType="fade">
+        <div className="dashboard-container">
+          <div className="dashboard-header">
+            <motion.h1
+              className="dashboard-title"
+              initial={{ y: -20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.5 }}
+            >
+              <FiBarChart2 className="title-icon" /> Market Dashboard
+            </motion.h1>
 
           <motion.div
             className="search-container"
@@ -833,11 +928,7 @@ const Dashboard = () => {
           </motion.div>
         </div>
 
-        {loading ? (
-          <div className="loading-container">
-            <Loading size="large" text="Loading market data..." />
-          </div>
-        ) : (
+        {!loading && (
           <>
             {/* Virtual Money and Portfolio Summary */}
             <motion.div
@@ -1084,14 +1175,25 @@ const Dashboard = () => {
         </AnimatePresence>
 
         {/* Stock Detail Component */}
-        {selectedStock && (
-          <FullPageStockChart
-            symbol={selectedStock}
-            onClose={() => setSelectedStock(null)}
-            onTransactionSuccess={handleTransactionSuccess}
-          />
-        )}
+        <AnimatePresence>
+          {selectedStock && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <FullScreenStockDetail
+                symbol={selectedStock}
+                onClose={() => setSelectedStock(null)}
+                onBuySuccess={handleTransactionSuccess}
+                onSellSuccess={handleTransactionSuccess}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
+      </PageTransition>
     </PageLayout>
   );
 };

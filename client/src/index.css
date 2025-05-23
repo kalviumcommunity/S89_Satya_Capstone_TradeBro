@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /* Import clean styles */
 @import url('./styles/theme.css');
 @import url('./styles/responsive.css');
@@ -22,3 +23,7 @@ body {
     color: var(--text-color);
     background-color: var(--background-color);
 }
+=======
+/* Import main styles */
+@import url('./styles/index.css');
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40

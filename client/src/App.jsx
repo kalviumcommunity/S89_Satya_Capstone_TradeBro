@@ -13,12 +13,18 @@ import { OfflineProvider } from "./context/OfflineContext.jsx";
 import { NotificationProvider } from "./context/NotificationContext.jsx";
 import ErrorBoundary from "./components/ErrorBoundary";
 import AppRoutes from "./approutes";
+import ScrollToTop from "./components/ScrollToTop";
+import ScrollProgress from "./components/animations/ScrollProgress";
 import store from "./redux/store";
 import { initializeTheme } from "./redux/reducers/themeReducer";
 import { checkAuth } from "./redux/reducers/authReducer";
+<<<<<<< HEAD
 import "./styles/theme.css";
 import "./styles/DarkMode.css";
 import "./styles/App.css";
+=======
+/* All styles are now imported through index.css */
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
 import "./styles/components/ErrorBoundary.css";
 import ToastContainer from "./components/ToastContainer";
 
@@ -36,6 +42,10 @@ const AppContent = () => {
   return (
     <Router>
       <div className="app-wrapper">
+        {/* Enhanced UX components */}
+        <ScrollProgress position="top" height={3} color="var(--primary-color)" />
+        <ScrollToTop showAfter={300} position="bottom-right" />
+
         <AppRoutes />
         {/* ToastContainer is now handled by ToastProvider */}
       </div>

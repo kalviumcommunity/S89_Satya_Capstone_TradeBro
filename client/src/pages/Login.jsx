@@ -6,8 +6,12 @@ import { motion } from "framer-motion";
 import { FiMail, FiLock, FiLogIn } from "react-icons/fi";
 import { login } from "../redux/reducers/authReducer";
 import { showErrorToast, showSuccessToast } from "../redux/reducers/toastReducer";
+<<<<<<< HEAD
 import API_ENDPOINTS from "../config/apiConfig";
 import Loading from "../components/common/Loading";
+=======
+import Loading from "../components/Loading";
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
 import "../styles/pages/AuthPages.css";
 import Squares from "../UI/squares";
 
@@ -64,7 +68,11 @@ const Login = () => {
 
     setLocalLoading(true);
     try {
+<<<<<<< HEAD
       const response = await axios.post(API_ENDPOINTS.AUTH.LOGIN, {
+=======
+      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/auth/login`, {
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
         email,
         password,
       });
@@ -121,7 +129,14 @@ const Login = () => {
   };
 
   const handleGoogleLogin = () => {
+<<<<<<< HEAD
     window.location.href = API_ENDPOINTS.AUTH.GOOGLE;
+=======
+    // Use the API base URL from environment variables
+    const redirectUrl = `${import.meta.env.VITE_API_BASE_URL}/api/auth/google`;
+    console.log("Redirecting to:", redirectUrl);
+    window.location.href = redirectUrl;
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
   };
 
   // Handle Google login redirect
@@ -221,6 +236,7 @@ const Login = () => {
             type="submit"
             className="auth-btn"
             disabled={loading || localLoading}
+<<<<<<< HEAD
             whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.98 }}
             animate={success ? {
@@ -229,6 +245,17 @@ const Login = () => {
               transition: { duration: 0.6 }
             } : {}}
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
+=======
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            initial={{ opacity: 0.9 }}
+            animate={{ opacity: 1 }}
+            transition={{
+              type: "spring",
+              stiffness: 500,
+              damping: 30
+            }}
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
           >
             {loading || localLoading ? (
               <Loading size="small" text="" />
@@ -262,8 +289,17 @@ const Login = () => {
             className="google-button"
             onClick={handleGoogleLogin}
             whileHover={{ scale: 1.02, y: -2 }}
+<<<<<<< HEAD
             whileTap={{ scale: 0.98 }}
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
+=======
+            whileTap={{ scale: 0.98, y: 1 }}
+            transition={{
+              type: "spring",
+              stiffness: 400,
+              damping: 25
+            }}
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
           >
             <img
               src="/Google.png"

@@ -6,7 +6,7 @@ import axios from "axios";
 import { API_ENDPOINTS } from "../config/apiConfig";
 import { useAuth } from "../context/AuthContext";
 import { usePusher } from "../context/PusherContext.jsx";
-import "./NotificationsPopup.css";
+import "../styles/components/NotificationsPopup.css";
 
 const NotificationsPopup = () => {
   const [isOpen, setIsOpen] = useState(false);
