@@ -282,7 +282,7 @@ const Notifications = () => {
             <AnimatePresence>
               {filteredNotifications.map((notification) => (
                 <motion.div
-                  key={notification._id}
+                  key={notification._id || notification.id || `notification-${Math.random()}`}
                   className={`notification-item ${notification.read ? "read" : "unread"}`}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}

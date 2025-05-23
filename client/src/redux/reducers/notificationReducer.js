@@ -79,15 +79,15 @@ export const {
 export const fetchNotifications = () => async (dispatch, getState) => {
   try {
     const { auth } = getState();
-    
+
     if (!auth.isAuthenticated) {
       return;
     }
-    
+
     dispatch(fetchNotificationsStart());
-    
-    const response = await axios.get(API_ENDPOINTS.NOTIFICATIONS.GET);
-    
+
+    const response = await axios.get(API_ENDPOINTS.NOTIFICATIONS.ALL);
+
     if (response.data && response.data.success) {
       dispatch(fetchNotificationsSuccess(response.data.data));
     } else {
@@ -102,7 +102,7 @@ export const fetchNotifications = () => async (dispatch, getState) => {
 export const markNotificationAsRead = (id) => async (dispatch) => {
   try {
     const response = await axios.put(`${API_ENDPOINTS.NOTIFICATIONS.MARK_READ}/${id}`);
-    
+
     if (response.data && response.data.success) {
       dispatch(markAsRead(id));
     }
@@ -116,7 +116,7 @@ export const markNotificationAsRead = (id) => async (dispatch) => {
 export const markAllNotificationsAsRead = () => async (dispatch) => {
   try {
     const response = await axios.put(API_ENDPOINTS.NOTIFICATIONS.MARK_ALL_READ);
-    
+
     if (response.data && response.data.success) {
       dispatch(markAllAsRead());
     }
@@ -130,7 +130,7 @@ export const markAllNotificationsAsRead = () => async (dispatch) => {
 export const deleteNotificationById = (id) => async (dispatch) => {
   try {
     const response = await axios.delete(`${API_ENDPOINTS.NOTIFICATIONS.DELETE}/${id}`);
-    
+
     if (response.data && response.data.success) {
       dispatch(deleteNotification(id));
     }

@@ -1,0 +1,211 @@
+/* Enhanced Loading Component Styles */
+.enhanced-loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+/* Size variations */
+.enhanced-loading-container.small {
+  min-height: 60px;
+}
+
+.enhanced-loading-container.medium {
+  min-height: 100px;
+}
+
+.enhanced-loading-container.large {
+  min-height: 150px;
+}
+
+/* Overlay mode */
+.enhanced-loading-container.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(5px);
+  z-index: 9999;
+}
+
+/* Loading text */
+.loading-text {
+  margin-top: 1rem;
+  font-size: 1rem;
+  color: var(--text-color, #333);
+  font-weight: 500;
+}
+
+.overlay .loading-text {
+  color: #fff;
+}
+
+/* Dots animation */
+.enhanced-loading-dots {
+  display: flex;
+  gap: 0.5rem;
+  height: 40px;
+  align-items: center;
+}
+
+.loading-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: #55828b;
+}
+
+.small .loading-dot {
+  width: 8px;
+  height: 8px;
+}
+
+.large .loading-dot {
+  width: 16px;
+  height: 16px;
+}
+
+/* Pulse animation */
+.enhanced-loading-pulse {
+  display: flex;
+  gap: 0.5rem;
+  height: 40px;
+  align-items: center;
+}
+
+.pulse-circle {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: #55828b;
+}
+
+.small .pulse-circle {
+  width: 8px;
+  height: 8px;
+}
+
+.large .pulse-circle {
+  width: 16px;
+  height: 16px;
+}
+
+/* Spinner animation */
+.enhanced-loading-spinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 40px;
+}
+
+.spinner-ring {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(85, 130, 139, 0.2);
+  border-top: 3px solid #55828b;
+  border-radius: 50%;
+}
+
+.small .spinner-ring {
+  width: 24px;
+  height: 24px;
+  border-width: 2px;
+}
+
+.large .spinner-ring {
+  width: 60px;
+  height: 60px;
+  border-width: 4px;
+}
+
+/* Wave animation */
+.enhanced-loading-wave {
+  display: flex;
+  gap: 4px;
+  height: 40px;
+  align-items: center;
+}
+
+.wave-bar {
+  width: 4px;
+  height: 100%;
+  background-color: #55828b;
+  border-radius: 2px;
+}
+
+.small .wave-bar {
+  width: 3px;
+}
+
+.large .wave-bar {
+  width: 6px;
+  gap: 6px;
+}
+
+/* Gradient animation */
+.enhanced-loading-gradient {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 40px;
+  position: relative;
+}
+
+.gradient-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, #55828b, transparent);
+  box-shadow: 0 0 15px rgba(85, 130, 139, 0.3);
+  position: relative;
+}
+
+.gradient-circle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 70%;
+  height: 70%;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.8);
+  box-shadow: inset 0 0 10px rgba(85, 130, 139, 0.2);
+}
+
+[data-theme="dark"] .gradient-circle::after {
+  background-color: rgba(30, 30, 30, 0.8);
+}
+
+.small .gradient-circle {
+  width: 24px;
+  height: 24px;
+}
+
+.large .gradient-circle {
+  width: 60px;
+  height: 60px;
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .loading-text {
+  color: #e0e0e0;
+}
+
+[data-theme="dark"] .spinner-ring {
+  border-color: rgba(85, 130, 139, 0.3);
+}
+
+/* Animation for gradient loading */
+@keyframes rotate-gradient {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

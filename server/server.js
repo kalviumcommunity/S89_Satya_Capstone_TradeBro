@@ -36,11 +36,30 @@ const MONGO_URI = process.env.MONGO_URI;
 // FMP API key for stock data
 const FMP_API = process.env.FMP_API_KEY;
 
+// Trust proxy - important for detecting HTTPS when behind a proxy like Cloudflare or Render
+app.set('trust proxy', true);
+
 // CORS configuration
 app.use(cors({
   origin: [
     "http://localhost:5173",
+<<<<<<< HEAD
     "https://tradebro.netlify.app"
+=======
+    "https://tradebro-client.vercel.app",
+    "https://tradebro.vercel.app"
+    // Prioritize localhost URLs for development
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:9090",
+    "http://localhost:9091",
+    "http://localhost:7000",
+    // Production URLs
+    "https://tradebro-client.vercel.app",
+    "https://tradebro.vercel.app",
+    "https://s89-satya-capstone-tradebro-client.vercel.app",
+    "https://s89-satya-capstone-tradebro.vercel.app",
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
   ],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -306,7 +325,11 @@ app.get('/api/stocks/search', async (req, res) => {
     });
   } catch (error) {
     console.error('Error in direct stock search:', error);
-    return res.error('Server error', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
   }
 });
 
@@ -328,7 +351,11 @@ app.use("/api/news", newsRoutes);
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error("Server error:", err);
-  return res.error("Internal Server Error", err);
+  return res.status(500).json({
+    success: false,
+    message: "Internal Server Error",
+    error: err.message
+  });
 });
 
 // Connect to MongoDB with improved options
@@ -341,7 +368,6 @@ mongoose.connect(MONGO_URI, {
   w: 'majority',
   ssl: true,
   authSource: 'admin'
-  // Removed deprecated options: useNewUrlParser and useUnifiedTopology
 })
 .then(() => {
   console.log('✅ Connected to MongoDB');

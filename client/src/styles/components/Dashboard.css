@@ -1,0 +1,144 @@
+/* Dashboard.css */
+.dashboard-container {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.dashboard-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.dashboard-header h1 {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.dashboard-header p {
+  font-size: 18px;
+  color: var(--text-secondary);
+}
+
+.block-card-section {
+  margin-bottom: 40px;
+}
+
+.block-card-section-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+  padding-left: 24px;
+}
+
+.dashboard-summary {
+  margin-top: 40px;
+}
+
+.dashboard-summary h2 {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+  padding-left: 24px;
+}
+
+.summary-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 24px;
+  padding: 0 24px;
+}
+
+.stat-card {
+  background-color: var(--card-bg);
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: var(--shadow-light);
+  border: 1px solid var(--border-light);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-main);
+}
+
+.stat-card h3 {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.stat-change {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.stat-change.positive {
+  color: var(--success-main);
+}
+
+.stat-change.negative {
+  color: var(--error-main);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding: 16px;
+  }
+  
+  .dashboard-header h1 {
+    font-size: 28px;
+  }
+  
+  .dashboard-header p {
+    font-size: 16px;
+  }
+  
+  .block-card-section-title,
+  .dashboard-summary h2 {
+    font-size: 20px;
+    padding-left: 16px;
+  }
+  
+  .summary-stats {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+    padding: 0 16px;
+  }
+  
+  .stat-card {
+    padding: 16px;
+  }
+  
+  .stat-value {
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-header h1 {
+    font-size: 24px;
+  }
+  
+  .dashboard-header p {
+    font-size: 14px;
+  }
+  
+  .summary-stats {
+    grid-template-columns: 1fr;
+  }
+}

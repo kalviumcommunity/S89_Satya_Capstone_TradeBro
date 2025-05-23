@@ -69,7 +69,8 @@ const chatHistorySchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-// Create indexes for efficient querying
+
+chatHistorySchema.index({ 'userId': 1, 'sessionId': 1 }, { unique: true });
 chatHistorySchema.index({ 'sessionId': 1 });
 chatHistorySchema.index({ 'metadata.lastActiveAt': -1 });
 

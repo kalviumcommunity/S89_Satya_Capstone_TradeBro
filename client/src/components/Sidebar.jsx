@@ -18,7 +18,10 @@ import ThemeToggle from "./ThemeToggle";
 import { useSidebar } from "../context/SidebarContext";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
+<<<<<<< HEAD
 import API_ENDPOINTS from "../config/apiConfig";
+=======
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
 import "../styles/components/Sidebar.css";
 
 const Sidebar = () => {
@@ -45,7 +48,11 @@ const Sidebar = () => {
       fullName: localStorage.getItem('userFullName') || localStorage.getItem('userName') || "User",
       email: localStorage.getItem('userEmail') || "",
       profileImage: localStorage.getItem('userProfileImage')
+<<<<<<< HEAD
         ? API_ENDPOINTS.UPLOADS(localStorage.getItem('userProfileImage'))
+=======
+        ? `${import.meta.env.VITE_API_BASE_URL}/uploads/${localStorage.getItem('userProfileImage')}`
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
         : "https://randomuser.me/api/portraits/lego/1.jpg",
       role: "Member"
     };

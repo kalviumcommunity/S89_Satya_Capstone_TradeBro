@@ -1,0 +1,235 @@
+/* News.css */
+.news-container {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+  min-height: 80vh;
+}
+
+.news-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.news-header h1 {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+
+.news-search-container {
+  position: relative;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.news-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+}
+
+.news-search-input {
+  width: 100%;
+  padding: 12px 40px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: var(--input-bg);
+  color: var(--text-primary);
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+
+.news-search-input:focus {
+  outline: none;
+  border-color: var(--primary-main);
+  box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.2);
+}
+
+.news-search-clear {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.news-search-clear:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: var(--text-primary);
+}
+
+.news-filters {
+  margin-bottom: 24px;
+  position: relative;
+}
+
+.news-filter-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+
+.news-filter-button {
+  background-color: var(--background-light);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.news-filter-button:hover {
+  background-color: var(--hover-color);
+  color: var(--text-primary);
+}
+
+.news-filter-button.active {
+  background-color: var(--primary-light);
+  color: var(--primary-dark);
+  border-color: var(--primary-main);
+}
+
+.news-filter-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin-top: 8px;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  padding: 8px;
+  gap: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.news-filter-option {
+  background: none;
+  border: none;
+  padding: 8px 16px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  flex: 1;
+  min-width: 100px;
+  text-align: center;
+}
+
+.news-filter-option:hover {
+  background-color: var(--hover-color);
+  color: var(--text-primary);
+}
+
+.news-filter-option.active {
+  background-color: var(--primary-light);
+  color: var(--primary-dark);
+}
+
+.news-loading,
+.news-error,
+.news-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 0;
+  color: var(--text-secondary);
+}
+
+.news-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--primary-main);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.news-retry-button {
+  background-color: var(--primary-main);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 16px;
+}
+
+.news-retry-button:hover {
+  background-color: var(--primary-dark);
+}
+
+/* Hide mobile-only elements on desktop */
+@media (min-width: 769px) {
+  .mobile-only {
+    display: none;
+  }
+}
+
+/* Hide desktop-only elements on mobile */
+@media (max-width: 768px) {
+  .desktop-only {
+    display: none;
+  }
+  
+  .news-container {
+    padding: 16px;
+  }
+  
+  .news-header h1 {
+    font-size: 24px;
+  }
+  
+  .news-search-input {
+    padding: 10px 36px;
+    font-size: 14px;
+  }
+  
+  .news-filter-buttons {
+    gap: 8px;
+  }
+  
+  .news-filter-button {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+}

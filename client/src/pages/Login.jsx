@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import axios from "axios";
@@ -6,8 +6,12 @@ import { motion } from "framer-motion";
 import { FiMail, FiLock, FiLogIn } from "react-icons/fi";
 import { login } from "../redux/reducers/authReducer";
 import { showErrorToast, showSuccessToast } from "../redux/reducers/toastReducer";
+<<<<<<< HEAD
 import API_ENDPOINTS from "../config/apiConfig";
 import Loading from "../components/common/Loading";
+=======
+import Loading from "../components/Loading";
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
 import "../styles/pages/AuthPages.css";
 import Squares from "../UI/squares";
 
@@ -64,7 +68,11 @@ const Login = () => {
 
     setLocalLoading(true);
     try {
+<<<<<<< HEAD
       const response = await axios.post(API_ENDPOINTS.AUTH.LOGIN, {
+=======
+      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/auth/login`, {
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
         email,
         password,
       });
@@ -72,6 +80,9 @@ const Login = () => {
 
       // Store the token and user data using Redux
       if (response.data.token) {
+        // Store token in localStorage first to ensure it's available
+        localStorage.setItem('authToken', response.data.token);
+
         // Dispatch login action
         dispatch(login(response.data.token, response.data.user));
         dispatch(showSuccessToast("Login successful!"));
@@ -85,10 +96,25 @@ const Login = () => {
 
       // Redirect after a short delay
       setTimeout(() => setSuccess(false), 1000);
-      setTimeout(() => {
-        console.log("Redirecting to portfolio page after login");
-        navigate("/portfolio", { replace: true });
-      }, 1200);
+      // Wait for authentication state to be set before redirecting
+      const checkAuthAndRedirect = () => {
+        const storedToken = localStorage.getItem('authToken');
+        if (storedToken && isAuthenticated) {
+          console.log("Authentication confirmed, redirecting to dashboard");
+          navigate("/dashboard", { replace: true });
+        } else if (storedToken) {
+          console.log("Token found but auth state not updated yet, waiting...");
+          // Force authentication state update
+          login(storedToken, response.data.user, true);
+          setTimeout(checkAuthAndRedirect, 500);
+        } else {
+          console.warn("No token found, forcing redirect anyway");
+          navigate("/dashboard", { replace: true });
+        }
+      };
+
+      // Start checking sooner
+      setTimeout(checkAuthAndRedirect, 500);
     } catch (error) {
       console.error("Login error:", error.response?.data || error.message);
       dispatch(showErrorToast(error.response?.data?.message || "Login failed. Please try again."));
@@ -103,7 +129,14 @@ const Login = () => {
   };
 
   const handleGoogleLogin = () => {
+<<<<<<< HEAD
     window.location.href = API_ENDPOINTS.AUTH.GOOGLE;
+=======
+    // Use the API base URL from environment variables
+    const redirectUrl = `${import.meta.env.VITE_API_BASE_URL}/api/auth/google`;
+    console.log("Redirecting to:", redirectUrl);
+    window.location.href = redirectUrl;
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
   };
 
   // Handle Google login redirect
@@ -119,6 +152,9 @@ const Login = () => {
       // Clear URL parameters
       window.history.replaceState({}, document.title, '/login');
 
+      // Store token in localStorage first to ensure it's available
+      localStorage.setItem('authToken', token);
+
       // Process the token using Redux
       dispatch(login(token));
       dispatch(showSuccessToast("Google login successful!"));
@@ -128,10 +164,25 @@ const Login = () => {
 
       // Redirect to portfolio
       setTimeout(() => setSuccess(false), 1000);
-      setTimeout(() => {
-        console.log("Redirecting to portfolio page after Google login");
-        navigate("/portfolio", { replace: true });
-      }, 1200);
+      // Wait for authentication state to be set before redirecting
+      const checkAuthAndRedirect = () => {
+        const storedToken = localStorage.getItem('authToken');
+        if (storedToken && isAuthenticated) {
+          console.log("Google authentication confirmed, redirecting to dashboard");
+          navigate("/dashboard", { replace: true });
+        } else if (storedToken) {
+          console.log("Google token found but auth state not updated yet, waiting...");
+          // Force authentication state update
+          login(storedToken, null, true);
+          setTimeout(checkAuthAndRedirect, 500);
+        } else {
+          console.warn("No Google token found, forcing redirect anyway");
+          navigate("/dashboard", { replace: true });
+        }
+      };
+
+      // Start checking sooner
+      setTimeout(checkAuthAndRedirect, 500);
     }
   }, [dispatch, navigate]);
 
@@ -181,19 +232,47 @@ const Login = () => {
           </div>
           {errors.password && <div className="error-message">{errors.password}</div>}
 
-          <button
+          <motion.button
             type="submit"
             className="auth-btn"
             disabled={loading || localLoading}
+<<<<<<< HEAD
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            animate={success ? {
+              scale: [1, 1.1, 1],
+              backgroundColor: ["#55828b", "#4CAF50", "#55828b"],
+              transition: { duration: 0.6 }
+            } : {}}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+=======
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            initial={{ opacity: 0.9 }}
+            animate={{ opacity: 1 }}
+            transition={{
+              type: "spring",
+              stiffness: 500,
+              damping: 30
+            }}
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
           >
             {loading || localLoading ? (
               <Loading size="small" text="" />
+            ) : success ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3 }}
+              >
+                ✓ Success!
+              </motion.div>
             ) : (
               <>
                 <FiLogIn style={{ marginRight: '8px' }} /> Log In
               </>
             )}
-          </button>
+          </motion.button>
         </form>
 
         <p className="auth-option">
@@ -206,9 +285,21 @@ const Login = () => {
 
         <div className="google-signup">
           <p>Or</p>
-          <button
+          <motion.button
             className="google-button"
             onClick={handleGoogleLogin}
+            whileHover={{ scale: 1.02, y: -2 }}
+<<<<<<< HEAD
+            whileTap={{ scale: 0.98 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+=======
+            whileTap={{ scale: 0.98, y: 1 }}
+            transition={{
+              type: "spring",
+              stiffness: 400,
+              damping: 25
+            }}
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
           >
             <img
               src="/Google.png"
@@ -221,7 +312,7 @@ const Login = () => {
               }}
             />
             Log In with Google
-          </button>
+          </motion.button>
         </div>
       </div>
       {success &&

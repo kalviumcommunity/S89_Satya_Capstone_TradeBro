@@ -150,6 +150,24 @@
 .notification-time {
   font-size: 0.8rem;
   color: #adb5bd;
+  display: block;
+  margin-bottom: 5px;
+}
+
+.notification-link {
+  font-size: 0.85rem;
+  color: #1B8E99;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 5px;
+  transition: color 0.2s ease;
+}
+
+.notification-link:hover {
+  color: #157a7f;
+  text-decoration: underline;
 }
 
 .notification-actions {
