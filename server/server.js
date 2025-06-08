@@ -20,9 +20,12 @@ const { router: notificationRoutes } = require("./routes/notificationRoutes");
 const watchlistRoutes = require("./routes/watchlistRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const stockSearchRoutes = require("./routes/stockSearchRoutes");
-const exampleRoutes = require("./routes/exampleRoutes");
+
 const userDataRoutes = require("./routes/userDataRoutes");
 const newsRoutes = require("./routes/newsRoutes");
+
+// Import real-time data service
+const realTimeDataService = require("./services/realTimeDataService");
 
 // Load environment variables
 dotenv.config();
@@ -33,8 +36,9 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 // Use environment variables for database connection and API keys
 const MONGO_URI = process.env.MONGO_URI;
-// FMP API key for stock data
+// API keys for stock data
 const FMP_API = process.env.FMP_API_KEY;
+const TWELVE_DATA_API_KEY = process.env.TWELVE_DATA_API_KEY;
 
 // Trust proxy - important for detecting HTTPS when behind a proxy like Cloudflare or Render
 app.set('trust proxy', true);
@@ -42,24 +46,18 @@ app.set('trust proxy', true);
 // CORS configuration
 app.use(cors({
   origin: [
-    "http://localhost:5173",
-<<<<<<< HEAD
-    "https://tradebro.netlify.app"
-=======
-    "https://tradebro-client.vercel.app",
-    "https://tradebro.vercel.app"
-    // Prioritize localhost URLs for development
+    // Development URLs
     "http://localhost:5173",
     "http://localhost:5174",
     "http://localhost:9090",
     "http://localhost:9091",
     "http://localhost:7000",
     // Production URLs
+    "https://tradebro.netlify.app",
     "https://tradebro-client.vercel.app",
     "https://tradebro.vercel.app",
     "https://s89-satya-capstone-tradebro-client.vercel.app",
-    "https://s89-satya-capstone-tradebro.vercel.app",
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
+    "https://s89-satya-capstone-tradebro.vercel.app"
   ],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -150,6 +148,38 @@ app.get('/api/virtual-money/test-reward-status', (_, res) => {
     balanceFormatted: '₹10,000'
   };
   return res.success('You can claim your daily reward!', rewardData);
+});
+
+// Test endpoint to trigger notifications
+app.post('/api/test/notification', (req, res) => {
+  const { userId, type = 'info', title = 'Test Notification', message = 'This is a test notification' } = req.body;
+
+  try {
+    // Send notification via real-time service
+    const notification = {
+      id: Date.now(),
+      type,
+      title,
+      message,
+      timestamp: new Date().toISOString(),
+      read: false
+    };
+
+    if (userId) {
+      realTimeDataService.sendNotificationToUser(userId, notification);
+    } else {
+      realTimeDataService.broadcastToAllUsers('new-notification', notification);
+    }
+
+    return res.success('Test notification sent successfully', notification);
+  } catch (error) {
+    console.error('Error sending test notification:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to send test notification',
+      error: error.message
+    });
+  }
 });
 
 // Public reward status endpoint (no authentication required)
@@ -344,7 +374,7 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/watchlist", watchlistRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/stock-search", stockSearchRoutes);
-app.use("/api/example", exampleRoutes);
+
 app.use("/api/userdata", userDataRoutes);
 app.use("/api/news", newsRoutes);
 
@@ -376,6 +406,10 @@ mongoose.connect(MONGO_URI, {
   app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`Health check endpoint: https://s89-satya-capstone-tradebro.onrender.com/api/health`);
+
+    // Start real-time data service
+    console.log('🔄 Starting real-time data service...');
+    realTimeDataService.start();
   });
 })
 .catch(err => {
@@ -400,5 +434,9 @@ mongoose.connect(MONGO_URI, {
   app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT} (without MongoDB)`);
     console.log(`Health check endpoint: https://s89-satya-capstone-tradebro.onrender.com/api/health`);
+
+    // Start real-time data service even without MongoDB
+    console.log('🔄 Starting real-time data service...');
+    realTimeDataService.start();
   });
 });

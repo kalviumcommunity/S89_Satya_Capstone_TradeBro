@@ -161,8 +161,6 @@ class UserDataManager {
       ]);
 
 
-      const totalSessions = await ChatHistory.countDocuments({ userId });
-
       const totalSessions = await ChatHistory.aggregate([
         { $match: { userId: userObjectId } },
         { $count: 'total' }
@@ -175,17 +173,6 @@ class UserDataManager {
         { sort: { 'metadata.lastActiveAt': -1 } }
       );
 
-
-      // Get existing user data to preserve other statistics
-      let userData = await UserData.findOne({ userId });
-
-      // Prepare statistics object with preserved tradingStats if it exists
-      const statisticsUpdate = {
-        chatAssistantUsage: {
-          totalMessages: totalMessages[0]?.total || 0,
-          totalSessions,
-          lastInteraction: lastChat?.metadata.lastActiveAt || null
-
       // Update user data
       await this.createOrUpdateUserData(userId, userEmail, {
         statistics: {
@@ -194,13 +181,7 @@ class UserDataManager {
             totalSessions: totalSessions[0]?.total || 0,
             lastInteraction: lastChat?.metadata.lastActiveAt || null
           }
-
         }
-      };
-
-      // Update user data with the prepared statistics
-      await this.createOrUpdateUserData(userId, userEmail, {
-        statistics: statisticsUpdate
       });
     } catch (error) {
       console.error('Error in updateChatStatistics:', error);

@@ -72,6 +72,7 @@ router.post('/signup', async (req, res) => {
     };
 
     res.status(201).json({
+      success: true,
       message: 'User registered successfully',
       token,
       user: userData
@@ -146,6 +147,7 @@ router.post('/login', async (req, res) => {
     };
 
     res.status(200).json({
+      success: true,
       message: 'Login successful',
       token,
       user: userData
@@ -265,6 +267,37 @@ router.put('/resetpassword', async (req, res) => {
   }
 });
 
+// Verify token endpoint
+router.get('/verify-token', verifyToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password -code -codeExpires');
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Create a user object with only the necessary data for the client
+    const userData = {
+      id: user._id,
+      email: user.email,
+      username: user.username,
+      fullName: user.fullName || user.username,
+      profileImage: user.profileImage,
+      phoneNumber: user.phoneNumber,
+      language: user.language,
+      notifications: user.notifications,
+      tradingExperience: user.tradingExperience || 'Beginner',
+      bio: user.bio || 'No bio provided yet.',
+      preferredMarkets: user.preferredMarkets || ['Stocks'],
+      createdAt: user.createdAt
+    };
+
+    res.json({ success: true, user: userData });
+  } catch (error) {
+    console.error('Error verifying token:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
 // Get user data by token
 router.get('/user', verifyToken, async (req, res) => {
   try {
@@ -299,10 +332,102 @@ router.get('/user', verifyToken, async (req, res) => {
   }
 });
 
+// Google Login with credential (for frontend Google Login component)
+router.post('/google', async (req, res) => {
+  try {
+    const { credential } = req.body;
+
+    if (!credential) {
+      return res.status(400).json({ success: false, message: 'Google credential is required' });
+    }
+
+    // Verify the Google credential
+    const { OAuth2Client } = require('google-auth-library');
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const { sub: googleId, email, name, picture } = payload;
+
+    // Check if user exists
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      // Create new user
+      user = new User({
+        email,
+        fullName: name,
+        username: email.split('@')[0],
+        profileImage: picture,
+        googleId,
+        isVerified: true, // Google accounts are pre-verified
+      });
+      await user.save();
+    } else if (!user.googleId) {
+      // Link Google account to existing user
+      user.googleId = googleId;
+      user.profileImage = user.profileImage || picture;
+      user.isVerified = true;
+      await user.save();
+    }
+
+    // Generate JWT token
+    const token = jwt.sign({
+      id: user._id,
+      email: user.email,
+      username: user.username,
+      fullName: user.fullName
+    }, JWT_SECRET, { expiresIn: '7d' });
+
+    // Create user data for response
+    const userData = {
+      id: user._id,
+      email: user.email,
+      username: user.username,
+      fullName: user.fullName,
+      profileImage: user.profileImage,
+      phoneNumber: user.phoneNumber,
+      language: user.language,
+      notifications: user.notifications,
+      tradingExperience: user.tradingExperience || 'Beginner',
+      bio: user.bio || 'No bio provided yet.',
+      preferredMarkets: user.preferredMarkets || ['Stocks'],
+      createdAt: user.createdAt
+    };
+
+    res.status(200).json({
+      success: true,
+      message: 'Google login successful',
+      token,
+      user: userData
+    });
+
+  } catch (error) {
+    console.error('Google login error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Google login failed',
+      error: error.message
+    });
+  }
+});
+
+// Test route for OAuth configuration
+router.get('/test', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Auth server is reachable',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    googleOAuthConfigured: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET)
+  });
+});
+
 // Google OAuth Login Route
-<<<<<<< HEAD
-router.get('/google',
-=======
 router.get('/google', (req, res, next) => {
   console.log('Google OAuth login route hit');
   console.log('Request URL:', req.originalUrl);
@@ -317,10 +442,11 @@ router.get('/google', (req, res, next) => {
   console.log('Headers:', req.headers);
 
   // Define the callback URL using environment variables
-  const callbackURL = process.env.API_BASE_URL + "/api/auth/google/callback";
+  const callbackURL = process.env.NODE_ENV === 'production'
+    ? "https://s89-satya-capstone-tradebro.onrender.com/api/auth/google/callback"
+    : "http://localhost:5000/api/auth/google/callback";
   console.log('Using callback URL:', callbackURL);
 
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
   passport.authenticate('google', {
     scope: ['profile', 'email'],
     prompt: 'select_account',
@@ -329,9 +455,6 @@ router.get('/google', (req, res, next) => {
 });
 
 // Google OAuth Callback Route
-<<<<<<< HEAD
-router.get('/google/callback',
-=======
 router.get('/google/callback', (req, res, next) => {
   console.log('Google OAuth callback route hit');
   console.log('Request URL:', req.originalUrl);
@@ -347,10 +470,11 @@ router.get('/google/callback', (req, res, next) => {
   console.log('Headers:', req.headers);
 
   // Define the callback URL using environment variables
-  const callbackURL = process.env.API_BASE_URL + "/api/auth/google/callback";
+  const callbackURL = process.env.NODE_ENV === 'production'
+    ? "https://s89-satya-capstone-tradebro.onrender.com/api/auth/google/callback"
+    : "http://localhost:5000/api/auth/google/callback";
   console.log('Using callback URL:', callbackURL);
 
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
   passport.authenticate('google', {
     callbackURL: callbackURL, // Pass the callback URL explicitly
     failureRedirect: '/login',
@@ -364,22 +488,15 @@ router.get('/google/callback', (req, res, next) => {
       // Make sure we have a valid user object
       if (!req.user || !req.user._id) {
         console.error('Invalid user object in Google callback');
-<<<<<<< HEAD
-        return res.redirect(`https://tradebro.netlify.app/login?error=invalid_user`);
-=======
 
-        // Determine the correct protocol based on the client URL
-        let clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
-
-        // If it's localhost, force HTTP protocol
-        if (clientUrl.includes('localhost')) {
-          clientUrl = clientUrl.replace('https://', 'http://');
-        }
+        // Determine the correct client URL based on environment
+        const clientUrl = process.env.NODE_ENV === 'production'
+          ? 'https://tradebro.netlify.app'  // Replace with your actual Netlify URL
+          : 'http://localhost:5173';
 
         console.log(`Redirecting to: ${clientUrl}/login?error=invalid_user`);
 
         return res.redirect(`${clientUrl}/login?error=invalid_user`);
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
       }
 
       // Generate JWT Token for Google OAuth with more user data (30 days expiration)
@@ -398,33 +515,10 @@ router.get('/google/callback', (req, res, next) => {
         maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
       });
 
-<<<<<<< HEAD
-      // Redirect to frontend with success message and user data
-      // Include token in the URL and set a flag to indicate Google login
-      // Check if we're in development or production
-      const redirectUrl = process.env.NODE_ENV === 'production'
-        ? `https://tradebro.netlify.app/dashboard?token=${token}&success=true&google=true`
-        : `http://localhost:5173/dashboard?token=${token}&success=true&google=true`;
-
-      console.log('Redirecting to:', redirectUrl);
-      res.redirect(redirectUrl);
-    } catch (error) {
-      console.error('Error in Google callback:', error);
-      // Check if we're in development or production
-      const errorRedirectUrl = process.env.NODE_ENV === 'production'
-        ? `https://tradebro.netlify.app/login?error=authentication_failed`
-        : `http://localhost:5173/login?error=authentication_failed`;
-
-      console.log('Redirecting to error URL:', errorRedirectUrl);
-      res.redirect(errorRedirectUrl);
-=======
-      // Determine the correct protocol based on the client URL
-      let clientUrl = process.env.CLIENT_URL;
-
-      // If it's localhost, force HTTP protocol
-      if (clientUrl.includes('localhost')) {
-        clientUrl = clientUrl.replace('https://', 'http://');
-      }
+      // Determine the correct client URL based on environment
+      const clientUrl = process.env.NODE_ENV === 'production'
+        ? 'https://tradebro.netlify.app'  // Replace with your actual Netlify URL
+        : 'http://localhost:5173';
 
       console.log(`Redirecting to: ${clientUrl}/dashboard?token=${token}&google=true`);
 
@@ -433,18 +527,14 @@ router.get('/google/callback', (req, res, next) => {
     } catch (error) {
       console.error('Error in Google callback:', error);
 
-      // Determine the correct protocol based on the client URL
-      let clientUrl = process.env.CLIENT_URL;
-
-      // If it's localhost, force HTTP protocol
-      if (clientUrl.includes('localhost')) {
-        clientUrl = clientUrl.replace('https://', 'http://');
-      }
+      // Determine the correct client URL based on environment
+      const clientUrl = process.env.NODE_ENV === 'production'
+        ? 'https://tradebro.netlify.app'  // Replace with your actual Netlify URL
+        : 'http://localhost:5173';
 
       console.log(`Redirecting to: ${clientUrl}/login?error=authentication_failed`);
 
       res.redirect(`${clientUrl}/login?error=authentication_failed`);
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
     }
   }
 );
