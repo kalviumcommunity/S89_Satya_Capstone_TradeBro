@@ -78,7 +78,6 @@ router.post('/signup', async (req, res) => {
       user: userData
     });
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -88,33 +87,23 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    console.log("Login request body:", req.body);
-
     if (!email || !password) {
-      console.log("Missing email or password");
       return res.status(400).json({ message: 'Please fill all fields' });
     }
 
     const user = await User.findOne({ email });
     if (!user) {
-      console.log("User not found for email:", email);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
     if (!user.password) {
-      console.error("Password not set for user:", user.email);
       return res.status(400).json({ message: 'Password not set for this user' });
     }
 
-    console.log("User found:", user);
-
     const isPasswordCorrect = await bcrypt.compare(password, user.password);
     if (!isPasswordCorrect) {
-      console.log("Incorrect password for user:", email);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
-
-    console.log("Password is correct for user:", email);
 
     const token = jwt.sign({
       id: user._id,
@@ -153,7 +142,6 @@ router.post('/login', async (req, res) => {
       user: userData
     });
   } catch (error) {
-    console.error("Error in login route:", error);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -174,12 +162,7 @@ router.post('/forgotpassword', async (req, res) => {
     user.codeExpires = Date.now() + 10 * 60 * 1000;
     await user.save();
 
-    // Log environment variables for debugging
-    console.log('Email config:', {
-      emailUser: process.env.email_nodemailer || process.env.EMAIL_USER,
-      emailPass: process.env.password_nodemailer ? 'Password exists' : 'No password',
-      emailService: process.env.EMAIL_SERVICE
-    });
+
 
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
@@ -211,10 +194,8 @@ router.post('/forgotpassword', async (req, res) => {
         `
       });
 
-      console.log('Password reset email sent successfully to:', user.email);
       return res.status(200).send({ msg: "Verification code sent successfully, check spam mails" });
     } catch (emailError) {
-      console.error('Error sending email:', emailError);
 
       // Check if it's an authentication error
       if (emailError.code === 'EAUTH') {
@@ -230,7 +211,6 @@ router.post('/forgotpassword', async (req, res) => {
       });
     }
   } catch (error) {
-    console.error('Error in forgotpassword route:', error);
     res.status(500).send({ msg: "Something went wrong", error: error.message });
   }
 });
@@ -262,7 +242,6 @@ router.put('/resetpassword', async (req, res) => {
 
     res.status(200).json({ message: 'Password reset successfully. Redirecting to login page...' });
   } catch (error) {
-    console.error('Error in resetpassword route:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -293,7 +272,6 @@ router.get('/verify-token', verifyToken, async (req, res) => {
 
     res.json({ success: true, user: userData });
   } catch (error) {
-    console.error('Error verifying token:', error);
     res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
@@ -327,7 +305,6 @@ router.get('/user', verifyToken, async (req, res) => {
       user: userData
     });
   } catch (error) {
-    console.error('Error fetching user data:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -407,45 +384,21 @@ router.post('/google', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Google login error:', error);
     res.status(500).json({
       success: false,
-      message: 'Google login failed',
-      error: error.message
+      message: 'Google authentication failed. Please try again.'
     });
   }
 });
 
-// Test route for OAuth configuration
-router.get('/test', (req, res) => {
-  res.json({
-    success: true,
-    message: 'Auth server is reachable',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development',
-    googleOAuthConfigured: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET)
-  });
-});
 
-// Google OAuth Login Route
-router.get('/google', (req, res, next) => {
-  console.log('Google OAuth login route hit');
-  console.log('Request URL:', req.originalUrl);
 
-  // Force HTTPS protocol regardless of what req.protocol reports
-  const protocol = 'https';
-  console.log('Protocol from request:', req.protocol);
-  console.log('X-Forwarded-Proto header:', req.headers['x-forwarded-proto']);
-  console.log('Using protocol:', protocol);
-
-  console.log('Full URL:', `${protocol}://${req.get('host')}${req.originalUrl}`);
-  console.log('Headers:', req.headers);
-
+// Google OAuth Login Route (traditional OAuth flow)
+router.get('/google/oauth', (req, res, next) => {
   // Define the callback URL using environment variables
   const callbackURL = process.env.NODE_ENV === 'production'
     ? "https://s89-satya-capstone-tradebro.onrender.com/api/auth/google/callback"
     : "http://localhost:5000/api/auth/google/callback";
-  console.log('Using callback URL:', callbackURL);
 
   passport.authenticate('google', {
     scope: ['profile', 'email'],
@@ -456,24 +409,10 @@ router.get('/google', (req, res, next) => {
 
 // Google OAuth Callback Route
 router.get('/google/callback', (req, res, next) => {
-  console.log('Google OAuth callback route hit');
-  console.log('Request URL:', req.originalUrl);
-
-  // Force HTTPS protocol regardless of what req.protocol reports
-  const protocol = 'https';
-  console.log('Protocol from request:', req.protocol);
-  console.log('X-Forwarded-Proto header:', req.headers['x-forwarded-proto']);
-  console.log('Using protocol:', protocol);
-
-  console.log('Full URL:', `${protocol}://${req.get('host')}${req.originalUrl}`);
-  console.log('Query params:', req.query);
-  console.log('Headers:', req.headers);
-
   // Define the callback URL using environment variables
   const callbackURL = process.env.NODE_ENV === 'production'
     ? "https://s89-satya-capstone-tradebro.onrender.com/api/auth/google/callback"
     : "http://localhost:5000/api/auth/google/callback";
-  console.log('Using callback URL:', callbackURL);
 
   passport.authenticate('google', {
     callbackURL: callbackURL, // Pass the callback URL explicitly
@@ -483,18 +422,12 @@ router.get('/google/callback', (req, res, next) => {
 },
   (req, res) => {
     try {
-      console.log('Google OAuth callback received, user:', req.user.email);
-
       // Make sure we have a valid user object
       if (!req.user || !req.user._id) {
-        console.error('Invalid user object in Google callback');
-
         // Determine the correct client URL based on environment
         const clientUrl = process.env.NODE_ENV === 'production'
-          ? 'https://tradebro.netlify.app'  // Replace with your actual Netlify URL
+          ? 'https://tradebro.netlify.app'
           : 'http://localhost:5173';
-
-        console.log(`Redirecting to: ${clientUrl}/login?error=invalid_user`);
 
         return res.redirect(`${clientUrl}/login?error=invalid_user`);
       }
@@ -517,22 +450,16 @@ router.get('/google/callback', (req, res, next) => {
 
       // Determine the correct client URL based on environment
       const clientUrl = process.env.NODE_ENV === 'production'
-        ? 'https://tradebro.netlify.app'  // Replace with your actual Netlify URL
+        ? 'https://tradebro.netlify.app'
         : 'http://localhost:5173';
-
-      console.log(`Redirecting to: ${clientUrl}/dashboard?token=${token}&google=true`);
 
       // Redirect directly to dashboard with token
       res.redirect(`${clientUrl}/dashboard?token=${token}&google=true`);
     } catch (error) {
-      console.error('Error in Google callback:', error);
-
       // Determine the correct client URL based on environment
       const clientUrl = process.env.NODE_ENV === 'production'
-        ? 'https://tradebro.netlify.app'  // Replace with your actual Netlify URL
+        ? 'https://tradebro.netlify.app'
         : 'http://localhost:5173';
-
-      console.log(`Redirecting to: ${clientUrl}/login?error=authentication_failed`);
 
       res.redirect(`${clientUrl}/login?error=authentication_failed`);
     }
@@ -543,7 +470,6 @@ router.get('/google/callback', (req, res, next) => {
 router.get('/logout', (req, res) => {
   req.logout((err) => {
     if (err) {
-      console.error("Logout error:", err);
       return res.status(500).json({ message: "Logout failed" });
     }
     req.session.destroy(); // Destroy the session
