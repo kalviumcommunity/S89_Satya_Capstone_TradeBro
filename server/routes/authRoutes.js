@@ -300,9 +300,6 @@ router.get('/user', verifyToken, async (req, res) => {
 });
 
 // Google OAuth Login Route
-<<<<<<< HEAD
-router.get('/google',
-=======
 router.get('/google', (req, res, next) => {
   console.log('Google OAuth login route hit');
   console.log('Request URL:', req.originalUrl);
@@ -320,7 +317,6 @@ router.get('/google', (req, res, next) => {
   const callbackURL = process.env.API_BASE_URL + "/api/auth/google/callback";
   console.log('Using callback URL:', callbackURL);
 
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
   passport.authenticate('google', {
     scope: ['profile', 'email'],
     prompt: 'select_account',
@@ -329,9 +325,6 @@ router.get('/google', (req, res, next) => {
 });
 
 // Google OAuth Callback Route
-<<<<<<< HEAD
-router.get('/google/callback',
-=======
 router.get('/google/callback', (req, res, next) => {
   console.log('Google OAuth callback route hit');
   console.log('Request URL:', req.originalUrl);
@@ -350,7 +343,6 @@ router.get('/google/callback', (req, res, next) => {
   const callbackURL = process.env.API_BASE_URL + "/api/auth/google/callback";
   console.log('Using callback URL:', callbackURL);
 
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
   passport.authenticate('google', {
     callbackURL: callbackURL, // Pass the callback URL explicitly
     failureRedirect: '/login',
@@ -364,9 +356,6 @@ router.get('/google/callback', (req, res, next) => {
       // Make sure we have a valid user object
       if (!req.user || !req.user._id) {
         console.error('Invalid user object in Google callback');
-<<<<<<< HEAD
-        return res.redirect(`https://tradebro.netlify.app/login?error=invalid_user`);
-=======
 
         // Determine the correct protocol based on the client URL
         let clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
@@ -379,7 +368,6 @@ router.get('/google/callback', (req, res, next) => {
         console.log(`Redirecting to: ${clientUrl}/login?error=invalid_user`);
 
         return res.redirect(`${clientUrl}/login?error=invalid_user`);
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
       }
 
       // Generate JWT Token for Google OAuth with more user data (30 days expiration)
@@ -398,51 +386,28 @@ router.get('/google/callback', (req, res, next) => {
         maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
       });
 
-<<<<<<< HEAD
-      // Redirect to frontend with success message and user data
-      // Include token in the URL and set a flag to indicate Google login
-      // Check if this is a new user or existing user
-      const isNewUser = req.user.isNewUser || false;
-      const redirectPath = isNewUser ? '/login' : '/dashboard';
-      const newUserParam = isNewUser ? '&newUser=true' : '';
-
-      // Check if we're in development or production
-      const baseUrl = process.env.NODE_ENV === 'production'
-        ? 'https://tradebro.netlify.app'
-        : 'http://localhost:5174'; // Updated to match current port
-
-      const redirectUrl = `${baseUrl}${redirectPath}?token=${token}&success=true&google=true${newUserParam}`;
-
-      console.log('Redirecting to:', redirectUrl, isNewUser ? '(New User)' : '(Existing User)');
-      res.redirect(redirectUrl);
-    } catch (error) {
-      console.error('Error in Google callback:', error);
-      // Check if we're in development or production
-      const baseUrl = process.env.NODE_ENV === 'production'
-        ? 'https://tradebro.netlify.app'
-        : 'http://localhost:5174'; // Updated to match current port
-      const errorRedirectUrl = `${baseUrl}/login?error=authentication_failed`;
-
-      console.log('Redirecting to error URL:', errorRedirectUrl);
-      res.redirect(errorRedirectUrl);
-=======
       // Determine the correct protocol based on the client URL
-      let clientUrl = process.env.CLIENT_URL;
+      let clientUrl = process.env.CLIENT_URL || 'https://tradebro.netlify.app';
 
       // If it's localhost, force HTTP protocol
       if (clientUrl.includes('localhost')) {
         clientUrl = clientUrl.replace('https://', 'http://');
       }
 
-      console.log(`Redirecting to: ${clientUrl}/dashboard?token=${token}&google=true`);
+      // Check if this is a new user or existing user
+      const isNewUser = req.user.isNewUser || false;
+      const redirectPath = isNewUser ? '/login' : '/dashboard';
+      const newUserParam = isNewUser ? '&newUser=true' : '';
 
-      // Redirect directly to dashboard with token
-      res.redirect(`${clientUrl}/dashboard?token=${token}&google=true`);
+      const redirectUrl = `${clientUrl}${redirectPath}?token=${token}&success=true&google=true${newUserParam}`;
+
+      console.log('Redirecting to:', redirectUrl, isNewUser ? '(New User)' : '(Existing User)');
+      res.redirect(redirectUrl);
     } catch (error) {
       console.error('Error in Google callback:', error);
 
       // Determine the correct protocol based on the client URL
-      let clientUrl = process.env.CLIENT_URL;
+      let clientUrl = process.env.CLIENT_URL || 'https://tradebro.netlify.app';
 
       // If it's localhost, force HTTP protocol
       if (clientUrl.includes('localhost')) {
@@ -452,7 +417,6 @@ router.get('/google/callback', (req, res, next) => {
       console.log(`Redirecting to: ${clientUrl}/login?error=authentication_failed`);
 
       res.redirect(`${clientUrl}/login?error=authentication_failed`);
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
     }
   }
 );
