@@ -1,73 +1,39 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-<<<<<<< HEAD
-import { resolve } from 'path'
-
-// https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [
-    react({
-      // React 19 compatibility settings
-      jsxRuntime: 'automatic',
-      jsxImportSource: 'react',
-      // Remove jsx: true to fix the non-boolean attribute error
-      babel: {
-        plugins: [
-          // Add babel plugins for React 19 compatibility if needed
-        ]
-      }
-    })
-  ],
-  define: {
-    // React 19 compatibility - avoid setting read-only properties
-    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
-  },
-  optimizeDeps: {
-    include: [
-      'react',
-      'react-dom',
-      'framer-motion',
-      'react-icons/fi'
-    ],
-    exclude: []
-  },
-  build: {
-    outDir: 'dist',
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-        },
-        // Ensure proper MIME types for ES modules
-        format: 'es',
-        entryFileNames: 'assets/[name]-[hash].js',
-        chunkFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash].[ext]'
-      }
-    }
-  },
-  server: {
-    port: 5173,
-    strictPort: true,
-    host: true,
-    proxy: {
-      '/api': {
-        target: 'https://s89-satya-capstone-tradebro.onrender.com',
-        changeOrigin: true,
-        secure: false
-      }
-    }
-=======
 import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   return {
-    plugins: [react()],
+    plugins: [
+      react({
+        // React 19 compatibility settings
+        jsxRuntime: 'automatic',
+        jsxImportSource: 'react',
+        babel: {
+          plugins: [
+            // Add babel plugins for React 19 compatibility if needed
+          ]
+        }
+      })
+    ],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
       },
+    },
+    define: {
+      // React 19 compatibility - avoid setting read-only properties
+      'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
+    },
+    optimizeDeps: {
+      include: [
+        'react',
+        'react-dom',
+        'framer-motion',
+        'react-icons/fi'
+      ],
+      exclude: []
     },
     build: {
       outDir: 'dist',
@@ -77,6 +43,9 @@ export default defineConfig(({ mode }) => {
           main: path.resolve(__dirname, 'index.html'),
         },
         output: {
+          manualChunks: {
+            vendor: ['react', 'react-dom', 'react-router-dom'],
+          },
           // Ensure proper file extensions and formats
           entryFileNames: 'assets/[name]-[hash].js',
           chunkFileNames: 'assets/[name]-[hash].js',
@@ -84,17 +53,29 @@ export default defineConfig(({ mode }) => {
           // Use standard ES modules
           format: 'es',
         },
+        // Handle external dependencies and platform-specific modules
+        external: (id) => {
+          // Don't bundle platform-specific rollup binaries
+          if (id.includes('@rollup/rollup-')) return true
+          return false
+        }
       },
       // Copy Netlify configuration files to the dist folder
       copyPublicDir: true,
     },
     server: {
-      port: 5173, // Use port 5173 for local development
+      port: 5173,
+      strictPort: true,
+      host: true,
       open: true,
-      https: false, // Explicitly disable HTTPS
-      host: 'localhost',
-      force: true, // Force the server to serve as specified (HTTP)
-    },
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
+      https: false,
+      proxy: {
+        '/api': {
+          target: 'https://s89-satya-capstone-tradebro.onrender.com',
+          changeOrigin: true,
+          secure: false
+        }
+      }
+    }
   }
 })
