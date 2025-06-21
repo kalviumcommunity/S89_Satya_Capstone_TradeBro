@@ -100,3 +100,62 @@
 ::-webkit-scrollbar-thumb:hover {
   background: var(--primary-dark);
 }
+
+/* ===== ENHANCED MOBILE RESPONSIVENESS ===== */
+
+/* Enhanced Mobile Responsiveness */
+@media (max-width: 768px) {
+  .app-container {
+    flex-direction: column;
+  }
+
+  .main-content {
+    width: 100%;
+    padding: 0;
+    overflow-x: hidden;
+  }
+
+  .welcome {
+    margin-top: 50px;
+    padding: 0 1rem;
+  }
+
+  .welcome h1 {
+    font-size: 2rem;
+  }
+
+  .welcome p {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-wrapper {
+    font-size: 14px;
+  }
+
+  .main-content {
+    min-height: calc(100vh - 60px);
+  }
+
+  .welcome {
+    margin-top: 30px;
+    padding: 0 0.75rem;
+  }
+
+  .welcome h1 {
+    font-size: 1.75rem;
+  }
+
+  .welcome p {
+    font-size: 0.9rem;
+  }
+}
+
+/* Touch-friendly interactions */
+@media (hover: none) and (pointer: coarse) {
+  button, .btn, .clickable {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}

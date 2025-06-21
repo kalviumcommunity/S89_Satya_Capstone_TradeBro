@@ -46,7 +46,7 @@ export const getVirtualMoney = async ({
     // Try to get from API if we should refresh
     if (shouldFetchFromApi) {
       try {
-        const response = await axios.get(API_ENDPOINTS.VIRTUAL_MONEY.ACCOUNT, { timeout: 8000 });
+        const response = await axios.get(API_ENDPOINTS.VIRTUAL_MONEY.ACCOUNT, { timeout: 5000 });
 
         if (response.data && response.data.success) {
           const data = response.data.data;

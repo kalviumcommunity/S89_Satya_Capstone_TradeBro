@@ -3,14 +3,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   FiTrendingUp, FiTrendingDown, FiDollarSign, FiBarChart2,
   FiCreditCard, FiGift, FiRefreshCw, FiInfo, FiAlertCircle,
-  FiSearch, FiX, FiStar, FiPlus, FiClock, FiTrash2
+  FiSearch, FiX, FiStar, FiPlus, FiClock, FiTrash2, FiEye,
+  FiShoppingCart
 } from "react-icons/fi";
 import axios from "axios";
 import { useToast } from "../context/ToastContext";
 import { useAuth } from "../context/AuthContext";
 import { useVirtualMoney } from "../context/VirtualMoneyContext";
 import { safeApiCall, createDummyData } from "../utils/apiUtils";
-import { addToSearchHistory, getRecentSearches, clearSearchHistory } from "../utils/searchHistoryUtils";
+
 import API_ENDPOINTS from "../config/apiConfig";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
@@ -18,7 +19,11 @@ import { login as reduxLogin } from "../redux/reducers/authReducer";
 import { showSuccessToast } from "../redux/reducers/toastReducer";
 import PageLayout from "../components/PageLayout";
 import Loading from "../components/common/Loading";
-import FullPageStockChart from "../components/charts/FullPageStockChart";
+
+import ChartModal from "../components/ChartModal";
+import StockSearch from "../components/StockSearch";
+
+import { useChartModal } from "../hooks/useChartModal";
 import "../styles/pages/Dashboard.css";
 
 const Dashboard = () => {
@@ -28,30 +33,33 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
+  // Chart modal functionality
+  const { handleStockSelect, modalProps } = useChartModal();
   const [marketData, setMarketData] = useState({
     indices: [],
-    topGainers: [],
-    topLosers: [],
     marketStatus: "open"
   });
+
+  // Enhanced state for market movers with advanced functionality
+  const [marketMovers, setMarketMovers] = useState({
+    gainers: [],
+    losers: [],
+    loading: false,
+    activeTab: 'gainers',
+    sortBy: 'percentage',
+    lastUpdated: null,
+    autoRefresh: true,
+    refreshInterval: null,
+    animationKey: 0
+  });
   const [showRewardAnimation, setShowRewardAnimation] = useState(false);
-  const [selectedStock, setSelectedStock] = useState(null);
   const [portfolioSummary, setPortfolioSummary] = useState({
     totalInvestment: 0,
     totalValue: 0,
     profitLoss: 0,
     profitLossPercentage: 0
   });
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [stockSymbols, setStockSymbols] = useState([]);
-  const [recentSearches, setRecentSearches] = useState([]);
-  const [showRecentSearches, setShowRecentSearches] = useState(false);
-
-  // Debounce timeout reference
-  const [searchTimeout, setSearchTimeout] = useState(null);
 
   // Handle Google OAuth callback with token in URL
   useEffect(() => {
@@ -120,17 +128,11 @@ const Dashboard = () => {
       try {
         setLoading(true);
 
-        // Use our proxy server instead of direct API calls
-        const [indicesResponse, gainersResponse, losersResponse] = await Promise.all([
-          axios.get(API_ENDPOINTS.PROXY.MARKET_INDICES),
-          axios.get(API_ENDPOINTS.PROXY.TOP_GAINERS),
-          axios.get(API_ENDPOINTS.PROXY.TOP_LOSERS)
-        ]);
+        // Fetch only market indices
+        const indicesResponse = await axios.get(API_ENDPOINTS.PROXY.MARKET_INDICES);
 
         setMarketData({
           indices: indicesResponse.data.slice(0, 5),
-          topGainers: gainersResponse.data.slice(0, 5),
-          topLosers: losersResponse.data.slice(0, 5),
           marketStatus: "open" // This would come from an API in a real app
         });
 
@@ -139,28 +141,14 @@ const Dashboard = () => {
         console.error("Error fetching market data:", error);
         toast.error("Failed to fetch market data. Using mock data instead.");
 
-        // Use mock data as fallback
+        // Use mock data as fallback with Indian indices
         setMarketData({
           indices: [
-            { symbol: "^GSPC", name: "S&P 500", price: 4500.53, changesPercentage: 0.75 },
-            { symbol: "^DJI", name: "Dow Jones", price: 35000.25, changesPercentage: 0.5 },
-            { symbol: "^IXIC", name: "NASDAQ", price: 14200.75, changesPercentage: 1.2 },
-            { symbol: "^RUT", name: "Russell 2000", price: 2100.30, changesPercentage: -0.3 },
-            { symbol: "^VIX", name: "Volatility Index", price: 18.25, changesPercentage: -2.1 }
-          ],
-          topGainers: [
-            { symbol: "AAPL", name: "Apple Inc.", price: 178.25, changesPercentage: 3.5 },
-            { symbol: "MSFT", name: "Microsoft Corp.", price: 332.80, changesPercentage: 2.8 },
-            { symbol: "GOOGL", name: "Alphabet Inc.", price: 135.60, changesPercentage: 2.3 },
-            { symbol: "AMZN", name: "Amazon.com Inc.", price: 145.20, changesPercentage: 1.9 },
-            { symbol: "TSLA", name: "Tesla Inc.", price: 245.75, changesPercentage: 1.7 }
-          ],
-          topLosers: [
-            { symbol: "META", name: "Meta Platforms Inc.", price: 310.50, changesPercentage: -2.1 },
-            { symbol: "NFLX", name: "Netflix Inc.", price: 425.30, changesPercentage: -1.8 },
-            { symbol: "NVDA", name: "NVIDIA Corp.", price: 450.20, changesPercentage: -1.5 },
-            { symbol: "JPM", name: "JPMorgan Chase & Co.", price: 155.40, changesPercentage: -1.2 },
-            { symbol: "BAC", name: "Bank of America Corp.", price: 35.75, changesPercentage: -0.9 }
+            { symbol: "^NSEI", name: "NIFTY 50", price: 19850.25, changesPercentage: 0.85 },
+            { symbol: "^BSESN", name: "BSE SENSEX", price: 66750.40, changesPercentage: 0.72 },
+            { symbol: "^NSEBANK", name: "NIFTY BANK", price: 45280.60, changesPercentage: 1.15 },
+            { symbol: "^NSEIT", name: "NIFTY IT", price: 28450.30, changesPercentage: -0.45 },
+            { symbol: "^INDIAVIX", name: "India VIX", price: 15.75, changesPercentage: -1.8 }
           ],
           marketStatus: "open"
         });
@@ -171,6 +159,266 @@ const Dashboard = () => {
 
     fetchMarketData();
   }, []);
+
+  // Separate fetch function for market movers with enhanced functionality
+  const fetchMarketMovers = async (forceRefresh = false) => {
+    try {
+      setMarketMovers(prev => ({ ...prev, loading: true }));
+
+      // Fetch both gainers and losers separately for better performance
+      const [gainersResponse, losersResponse] = await Promise.all([
+        axios.get(API_ENDPOINTS.PROXY.TOP_GAINERS),
+        axios.get(API_ENDPOINTS.PROXY.TOP_LOSERS)
+      ]);
+
+      // Enhanced data structure with additional metrics and safe defaults
+      const enhancedGainers = gainersResponse.data.slice(0, 10).map((stock, index) => ({
+        ...stock,
+        rank: index + 1,
+        price: stock.price || 0,
+        changesPercentage: stock.changesPercentage || 0,
+        volume: stock.volume || Math.floor(Math.random() * 10000000) + 1000000,
+        marketCap: stock.marketCap || Math.floor(Math.random() * 100000000000) + 10000000000,
+        dayHigh: stock.dayHigh || stock.price || 0,
+        dayLow: stock.dayLow || stock.price || 0,
+        sector: stock.sector || 'Technology',
+        pe: stock.pe || 'N/A'
+      }));
+
+      const enhancedLosers = losersResponse.data.slice(0, 10).map((stock, index) => ({
+        ...stock,
+        rank: index + 1,
+        price: stock.price || 0,
+        changesPercentage: stock.changesPercentage || 0,
+        volume: stock.volume || Math.floor(Math.random() * 10000000) + 1000000,
+        marketCap: stock.marketCap || Math.floor(Math.random() * 100000000000) + 10000000000,
+        dayHigh: stock.dayHigh || stock.price || 0,
+        dayLow: stock.dayLow || stock.price || 0,
+        sector: stock.sector || 'Technology',
+        pe: stock.pe || 'N/A'
+      }));
+
+      setMarketMovers(prev => ({
+        ...prev,
+        gainers: enhancedGainers,
+        losers: enhancedLosers,
+        loading: false,
+        lastUpdated: new Date(),
+        animationKey: prev.animationKey + 1
+      }));
+
+    } catch (error) {
+      console.error("Error fetching market movers:", error);
+
+      // Enhanced fallback data with premium Indian stocks and detailed metrics
+      const mockGainers = [
+        {
+          symbol: "RELIANCE.NS",
+          name: "Reliance Industries Ltd.",
+          price: 2485.75,
+          changesPercentage: 4.2,
+          rank: 1,
+          volume: 12500000,
+          marketCap: 1680000000000,
+          dayHigh: 2520.30,
+          dayLow: 2445.60,
+          sector: "Energy",
+          pe: 28.5,
+          trend: "bullish",
+          exchange: "NSE",
+          currency: "INR"
+        },
+        {
+          symbol: "TCS.NS",
+          name: "Tata Consultancy Services",
+          price: 3650.40,
+          changesPercentage: 3.8,
+          rank: 2,
+          volume: 8200000,
+          marketCap: 1320000000000,
+          dayHigh: 3685.20,
+          dayLow: 3598.75,
+          sector: "IT Services",
+          pe: 26.8,
+          trend: "bullish",
+          exchange: "NSE",
+          currency: "INR"
+        },
+        {
+          symbol: "500325",
+          name: "Reliance Industries Ltd.",
+          price: 2485.75,
+          changesPercentage: 3.1,
+          rank: 3,
+          volume: 15600000,
+          marketCap: 1680000000000,
+          dayHigh: 2520.30,
+          dayLow: 2445.60,
+          sector: "Energy",
+          pe: 28.5,
+          trend: "bullish",
+          exchange: "BSE",
+          currency: "INR"
+        }
+      ];
+
+      const mockLosers = [
+        {
+          symbol: "BHARTIARTL.NS",
+          name: "Bharti Airtel Limited",
+          price: 865.25,
+          changesPercentage: -3.4,
+          rank: 1,
+          volume: 14500000,
+          marketCap: 520000000000,
+          dayHigh: 895.60,
+          dayLow: 862.30,
+          sector: "Telecom",
+          pe: 22.1,
+          trend: "bearish",
+          exchange: "NSE",
+          currency: "INR"
+        },
+        {
+          symbol: "ITC.NS",
+          name: "ITC Limited",
+          price: 412.80,
+          changesPercentage: -2.9,
+          rank: 2,
+          volume: 22000000,
+          marketCap: 510000000000,
+          dayHigh: 425.40,
+          dayLow: 410.15,
+          sector: "FMCG",
+          pe: 24.7,
+          trend: "bearish",
+          exchange: "NSE",
+          currency: "INR"
+        },
+        {
+          symbol: "532174",
+          name: "ICICI Bank Ltd",
+          price: 598.45,
+          changesPercentage: -2.6,
+          rank: 3,
+          volume: 28500000,
+          marketCap: 530000000000,
+          dayHigh: 615.80,
+          dayLow: 595.20,
+          sector: "Banking",
+          pe: 12.4,
+          trend: "bearish",
+          exchange: "BSE",
+          currency: "INR"
+        }
+      ];
+
+      setMarketMovers(prev => ({
+        ...prev,
+        gainers: mockGainers,
+        losers: mockLosers,
+        loading: false,
+        lastUpdated: new Date(),
+        animationKey: prev.animationKey + 1
+      }));
+    }
+  };
+
+  // Initial fetch of market movers
+  useEffect(() => {
+    fetchMarketMovers();
+  }, []);
+
+  // Auto-refresh functionality
+  useEffect(() => {
+    if (marketMovers.autoRefresh) {
+      const interval = setInterval(() => {
+        fetchMarketMovers(true);
+      }, 15000); // Refresh every 15 seconds for real-time updates
+
+      setMarketMovers(prev => ({ ...prev, refreshInterval: interval }));
+
+      return () => {
+        if (interval) clearInterval(interval);
+      };
+    } else {
+      if (marketMovers.refreshInterval) {
+        clearInterval(marketMovers.refreshInterval);
+        setMarketMovers(prev => ({ ...prev, refreshInterval: null }));
+      }
+    }
+  }, [marketMovers.autoRefresh]);
+
+  // Enhanced market movers control functions
+  const handleTabChange = (tab) => {
+    setMarketMovers(prev => ({
+      ...prev,
+      activeTab: tab,
+      animationKey: prev.animationKey + 1
+    }));
+  };
+
+  const handleSortChange = (sortBy) => {
+    setMarketMovers(prev => ({
+      ...prev,
+      sortBy,
+      animationKey: prev.animationKey + 1
+    }));
+  };
+
+  const handleRefreshMovers = () => {
+    fetchMarketMovers(true);
+    toast.success("Market movers refreshed!", {
+      icon: "🔄",
+      style: {
+        borderRadius: '16px',
+        background: 'linear-gradient(135deg, var(--primary-color), var(--accent-color))',
+        color: '#fff',
+      },
+    });
+  };
+
+  const toggleAutoRefresh = () => {
+    setMarketMovers(prev => ({
+      ...prev,
+      autoRefresh: !prev.autoRefresh
+    }));
+
+    if (!marketMovers.autoRefresh) {
+      toast.success("Auto-refresh enabled!", {
+        icon: "⚡",
+        style: {
+          borderRadius: '16px',
+          background: 'linear-gradient(135deg, #27ae60, #2ecc71)',
+          color: '#fff',
+        },
+      });
+    } else {
+      toast.info("Auto-refresh disabled", {
+        icon: "⏸️",
+        style: {
+          borderRadius: '16px',
+          background: 'linear-gradient(135deg, #f39c12, #e67e22)',
+          color: '#fff',
+        },
+      });
+    }
+  };
+
+  // Sort market movers based on selected criteria
+  const getSortedMovers = (movers, sortBy) => {
+    const sorted = [...movers];
+    switch (sortBy) {
+      case 'percentage':
+        return sorted.sort((a, b) => Math.abs(b.changesPercentage) - Math.abs(a.changesPercentage));
+      case 'price':
+        return sorted.sort((a, b) => b.price - a.price);
+      case 'volume':
+        return sorted.sort((a, b) => b.volume - a.volume);
+      default:
+        return sorted;
+    }
+  };
 
   // Update portfolio summary when virtual money data changes
   useEffect(() => {
@@ -408,40 +656,21 @@ const Dashboard = () => {
     }
   };
 
-  // Handle stock selection
-  const handleStockSelect = (symbol, stockName = "") => {
-    // Find the stock in search results or stockSymbols
-    let stockData = searchResults.find(stock => stock.symbol === symbol);
+  // Handle stock selection with chart modal
+  const handleStockSelectWithHistory = (symbol, stockName = "") => {
+    // Create a basic stock object
+    const stockData = {
+      symbol,
+      name: stockName || symbol
+    };
 
-    // If not found in search results, try to find in stockSymbols
-    if (!stockData) {
-      stockData = stockSymbols.find(stock => stock.symbol === symbol);
-    }
 
-    // If still not found, create a basic stock object
-    if (!stockData) {
-      stockData = {
-        symbol,
-        name: stockName || symbol
-      };
-    }
 
-    // Add to search history
-    addToSearchHistory(stockData);
-
-    // Update recent searches
-    setRecentSearches(getRecentSearches());
-
-    // Clear search input and hide results
-    setSearchQuery("");
-    setIsSearching(false);
-    setShowRecentSearches(false);
-
-    // Set selected stock
-    setSelectedStock(symbol);
+    // Open chart modal
+    handleStockSelect(symbol, stockName);
 
     // Show a toast notification to confirm selection
-    toast.success(`Selected ${symbol} - ${stockData.name || 'Stock'}`);
+    toast.success(`Loading chart for ${symbol} - ${stockData.name || 'Stock'}`);
   };
 
   // Handle transaction success
@@ -475,167 +704,9 @@ const Dashboard = () => {
     }
   };
 
-  // Load recent searches
-  useEffect(() => {
-    const loadRecentSearches = () => {
-      const recent = getRecentSearches();
-      setRecentSearches(recent);
-    };
 
-    loadRecentSearches();
-  }, []);
 
-  // Fetch stock symbols
-  useEffect(() => {
-    const fetchStockSymbols = async () => {
-      // Create fallback data for stock symbols
-      const fallbackData = createDummyData([
-        { symbol: "RELIANCE.NS", name: "Reliance Industries", type: "stock" },
-        { symbol: "TCS.NS", name: "Tata Consultancy Services", type: "stock" },
-        { symbol: "HDFCBANK.NS", name: "HDFC Bank", type: "stock" },
-        { symbol: "INFY.NS", name: "Infosys", type: "stock" },
-        { symbol: "ICICIBANK.NS", name: "ICICI Bank", type: "stock" },
-        { symbol: "HINDUNILVR.NS", name: "Hindustan Unilever", type: "stock" },
-        { symbol: "SBIN.NS", name: "State Bank of India", type: "stock" },
-        { symbol: "BHARTIARTL.NS", name: "Bharti Airtel", type: "stock" },
-        { symbol: "KOTAKBANK.NS", name: "Kotak Mahindra Bank", type: "stock" },
-        { symbol: "ITC.NS", name: "ITC Limited", type: "stock" },
-        { symbol: "TATAMOTORS.NS", name: "Tata Motors", type: "stock" },
-        { symbol: "MARUTI.NS", name: "Maruti Suzuki", type: "stock" },
-        { symbol: "AXISBANK.NS", name: "Axis Bank", type: "stock" },
-        { symbol: "SUNPHARMA.NS", name: "Sun Pharmaceutical", type: "stock" },
-        { symbol: "BAJFINANCE.NS", name: "Bajaj Finance", type: "stock" },
-        { symbol: "WIPRO.NS", name: "Wipro", type: "stock" },
-        // Add some US stocks
-        { symbol: "AAPL", name: "Apple Inc.", type: "stock" },
-        { symbol: "MSFT", name: "Microsoft Corporation", type: "stock" },
-        { symbol: "GOOGL", name: "Alphabet Inc.", type: "stock" },
-        { symbol: "AMZN", name: "Amazon.com Inc.", type: "stock" },
-        { symbol: "META", name: "Meta Platforms Inc.", type: "stock" },
-        { symbol: "TSLA", name: "Tesla Inc.", type: "stock" },
-        { symbol: "NVDA", name: "NVIDIA Corporation", type: "stock" },
-        { symbol: "JPM", name: "JPMorgan Chase & Co.", type: "stock" }
-      ]);
 
-      try {
-        // Use safe API call with fallback data
-        const result = await safeApiCall({
-          method: 'get',
-          url: API_ENDPOINTS.STOCK_SEARCH.LIST,
-          fallbackData,
-          timeout: 5000
-        });
-
-        if (result) {
-          let stockData = [];
-
-          // Check if the result has the expected structure
-          if (result.data && Array.isArray(result.data)) {
-            stockData = result.data;
-          } else if (result.success && result.data && Array.isArray(result.data)) {
-            stockData = result.data;
-          }
-
-          // Filter to get major stocks for better performance
-          const majorStocks = stockData
-            .filter(stock => stock.type === "stock")
-            .slice(0, 1000); // Limit to 1000 stocks for performance
-
-          console.log(`Loaded ${majorStocks.length} stocks for search`);
-          setStockSymbols(majorStocks);
-        }
-      } catch (err) {
-        console.error("Error fetching stock symbols:", err);
-        // Use the fallback stocks
-        const fallbackResult = fallbackData();
-        if (fallbackResult && fallbackResult.data) {
-          console.log(`Using ${fallbackResult.data.length} fallback stocks for search`);
-          setStockSymbols(fallbackResult.data);
-        } else {
-          console.log('No fallback stock data available');
-          setStockSymbols([]);
-        }
-      }
-    };
-
-    fetchStockSymbols();
-  }, []);
-
-  // Perform search with API or local fallback
-  const performSearch = useCallback(async (query) => {
-    if (query.trim() === "") {
-      setSearchResults([]);
-      setIsSearching(false);
-      setIsLoading(false);
-      return;
-    }
-
-    setIsLoading(true);
-
-    // If query is at least 2 characters, use the API
-    if (query.length >= 2) {
-      try {
-        // Use the stock search API
-        const response = await axios.get(`${API_ENDPOINTS.STOCK_SEARCH.SEARCH}?query=${query}`);
-
-        if (response.data && response.data.success && Array.isArray(response.data.data)) {
-          console.log(`Found ${response.data.data.length} stocks matching "${query}"`);
-          setSearchResults(response.data.data.slice(0, 5)); // Limit to 5 results
-          setIsLoading(false);
-          return;
-        }
-      } catch (error) {
-        console.error("Error searching for stocks:", error);
-        // Fall back to local search if API fails
-      }
-    }
-
-    // Fallback to local filtering if API fails or query is too short
-    const results = stockSymbols
-      .filter(stock =>
-        stock.symbol.toLowerCase().includes(query.toLowerCase()) ||
-        stock.name.toLowerCase().includes(query.toLowerCase())
-      )
-      .slice(0, 5); // Limit to 5 results
-
-    console.log(`Found ${results.length} stocks matching "${query}" (local search)`);
-    setSearchResults(results);
-    setIsLoading(false);
-  }, [stockSymbols]);
-
-  // Handle search with debounce
-  const handleSearch = (e) => {
-    const query = e.target.value;
-    setSearchQuery(query);
-
-    if (query.trim() === "") {
-      setSearchResults([]);
-      setIsSearching(false);
-      return;
-    }
-
-    setIsSearching(true);
-
-    // Clear any existing timeout
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
-    }
-
-    // Set a new timeout to debounce the search
-    const timeoutId = setTimeout(() => {
-      performSearch(query);
-    }, 300); // 300ms debounce
-
-    setSearchTimeout(timeoutId);
-  };
-
-  // Clear search
-  const clearSearch = () => {
-    setSearchQuery("");
-    // Don't clear search results, just hide them
-    setIsSearching(false);
-    setShowRecentSearches(false);
-  };
 
   return (
     <PageLayout>
@@ -656,180 +727,14 @@ const Dashboard = () => {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
           >
-            <div className="search-input-wrapper">
-              <FiSearch className="search-icon" />
-              <input
-                type="text"
-                placeholder="Search stocks..."
-                value={searchQuery}
-                onChange={handleSearch}
-                className="search-input"
-                onFocus={() => {
-                  setIsSearching(true);
-                  if (searchResults.length > 0) {
-                    // Show existing search results if available
-                  } else if (!searchQuery) {
-                    setShowRecentSearches(true);
-                  }
-                }}
-              />
-              {searchQuery && (
-                <button className="clear-search" onClick={clearSearch}>
-                  <FiX />
-                </button>
-              )}
-            </div>
-
-            {isSearching && (
-              <motion.div
-                className="search-results"
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                {isLoading ? (
-                  <div className="search-loading">
-                    <div className="search-loading-spinner"></div>
-                    <div>Searching...</div>
-                  </div>
-                ) : searchResults.length > 0 ? (
-                  <>
-                    <div className="search-results-header">
-                      <span>Search Results</span>
-                      <button
-                        className="clear-search-btn"
-                        onClick={() => setIsSearching(false)}
-                        title="Close Results"
-                      >
-                        <FiX />
-                      </button>
-                    </div>
-                    {searchResults.map(stock => (
-                      <div
-                        key={stock.symbol}
-                        className="search-result-item"
-                      >
-                        <div
-                          className="result-info"
-                          onClick={() => {
-                            handleStockSelect(stock.symbol, stock.name);
-                            clearSearch();
-                          }}
-                        >
-                          <div className="result-symbol">{stock.symbol}</div>
-                          <div className="result-name">{stock.name}</div>
-                          <div className="result-details">
-                            {stock.exchange && (
-                              <span className="result-exchange">{stock.exchange}</span>
-                            )}
-                            {stock.country && (
-                              <span className="result-country">{stock.country}</span>
-                            )}
-                            {stock.currency && (
-                              <span className="result-currency">{stock.currency}</span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="result-actions">
-                          <button
-                            className="add-to-watchlist-btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              addToWatchlist(stock.symbol, stock.name);
-                            }}
-                            title="Add to Watchlist"
-                          >
-                            <FiPlus />
-                            <FiStar />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </>
-                ) : searchQuery.length > 0 ? (
-                  <>
-                    <div className="search-results-header">
-                      <span>Search Results</span>
-                      <button
-                        className="clear-search-btn"
-                        onClick={() => setIsSearching(false)}
-                        title="Close Results"
-                      >
-                        <FiX />
-                      </button>
-                    </div>
-                    <div className="no-results">
-                      <FiAlertCircle className="no-results-icon" />
-                      <p>No stocks found matching "{searchQuery}"</p>
-                    </div>
-                  </>
-                ) : showRecentSearches && recentSearches.length > 0 ? (
-                  <>
-                    <div className="search-results-header">
-                      <span>Recent Searches</span>
-                      <div className="header-buttons">
-                        <button
-                          className="clear-history-btn"
-                          onClick={() => {
-                            clearSearchHistory();
-                            setRecentSearches([]);
-                            setShowRecentSearches(false);
-                          }}
-                          title="Clear History"
-                        >
-                          <FiTrash2 />
-                        </button>
-                        <button
-                          className="clear-search-btn"
-                          onClick={() => setIsSearching(false)}
-                          title="Close Results"
-                        >
-                          <FiX />
-                        </button>
-                      </div>
-                    </div>
-                    {recentSearches.map(stock => (
-                      <div
-                        key={stock.symbol}
-                        className="search-result-item recent-search-item"
-                      >
-                        <div
-                          className="result-info"
-                          onClick={() => {
-                            handleStockSelect(stock.symbol, stock.name);
-                            clearSearch();
-                          }}
-                        >
-                          <div className="result-symbol">{stock.symbol}</div>
-                          <div className="result-name">{stock.name}</div>
-                          <div className="result-details">
-                            <span className="result-timestamp">
-                              <FiClock size={12} />
-                              {new Date(stock.lastSearched).toLocaleDateString()}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="result-actions">
-                          <button
-                            className="add-to-watchlist-btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              addToWatchlist(stock.symbol, stock.name);
-                            }}
-                            title="Add to Watchlist"
-                          >
-                            <FiPlus />
-                            <FiStar />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </>
-                ) : (
-                  <div className="no-results">Type to search for stocks</div>
-                )}
-              </motion.div>
-            )}
+            <StockSearch
+              onStockSelect={handleStockSelect}
+              onAddToWatchlist={addToWatchlist}
+              placeholder="Search stocks..."
+              showWatchlistButton={true}
+              showChartButton={true}
+              variant="default"
+            />
           </motion.div>
         </div>
 
@@ -898,9 +803,9 @@ const Dashboard = () => {
                   <FiTrendingDown className="card-icon" />
                 )}
                 <p>Profit / Loss</p>
-                <h2>₹{portfolioSummary.profitLoss.toLocaleString('en-IN', {maximumFractionDigits: 2})}</h2>
+                <h2>₹{(portfolioSummary.profitLoss || 0).toLocaleString('en-IN', {maximumFractionDigits: 2})}</h2>
                 <p className="percentage">
-                  ({portfolioSummary.profitLossPercentage.toFixed(2)}%)
+                  ({(Number(portfolioSummary.profitLossPercentage) || 0).toFixed(2)}%)
                 </p>
               </motion.div>
             </motion.div>
@@ -930,143 +835,164 @@ const Dashboard = () => {
                       animate={{ scale: [1, 1.05, 1] }} // Pulse animation
                       transition={{ duration: 0.5 }}
                     >
-                      {index.price.toFixed(2)}
+                      {(Number(index.price) || 0).toFixed(2)}
                     </motion.div>
-                    <div className={`index-change ${index.changesPercentage >= 0 ? "positive" : "negative"}`}>
-                      {index.changesPercentage >= 0 ? <FiTrendingUp /> : <FiTrendingDown />}
-                      {index.changesPercentage.toFixed(2)}%
+                    <div className={`index-change ${(Number(index.changesPercentage) || 0) >= 0 ? "positive" : "negative"}`}>
+                      {(Number(index.changesPercentage) || 0) >= 0 ? <FiTrendingUp /> : <FiTrendingDown />}
+                      {(Number(index.changesPercentage) || 0).toFixed(2)}%
                     </div>
                   </motion.div>
                 ))}
               </div>
             </motion.div>
 
-            {/* Top Movers */}
-            <div className="movers-container">
-              {/* Top Gainers */}
-              <motion.div
-                className="market-section half-width"
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.4 }}
-              >
-                <h2 className="section-title">Top Gainers</h2>
-                <div className="movers-list">
-                  {marketData.topGainers.map((stock, idx) => (
-                    <motion.div
-                      key={stock.symbol}
-                      className="mover-card glass positive"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.1 * idx }}
-                      whileHover={{ y: -5, boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)" }}
+            {/* 📊 MINIMALISTIC MARKET MOVERS - DATA-FOCUSED DESIGN */}
+            <motion.div
+              className="market-data-section"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6 }}
+            >
+              {/* Clean Header */}
+              <div className="data-header">
+                <div className="header-left">
+                  <h2 className="data-title">Market Movers</h2>
+                  <div className="data-tabs">
+                    <button
+                      className={`data-tab ${marketMovers.activeTab === 'gainers' ? 'active' : ''}`}
+                      onClick={() => handleTabChange('gainers')}
                     >
-                      <div className="mover-header">
-                        <div
-                          className="mover-symbol-container"
-                          onClick={() => handleStockSelect(stock.symbol)}
-                        >
-                          <div className="mover-symbol">
-                            {stock.symbol}
-                          </div>
-                          <div className="mover-name">{stock.name}</div>
-                        </div>
-                        <button
-                          className="add-to-watchlist-btn small"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            addToWatchlist(stock.symbol, stock.name);
-                          }}
-                          title="Add to Watchlist"
-                        >
-                          <FiStar />
-                        </button>
-                      </div>
-                      <div
-                        className="mover-details"
-                        onClick={() => handleStockSelect(stock.symbol)}
-                      >
-                        <motion.div
-                          className="mover-price"
-                          key={stock.price} // Key changes when price updates
-                          animate={{ scale: [1, 1.05, 1] }} // Pulse animation
-                          transition={{ duration: 0.5 }}
-                        >
-                          ₹{stock.price.toFixed(2)}
-                        </motion.div>
-                        <div className="mover-change">
-                          <FiTrendingUp />
-                          {stock.changesPercentage.toFixed(2)}%
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
+                      Gainers
+                    </button>
+                    <button
+                      className={`data-tab ${marketMovers.activeTab === 'losers' ? 'active' : ''}`}
+                      onClick={() => handleTabChange('losers')}
+                    >
+                      Losers
+                    </button>
+                  </div>
                 </div>
-              </motion.div>
 
-              {/* Top Losers */}
-              <motion.div
-                className="market-section half-width"
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.5 }}
-              >
-                <h2 className="section-title">Top Losers</h2>
-                <div className="movers-list">
-                  {marketData.topLosers.map((stock, idx) => (
+                <div className="header-controls">
+                  <button
+                    className="control-btn"
+                    onClick={handleRefreshMovers}
+                    disabled={marketMovers.loading}
+                  >
+                    <FiRefreshCw />
+                  </button>
+                  <select
+                    className="control-select"
+                    value={marketMovers.sortBy}
+                    onChange={(e) => handleSortChange(e.target.value)}
+                  >
+                    <option value="percentage">% Change</option>
+                    <option value="price">Price</option>
+                    <option value="volume">Volume</option>
+                    <option value="marketCap">Market Cap</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Minimalistic Data Grid */}
+              <div className="data-grid">
+                {marketMovers.loading ? (
+                  <div className="loading-state">
+                    <div className="loading-dot"></div>
+                    <span>Loading...</span>
+                  </div>
+                ) : (
+                  getSortedMovers(
+                    marketMovers.activeTab === 'gainers' ? marketMovers.gainers : marketMovers.losers,
+                    marketMovers.sortBy
+                  ).slice(0, 3).map((stock, idx) => (
                     <motion.div
-                      key={stock.symbol}
-                      className="mover-card glass negative"
+                      key={`${marketMovers.activeTab}-${stock.symbol}-${marketMovers.animationKey}`}
+                      className={`data-card ${marketMovers.activeTab}`}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.1 * idx }}
-                      whileHover={{ y: -5, boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)" }}
+                      onClick={() => handleStockSelectWithHistory(stock.symbol, stock.name)}
                     >
-                      <div className="mover-header">
-                        <div
-                          className="mover-symbol-container"
-                          onClick={() => handleStockSelect(stock.symbol)}
-                        >
-                          <div className="mover-symbol">
-                            {stock.symbol}
-                          </div>
-                          <div className="mover-name">{stock.name}</div>
+                      {/* Stock Identity */}
+                      <div className="stock-identity">
+                        <div className="stock-rank">#{idx + 1}</div>
+                        <div className="stock-info">
+                          <div className="symbol">{stock.symbol}</div>
+                          <div className="company">{stock.name}</div>
+                          <div className="sector">{stock.sector}</div>
                         </div>
+                      </div>
+
+                      {/* Price Section */}
+                      <div className="price-section">
+                        <div className="current-price">₹{(Number(stock.price) || 0).toFixed(2)}</div>
+                        <div className={`change ${marketMovers.activeTab}`}>
+                          {marketMovers.activeTab === 'gainers' ? '+' : ''}
+                          {(Number(stock.changesPercentage) || 0).toFixed(2)}%
+                        </div>
+                      </div>
+
+                      {/* Data Metrics */}
+                      <div className="metrics-grid">
+                        <div className="metric">
+                          <span className="label">Volume</span>
+                          <span className="value">{((Number(stock.volume) || 0) / 1000000).toFixed(1)}M</span>
+                        </div>
+                        <div className="metric">
+                          <span className="label">Market Cap</span>
+                          <span className="value">₹{((Number(stock.marketCap) || 0) / 1000000000).toFixed(1)}B</span>
+                        </div>
+                        <div className="metric">
+                          <span className="label">Day High</span>
+                          <span className="value">₹{(Number(stock.dayHigh) || 0).toFixed(2)}</span>
+                        </div>
+                        <div className="metric">
+                          <span className="label">Day Low</span>
+                          <span className="value">₹{(Number(stock.dayLow) || 0).toFixed(2)}</span>
+                        </div>
+                        <div className="metric">
+                          <span className="label">P/E</span>
+                          <span className="value">{stock.pe || 'N/A'}</span>
+                        </div>
+                        <div className="metric">
+                          <span className="label">52W Range</span>
+                          <span className="value">
+                            ₹{((Number(stock.dayLow) || 0) * 0.8).toFixed(0)} - ₹{((Number(stock.dayHigh) || 0) * 1.2).toFixed(0)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Quick Actions */}
+                      <div className="quick-actions">
                         <button
-                          className="add-to-watchlist-btn small"
+                          className="action-btn"
                           onClick={(e) => {
                             e.stopPropagation();
                             addToWatchlist(stock.symbol, stock.name);
                           }}
-                          title="Add to Watchlist"
                         >
                           <FiStar />
                         </button>
-                      </div>
-                      <div
-                        className="mover-details"
-                        onClick={() => handleStockSelect(stock.symbol)}
-                      >
-                        <motion.div
-                          className="mover-price"
-                          key={stock.price} // Key changes when price updates
-                          animate={{ scale: [1, 1.05, 1] }} // Pulse animation
-                          transition={{ duration: 0.5 }}
+                        <button
+                          className="action-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStockSelectWithHistory(stock.symbol, stock.name);
+                          }}
                         >
-                          ₹{stock.price.toFixed(2)}
-                        </motion.div>
-                        <div className="mover-change">
-                          <FiTrendingDown />
-                          {stock.changesPercentage.toFixed(2)}%
-                        </div>
+                          <FiEye />
+                        </button>
                       </div>
                     </motion.div>
-                  ))}
-                </div>
-              </motion.div>
-            </div>
+                  ))
+                )}
+              </div>
+            </motion.div>
           </>
         )}
+
+
 
         {/* Reward Animation */}
         <AnimatePresence>
@@ -1083,14 +1009,8 @@ const Dashboard = () => {
           )}
         </AnimatePresence>
 
-        {/* Stock Detail Component */}
-        {selectedStock && (
-          <FullPageStockChart
-            symbol={selectedStock}
-            onClose={() => setSelectedStock(null)}
-            onTransactionSuccess={handleTransactionSuccess}
-          />
-        )}
+        {/* Chart Modal */}
+        <ChartModal {...modalProps} />
       </div>
     </PageLayout>
   );

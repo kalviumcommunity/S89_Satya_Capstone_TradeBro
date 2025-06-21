@@ -10,10 +10,13 @@ import { useAuth } from "../context/AuthContext";
 import { useVirtualMoney } from "../context/VirtualMoneyContext";
 import { safeApiCall, createDummyData } from "../utils/apiUtils";
 import { getCachedStockSymbols, cacheStockSymbols } from "../utils/stockCache";
+import { addToSearchHistory } from "../utils/searchUtils";
 import PageLayout from "../components/PageLayout";
 import Loading from "../components/common/Loading";
+import ChartModal from "../components/ChartModal";
 import FullScreenStockDetail from "../components/FullScreenStockDetail";
 import StockSearch from "../components/StockSearch";
+import { useChartModal } from "../hooks/useChartModal";
 import axios from "axios";
 import API_ENDPOINTS from "../config/apiConfig";
 import "../styles/pages/portfolio.css";
@@ -92,78 +95,27 @@ const PortfolioPage = () => {
   const [errors, setErrors] = useState({});
   const [selectedStock, setSelectedStock] = useState(null);
   const [showFullScreenDetail, setShowFullScreenDetail] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
-  const [stockSymbols, setStockSymbols] = useState([]);
 
-  // Fetch stock symbols from API
-  useEffect(() => {
-    const fetchStockSymbols = async () => {
-      // First, try to get cached stock symbols
-      const cachedSymbols = getCachedStockSymbols();
+  // Chart modal functionality
+  const { handleStockSelect: openChart, modalProps } = useChartModal();
 
-      // Set the cached symbols immediately to improve user experience
-      setStockSymbols(cachedSymbols);
+  // Handle stock selection for chart modal (quick view)
+  const handleStockSelectChart = (symbol, name = '') => {
+    openChart(symbol, name);
+  };
 
-      // Then try to fetch fresh data in the background with a longer timeout
-      try {
-        // Use safe API call with cached data as fallback
-        const result = await safeApiCall({
-          method: 'get',
-          url: API_ENDPOINTS.PROXY.STOCK_LIST,
-          fallbackData: () => ({ success: true, data: cachedSymbols }),
-          timeout: 8000 // Increase timeout to 8 seconds
-        });
+  // Handle stock selection from StockSearch
+  const handleStockSelectFromSearch = (symbol, name) => {
+    console.log(`Selected stock: ${symbol} - ${name}`);
+    addToSearchHistory({ symbol, name });
+    setSelectedStock(symbol);
+    setShowFullScreenDetail(true);
+  };
 
-        if (result && result.data && result.data.length > 0) {
-          // Filter to get major stocks for better performance
-          const majorStocks = result.data
-            .filter(stock => stock.type === "stock")
-            .slice(0, 1000); // Limit to 1000 stocks for performance
-
-          // Update state with fresh data
-          setStockSymbols(majorStocks);
-
-          // Cache the fresh data for future use
-          cacheStockSymbols(majorStocks);
-
-          console.log('Stock symbols updated from API');
-        }
-      } catch (err) {
-        console.error("Error fetching stock symbols:", err);
-        // We're already using cached symbols, so no need to update state again
-        console.log('Using cached stock symbols due to API error');
-      }
-    };
-
-    fetchStockSymbols();
-  }, []);
-
-  // Handle search
-  const handleSearch = React.useCallback(() => {
-    if (!searchQuery.trim()) {
-      setSearchResults([]);
-      return;
-    }
-
-    const query = searchQuery.toUpperCase();
-    const results = stockSymbols.filter(
-      stock => stock.symbol.includes(query) || stock.name?.toUpperCase().includes(query)
-    ).slice(0, 10); // Limit to 10 results
-
-    setSearchResults(results);
-  }, [searchQuery, stockSymbols]);
-
-  useEffect(() => {
-    handleSearch();
-  }, [handleSearch]);
-
-  // Handle stock selection
+  // Handle stock selection for full-screen detail view
   const handleStockSelect = (symbol) => {
     setSelectedStock(symbol);
     setShowFullScreenDetail(true);
-    setSearchQuery("");
-    setSearchResults([]);
   };
 
   // Handle closing the full-screen detail view
@@ -897,14 +849,16 @@ const PortfolioPage = () => {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
-        <motion.h1
-          className="portfolio-title"
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.1 }}
-        >
-          <FiBarChart2 className="title-icon" /> Portfolio Dashboard
-        </motion.h1>
+        <div className="portfolio-header">
+          <motion.h1
+            className="portfolio-title"
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.1 }}
+          >
+            <FiBarChart2 className="title-icon" /> Portfolio Dashboard
+          </motion.h1>
+        </div>
 
         <motion.div
           className="portfolio-summary"
@@ -913,8 +867,9 @@ const PortfolioPage = () => {
           transition={{ delay: 0.2 }}
         >
           <motion.div
-            className="summary-card glass virtual-money-card"
-            whileHover={{ y: -10, boxShadow: "0 15px 30px rgba(0, 0, 0, 0.1)" }}
+            className="summary-card virtual-money-card"
+            whileHover={{ y: -5, scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
           >
             <FiCreditCard className="card-icon" />
             <p>Virtual Money {virtualMoney.userFullName ? `- ${virtualMoney.userFullName}` : ''}</p>
@@ -945,26 +900,29 @@ const PortfolioPage = () => {
             </div>
           </motion.div>
           <motion.div
-            className="summary-card glass"
-            whileHover={{ y: -10, boxShadow: "0 15px 30px rgba(0, 0, 0, 0.1)" }}
+            className="summary-card"
+            whileHover={{ y: -5, scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
           >
             <FiDollarSign className="card-icon" />
             <p>Total Investment</p>
             <h2>₹{totalInvestment.toLocaleString()}</h2>
           </motion.div>
           <motion.div
-            className="summary-card glass"
-            whileHover={{ y: -10, boxShadow: "0 15px 30px rgba(0, 0, 0, 0.1)" }}
+            className="summary-card"
+            whileHover={{ y: -5, scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
           >
             <FiBarChart2 className="card-icon" />
             <p>Current Value</p>
             <h2>₹{totalValue.toLocaleString()}</h2>
           </motion.div>
           <motion.div
-            className={`summary-card glass ${
+            className={`summary-card ${
               profitLoss >= 0 ? "profit" : "loss"
             }`}
-            whileHover={{ y: -10, boxShadow: "0 15px 30px rgba(0, 0, 0, 0.1)" }}
+            whileHover={{ y: -5, scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
           >
             {profitLoss >= 0 ? (
               <FiTrendingUp className="card-icon" />
@@ -996,11 +954,13 @@ const PortfolioPage = () => {
         </AnimatePresence>
 
         <motion.div
-          className="table-container glass"
+          className="portfolio-section"
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.3 }}
         >
+          <h3 className="section-title">Portfolio Holdings</h3>
+          <div className="table-container">
           <div className="portfolio-actions">
             <motion.button
               className="refresh-btn"
@@ -1026,12 +986,12 @@ const PortfolioPage = () => {
             <table className="portfolio-table">
               <thead>
                 <tr>
-                  <th>Symbol</th>
-                  <th>Company</th>
-                  <th>Qty</th>
-                  <th>Buy ₹</th>
-                  <th>Now ₹</th>
+                  <th>Stock</th>
+                  <th>Quantity</th>
+                  <th>Buy Price</th>
+                  <th>Current Price</th>
                   <th>P/L</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -1048,20 +1008,33 @@ const PortfolioPage = () => {
                       transition={{ delay: 0.1 * idx }}
                       whileHover={{ backgroundColor: "rgba(255, 255, 255, 0.9)" }}
                       className="stock-row"
-                      onClick={() => handleStockSelect(stock.symbol)}
+                      onClick={() => handleStockSelectChart(stock.symbol, stock.company)}
                     >
-                      <td className="symbol-cell">{stock.symbol}</td>
-                      <td>{stock.company}</td>
+                      <td>
+                        <div className="stock-symbol">{stock.symbol}</div>
+                        <div className="company-name">{stock.company}</div>
+                      </td>
                       <td>{stock.quantity}</td>
-                      <td>₹{stock.buyPrice.toLocaleString()}</td>
-                      <td>₹{stock.currentPrice.toLocaleString()}</td>
-                      <td className={stockPL >= 0 ? "profit" : "loss"}>
-                        <div className="pl-container">
-                          <span>₹{stockPL.toLocaleString()}</span>
-                          <span className="percentage">({percentChange}%)</span>
-                          {stockPL >= 0 ? <FiTrendingUp /> : <FiTrendingDown />}
+                      <td className="price-cell">₹{stock.buyPrice.toLocaleString()}</td>
+                      <td className="price-cell">₹{stock.currentPrice.toLocaleString()}</td>
+                      <td className={`change-cell ${stockPL >= 0 ? "positive" : "negative"}`}>
+                        <div className="price-cell">₹{stockPL.toLocaleString()}</div>
+                        <div className="percentage">({percentChange}%)</div>
+                      </td>
+                      <td>
+                        <div className="action-buttons">
                           <button
-                            className="view-detail-btn"
+                            className="action-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStockSelectChart(stock.symbol, stock.company);
+                            }}
+                            title="View chart"
+                          >
+                            <FiBarChart2 />
+                          </button>
+                          <button
+                            className="action-btn"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleStockSelect(stock.symbol);
@@ -1083,6 +1056,7 @@ const PortfolioPage = () => {
               <p>Add stocks to start tracking your investments</p>
             </div>
           )}
+          </div>
         </motion.div>
 
         <motion.div
@@ -1094,8 +1068,11 @@ const PortfolioPage = () => {
           <h3 className="section-title">Search Stocks</h3>
           <div className="search-container">
             <StockSearch
-              onStockSelect={(symbol) => setSelectedStock(symbol)}
+              onStockSelect={handleStockSelectFromSearch}
               placeholder="Search for stocks to view details..."
+              showWatchlistButton={false}
+              showChartButton={true}
+              variant="default"
             />
           </div>
         </motion.div>
@@ -1231,6 +1208,9 @@ const PortfolioPage = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Chart Modal for quick chart view */}
+      <ChartModal {...modalProps} />
     </PageLayout>
   );
 };

@@ -13,7 +13,7 @@ const API_KEY = process.env.FMP_API_KEY ;
 const cache = {
   data: {},
   timestamps: {},
-  maxAge: 5 * 60 * 1000, // 5 minutes cache
+  maxAge: 30 * 1000, // 30 seconds cache for real-time data
 };
 
 // Helper function to check if cache is valid
@@ -138,6 +138,199 @@ predefinedStocks.forEach(stock => {
   const isGainer = Math.random() > 0.5;
   mockData.stockQuotes[stock.symbol] = generateMockStockData(stock.symbol, stock.name, isGainer);
 });
+
+// Specific route for stock quotes
+router.get("/fmp/quote/:symbol", async (req, res) => {
+  try {
+    const { symbol } = req.params;
+    const cacheKey = `quote/${symbol}`;
+
+    // Check cache first
+    if (isCacheValid(cacheKey)) {
+      console.log(`Using cached data for: ${cacheKey}`);
+      return res.json(cache.data[cacheKey]);
+    }
+
+    // Check if the symbol is an Indian stock (ends with .NS or .BO)
+    const isIndianStock = symbol.endsWith('.NS') || symbol.endsWith('.BO');
+
+    if (isIndianStock) {
+      console.log(`Using mock data for Indian stock: ${symbol}`);
+
+      // Generate or get existing mock data
+      let mockStock;
+      if (mockData.stockQuotes[symbol]) {
+        mockStock = { ...mockData.stockQuotes[symbol] };
+
+        // Add some randomness if market is open
+        if (isMarketOpen()) {
+          const randomChange = (Math.random() * 0.4) - 0.2;
+          mockStock.price = parseFloat((mockStock.price + randomChange).toFixed(2));
+          mockStock.changesPercentage = parseFloat((mockStock.changesPercentage + randomChange).toFixed(2));
+        }
+      } else {
+        // Generate new mock data
+        const stockName = predefinedStocks.find(s => s.symbol === symbol)?.name || symbol;
+        const isGainer = Math.random() > 0.5;
+        mockStock = generateMockStockData(symbol, stockName, isGainer);
+        mockData.stockQuotes[symbol] = mockStock;
+      }
+
+      // Update cache
+      cache.data[cacheKey] = [mockStock];
+      cache.timestamps[cacheKey] = Date.now();
+
+      return res.json([mockStock]);
+    }
+
+    // For non-Indian stocks, try the API
+    console.log(`Fetching fresh data for: ${cacheKey}`);
+    const response = await axios.get(
+      `https://financialmodelingprep.com/api/v3/quote/${symbol}`,
+      { params: { apikey: API_KEY } }
+    );
+
+    if (response.data && response.data.length > 0) {
+      // Add some randomness to simulate live data
+      const liveData = response.data.map(item => {
+        if (isMarketOpen()) {
+          const randomChange = (Math.random() * 0.4) - 0.2;
+          return {
+            ...item,
+            price: parseFloat((item.price + randomChange).toFixed(2)),
+            changesPercentage: parseFloat((item.changesPercentage + randomChange).toFixed(2))
+          };
+        }
+        return item;
+      });
+
+      // Update cache
+      cache.data[cacheKey] = liveData;
+      cache.timestamps[cacheKey] = Date.now();
+
+      return res.json(liveData);
+    } else {
+      throw new Error("Empty response from API");
+    }
+  } catch (error) {
+    console.error("Error fetching stock quote:", error.message);
+
+    // Generate mock data as fallback
+    const { symbol } = req.params;
+    const stockName = predefinedStocks.find(s => s.symbol === symbol)?.name || symbol;
+    const isGainer = Math.random() > 0.5;
+    const mockStock = generateMockStockData(symbol, stockName, isGainer);
+
+    // Cache the mock data
+    const cacheKey = `quote/${symbol}`;
+    cache.data[cacheKey] = [mockStock];
+    cache.timestamps[cacheKey] = Date.now();
+
+    return res.json([mockStock]);
+  }
+});
+
+// Specific route for stock chart data
+router.get("/fmp/stock/chart/5min/:symbol", async (req, res) => {
+  try {
+    const { symbol } = req.params;
+    const cacheKey = `chart/5min/${symbol}`;
+
+    // Check cache first
+    if (isCacheValid(cacheKey)) {
+      console.log(`Using cached data for: ${cacheKey}`);
+      return res.json(cache.data[cacheKey]);
+    }
+
+    // Check if the symbol is an Indian stock (ends with .NS or .BO)
+    const isIndianStock = symbol.endsWith('.NS') || symbol.endsWith('.BO');
+
+    if (isIndianStock) {
+      console.log(`Using mock chart data for Indian stock: ${symbol}`);
+
+      // Generate mock chart data
+      const mockChartData = generateMockChartData(symbol);
+
+      // Update cache
+      cache.data[cacheKey] = mockChartData;
+      cache.timestamps[cacheKey] = Date.now();
+
+      return res.json(mockChartData);
+    }
+
+    // For non-Indian stocks, try the API
+    console.log(`Fetching fresh chart data for: ${cacheKey}`);
+    const response = await axios.get(
+      `https://financialmodelingprep.com/api/v3/historical-chart/5min/${symbol}`,
+      { params: { apikey: API_KEY } }
+    );
+
+    if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+      // Format the data for chart library
+      const formattedData = response.data.map(candle => ({
+        time: new Date(candle.date).getTime(),
+        open: candle.open,
+        high: candle.high,
+        low: candle.low,
+        close: candle.close,
+        volume: candle.volume
+      }));
+
+      // Update cache
+      cache.data[cacheKey] = formattedData;
+      cache.timestamps[cacheKey] = Date.now();
+
+      return res.json(formattedData);
+    } else {
+      throw new Error("Empty response from API");
+    }
+  } catch (error) {
+    console.error("Error fetching chart data:", error.message);
+
+    // Generate mock chart data as fallback
+    const { symbol } = req.params;
+    const mockChartData = generateMockChartData(symbol);
+
+    // Cache the mock data
+    const cacheKey = `chart/5min/${symbol}`;
+    cache.data[cacheKey] = mockChartData;
+    cache.timestamps[cacheKey] = Date.now();
+
+    return res.json(mockChartData);
+  }
+});
+
+// Helper function to generate mock chart data
+function generateMockChartData(symbol) {
+  const data = [];
+  const now = new Date();
+  const basePrice = Math.floor(Math.random() * 900) + 100;
+  const volatility = Math.random() * 2 + 0.5;
+
+  // Generate 100 data points for the last 500 minutes (5-minute intervals)
+  for (let i = 99; i >= 0; i--) {
+    const time = new Date(now.getTime() - (i * 5 * 60 * 1000));
+    const randomChange = (Math.random() - 0.5) * volatility;
+    const price = Math.max(1, basePrice + randomChange * (100 - i));
+
+    const open = price + (Math.random() - 0.5) * 2;
+    const close = price + (Math.random() - 0.5) * 2;
+    const high = Math.max(open, close) + Math.random() * 3;
+    const low = Math.min(open, close) - Math.random() * 3;
+    const volume = Math.floor(Math.random() * 1000000) + 10000;
+
+    data.push({
+      time: time.getTime(),
+      open: parseFloat(open.toFixed(2)),
+      high: parseFloat(high.toFixed(2)),
+      low: parseFloat(low.toFixed(2)),
+      close: parseFloat(close.toFixed(2)),
+      volume: volume
+    });
+  }
+
+  return data;
+}
 
 // Proxy endpoint for Financial Modeling Prep API
 router.get("/fmp/:endpoint", async (req, res) => {

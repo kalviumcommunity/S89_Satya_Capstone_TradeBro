@@ -13,13 +13,15 @@ const responseMiddleware = require("./middleware/responseMiddleware");
 const authRoutes = require("./routes/authRoutes");
 const dataRoutes = require("./routes/apiRoutes");
 const settingsRoutes = require("./routes/settings");
-const chatbotRoutes = require("./chatbot");
+const saytrixRoutes = require("./routes/saytrix");
+const searchRoutes = require("./routes/searchRoutes");
+const saytrixRoutesAdvanced = require("./routes/saytrixRoutes");
 const virtualMoneyRoutes = require("./routes/virtualMoneyRoutes");
 const proxyRoutes = require("./routes/proxyRoutes");
 const { router: notificationRoutes } = require("./routes/notificationRoutes");
 const watchlistRoutes = require("./routes/watchlistRoutes");
 const orderRoutes = require("./routes/orderRoutes");
-const stockSearchRoutes = require("./routes/stockSearchRoutes");
+
 const exampleRoutes = require("./routes/exampleRoutes");
 const userDataRoutes = require("./routes/userDataRoutes");
 const newsRoutes = require("./routes/newsRoutes");
@@ -40,7 +42,10 @@ const FMP_API = process.env.FMP_API_KEY;
 app.use(cors({
   origin: [
     "http://localhost:5173",
-    "https://tradebro.netlify.app"
+    "http://localhost:5174",
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://localhost:3002"
   ],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -48,10 +53,38 @@ app.use(cors({
 }));
 
 // Basic middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' })); // Increased limit for production
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
+
+// Enable compression for production
+if (process.env.NODE_ENV === 'production') {
+  const compression = require('compression');
+  app.use(compression({
+    level: 6, // Compression level (1-9)
+    threshold: 1024, // Only compress responses larger than 1KB
+    filter: (req, res) => {
+      // Don't compress responses with this request header
+      if (req.headers['x-no-compression']) {
+        return false;
+      }
+      // Fallback to standard filter function
+      return compression.filter(req, res);
+    }
+  }));
+  console.log('✅ Compression enabled for production');
+}
+
 app.use("/uploads", express.static("uploads"));
+
+// Ensure JSON responses and prevent HTML error pages
+app.use((req, res, next) => {
+  // Set default content type to JSON for API routes
+  if (req.path.startsWith('/api/')) {
+    res.setHeader('Content-Type', 'application/json');
+  }
+  next();
+});
 
 // Apply response middleware to standardize API responses
 app.use(responseMiddleware);
@@ -104,34 +137,9 @@ app.get('/api/health', (_, res) => {
   return res.success('Server is running', healthData);
 });
 
-// Simple test endpoint
-app.get('/api/test', (_, res) => {
-  return res.success('API is working correctly', {
-    time: new Date().toISOString()
-  });
-});
 
-// Public virtual money endpoint for testing
-app.get('/api/virtual-money/public', (_, res) => {
-  const virtualMoneyData = {
-    balance: 10000,
-    balanceFormatted: '₹10,000',
-    lastLoginReward: null,
-    portfolio: [],
-    currency: 'INR'
-  };
-  return res.success('Virtual money data retrieved', virtualMoneyData);
-});
 
-// Test endpoint for reward status
-app.get('/api/virtual-money/test-reward-status', (_, res) => {
-  const rewardData = {
-    canClaim: true,
-    balance: 10000,
-    balanceFormatted: '₹10,000'
-  };
-  return res.success('You can claim your daily reward!', rewardData);
-});
+
 
 // Public reward status endpoint (no authentication required)
 app.get('/api/virtual-money/public-reward-status', (_, res) => {
@@ -314,20 +322,48 @@ app.get('/api/stocks/search', async (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/data", dataRoutes);
 app.use("/api/settings", settingsRoutes);
-app.use("/api/chatbot", chatbotRoutes);
+app.use("/api/saytrix", saytrixRoutes);
+app.use("/api/search", searchRoutes);
+app.use("/api/saytrix", saytrixRoutesAdvanced);
+// Legacy chatbot endpoint redirects to Saytrix
+app.use("/api/chatbot", saytrixRoutes);
 app.use("/api/virtual-money", virtualMoneyRoutes);
 app.use("/api/proxy", proxyRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/watchlist", watchlistRoutes);
 app.use("/api/orders", orderRoutes);
-app.use("/api/stock-search", stockSearchRoutes);
+
 app.use("/api/example", exampleRoutes);
 app.use("/api/userdata", userDataRoutes);
 app.use("/api/news", newsRoutes);
 
+// 404 handler for API routes
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/')) {
+    res.status(404).json({
+      success: false,
+      message: 'API endpoint not found',
+      path: req.path,
+      method: req.method
+    });
+  } else {
+    next();
+  }
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error("Server error:", err);
+
+  // Ensure JSON response for API routes
+  if (req.path.startsWith('/api/')) {
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+      error: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+    });
+  }
+
   return res.error("Internal Server Error", err);
 });
 
@@ -349,7 +385,7 @@ mongoose.connect(MONGO_URI, {
   // Start server after successful MongoDB connection
   app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`Health check endpoint: https://s89-satya-capstone-tradebro.onrender.com/api/health`);
+    console.log(`Health check endpoint: http://localhost:${PORT}/api/health`);
   });
 })
 .catch(err => {
@@ -373,6 +409,6 @@ mongoose.connect(MONGO_URI, {
   // Start server anyway to allow non-database features to work
   app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT} (without MongoDB)`);
-    console.log(`Health check endpoint: https://s89-satya-capstone-tradebro.onrender.com/api/health`);
+    console.log(`Health check endpoint: http://localhost:${PORT}/api/health`);
   });
 });

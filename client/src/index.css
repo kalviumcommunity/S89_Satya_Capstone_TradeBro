@@ -2,12 +2,35 @@
 @import url('./styles/theme.css');
 @import url('./styles/responsive.css');
 @import url('./styles/animations.css');
+@import url('./styles/mobile-enhancements.css');
 
 /* Global reset */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    outline: none !important; /* Remove all focus outlines */
+}
+
+/* Remove focus outlines and tap highlights globally */
+*:focus {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+button:focus,
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* Remove tap highlight on mobile devices */
+* {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
 }
 
 html {
@@ -20,5 +43,79 @@ body {
     font-family: 'Inter', 'Poppins', system-ui, sans-serif;
     line-height: 1.6;
     color: var(--text-color);
-    background-color: var(--background-color);
+    background: var(--background-gradient);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* ===== GLOBAL STYLES FOR EL CLASSICO DESIGN ===== */
+
+/* Enhanced Global Utilities */
+.glass-effect {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(85, 130, 139, 0.1);
+    box-shadow: 0 8px 32px rgba(85, 130, 139, 0.08);
+}
+
+.el-classico-gradient {
+    background: linear-gradient(135deg,
+        var(--primary-color) 0%,
+        var(--accent-color) 50%,
+        var(--secondary-color) 100%);
+}
+
+.el-classico-text-gradient {
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.smooth-transition {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-lift:hover {
+    transform: translateY(-2px);
+}
+
+.hover-scale:hover {
+    transform: scale(1.05);
+}
+
+/* Enhanced Button Styles */
+.btn-el-classico {
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 25px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 15px rgba(85, 130, 139, 0.2);
+}
+
+.btn-el-classico:hover {
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(85, 130, 139, 0.3);
+}
+
+/* Enhanced Card Styles */
+.card-el-classico {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 20px;
+    border: 1px solid rgba(85, 130, 139, 0.1);
+    box-shadow: 0 8px 32px rgba(85, 130, 139, 0.08);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-el-classico:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 45px rgba(85, 130, 139, 0.12);
 }

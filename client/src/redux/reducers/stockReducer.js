@@ -178,22 +178,7 @@ export const fetchStockSymbols = () => async (dispatch) => {
   }
 };
 
-export const searchStocks = (query) => (dispatch, getState) => {
-  const { stock } = getState();
-  
-  if (!query.trim()) {
-    dispatch(setSearchResults([]));
-    return;
-  }
-  
-  const upperQuery = query.toUpperCase();
-  const results = stock.stockSymbols.filter(
-    stock => stock.symbol.includes(upperQuery) || 
-             stock.name?.toUpperCase().includes(upperQuery)
-  ).slice(0, 10); // Limit to 10 results
-  
-  dispatch(setSearchResults(results));
-};
+
 
 export const fetchStockData = (symbol) => async (dispatch) => {
   try {

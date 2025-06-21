@@ -1,9 +1,8 @@
 import axios from 'axios';
-import { setupMockHealthEndpoint } from './mockEndpoints';
 import { API_BASE_URL } from '../config/apiConfig';
 
-// Configure axios defaults
-axios.defaults.timeout = 10000; // 10 seconds timeout by default
+// Configure axios defaults for real-time performance
+axios.defaults.timeout = 5000; // 5 seconds timeout for faster response
 axios.defaults.baseURL = API_BASE_URL; // Set the base URL for all requests
 
 // Set up global error handling for network errors
@@ -64,7 +63,11 @@ axios.interceptors.response.use(
   (error) => {
     // Only log errors in development environment
     if (process.env.NODE_ENV === 'development') {
-      console.error('API Error:', error.config?.url, error.message, error.response?.status);
+      if (error.message && error.message.includes('timeout')) {
+        console.warn('API Timeout:', error.config?.url, `timeout of ${error.timeout || 'unknown'}ms exceeded`);
+      } else {
+        console.error('API Error:', error.config?.url, error.message, error.response?.status);
+      }
     }
 
     // Check if this is an offline error
@@ -73,6 +76,45 @@ axios.interceptors.response.use(
         console.log('Request blocked due to offline mode:', error.message);
       }
       return Promise.reject(error);
+    }
+
+    // Handle specific 404 errors for stock data endpoints
+    if (error.response?.status === 404 && error.config?.url) {
+      const url = error.config.url;
+
+      // Handle stock quote 404 errors
+      if (url.includes('/api/proxy/fmp/quote/')) {
+        const symbol = url.split('/').pop();
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`Stock quote not found for ${symbol}, this might be expected for some symbols`);
+        }
+
+        // Create a more informative error for the frontend
+        const enhancedError = {
+          ...error,
+          isStockNotFound: true,
+          symbol: symbol,
+          message: `Stock data not available for ${symbol}`
+        };
+        return Promise.reject(enhancedError);
+      }
+
+      // Handle chart data 404 errors
+      if (url.includes('/api/proxy/fmp/stock/chart/')) {
+        const symbol = url.split('/').pop();
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`Chart data not found for ${symbol}, this might be expected for some symbols`);
+        }
+
+        // Create a more informative error for the frontend
+        const enhancedError = {
+          ...error,
+          isChartNotFound: true,
+          symbol: symbol,
+          message: `Chart data not available for ${symbol}`
+        };
+        return Promise.reject(enhancedError);
+      }
     }
 
     // Handle network errors (like ECONNREFUSED, timeout, etc.)
@@ -446,20 +488,27 @@ axios.interceptors.response.use(
             });
           }
 
-          // Enhanced mock stock data with more fields
+          // Enhanced mock stock data with more fields - Indian NSE and BSE stocks only
           const mockStocks = [
-            { symbol: "AAPL", name: "Apple Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock", country: "United States", currency: "USD" },
-            { symbol: "MSFT", name: "Microsoft Corporation", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock", country: "United States", currency: "USD" },
-            { symbol: "GOOGL", name: "Alphabet Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock", country: "United States", currency: "USD" },
-            { symbol: "AMZN", name: "Amazon.com Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock", country: "United States", currency: "USD" },
-            { symbol: "META", name: "Meta Platforms Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock", country: "United States", currency: "USD" },
-            { symbol: "TSLA", name: "Tesla, Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock", country: "United States", currency: "USD" },
-            { symbol: "NFLX", name: "Netflix, Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock", country: "United States", currency: "USD" },
-            { symbol: "NVDA", name: "NVIDIA Corporation", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock", country: "United States", currency: "USD" },
-            { symbol: "RELIANCE.BSE", name: "Reliance Industries", exchange: "BSE", exchangeShortName: "BSE", type: "stock", country: "India", currency: "INR" },
-            { symbol: "TCS.BSE", name: "Tata Consultancy Services", exchange: "BSE", exchangeShortName: "BSE", type: "stock", country: "India", currency: "INR" },
-            { symbol: "INFY.BSE", name: "Infosys Ltd", exchange: "BSE", exchangeShortName: "BSE", type: "stock", country: "India", currency: "INR" },
-            { symbol: "HDFCBANK.BSE", name: "HDFC Bank Ltd", exchange: "BSE", exchangeShortName: "BSE", type: "stock", country: "India", currency: "INR" }
+            // NSE Stocks
+            { symbol: "RELIANCE.NS", name: "Reliance Industries Ltd", exchange: "NSE", exchangeShortName: "NSE", type: "stock", country: "India", currency: "INR" },
+            { symbol: "TCS.NS", name: "Tata Consultancy Services Ltd", exchange: "NSE", exchangeShortName: "NSE", type: "stock", country: "India", currency: "INR" },
+            { symbol: "HDFCBANK.NS", name: "HDFC Bank Ltd", exchange: "NSE", exchangeShortName: "NSE", type: "stock", country: "India", currency: "INR" },
+            { symbol: "INFY.NS", name: "Infosys Ltd", exchange: "NSE", exchangeShortName: "NSE", type: "stock", country: "India", currency: "INR" },
+            { symbol: "ICICIBANK.NS", name: "ICICI Bank Ltd", exchange: "NSE", exchangeShortName: "NSE", type: "stock", country: "India", currency: "INR" },
+            { symbol: "HINDUNILVR.NS", name: "Hindustan Unilever Ltd", exchange: "NSE", exchangeShortName: "NSE", type: "stock", country: "India", currency: "INR" },
+            { symbol: "ITC.NS", name: "ITC Ltd", exchange: "NSE", exchangeShortName: "NSE", type: "stock", country: "India", currency: "INR" },
+            { symbol: "SBIN.NS", name: "State Bank of India", exchange: "NSE", exchangeShortName: "NSE", type: "stock", country: "India", currency: "INR" },
+            { symbol: "BHARTIARTL.NS", name: "Bharti Airtel Ltd", exchange: "NSE", exchangeShortName: "NSE", type: "stock", country: "India", currency: "INR" },
+            { symbol: "KOTAKBANK.NS", name: "Kotak Mahindra Bank Ltd", exchange: "NSE", exchangeShortName: "NSE", type: "stock", country: "India", currency: "INR" },
+
+            // BSE Stocks
+            { symbol: "500325", name: "Reliance Industries Ltd", exchange: "BSE", exchangeShortName: "BSE", type: "stock", country: "India", currency: "INR" },
+            { symbol: "532540", name: "Tata Consultancy Services Ltd", exchange: "BSE", exchangeShortName: "BSE", type: "stock", country: "India", currency: "INR" },
+            { symbol: "500180", name: "HDFC Bank Ltd", exchange: "BSE", exchangeShortName: "BSE", type: "stock", country: "India", currency: "INR" },
+            { symbol: "500209", name: "Infosys Ltd", exchange: "BSE", exchangeShortName: "BSE", type: "stock", country: "India", currency: "INR" },
+            { symbol: "532174", name: "ICICI Bank Ltd", exchange: "BSE", exchangeShortName: "BSE", type: "stock", country: "India", currency: "INR" },
+            { symbol: "500696", name: "Hindustan Unilever Ltd", exchange: "BSE", exchangeShortName: "BSE", type: "stock", country: "India", currency: "INR" }
           ];
 
           // Filter stocks based on query
@@ -1004,20 +1053,25 @@ axios.interceptors.response.use(
             });
           }
 
-          // Enhanced mock stock data with more fields
+          // Enhanced mock stock data with more fields - Indian NSE and BSE stocks only
           const mockStocks = [
-            { symbol: "AAPL", name: "Apple Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock", country: "United States", currency: "USD" },
-            { symbol: "MSFT", name: "Microsoft Corporation", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock", country: "United States", currency: "USD" },
-            { symbol: "GOOGL", name: "Alphabet Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock", country: "United States", currency: "USD" },
-            { symbol: "AMZN", name: "Amazon.com Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock", country: "United States", currency: "USD" },
-            { symbol: "META", name: "Meta Platforms Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock", country: "United States", currency: "USD" },
-            { symbol: "TSLA", name: "Tesla, Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock", country: "United States", currency: "USD" },
-            { symbol: "NFLX", name: "Netflix, Inc.", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock", country: "United States", currency: "USD" },
-            { symbol: "NVDA", name: "NVIDIA Corporation", exchange: "NASDAQ", exchangeShortName: "NASDAQ", type: "stock", country: "United States", currency: "USD" },
-            { symbol: "RELIANCE.BSE", name: "Reliance Industries", exchange: "BSE", exchangeShortName: "BSE", type: "stock", country: "India", currency: "INR" },
-            { symbol: "TCS.BSE", name: "Tata Consultancy Services", exchange: "BSE", exchangeShortName: "BSE", type: "stock", country: "India", currency: "INR" },
-            { symbol: "INFY.BSE", name: "Infosys Ltd", exchange: "BSE", exchangeShortName: "BSE", type: "stock", country: "India", currency: "INR" },
-            { symbol: "HDFCBANK.BSE", name: "HDFC Bank Ltd", exchange: "BSE", exchangeShortName: "BSE", type: "stock", country: "India", currency: "INR" }
+            // NSE Stocks
+            { symbol: "RELIANCE.NS", name: "Reliance Industries Ltd", exchange: "NSE", exchangeShortName: "NSE", type: "stock", country: "India", currency: "INR" },
+            { symbol: "TCS.NS", name: "Tata Consultancy Services Ltd", exchange: "NSE", exchangeShortName: "NSE", type: "stock", country: "India", currency: "INR" },
+            { symbol: "HDFCBANK.NS", name: "HDFC Bank Ltd", exchange: "NSE", exchangeShortName: "NSE", type: "stock", country: "India", currency: "INR" },
+            { symbol: "INFY.NS", name: "Infosys Ltd", exchange: "NSE", exchangeShortName: "NSE", type: "stock", country: "India", currency: "INR" },
+            { symbol: "ICICIBANK.NS", name: "ICICI Bank Ltd", exchange: "NSE", exchangeShortName: "NSE", type: "stock", country: "India", currency: "INR" },
+            { symbol: "HINDUNILVR.NS", name: "Hindustan Unilever Ltd", exchange: "NSE", exchangeShortName: "NSE", type: "stock", country: "India", currency: "INR" },
+            { symbol: "ITC.NS", name: "ITC Ltd", exchange: "NSE", exchangeShortName: "NSE", type: "stock", country: "India", currency: "INR" },
+            { symbol: "SBIN.NS", name: "State Bank of India", exchange: "NSE", exchangeShortName: "NSE", type: "stock", country: "India", currency: "INR" },
+
+            // BSE Stocks
+            { symbol: "500325", name: "Reliance Industries Ltd", exchange: "BSE", exchangeShortName: "BSE", type: "stock", country: "India", currency: "INR" },
+            { symbol: "532540", name: "Tata Consultancy Services Ltd", exchange: "BSE", exchangeShortName: "BSE", type: "stock", country: "India", currency: "INR" },
+            { symbol: "500180", name: "HDFC Bank Ltd", exchange: "BSE", exchangeShortName: "BSE", type: "stock", country: "India", currency: "INR" },
+            { symbol: "500209", name: "Infosys Ltd", exchange: "BSE", exchangeShortName: "BSE", type: "stock", country: "India", currency: "INR" },
+            { symbol: "532174", name: "ICICI Bank Ltd", exchange: "BSE", exchangeShortName: "BSE", type: "stock", country: "India", currency: "INR" },
+            { symbol: "500696", name: "Hindustan Unilever Ltd", exchange: "BSE", exchangeShortName: "BSE", type: "stock", country: "India", currency: "INR" }
           ];
 
           // Filter stocks based on query
@@ -1087,16 +1141,16 @@ axios.interceptors.response.use(
             if (message.toLowerCase().includes('stock') ||
                 message.toLowerCase().includes('price') ||
                 message.toLowerCase().includes('market')) {
-              response = `I'd be happy to help you with information about stocks and the market.
+              response = `I'd be happy to help you with information about Indian stocks and the market.
 
-The stock market has been quite volatile lately, with tech stocks showing strong performance. If you're interested in a specific stock, you can ask me about it, and I'll provide you with the latest information.
+The Indian stock market has been showing strong performance lately, with both NSE and BSE indices reaching new heights. If you're interested in a specific stock, you can ask me about it, and I'll provide you with the latest information.
 
-Some popular stocks to consider:
-• Apple (AAPL)
-• Microsoft (MSFT)
-• Amazon (AMZN)
-• Tesla (TSLA)
-• Google (GOOGL)
+Some popular Indian stocks to consider:
+• Reliance Industries (RELIANCE.NS)
+• Tata Consultancy Services (TCS.NS)
+• HDFC Bank (HDFCBANK.NS)
+• Infosys (INFY.NS)
+• ICICI Bank (ICICIBANK.NS)
 
 What specific information would you like to know?`;
             }

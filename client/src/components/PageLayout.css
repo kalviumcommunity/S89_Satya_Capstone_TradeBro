@@ -1,9 +1,11 @@
+/* Perfect Page Layout - El Classico Professional Design */
 .page-layout {
   display: flex;
   min-height: 100vh;
   background: var(--background-gradient, linear-gradient(135deg, #e0f7fa, #fdfbfb));
   position: relative;
   width: 100%;
+  overflow-x: hidden; /* Prevent horizontal scroll */
 }
 
 [data-theme="dark"] .page-layout {
@@ -13,23 +15,32 @@
 .page-content {
   flex: 1;
   padding: 2rem;
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1); /* Smooth transition matching sidebar */
   width: 100%;
   overflow-x: hidden;
+  min-height: 100vh; /* Ensure full height */
 }
 
-/* Adjust content based on sidebar state */
+/* Clean alignment with compact sidebar dimensions */
 .page-content.sidebar-expanded {
-  margin-left: 250px; /* Width of expanded sidebar */
-  width: calc(100% - 250px);
+  margin-left: 220px; /* Matches compact sidebar width exactly */
+  width: calc(100% - 220px);
+  transition: all 0.3s ease;
 }
 
 .page-content.sidebar-collapsed {
-  margin-left: 80px; /* Width of collapsed sidebar */
-  width: calc(100% - 80px);
+  margin-left: 64px; /* Matches compact collapsed sidebar width exactly */
+  width: calc(100% - 64px);
+  transition: all 0.3s ease;
 }
 
-/* Mobile adjustments */
+/* Perfect responsive design */
+@media (max-width: 1200px) {
+  .page-content {
+    padding: 1.75rem; /* Slightly reduced for medium screens */
+  }
+}
+
 @media (max-width: 992px) {
   .page-content {
     padding: 1.5rem;
@@ -37,15 +48,20 @@
 
   .page-content.sidebar-expanded,
   .page-content.sidebar-collapsed {
+    margin-left: 0; /* Full width on tablets */
     width: 100%;
   }
 }
 
 @media (max-width: 768px) {
+  .page-content {
+    padding: 1rem;
+  }
+
   .page-content.mobile {
     margin-left: 0;
     padding: 1rem;
-    padding-top: 70px; /* Space for mobile header */
+    padding-top: 75px; /* Space for mobile header */
     width: 100%;
   }
 
@@ -63,6 +79,13 @@
 
   .page-content.mobile {
     padding: 0.75rem;
-    padding-top: 65px;
+    padding-top: 70px; /* Adjusted for smaller screens */
+  }
+}
+
+/* Perfect smooth transitions for all screen sizes */
+@media (prefers-reduced-motion: reduce) {
+  .page-content {
+    transition: none !important;
   }
 }

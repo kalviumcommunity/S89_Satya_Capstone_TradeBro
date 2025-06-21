@@ -29,9 +29,11 @@ export const PusherProvider = ({ children }) => {
         const pusherClient = new Pusher(pusherConfig.key, {
           cluster: pusherConfig.cluster,
           encrypted: pusherConfig.useTLS,
-          enabledTransports: ['ws', 'wss'], // Only use WebSocket, not HTTP fallbacks
+          enabledTransports: ['ws', 'wss'], // Only use WebSocket for real-time performance
           disabledTransports: ['xhr_streaming', 'xhr_polling', 'sockjs'],
-          timeout: 10000 // Increase connection timeout to 10 seconds
+          timeout: 5000, // Faster connection timeout for real-time experience
+          activityTimeout: 30000, // Keep connection alive
+          pongTimeout: 6000 // Faster pong timeout
         });
 
         // Handle connection errors

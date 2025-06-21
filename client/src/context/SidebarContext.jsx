@@ -5,13 +5,36 @@ const SidebarContext = createContext();
 
 // Create a provider component
 export const SidebarProvider = ({ children }) => {
-  const [isCollapsed, setIsCollapsed] = useState(true); // Default to collapsed
-  const [isMobile, setIsMobile] = useState(false);
+  // Get initial state from localStorage or default based on screen size
+  const getInitialCollapsedState = () => {
+    const savedState = localStorage.getItem('sidebarCollapsed');
+    if (savedState !== null) {
+      return JSON.parse(savedState);
+    }
+    // Default to collapsed on mobile, expanded on desktop
+    return window.innerWidth <= 768;
+  };
+
+  const [isCollapsed, setIsCollapsed] = useState(getInitialCollapsedState);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   // Check if screen is mobile size
   useEffect(() => {
     const checkIfMobile = () => {
-      setIsMobile(window.innerWidth <= 768);
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(mobile);
+
+      // Auto-collapse on mobile, but preserve user preference on desktop
+      // Use functional update to avoid dependency on isCollapsed
+      if (mobile) {
+        setIsCollapsed(prevCollapsed => {
+          if (!prevCollapsed) {
+            localStorage.setItem('sidebarCollapsed', 'true');
+            return true;
+          }
+          return prevCollapsed;
+        });
+      }
     };
 
     // Initial check
@@ -22,17 +45,36 @@ export const SidebarProvider = ({ children }) => {
 
     // Cleanup
     return () => window.removeEventListener('resize', checkIfMobile);
-  }, []);
+  }, []); // Remove isCollapsed from dependency array
 
-  // Toggle sidebar state
-  const toggleSidebar = () => setIsCollapsed(!isCollapsed);
+  // Toggle sidebar state with localStorage persistence
+  const toggleSidebar = () => {
+    setIsCollapsed(prevCollapsed => {
+      const newCollapsedState = !prevCollapsed;
+      localStorage.setItem('sidebarCollapsed', JSON.stringify(newCollapsedState));
+      return newCollapsedState;
+    });
+  };
 
   // Value to be provided to consumers
   const value = {
     isCollapsed,
     setIsCollapsed,
     isMobile,
-    toggleSidebar
+    toggleSidebar,
+    // Additional utility functions
+    expandSidebar: () => {
+      setIsCollapsed(() => {
+        localStorage.setItem('sidebarCollapsed', 'false');
+        return false;
+      });
+    },
+    collapseSidebar: () => {
+      setIsCollapsed(() => {
+        localStorage.setItem('sidebarCollapsed', 'true');
+        return true;
+      });
+    }
   };
 
   return (
@@ -51,4 +93,5 @@ export const useSidebar = () => {
   return context;
 };
 
-export default SidebarContext;
+// Remove default export to fix HMR issues
+// export default SidebarContext;

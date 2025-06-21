@@ -5,7 +5,6 @@ import sidebarReducer from './sidebarReducer';
 import virtualMoneyReducer from './virtualMoneyReducer';
 import toastReducer from './toastReducer';
 import stockReducer from './stockReducer';
-import chatbotReducer from './chatbotReducer';
 import notificationReducer from './notificationReducer';
 import uiReducer from './uiReducer';
 import profileReducer from './profileReducer';
@@ -19,7 +18,6 @@ const rootReducer = combineReducers({
   virtualMoney: virtualMoneyReducer,
   toast: toastReducer,
   stock: stockReducer,
-  chatbot: chatbotReducer,
   notification: notificationReducer,
   ui: uiReducer,
   profile: profileReducer,

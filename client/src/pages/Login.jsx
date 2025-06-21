@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { FiMail, FiLock, FiLogIn } from "react-icons/fi";
 import { login } from "../redux/reducers/authReducer";
 import { showErrorToast, showSuccessToast } from "../redux/reducers/toastReducer";
+import { useAuth } from "../context/AuthContext";
 import API_ENDPOINTS from "../config/apiConfig";
 import Loading from "../components/common/Loading";
 import "../styles/pages/AuthPages.css";
@@ -14,7 +15,8 @@ import Squares from "../UI/squares";
 const Login = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { loading, error } = useSelector(state => state.auth);
+  const { loading, error, isAuthenticated } = useSelector(state => state.auth);
+  const { login: authLogin } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -124,15 +126,81 @@ const Login = () => {
     window.location.href = API_ENDPOINTS.AUTH.GOOGLE;
   };
 
+  const handleDemoLogin = async () => {
+    setLocalLoading(true);
+    try {
+      // Demo credentials
+      const demoEmail = "demo@tradebro.com";
+      const demoPassword = "demo123";
+
+      const response = await axios.post(API_ENDPOINTS.AUTH.LOGIN, {
+        email: demoEmail,
+        password: demoPassword,
+      });
+      console.log("Demo login successful:", response.data);
+
+      // Store the token and user data
+      if (response.data.token) {
+        localStorage.setItem('authToken', response.data.token);
+        dispatch(login(response.data.token, response.data.user));
+        dispatch(showSuccessToast("Demo login successful!"));
+      }
+
+      setSuccess(true);
+
+      // Redirect to dashboard
+      const checkAuthAndRedirect = () => {
+        const storedToken = localStorage.getItem('authToken');
+        if (storedToken && isAuthenticated) {
+          console.log("Demo authentication confirmed, redirecting to dashboard");
+          navigate("/dashboard", { replace: true });
+        } else if (storedToken) {
+          console.log("Demo token found but auth state not updated yet, waiting...");
+          authLogin(storedToken, null, true);
+          setTimeout(checkAuthAndRedirect, 500);
+        }
+      };
+
+      setTimeout(checkAuthAndRedirect, 500);
+    } catch (error) {
+      console.error("Demo login error:", error.response?.data || error.message);
+      dispatch(showErrorToast("Demo login failed. Creating demo account..."));
+
+      // If demo login fails, try to create demo account
+      try {
+        const signupResponse = await axios.post(API_ENDPOINTS.AUTH.SIGNUP, {
+          email: "demo@tradebro.com",
+          password: "demo123",
+          username: "demo",
+          fullName: "Demo User"
+        });
+
+        if (signupResponse.data.token) {
+          localStorage.setItem('authToken', signupResponse.data.token);
+          dispatch(login(signupResponse.data.token, signupResponse.data.user));
+          dispatch(showSuccessToast("Demo account created and logged in!"));
+          setSuccess(true);
+          setTimeout(() => navigate("/dashboard", { replace: true }), 1000);
+        }
+      } catch (signupError) {
+        console.error("Demo signup error:", signupError);
+        dispatch(showErrorToast("Demo setup failed. Please try manual login."));
+      }
+    } finally {
+      setLocalLoading(false);
+    }
+  };
+
   // Handle Google login redirect
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const success = urlParams.get('success');
     const token = urlParams.get('token');
     const google = urlParams.get('google');
+    const newUser = urlParams.get('newUser');
 
     if (success === 'true' && token && google === 'true') {
-      console.log('Google login successful, processing token');
+      console.log('Google login successful, processing token', newUser === 'true' ? '(New User)' : '(Existing User)');
 
       // Clear URL parameters
       window.history.replaceState({}, document.title, '/login');
@@ -142,34 +210,48 @@ const Login = () => {
 
       // Process the token using Redux
       dispatch(login(token));
-      dispatch(showSuccessToast("Google login successful!"));
 
-      // Show success message
-      setSuccess(true);
+      if (newUser === 'true') {
+        // New user - show welcome message and stay on login page briefly before redirecting
+        dispatch(showSuccessToast("Welcome to TradeBro! Your Google account has been successfully registered."));
+        setSuccess(true);
 
-      // Redirect to portfolio
-      setTimeout(() => setSuccess(false), 1000);
-      // Wait for authentication state to be set before redirecting
-      const checkAuthAndRedirect = () => {
-        const storedToken = localStorage.getItem('authToken');
-        if (storedToken && isAuthenticated) {
-          console.log("Google authentication confirmed, redirecting to dashboard");
+        // Show success message for new users
+        setTimeout(() => {
+          setSuccess(false);
+          console.log("New user registration complete, redirecting to dashboard");
           navigate("/dashboard", { replace: true });
-        } else if (storedToken) {
-          console.log("Google token found but auth state not updated yet, waiting...");
-          // Force authentication state update
-          login(storedToken, null, true);
-          setTimeout(checkAuthAndRedirect, 500);
-        } else {
-          console.warn("No Google token found, forcing redirect anyway");
-          navigate("/dashboard", { replace: true });
-        }
-      };
+        }, 2500); // Longer delay for new users to see welcome message
+      } else {
+        // Existing user - quick redirect
+        dispatch(showSuccessToast("Google login successful!"));
+        setSuccess(true);
 
-      // Start checking sooner
-      setTimeout(checkAuthAndRedirect, 500);
+        // Wait for authentication state to be set before redirecting
+        const checkAuthAndRedirect = () => {
+          const storedToken = localStorage.getItem('authToken');
+          if (storedToken && isAuthenticated) {
+            console.log("Google authentication confirmed, redirecting to dashboard");
+            navigate("/dashboard", { replace: true });
+          } else if (storedToken) {
+            console.log("Google token found but auth state not updated yet, waiting...");
+            // Force authentication state update
+            login(storedToken, null, true);
+            setTimeout(checkAuthAndRedirect, 500);
+          } else {
+            console.warn("No Google token found, forcing redirect anyway");
+            navigate("/dashboard", { replace: true });
+          }
+        };
+
+        // Start checking sooner for existing users
+        setTimeout(() => {
+          setSuccess(false);
+          checkAuthAndRedirect();
+        }, 1000);
+      }
     }
-  }, [dispatch, navigate]);
+  }, [dispatch, navigate, isAuthenticated]);
 
   return (
     <div className="auth-full-bg">
@@ -277,10 +359,41 @@ const Login = () => {
             />
             Log In with Google
           </motion.button>
+
+          <motion.button
+            className="demo-button"
+            onClick={handleDemoLogin}
+            disabled={loading || localLoading}
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+            style={{
+              marginTop: "10px",
+              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+              color: "white",
+              border: "none",
+              padding: "12px 24px",
+              borderRadius: "8px",
+              fontSize: "16px",
+              fontWeight: "500",
+              cursor: "pointer",
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "8px"
+            }}
+          >
+            🚀 Try Demo Login
+          </motion.button>
         </div>
       </div>
       {success &&
-        <div className="success-message">Login successful!</div>
+        <div className="success-message">
+          {new URLSearchParams(window.location.search).get('newUser') === 'true'
+            ? 'Welcome to TradeBro! Registration successful!'
+            : 'Login successful!'}
+        </div>
       }
     </div>
   );

@@ -7,7 +7,7 @@ import Signup from "./pages/Signup";
 import LandingPage from "./pages/landingPage";
 import ForgetPassword from './pages/ForgetPassword';
 import ResetPassword from './pages/ResetPassword';
-import PortfolioPage from "./pages/portfolio";
+import PortfolioPage from "./pages/portfolio.jsx";
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import News from "./pages/News";
@@ -16,10 +16,11 @@ import Profile from "./pages/Profile";
 import Watchlist from "./pages/Watchlist";
 import History from "./pages/History";
 import Orders from "./pages/Orders";
-import TradingAssistantPage from "./pages/TradingAssistantPage";
+import SaytrixPage from "./pages/SaytrixPage";
+import FloatingSaytrix from "./components/saytrix/FloatingSaytrix";
 import PageTransition from "./components/PageTransition";
-import TradingAssistant from "./components/TradingAssistant";
 import ProtectedRoute from "./components/ProtectedRoute";
+
 
 const AppRoutes = () => {
   const location = useLocation();
@@ -121,24 +122,35 @@ const AppRoutes = () => {
               </PageTransition>
             </ProtectedRoute>
           }/>
-          <Route path="/assistant" element={
+          <Route path="/saytrix" element={
             <ProtectedRoute>
               <PageTransition>
-                <TradingAssistantPage />
+                <SaytrixPage />
+              </PageTransition>
+            </ProtectedRoute>
+          }/>
+          {/* Legacy chatbot route redirects to Saytrix */}
+          <Route path="/chatbot" element={
+            <ProtectedRoute>
+              <PageTransition>
+                <SaytrixPage />
               </PageTransition>
             </ProtectedRoute>
           }/>
         </Routes>
       </AnimatePresence>
 
-      {/* Trading Assistant is available on all pages except landing, login, signup, and the dedicated assistant page */}
+      {/* Floating Saytrix - Available on all protected pages except landing, login, signup, and saytrix page */}
       {location.pathname !== "/" &&
        location.pathname !== "/login" &&
        location.pathname !== "/signup" &&
        location.pathname !== "/forgotpassword" &&
        location.pathname !== "/resetpassword" &&
-       location.pathname !== "/assistant" && (
-        <TradingAssistant />
+       location.pathname !== "/chatbot" &&
+       location.pathname !== "/saytrix" &&
+       location.pathname !== "/saytrix-demo" &&
+       location.pathname !== "/jarvis-demo" && (
+        <FloatingSaytrix />
       )}
     </>
   );

@@ -1,5 +1,5 @@
 // App.jsx
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router } from "react-router-dom";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { Provider } from "react-redux";
@@ -11,16 +11,31 @@ import { SidebarProvider } from "./context/SidebarContext.jsx";
 import { ThemeProvider } from "./context/ThemeContext.jsx";
 import { OfflineProvider } from "./context/OfflineContext.jsx";
 import { NotificationProvider } from "./context/NotificationContext.jsx";
+import { GlobalVoiceProvider } from "./context/GlobalVoiceContext.jsx";
 import ErrorBoundary from "./components/ErrorBoundary";
 import AppRoutes from "./approutes";
+import SpeakingIndicator from "./components/SpeakingIndicator";
+
+import VoiceStatusIndicator from "./components/VoiceStatusIndicator";
+import VoiceCommandOverlay from "./components/voice/VoiceCommandOverlay";
+import VoiceFloatingButton from "./components/voice/VoiceFloatingButton";
+import SpeechPermissionHandler from "./components/voice/SpeechPermissionHandler";
+// import SaytrixUI from "./components/voice/SaytrixUI";
+// import SimpleSaytrix from "./components/voice/SimpleSaytrix";
+import SaytrixAssistant from "./components/voice/SaytrixAssistant";
+// import SaytrixTest from "./components/voice/SaytrixTest";
+
 import store from "./redux/store";
 import { initializeTheme } from "./redux/reducers/themeReducer";
 import { checkAuth } from "./redux/reducers/authReducer";
+// import useVoiceAssistant from "./hooks/useVoiceAssistant";
 import "./styles/theme.css";
 import "./styles/DarkMode.css";
 import "./styles/App.css";
 import "./styles/components/ErrorBoundary.css";
+import "./styles/el-classico-theme.css";
 import ToastContainer from "./components/ToastContainer";
+import ThemeToggleEnhanced from "./components/ThemeToggleEnhanced";
 
 const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
@@ -35,10 +50,29 @@ const AppContent = () => {
 
   return (
     <Router>
-      <div className="app-wrapper">
-        <AppRoutes />
-        {/* ToastContainer is now handled by ToastProvider */}
-      </div>
+      <GlobalVoiceProvider>
+        <div className="app-wrapper">
+          <AppRoutes />
+
+          {/* Voice Components */}
+          <SpeakingIndicator />
+          <VoiceStatusIndicator position="bottom-left" />
+          <VoiceCommandOverlay />
+          <VoiceFloatingButton />
+          <SpeechPermissionHandler />
+
+          {/* SAYTRIX Voice Assistant - Always Active */}
+          <SaytrixAssistant />
+
+          {/* Enhanced Theme Toggle */}
+          <ThemeToggleEnhanced position="top-right" showLabel={true} />
+
+          {/* Development Test Panel - Temporarily disabled */}
+          {/* {process.env.NODE_ENV === 'development' && <SaytrixTest />} */}
+
+          {/* ToastContainer is now handled by ToastProvider */}
+        </div>
+      </GlobalVoiceProvider>
     </Router>
   );
 };

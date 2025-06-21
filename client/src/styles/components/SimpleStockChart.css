@@ -1,0 +1,365 @@
+/* Simple Stock Chart Styles - El Classico Professional Design */
+
+.simple-stock-chart {
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 
+    0 20px 40px rgba(0, 0, 0, 0.1),
+    0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  max-width: 900px;
+  width: 100%;
+  margin: 0 auto;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.simple-chart-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 
+    0 20px 40px rgba(0, 0, 0, 0.1),
+    0 4px 12px rgba(0, 0, 0, 0.05);
+  margin: 2rem auto;
+  max-width: 900px;
+}
+
+.loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #f3f4f6;
+  border-top: 3px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loading-spinner span {
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* Header */
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 32px 32px 24px 32px;
+  background: linear-gradient(135deg, #fafbfc 0%, #f8f9fa 100%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.stock-info {
+  flex: 1;
+}
+
+.stock-symbol {
+  font-size: 28px;
+  font-weight: 800;
+  color: #1a1a1a;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.03em;
+}
+
+.stock-name {
+  font-size: 16px;
+  color: #6b7280;
+  margin: 0 0 16px 0;
+  font-weight: 500;
+}
+
+.price-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.current-price {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1a1a1a;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.price-change {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.price-change.positive {
+  color: #059669;
+  background: rgba(5, 150, 105, 0.1);
+}
+
+.price-change.negative {
+  color: #dc2626;
+  background: rgba(220, 38, 38, 0.1);
+}
+
+.chart-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 18px;
+}
+
+.action-btn:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+  color: #374151;
+  transform: translateY(-1px);
+}
+
+.action-btn:active {
+  transform: scale(0.95);
+}
+
+.close-btn:hover {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+
+.maximize-btn:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #2563eb;
+}
+
+/* Chart Container */
+.chart-container {
+  position: relative;
+  padding: 0;
+}
+
+.chart-error-banner {
+  background: linear-gradient(90deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+/* Stats */
+.chart-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0;
+  background: #f8f9fa;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 16px;
+  border-right: 1px solid rgba(0, 0, 0, 0.06);
+  transition: all 0.2s ease;
+}
+
+.stat-item:last-child {
+  border-right: none;
+}
+
+.stat-item:hover {
+  background: #f1f5f9;
+}
+
+.stat-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+
+.stat-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Animations */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .simple-stock-chart {
+    margin: 1rem;
+    border-radius: 16px;
+  }
+  
+  .chart-header {
+    padding: 24px 20px 20px 20px;
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+  
+  .stock-symbol {
+    font-size: 24px;
+  }
+  
+  .current-price {
+    font-size: 28px;
+  }
+  
+  .price-change {
+    font-size: 14px;
+  }
+  
+  .chart-actions {
+    align-self: flex-end;
+  }
+  
+  .chart-stats {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  }
+  
+  .stat-item {
+    padding: 16px 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .simple-stock-chart {
+    margin: 0.5rem;
+    border-radius: 12px;
+  }
+  
+  .chart-header {
+    padding: 20px 16px 16px 16px;
+  }
+  
+  .stock-symbol {
+    font-size: 20px;
+  }
+  
+  .current-price {
+    font-size: 24px;
+  }
+  
+  .price-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .chart-stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .stat-item {
+    border-right: none;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 16px 20px;
+  }
+  
+  .stat-item:last-child {
+    border-bottom: none;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .simple-stock-chart,
+  .simple-chart-loading {
+    background: #1f2937;
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .chart-header {
+    background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .stock-symbol,
+  .current-price,
+  .stat-value {
+    color: #f9fafb;
+  }
+  
+  .stock-name,
+  .stat-label {
+    color: #9ca3af;
+  }
+  
+  .action-btn {
+    background: #374151;
+    border-color: #4b5563;
+    color: #9ca3af;
+  }
+  
+  .action-btn:hover {
+    background: #4b5563;
+    color: #f9fafb;
+  }
+  
+  .chart-stats {
+    background: #374151;
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .stat-item {
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .stat-item:hover {
+    background: #4b5563;
+  }
+  
+  .chart-error-banner {
+    background: linear-gradient(90deg, #451a03 0%, #78350f 100%);
+    color: #fbbf24;
+  }
+  
+  .loading-spinner span {
+    color: #9ca3af;
+  }
+}

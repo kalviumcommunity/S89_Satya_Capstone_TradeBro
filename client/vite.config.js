@@ -4,7 +4,32 @@ import { resolve } from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react({
+      // React 19 compatibility settings
+      jsxRuntime: 'automatic',
+      jsxImportSource: 'react',
+      // Remove jsx: true to fix the non-boolean attribute error
+      babel: {
+        plugins: [
+          // Add babel plugins for React 19 compatibility if needed
+        ]
+      }
+    })
+  ],
+  define: {
+    // React 19 compatibility - avoid setting read-only properties
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
+  },
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'framer-motion',
+      'react-icons/fi'
+    ],
+    exclude: []
+  },
   build: {
     outDir: 'dist',
     rollupOptions: {

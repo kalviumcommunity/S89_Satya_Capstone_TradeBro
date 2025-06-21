@@ -10,7 +10,7 @@ import { useToast } from "../context/ToastContext";
 import { useAuth } from "../context/AuthContext";
 import { useVirtualMoney } from "../context/VirtualMoneyContext";
 import Loading from "./common/Loading";
-import StockChart from "./charts/StockChart";
+import StockChart from "./StockChart";
 import FixedHeader from "./FixedHeader";
 import BuySellModal from "./forms/BuySellModal";
 import API_ENDPOINTS from "../config/apiConfig";
@@ -193,9 +193,11 @@ const FullScreenStockDetail = ({ symbol, onClose, onBuySuccess, onSellSuccess })
             <div className="fullscreen-chart-container">
               <StockChart
                 symbol={symbol}
-                timeRange={chartTimeRange}
                 chartType={chartType}
-                fullscreen={true}
+                height={600}
+                showVolume={true}
+                showSMA={true}
+                smaLength={14}
               />
             </div>
 

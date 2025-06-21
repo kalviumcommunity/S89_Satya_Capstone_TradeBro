@@ -1,6 +1,7 @@
 import React from 'react';
 import { useSidebar } from '../context/SidebarContext';
 import Sidebar from './Sidebar';
+import VoiceStatusIndicator from './VoiceStatusIndicator';
 import './PageLayout.css';
 
 const PageLayout = ({ children }) => {
@@ -9,11 +10,12 @@ const PageLayout = ({ children }) => {
   return (
     <div className="page-layout">
       <Sidebar />
-      <main 
+      <main
         className={`page-content ${isCollapsed ? 'sidebar-collapsed' : 'sidebar-expanded'} ${isMobile ? 'mobile' : ''}`}
       >
         {children}
       </main>
+      <VoiceStatusIndicator position="bottom-left" showToggle={true} />
     </div>
   );
 };

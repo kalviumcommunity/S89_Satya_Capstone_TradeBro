@@ -341,19 +341,27 @@ router.get('/google/callback',
 
       // Redirect to frontend with success message and user data
       // Include token in the URL and set a flag to indicate Google login
-      // Check if we're in development or production
-      const redirectUrl = process.env.NODE_ENV === 'production'
-        ? `https://tradebro.netlify.app/dashboard?token=${token}&success=true&google=true`
-        : `http://localhost:5173/dashboard?token=${token}&success=true&google=true`;
+      // Check if this is a new user or existing user
+      const isNewUser = req.user.isNewUser || false;
+      const redirectPath = isNewUser ? '/login' : '/dashboard';
+      const newUserParam = isNewUser ? '&newUser=true' : '';
 
-      console.log('Redirecting to:', redirectUrl);
+      // Check if we're in development or production
+      const baseUrl = process.env.NODE_ENV === 'production'
+        ? 'https://tradebro.netlify.app'
+        : 'http://localhost:5174'; // Updated to match current port
+
+      const redirectUrl = `${baseUrl}${redirectPath}?token=${token}&success=true&google=true${newUserParam}`;
+
+      console.log('Redirecting to:', redirectUrl, isNewUser ? '(New User)' : '(Existing User)');
       res.redirect(redirectUrl);
     } catch (error) {
       console.error('Error in Google callback:', error);
       // Check if we're in development or production
-      const errorRedirectUrl = process.env.NODE_ENV === 'production'
-        ? `https://tradebro.netlify.app/login?error=authentication_failed`
-        : `http://localhost:5173/login?error=authentication_failed`;
+      const baseUrl = process.env.NODE_ENV === 'production'
+        ? 'https://tradebro.netlify.app'
+        : 'http://localhost:5174'; // Updated to match current port
+      const errorRedirectUrl = `${baseUrl}/login?error=authentication_failed`;
 
       console.log('Redirecting to error URL:', errorRedirectUrl);
       res.redirect(errorRedirectUrl);

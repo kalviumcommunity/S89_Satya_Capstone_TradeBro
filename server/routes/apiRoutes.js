@@ -32,31 +32,7 @@ router.get("/stocks/history/:symbol", async (req, res) => {
   }
 });
 
-// 3. Company name search
-router.get("/search/name/:query", async (req, res) => {
-  const { query } = req.params;
-  try {
-    const response = await axios.get(
-      `https://financialmodelingprep.com/stable/search-name?query=${query}&apikey=${FMP_API}`
-    );
-    res.json(response.data);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to search by name", err });
-  }
-});
 
-// 4. Symbol search
-router.get("/search/symbol/:query", async (req, res) => {
-  const { query } = req.params;
-  try {
-    const response = await axios.get(
-      `https://financialmodelingprep.com/stable/search-symbol?query=${query}&apikey=${FMP_API}`
-    );
-    res.json(response.data);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to search by symbol",err });
-  }
-});
 
 // 5. Screener API
 router.get("/screener", async (req, res) => {

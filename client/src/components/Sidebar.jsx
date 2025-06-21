@@ -6,15 +6,22 @@ import {
   FiSettings,
   FiMenu,
   FiUser,
-  FiCpu,
   FiBarChart2,
   FiLogOut,
   FiClock,
-  FiBookOpen,
   FiFileText,
   FiBell,
+  FiMessageSquare,
+  FiPieChart,
+  FiActivity,
+  FiBookmark,
+  FiShoppingCart,
+  FiStar,
+  FiZap,
+  FiMessageCircle,
+  FiCpu,
 } from "react-icons/fi";
-import ThemeToggle from "./ThemeToggle";
+
 import { useSidebar } from "../context/SidebarContext";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
@@ -28,6 +35,12 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const { isAuthenticated, logout } = useAuth();
 
+
+
+  // Loading and animation states
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+
   // User data state
   const [user, setUser] = useState({
     fullName: "User",
@@ -36,22 +49,42 @@ const Sidebar = () => {
     role: "Member"
   });
 
-  // Get user data from localStorage
+  // Get user data from localStorage and handle loading
   useEffect(() => {
-    if (!isAuthenticated) return;
+    const loadSidebar = async () => {
+      // Simulate loading for smooth animation
+      await new Promise(resolve => setTimeout(resolve, 100));
 
-    // Get user data directly from localStorage
-    const userInfo = {
-      fullName: localStorage.getItem('userFullName') || localStorage.getItem('userName') || "User",
-      email: localStorage.getItem('userEmail') || "",
-      profileImage: localStorage.getItem('userProfileImage')
-        ? API_ENDPOINTS.UPLOADS(localStorage.getItem('userProfileImage'))
-        : "https://randomuser.me/api/portraits/lego/1.jpg",
-      role: "Member"
+      if (!isAuthenticated) {
+        setIsLoaded(true);
+        return;
+      }
+
+      // Get user data directly from localStorage
+      const userInfo = {
+        fullName: localStorage.getItem('userFullName') || localStorage.getItem('userName') || "User",
+        email: localStorage.getItem('userEmail') || "",
+        profileImage: localStorage.getItem('userProfileImage')
+          ? API_ENDPOINTS.UPLOADS(localStorage.getItem('userProfileImage'))
+          : "https://randomuser.me/api/portraits/lego/1.jpg",
+        role: "Member"
+      };
+
+      setUser(userInfo);
+      setIsLoaded(true);
     };
 
-    setUser(userInfo);
+    loadSidebar();
   }, [isAuthenticated]);
+
+  // Handle sidebar toggle with animation
+  const handleToggle = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsAnimating(true);
+    toggleSidebar();
+    setTimeout(() => setIsAnimating(false), 300);
+  };
 
   // Handle logout
   const handleLogout = () => {
@@ -60,18 +93,35 @@ const Sidebar = () => {
   };
 
   return (
-    <div className={`sidebar ${isCollapsed ? "collapsed" : ""} ${isMobile ? "mobile" : ""}`}>
+    <div
+      className={`sidebar ${isCollapsed ? "collapsed" : ""} ${isMobile ? "mobile" : ""} ${isLoaded ? "loaded" : "loading"} ${isAnimating ? "animating" : ""}`}
+      role="navigation"
+      aria-label="Main navigation"
+    >
       <div className="top-section">
-        <button className="toggle-btn" onClick={toggleSidebar}>
+        <button
+          className="toggle-btn"
+          onClick={handleToggle}
+          type="button"
+          aria-label={isCollapsed ? "Expand sidebar navigation" : "Collapse sidebar navigation"}
+          title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-expanded={!isCollapsed}
+        >
           <FiMenu />
         </button>
-        {!isCollapsed && <h1 className="logo">🚀 TradeBro</h1>}
+
+
+        {!isCollapsed && (
+          <h1 className="logo" role="banner">
+            ⚡ TradeBro
+          </h1>
+        )}
       </div>
 
       {!isCollapsed && (
         <div className="user-profile">
           <div className="user-avatar">
-            <img src={user.profileImage} alt={user.fullName} />
+            <div className="avatar-symbol">👤</div>
           </div>
           <div className="user-info">
             <h3 className="user-name">{user.fullName}</h3>
@@ -80,28 +130,34 @@ const Sidebar = () => {
         </div>
       )}
 
-      <ul className="sidebar-links">
-        <li>
-          <Link to="/dashboard" className={`sidebar-link ${location.pathname === "/dashboard" ? "active" : ""}`}>
-            <FiBarChart2 />
-            {!isCollapsed && <span>Dashboard</span>}
-          </Link>
-        </li>
+      <nav role="navigation" aria-label="Main menu">
+        <ul className="sidebar-links">
+          <li>
+            <Link
+              to="/dashboard"
+              className={`sidebar-link ${location.pathname === "/dashboard" ? "active" : ""}`}
+              aria-current={location.pathname === "/dashboard" ? "page" : undefined}
+              title="Dashboard"
+            >
+              <FiBarChart2 aria-hidden="true" />
+              {!isCollapsed && <span>Dashboard</span>}
+            </Link>
+          </li>
         <li>
           <Link to="/portfolio" className={`sidebar-link ${location.pathname === "/portfolio" ? "active" : ""}`}>
-            <FiBriefcase />
+            <FiPieChart />
             {!isCollapsed && <span>Portfolio</span>}
           </Link>
         </li>
         <li>
           <Link to="/watchlist" className={`sidebar-link ${location.pathname === "/watchlist" ? "active" : ""}`}>
-            <FiTrendingUp />
+            <FiBookmark />
             {!isCollapsed && <span>Watchlist</span>}
           </Link>
         </li>
         <li>
           <Link to="/orders" className={`sidebar-link ${location.pathname === "/orders" ? "active" : ""}`}>
-            <FiBookOpen />
+            <FiShoppingCart />
             {!isCollapsed && <span>Orders</span>}
           </Link>
         </li>
@@ -124,21 +180,16 @@ const Sidebar = () => {
           </Link>
         </li>
         <li>
-          <Link to="/assistant" className={`sidebar-link ${location.pathname === "/assistant" ? "active" : ""} highlight`}>
-            <FiCpu />
-            {!isCollapsed && <span>Trading Assistant</span>}
+          <Link to="/saytrix" className={`sidebar-link ${(location.pathname === "/saytrix" || location.pathname === "/chatbot") ? "active" : ""} highlight`}>
+            <FiMessageCircle />
+            {!isCollapsed && <span>Saytrix AI</span>}
           </Link>
         </li>
       </ul>
+      </nav>
 
       <div className="sidebar-bottom">
         <div className="sidebar-actions">
-          <div className="action-buttons">
-            <div className="theme-toggle-container">
-              <ThemeToggle />
-            </div>
-          </div>
-
           <Link to="/profile" className={`sidebar-link ${location.pathname === "/profile" ? "active" : ""}`}>
             <FiUser />
             {!isCollapsed && <span>Profile</span>}
@@ -149,7 +200,12 @@ const Sidebar = () => {
             {!isCollapsed && <span>Settings</span>}
           </Link>
 
-          <button onClick={handleLogout} className="sidebar-link logout-btn">
+          <button
+            onClick={handleLogout}
+            className="sidebar-link logout-btn"
+            aria-label="Logout from TradeBro"
+            title="Logout from TradeBro"
+          >
             <FiLogOut />
             {!isCollapsed && <span>Logout</span>}
           </button>
@@ -157,8 +213,8 @@ const Sidebar = () => {
 
         {!isCollapsed && (
           <div className="sidebar-footer">
-            <p className="copyright">© 2023 TradeBro</p>
-            <p className="version">v1.0.0</p>
+            <p className="copyright">© 2024 TradeBro ⚡</p>
+            <p className="version">v1.0.0 • 🚀</p>
           </div>
         )}
       </div>

@@ -27,8 +27,11 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
 
         // Check if user already exists
         let user = await User.findOne({ email: profile.emails[0].value });
+        let isNewUser = false;
+
         if (!user) {
           console.log("Creating new user for Google account:", profile.emails[0].value); // Debugging
+          isNewUser = true;
 
           // Create a new user if not found
           user = new User({
@@ -63,6 +66,9 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
             console.log("Updated existing user with Google profile data");
           }
         }
+
+        // Add isNewUser flag to user object for callback handling
+        user.isNewUser = isNewUser;
 
         // Generate JWT token for the user with more user data
         const token = jwt.sign(

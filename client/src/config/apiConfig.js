@@ -27,11 +27,22 @@ export const API_ENDPOINTS = {
     NOTIFICATIONS: `${API_BASE_URL}/api/settings/notifications`,
   },
 
-  // Chatbot endpoints
+  // Saytrix endpoints
+  SAYTRIX: {
+    START: `${API_BASE_URL}/api/saytrix/start`,
+    END: `${API_BASE_URL}/api/saytrix/end`,
+    MESSAGE: `${API_BASE_URL}/api/saytrix/message`,
+    VOICE: `${API_BASE_URL}/api/saytrix/voice`,
+    CHAT: `${API_BASE_URL}/api/saytrix/chat`,
+    SUGGESTIONS: `${API_BASE_URL}/api/saytrix/suggestions`,
+    HEALTH: `${API_BASE_URL}/api/saytrix/health`,
+  },
+
+  // Legacy chatbot endpoints (for backward compatibility)
   CHATBOT: {
-    START: `${API_BASE_URL}/api/chatbot/start`,
-    END: `${API_BASE_URL}/api/chatbot/end`,
-    MESSAGE: `${API_BASE_URL}/api/chatbot/message`,
+    START: `${API_BASE_URL}/api/saytrix/start`,
+    END: `${API_BASE_URL}/api/saytrix/end`,
+    MESSAGE: `${API_BASE_URL}/api/saytrix/message`,
   },
 
   // Virtual money endpoints
@@ -59,7 +70,7 @@ export const API_ENDPOINTS = {
     STOCKS: `${API_BASE_URL}/api/watchlist/stocks`,
     ADD: `${API_BASE_URL}/api/watchlist/add`,
     REMOVE: (symbol) => `${API_BASE_URL}/api/watchlist/remove/${symbol}`,
-    SEARCH: `${API_BASE_URL}/api/watchlist/search`,
+
   },
 
   // Proxy endpoints
@@ -70,14 +81,10 @@ export const API_ENDPOINTS = {
     MARKET_INDICES: `${API_BASE_URL}/api/proxy/market-indices`,
     TOP_GAINERS: `${API_BASE_URL}/api/proxy/top-gainers`,
     TOP_LOSERS: `${API_BASE_URL}/api/proxy/top-losers`,
+    FMP: `${API_BASE_URL}/api/proxy/fmp`,
   },
 
-  // Stock Search endpoints
-  STOCK_SEARCH: {
-    SEARCH: `${API_BASE_URL}/api/stock-search`,
-    SEARCH_DIRECT: `${API_BASE_URL}/api/stocks/search`,
-    LIST: `${API_BASE_URL}/api/stock-search/list`,
-  },
+
 
   // Contact endpoint
   CONTACT: {

@@ -7,7 +7,7 @@ import { useToast } from "../context/ToastContext";
 import { useAuth } from "../context/AuthContext";
 import { useVirtualMoney } from "../context/VirtualMoneyContext";
 import Loading from "./common/Loading";
-import StockChart from "./charts/StockChart";
+import StockChart from "./StockChart";
 import BuySellModal from "./forms/BuySellModal";
 import API_ENDPOINTS from "../config/apiConfig";
 import { formatIndianRupees, formatLargeIndianRupees } from '../utils/currencyUtils';
@@ -469,7 +469,14 @@ const StockDetail = ({ symbol, onClose, onBuySuccess, onSellSuccess }) => {
               </div>
             </div>
 
-            <StockChart symbol={symbol} chartType="candle" timeRange="5min" />
+            <StockChart
+              symbol={symbol}
+              chartType="candlestick"
+              height={400}
+              showVolume={true}
+              showSMA={true}
+              smaLength={14}
+            />
 
             <div className="action-buttons">
               <button className="buy-btn" onClick={() => setShowBuyModal(true)}>

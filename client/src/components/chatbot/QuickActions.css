@@ -1,0 +1,79 @@
+/* Quick Actions */
+.quick-actions {
+  padding: 12px 20px 0;
+  border-top: 1px solid #f1f5f9;
+}
+
+.actions-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.action-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px;
+  border: none;
+  background: #f8fafc;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid #e2e8f0;
+}
+
+.action-button:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+.action-icon {
+  font-size: 16px;
+}
+
+.action-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #475569;
+}
+
+/* Dark theme */
+[data-theme="dark"] .quick-actions {
+  border-top-color: #374151;
+}
+
+[data-theme="dark"] .action-button {
+  background: #374151;
+  border-color: #4b5563;
+}
+
+[data-theme="dark"] .action-button:hover {
+  background: #4b5563;
+  border-color: #6b7280;
+}
+
+[data-theme="dark"] .action-label {
+  color: #d1d5db;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .quick-actions {
+    padding: 8px 16px 0;
+  }
+  
+  .action-button {
+    padding: 6px 2px;
+  }
+  
+  .action-icon {
+    font-size: 14px;
+  }
+  
+  .action-label {
+    font-size: 10px;
+  }
+}

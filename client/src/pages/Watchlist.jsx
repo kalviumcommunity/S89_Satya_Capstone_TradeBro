@@ -2,10 +2,13 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiPlus, FiTrash2, FiRefreshCw, FiTrendingUp, FiTrendingDown, FiSearch, FiAlertCircle, FiX, FiMaximize2 } from "react-icons/fi";
 import PageLayout from "../components/PageLayout";
-import WatchlistSearch from "../components/WatchlistSearch";
+
+import ChartModal from "../components/ChartModal";
+import StockSearch from "../components/StockSearch";
 import { useToast } from "../hooks/useToast";
 import { useAuth } from "../context/AuthContext";
 import { useOfflineMode } from "../context/OfflineContext";
+import { useChartModal } from "../hooks/useChartModal";
 import FullScreenStockDetail from "../components/FullScreenStockDetail";
 import axios from "axios";
 import API_ENDPOINTS from "../config/apiConfig";
@@ -62,6 +65,10 @@ const Watchlist = () => {
   const [isFiltered, setIsFiltered] = useState(false);
   const [selectedStock, setSelectedStock] = useState(null);
   const [showFullScreenDetail, setShowFullScreenDetail] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(true);
+
+  // Chart modal functionality
+  const { handleStockSelect: openChart, modalProps } = useChartModal();
 
   // Mock data for demonstration
   const mockWatchlist = [
@@ -192,8 +199,24 @@ const Watchlist = () => {
     fetchWatchlist();
   }, [isAuthenticated, isOffline, searchTerm]);
 
+  // Auto-refresh watchlist every 30 seconds for real-time updates
+  useEffect(() => {
+    if (!autoRefresh || !isAuthenticated || loading) return;
+
+    const interval = setInterval(() => {
+      refreshWatchlist();
+    }, 15000); // Refresh every 15 seconds for real-time updates
+
+    return () => clearInterval(interval);
+  }, [autoRefresh, isAuthenticated, loading, watchlist]);
+
   // We're now filtering on the server side or in the fetchWatchlist function
   const filteredWatchlist = watchlist;
+
+  // Handle stock selection for chart modal (quick view)
+  const handleStockSelectChart = (symbol, name = '') => {
+    openChart(symbol, name);
+  };
 
   // Handle stock selection for full-screen detail view
   const handleStockSelect = (symbol) => {
@@ -559,12 +582,15 @@ const Watchlist = () => {
           </div>
 
           <div className="watchlist-controls">
-            <WatchlistSearch
-              onAddStock={(symbol, name) => {
+            <StockSearch
+              onStockSelect={(symbol, name) => {
                 // Directly call addToWatchlist with the symbol and name
                 addStockToWatchlist(symbol, name);
               }}
-              watchlistSymbols={watchlist.map(stock => stock.symbol)}
+              placeholder="Search and add stocks to watchlist..."
+              showWatchlistButton={false}
+              showChartButton={true}
+              variant="default"
             />
 
             <button
@@ -636,7 +662,7 @@ const Watchlist = () => {
                     transition={{ duration: 0.3 }}
                     whileHover={{ backgroundColor: "rgba(0,0,0,0.02)" }}
                     className="stock-row"
-                    onClick={() => handleStockSelect(stock.symbol)}
+                    onClick={() => handleStockSelectChart(stock.symbol, stock.name)}
                   >
                     <td className="symbol-cell">{stock.symbol}</td>
                     <td>{stock.name}</td>
@@ -707,6 +733,9 @@ const Watchlist = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Chart Modal for quick chart view */}
+      <ChartModal {...modalProps} />
     </PageLayout>
   );
 };
