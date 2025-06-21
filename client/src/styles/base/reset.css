@@ -1,0 +1,65 @@
+/* Base Reset Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  scroll-behavior: smooth;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background-color);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-dark);
+}
+
+/* Ensure all elements respect box-sizing */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* Remove focus outlines for buttons and icons */
+button:focus,
+[role="button"]:focus,
+.btn:focus,
+.icon:focus,
+.icon-button:focus,
+a:focus,
+.nav-item:focus,
+.menu-item:focus,
+.sidebar-toggle:focus,
+.theme-toggle:focus,
+.settings-button:focus,
+.notification-button:focus,
+.search-button:focus,
+.user-menu-button:focus,
+.dropdown-toggle:focus,
+.tab-button:focus,
+.close-button:focus,
+.action-button:focus,
+.card-action:focus,
+.menu-icon:focus,
+svg:focus,
+.icon-wrapper:focus,
+.icon-container:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}

@@ -63,6 +63,8 @@
 .toast.top-right {
   top: 20px;
   right: 20px;
+  z-index: 10000; /* Ensure it's above other elements */
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
 .toast.top-left {
@@ -111,7 +113,7 @@
     width: calc(100% - 40px);
     max-width: none;
   }
-  
+
   .toast.top-center,
   .toast.bottom-center {
     width: calc(100% - 40px);

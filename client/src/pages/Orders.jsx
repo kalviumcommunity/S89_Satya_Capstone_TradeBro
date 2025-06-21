@@ -5,7 +5,10 @@ import PageLayout from "../components/PageLayout";
 import { useToast } from "../context/ToastContext";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
+<<<<<<< HEAD
 import API_ENDPOINTS from "../config/apiConfig";
+=======
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
 import "../styles/pages/Orders.css";
 
 const Orders = () => {
@@ -96,7 +99,11 @@ const Orders = () => {
       setError(null);
 
       try {
+<<<<<<< HEAD
         const response = await axios.get(API_ENDPOINTS.ORDERS.ALL);
+=======
+        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/orders/all`);
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
 
         if (response.data.success) {
           // Transform the data to match our frontend format
@@ -157,7 +164,11 @@ const Orders = () => {
     setError(null);
 
     try {
+<<<<<<< HEAD
       const response = await axios.get(API_ENDPOINTS.ORDERS.ALL);
+=======
+      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/orders/all`);
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
 
       if (response.data.success) {
         // Transform the data to match our frontend format
@@ -199,7 +210,11 @@ const Orders = () => {
     }
 
     try {
+<<<<<<< HEAD
       const response = await axios.post(API_ENDPOINTS.ORDERS.CANCEL(id));
+=======
+      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/orders/cancel/${id}`);
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
 
       if (response.data.success) {
         // Update the order in the local state

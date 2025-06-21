@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
-import { FiSearch, FiExternalLink, FiClock, FiFilter } from "react-icons/fi";
+import { FiSearch, FiExternalLink, FiClock, FiFilter, FiRefreshCw } from "react-icons/fi";
 import PageLayout from "../components/PageLayout";
+<<<<<<< HEAD
+=======
+import API_ENDPOINTS from "../config/apiConfig";
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
 import "../styles/pages/News.css";
 
 const News = () => {
@@ -13,91 +17,115 @@ const News = () => {
   const [category, setCategory] = useState("general");
   const [filteredNews, setFilteredNews] = useState([]);
 
-  // Mock news data (replace with actual API call)
+  // Function to refresh news data
+  const refreshNews = () => {
+    setLoading(true);
+    setError(null);
+    // This will trigger the useEffect to fetch news again
+    setCategory(prevCategory => prevCategory);
+  };
+
+  // Fetch news data from the API
   useEffect(() => {
     const fetchNews = async () => {
       setLoading(true);
-      try {
-        // In a real app, replace this with an actual API call
-        // const response = await axios.get(`https://api.example.com/news?category=${category}`);
-        // setNewsItems(response.data);
+      setError(null);
 
-        // Mock data for demonstration
-        setTimeout(() => {
-          const mockNews = [
-            {
-              id: 1,
-              title: "Stock Market Reaches All-Time High",
-              description: "Major indices hit record levels as tech stocks surge on positive earnings reports.",
-              source: "Financial Times",
-              url: "#",
-              imageUrl: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80",
-              publishedAt: "2023-10-15T14:30:00Z",
-              category: "markets"
-            },
-            {
-              id: 2,
-              title: "Central Bank Announces Interest Rate Decision",
-              description: "The central bank has decided to maintain current interest rates, citing stable inflation and employment figures.",
-              source: "Bloomberg",
-              url: "#",
-              imageUrl: "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80",
-              publishedAt: "2023-10-14T10:15:00Z",
-              category: "economy"
-            },
-            {
-              id: 3,
-              title: "Tech Giant Announces New Product Line",
-              description: "Leading technology company unveils innovative products expected to disrupt the market.",
-              source: "TechCrunch",
-              url: "#",
-              imageUrl: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80",
-              publishedAt: "2023-10-13T16:45:00Z",
-              category: "technology"
-            },
-            {
-              id: 4,
-              title: "Oil Prices Fluctuate Amid Global Tensions",
-              description: "Crude oil prices show volatility as geopolitical tensions rise in key producing regions.",
-              source: "Reuters",
-              url: "#",
-              imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT1_79c_SHfoQyQJBX5Xg-WVqw4emcG0vwtRQ7LHDr3lxounWyzXcHHOcYZjLkc9boS9jg&usqp=CAU",
-              publishedAt: "2023-10-12T09:20:00Z",
-              category: "commodities"
-            },
-            {
-              id: 5,
-              title: "Major Merger Announced in Banking Sector",
-              description: "Two leading banks have agreed to merge, creating one of the largest financial institutions in the region.",
-              source: "Wall Street Journal",
-              url: "#",
-              imageUrl: "https://images.unsplash.com/photo-1501167786227-4cba60f6d58f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80",
-              publishedAt: "2023-10-11T13:10:00Z",
-              category: "finance"
-            },
-            {
-              id: 6,
-              title: "Cryptocurrency Market Shows Signs of Recovery",
-              description: "After months of decline, major cryptocurrencies are showing positive momentum with increased trading volumes.",
-              source: "CoinDesk",
-              url: "#",
-              imageUrl: "https://images.unsplash.com/photo-1518546305927-5a555bb7020d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1469&q=80",
-              publishedAt: "2023-10-10T11:05:00Z",
-              category: "crypto"
+      try {
+        console.log(`Fetching news for category: ${category}, search: ${searchTerm || 'none'}`);
+
+        // Use the real news API with the API key
+        const response = await axios.get(
+          category === 'general'
+            ? API_ENDPOINTS.NEWS.GET_ALL
+            : API_ENDPOINTS.NEWS.GET_BY_CATEGORY(category),
+          {
+            params: {
+              q: searchTerm || 'stocks'
             }
-          ];
-          setNewsItems(mockNews);
-          setFilteredNews(mockNews);
-          setLoading(false);
-        }, 1000);
+          }
+        );
+
+        if (response.data && response.data.success) {
+          // Check if we have data
+          if (response.data.data && Array.isArray(response.data.data) && response.data.data.length > 0) {
+            const newsData = response.data.data.map(article => ({
+              id: article.id,
+              title: article.title,
+              description: article.description,
+              source: article.source,
+              url: article.url,
+              imageUrl: article.image,
+              publishedAt: article.publishedAt,
+              category: article.category
+            }));
+
+            setNewsItems(newsData);
+            setFilteredNews(newsData);
+
+            // If data is from mock source, show a small notification
+            if (response.data.source === 'mock' || response.data.source === 'fallback') {
+              setError("Using fallback news data. Some features may be limited.");
+            }
+          } else {
+            // No data returned
+            throw new Error('No news data available');
+          }
+        } else {
+          throw new Error(response.data?.message || 'Failed to fetch news data');
+        }
       } catch (err) {
-        setError("Failed to fetch news. Please try again later.");
+        console.error('Error fetching news:', err);
+        setError("Failed to fetch news. Using local fallback data.");
+
+        // Fallback to local mock data if API fails completely
+        const mockNews = [
+          {
+            id: 1,
+            title: "Stock Market Reaches All-Time High",
+            description: "Major indices hit record levels as tech stocks surge on positive earnings reports.",
+            source: "Financial Times",
+            url: "#",
+            imageUrl: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80",
+            publishedAt: new Date(Date.now() - 3600000).toISOString(),
+            category: "markets"
+          },
+          {
+            id: 2,
+            title: "Central Bank Announces Interest Rate Decision",
+            description: "The central bank has decided to maintain current interest rates, citing stable inflation and employment figures.",
+            source: "Bloomberg",
+            url: "#",
+            imageUrl: "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80",
+            publishedAt: new Date(Date.now() - 7200000).toISOString(),
+            category: "economy"
+          },
+          {
+            id: 3,
+            title: "Tech Giant Announces New Product Line",
+            description: "Leading technology company unveils innovative products expected to disrupt the market.",
+            source: "TechCrunch",
+            url: "#",
+            imageUrl: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80",
+            publishedAt: new Date(Date.now() - 10800000).toISOString(),
+            category: "technology"
+          }
+        ];
+
+        // Filter mock news by category if needed
+        const filteredMockNews = category !== 'general'
+          ? mockNews.filter(item => item.category === category)
+          : mockNews;
+
+        setNewsItems(filteredMockNews.length > 0 ? filteredMockNews : mockNews);
+        setFilteredNews(filteredMockNews.length > 0 ? filteredMockNews : mockNews);
+      } finally {
         setLoading(false);
       }
     };
 
     fetchNews();
-  }, [category]);
+  }, [category, searchTerm]);
 
   // Filter news based on search term
   useEffect(() => {
@@ -152,6 +180,15 @@ const News = () => {
               <option value="crypto">Cryptocurrency</option>
             </select>
           </div>
+
+          <button
+            className="refresh-button"
+            onClick={refreshNews}
+            disabled={loading}
+          >
+            <FiRefreshCw className={loading ? "spinning" : ""} />
+            Refresh
+          </button>
         </div>
 
         {loading ? (
@@ -173,8 +210,16 @@ const News = () => {
                 transition={{ duration: 0.3 }}
               >
                 <div className="news-image-container">
-                  <img src={item.imageUrl} alt={item.title} className="news-image" />
-                  <div className="news-source">{item.source}</div>
+                  <img
+                    src={item.imageUrl || item.image || "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1470&q=80"}
+                    alt={item.title}
+                    className="news-image"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1470&q=80";
+                    }}
+                  />
+                  <div className="news-source">{item.source || "TradeBro"}</div>
                 </div>
                 <div className="news-content-container">
                   <h3 className="news-title">{item.title}</h3>

@@ -5,9 +5,18 @@
  * It provides a centralized place to manage the API base URL.
  */
 
+<<<<<<< HEAD
 // Base URL for API requests - use relative URLs in development for proxy support
 const isDevelopment = import.meta.env.DEV;
 export const API_BASE_URL = isDevelopment ? '' : 'https://s89-satya-capstone-tradebro.onrender.com';
+=======
+// Import the URL utility
+import { getApiBaseUrl } from '../utils/urlUtils';
+
+// Base URL for API requests - use environment variable or fallback to localhost
+// Always ensure HTTP for localhost to avoid SSL issues
+export const API_BASE_URL = getApiBaseUrl();
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
 
 // API endpoints
 export const API_ENDPOINTS = {
@@ -103,6 +112,13 @@ export const API_ENDPOINTS = {
   // Chart data endpoints
   CHARTS: {
     FIVE_MIN: (symbol) => `${API_BASE_URL}/api/data/chart/5min/${symbol}`,
+  },
+
+  // News endpoints
+  NEWS: {
+    GET_ALL: `${API_BASE_URL}/api/news`,
+    GET_BY_CATEGORY: (category) => `${API_BASE_URL}/api/news/category/${category}`,
+    SEARCH: `${API_BASE_URL}/api/news/search`,
   },
 
   // Health check endpoint

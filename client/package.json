@@ -5,7 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "dev:kalvium": "vite --config vite.kalvium.config.js",
+    "build": "vite build && node copy-netlify-config.js",
+    "build:kalvium": "vite build --config vite.kalvium.config.js",
+    "postbuild": "node copy-netlify-config.js",
+    "netlify-build": "node netlify-build.js",
     "lint": "eslint .",
     "preview": "vite preview",
     "netlify-build": "vite build && cp -f _redirects dist/ && cp -f _headers dist/"
@@ -51,7 +55,6 @@
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^15.15.0",
     "postcss": "^8.5.3",
-    "tailwindcss": "^4.1.4",
     "vite": "^6.2.0"
   }
 }

@@ -149,22 +149,32 @@ class UserDataManager {
    */
   static async updateChatStatistics(userId, userEmail) {
     try {
+      // Convert userId to ObjectId if it's not already
+      const userObjectId = typeof userId === 'string' ? mongoose.Types.ObjectId(userId) : userId;
+
       // Get total messages count
       const totalMessages = await ChatHistory.aggregate([
         { $match: { userId: new mongoose.Types.ObjectId(userId) } },
+        { $match: { userId: userObjectId } },
         { $unwind: '$messages' },
         { $count: 'total' }
       ]);
 
-      // Get total sessions count
+
       const totalSessions = await ChatHistory.countDocuments({ userId });
+
+      const totalSessions = await ChatHistory.aggregate([
+        { $match: { userId: userObjectId } },
+        { $count: 'total' }
+      ]);
 
       // Get last interaction time
       const lastChat = await ChatHistory.findOne(
-        { userId },
+        { userId: userObjectId },
         {},
         { sort: { 'metadata.lastActiveAt': -1 } }
       );
+
 
       // Get existing user data to preserve other statistics
       let userData = await UserData.findOne({ userId });
@@ -175,6 +185,16 @@ class UserDataManager {
           totalMessages: totalMessages[0]?.total || 0,
           totalSessions,
           lastInteraction: lastChat?.metadata.lastActiveAt || null
+
+      // Update user data
+      await this.createOrUpdateUserData(userId, userEmail, {
+        statistics: {
+          chatAssistantUsage: {
+            totalMessages: totalMessages[0]?.total || 0,
+            totalSessions: totalSessions[0]?.total || 0,
+            lastInteraction: lastChat?.metadata.lastActiveAt || null
+          }
+
         }
       };
 

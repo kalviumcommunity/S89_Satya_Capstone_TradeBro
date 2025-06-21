@@ -4,7 +4,10 @@ import axios from "axios";
 import { FiMail, FiUser, FiMessageSquare, FiSend, FiCheck } from "react-icons/fi";
 import PageLayout from "../components/PageLayout";
 import { useToast } from "../context/ToastContext";
+<<<<<<< HEAD
 import API_ENDPOINTS from "../config/apiConfig";
+=======
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
 import "../styles/pages/Contact.css";
 
 const Contact = () => {
@@ -62,7 +65,11 @@ const Contact = () => {
     setLoading(true);
 
     try {
+<<<<<<< HEAD
       const response = await axios.post(API_ENDPOINTS.CONTACT.SEND, formData);
+=======
+      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/contact/send`, formData);
+>>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
 
       if (response.data.success) {
         setSuccess(true);

@@ -11,6 +11,11 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- Use nomodule as a fallback for browsers that don't support modules -->
+    <script nomodule>
+      document.write('<script src="/src/main.jsx"><\/script>');
+    </script>
+    <!-- Use type="module" for modern browsers -->
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
