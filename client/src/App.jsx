@@ -29,11 +29,8 @@ import store from "./redux/store";
 import { initializeTheme } from "./redux/reducers/themeReducer";
 import { checkAuth } from "./redux/reducers/authReducer";
 // import useVoiceAssistant from "./hooks/useVoiceAssistant";
-import "./styles/themes/theme.css";
-import "./styles/DarkMode.css";
-import "./styles/App.css";
-import "./styles/components/ErrorBoundary.css";
-import "./styles/el-classico-theme.css";
+// Import the new professional theme system
+import "./index.css"; // This imports our complete theme system
 import ToastContainer from "./components/ToastContainer";
 import ThemeToggleEnhanced from "./components/ThemeToggleEnhanced";
 

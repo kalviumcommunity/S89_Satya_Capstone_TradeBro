@@ -161,8 +161,7 @@ class UserDataManager {
       ]);
 
 
-      const totalSessions = await ChatHistory.countDocuments({ userId });
-
+      // Get total sessions count
       const totalSessions = await ChatHistory.aggregate([
         { $match: { userId: userObjectId } },
         { $count: 'total' }
@@ -175,7 +174,6 @@ class UserDataManager {
         { sort: { 'metadata.lastActiveAt': -1 } }
       );
 
-
       // Get existing user data to preserve other statistics
       let userData = await UserData.findOne({ userId });
 
@@ -183,18 +181,8 @@ class UserDataManager {
       const statisticsUpdate = {
         chatAssistantUsage: {
           totalMessages: totalMessages[0]?.total || 0,
-          totalSessions,
+          totalSessions: totalSessions[0]?.total || 0,
           lastInteraction: lastChat?.metadata.lastActiveAt || null
-
-      // Update user data
-      await this.createOrUpdateUserData(userId, userEmail, {
-        statistics: {
-          chatAssistantUsage: {
-            totalMessages: totalMessages[0]?.total || 0,
-            totalSessions: totalSessions[0]?.total || 0,
-            lastInteraction: lastChat?.metadata.lastActiveAt || null
-          }
-
         }
       };
 

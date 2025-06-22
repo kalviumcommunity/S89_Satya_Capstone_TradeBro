@@ -15,8 +15,10 @@ let cleanupMockEndpoints = null;
 // Check if we should use mock endpoints
 const useMocks = localStorage.getItem('useMockEndpoints') === 'true';
 
-// Log the API URL being used
-console.log('API URL:', import.meta.env.VITE_API_BASE_URL || 'https://s89-satya-capstone-tradebro.onrender.com');
+// Log the API URL being used (only in development)
+if (import.meta.env.DEV) {
+  console.log('API URL:', import.meta.env.VITE_API_BASE_URL || 'https://s89-satya-capstone-tradebro.onrender.com');
+}
 
 // Initialize mock endpoints if needed
 if (useMocks) {

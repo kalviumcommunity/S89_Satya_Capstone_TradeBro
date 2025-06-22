@@ -9,16 +9,12 @@
   --animation-speed-medium: 600ms;
   --animation-speed-fast: 300ms;
 
-<<<<<<< HEAD:client/src/styles/animations.css
   /* Animation Easing Variables - Safe for CSS and Web Animations API */
-=======
-  /* Animation Easing Variables */
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40:client/src/styles/components/animations.css
   --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-out: cubic-bezier(0, 0, 0.2, 1);
   --ease-in: cubic-bezier(0.4, 0, 1, 1);
   --ease-bounce: cubic-bezier(0.175, 0.885, 0.32, 1.275);
-<<<<<<< HEAD:client/src/styles/animations.css
+
   /* Fixed elastic ease to ensure x values are between 0 and 1 for Web Animations API */
   --ease-elastic: cubic-bezier(0.68, -0.55, 0.265, 1.55); /* CSS only */
   --ease-elastic-safe: cubic-bezier(0.68, -0.55, 0.32, 1.55); /* Safe for Web Animations API */
@@ -27,9 +23,6 @@
   --ease-in-out-quad: cubic-bezier(0.455, 0.03, 0.515, 0.955);
   --ease-in-out-cubic: cubic-bezier(0.645, 0.045, 0.355, 1);
   --ease-in-out-quart: cubic-bezier(0.77, 0, 0.175, 1);
-=======
-  --ease-elastic: cubic-bezier(0.68, 0, 0.265, 1.55);
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40:client/src/styles/components/animations.css
 }
 
 /* ===== Keyframe Animations ===== */

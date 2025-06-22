@@ -13,8 +13,7 @@ import {
   ParallaxSection
 } from "../components/animations";
 
-// Import TradingAssistant component
-import TradingAssistant from "../components/TradingAssistant";
+// TradingAssistant component removed to eliminate microphone option
 
 // Memoized components for better performance
 const NavBar = memo(({ mobileMenuOpen, toggleMobileMenu, handleGetStarted }) => {
@@ -413,9 +412,6 @@ const LandingPage = () => {
           ))}
         </p>
       </footer>
-
-      {/* Add Trading Assistant chatbot */}
-      <TradingAssistant />
     </div>
   );
 };

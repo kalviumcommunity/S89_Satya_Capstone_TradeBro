@@ -4,9 +4,9 @@ require('dotenv').config();
 
 class GeminiService {
   constructor() {
-    this.apiKey = process.env.GEMINI_API_KEY || 'AIzaSyD502Fqn3f0P1alBXYIDBfz7nIKflBdt80';
+    this.apiKey = process.env.GEMINI_API_KEY;
     console.log('🤖 Initializing Gemini Service...');
-    console.log('🔑 API Key:', this.apiKey ? `${this.apiKey.substring(0, 10)}...` : 'Not found');
+    console.log('🔑 API Key:', this.apiKey ? 'Configured ✅' : 'Not found ❌');
 
     this.genAI = new GoogleGenerativeAI(this.apiKey);
     this.model = this.genAI.getGenerativeModel({

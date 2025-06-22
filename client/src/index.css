@@ -1,5 +1,8 @@
-/* Import clean styles */
+/* ===== PROFESSIONAL UI THEME IMPORTS ===== */
+/* Import order is important - variables first, then theme, then overrides */
+@import url('./styles/themes/variables.css');
 @import url('./styles/themes/theme.css');
+@import url('./styles/themes/color-override.css');
 @import url('./styles/utils/responsive.css');
 @import url('./styles/utils/animations.css');
 @import url('./styles/mobile-enhancements.css');
@@ -40,10 +43,10 @@ html {
 }
 
 body {
-    font-family: 'Inter', 'Poppins', system-ui, sans-serif;
+    font-family: 'Inter', 'Playfair Display', system-ui, sans-serif;
     line-height: 1.6;
-    color: var(--text-color);
-    background: var(--background-gradient);
+    color: var(--text-primary);
+    background: var(--bg-primary);
     min-height: 100vh;
     overflow-x: hidden;
 }
@@ -55,19 +58,24 @@ body {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(85, 130, 139, 0.1);
-    box-shadow: 0 8px 32px rgba(85, 130, 139, 0.08);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 8px 32px var(--shadow-color);
+}
+
+[data-theme="dark"] .glass-effect {
+    background: rgba(31, 40, 51, 0.95);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 8px 32px var(--shadow-color);
 }
 
 .el-classico-gradient {
     background: linear-gradient(135deg,
-        var(--primary-color) 0%,
-        var(--accent-color) 50%,
-        var(--secondary-color) 100%);
+        var(--accent-primary) 0%,
+        var(--accent-secondary) 100%);
 }
 
 .el-classico-text-gradient {
-    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -87,7 +95,7 @@ body {
 
 /* Enhanced Button Styles */
 .btn-el-classico {
-    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    background: var(--accent-primary);
     color: white;
     border: none;
     padding: 12px 24px;
@@ -95,27 +103,31 @@ body {
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 15px rgba(85, 130, 139, 0.2);
+    box-shadow: 0 4px 15px var(--shadow-color);
+}
+
+[data-theme="dark"] .btn-el-classico {
+    color: #0B0C10;
 }
 
 .btn-el-classico:hover {
-    background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
+    background: var(--accent-secondary);
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(85, 130, 139, 0.3);
+    box-shadow: 0 8px 25px var(--shadow-color);
 }
 
 /* Enhanced Card Styles */
 .card-el-classico {
-    background: rgba(255, 255, 255, 0.95);
+    background: var(--card-bg);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-radius: 20px;
-    border: 1px solid rgba(85, 130, 139, 0.1);
-    box-shadow: 0 8px 32px rgba(85, 130, 139, 0.08);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 8px 32px var(--shadow-color);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .card-el-classico:hover {
     transform: translateY(-5px);
-    box-shadow: 0 15px 45px rgba(85, 130, 139, 0.12);
+    box-shadow: 0 15px 45px var(--shadow-color);
 }

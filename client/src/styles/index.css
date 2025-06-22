@@ -1,16 +1,9 @@
-<<<<<<< HEAD
-/* Clean styles already imported in main index.css */
-=======
-/* Main Styles Index */
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
-
 /* Base Styles */
 @import url('./base/reset.css');
 @import url('./base/typography.css');
 
 /* Theme Styles */
 @import url('./themes/variables.css');
-@import url('./themes/colors.css');
 @import url('./themes/theme.css');
 
 /* Utility Styles */

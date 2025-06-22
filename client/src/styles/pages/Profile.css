@@ -33,11 +33,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-<<<<<<< HEAD
   background-color: #55828b;
-=======
-  background-color: var(--primary-color);
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
   color: white;
   border: none;
   padding: 0.8rem 1.5rem;
@@ -50,24 +46,9 @@
 }
 
 .edit-profile-btn:hover {
-<<<<<<< HEAD
   background-color: #3b6064;
   transform: translateY(-3px);
   box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
-=======
-  background-color: var(--primary-dark);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-[data-theme="dark"] .edit-profile-btn {
-  background-color: var(--primary-color);
-  color: white;
-}
-
-[data-theme="dark"] .edit-profile-btn:hover {
-  background-color: var(--primary-light);
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
 }
 
 .profile-grid {
@@ -146,15 +127,9 @@
 
 .image-upload-label {
   position: absolute;
-<<<<<<< HEAD
   bottom: 10px;
   right: 10px;
   background-color: #55828b;
-=======
-  bottom: 0;
-  right: 0;
-  background-color: var(--primary-color);
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
   color: white;
   width: 50px;
   height: 50px;
@@ -165,7 +140,6 @@
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s ease;
-<<<<<<< HEAD
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
   z-index: 2;
 }
@@ -183,23 +157,6 @@
 
 .image-upload-label:hover .upload-text {
   display: block;
-=======
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-.image-upload-label:hover {
-  background-color: var(--primary-light);
-  transform: scale(1.1);
-}
-
-[data-theme="dark"] .image-upload-label {
-  background-color: var(--primary-color);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-}
-
-[data-theme="dark"] .image-upload-label:hover {
-  background-color: var(--primary-light);
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
 }
 
 .image-upload-input {
@@ -584,7 +541,6 @@
 }
 
 .cancel-btn:hover {
-<<<<<<< HEAD
   background-color: rgba(96, 108, 56, 0.15);
   transform: translateY(-2px);
   box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
@@ -592,36 +548,14 @@
 
 .save-btn {
   background-color: #55828b;
-=======
-  background-color: #f8f9fa;
-  transform: translateY(-2px);
-}
-
-[data-theme="dark"] .cancel-btn {
-  border-color: var(--border-color);
-  color: var(--text-secondary);
-}
-
-[data-theme="dark"] .cancel-btn:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-}
-
-.save-btn {
-  background-color: var(--primary-color);
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
   border: none;
   color: white;
 }
 
 .save-btn:hover {
-<<<<<<< HEAD
-  background-color: #3b6064;
+  background-color: var(--primary-dark);
   transform: translateY(-2px);
   box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
-=======
-  background-color: var(--primary-light);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 [data-theme="dark"] .save-btn {
@@ -631,7 +565,6 @@
 [data-theme="dark"] .save-btn:hover {
   background-color: var(--primary-light);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
 }
 
 .cancel-btn:disabled,
