@@ -99,7 +99,6 @@ const HeroSection = memo(({ handleGetStarted }) => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: [0.6, 0.05, 0.01, 0.9] }}
       >
-<<<<<<< HEAD
         <h1>
           <AnimatedText
             text="Master the Markets with Confidence"
@@ -109,9 +108,6 @@ const HeroSection = memo(({ handleGetStarted }) => {
             style={{ fontSize: '3rem', lineHeight: '1.2',  maxWidth: '90%' }}
           />
         </h1>
-=======
-        <h1 className="hero-title">Master the Markets with Confidence</h1>
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -136,7 +132,6 @@ const HeroSection = memo(({ handleGetStarted }) => {
           </motion.button>
         </motion.div>
       </motion.div>
-<<<<<<< HEAD
       <FloatingElement amplitude={15} duration={4}>
         <motion.div
           className="hero-visual"
@@ -152,20 +147,6 @@ const HeroSection = memo(({ handleGetStarted }) => {
           />
         </motion.div>
       </FloatingElement>
-=======
-      <motion.div
-        className="hero-visual"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.8, delay: 0.2 }}
-      >
-        <img
-          src="https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80"
-          alt="Stock Market Dashboard"
-          loading="eager"
-        />
-      </motion.div>
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
     </section>
   );
 });

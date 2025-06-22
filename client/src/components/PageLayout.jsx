@@ -2,7 +2,7 @@ import React from 'react';
 import { useSidebar } from '../context/SidebarContext';
 import Sidebar from './Sidebar';
 import VoiceStatusIndicator from './VoiceStatusIndicator';
-import './PageLayout.css';
+import '../styles/components/PageLayout.css';
 
 const PageLayout = ({ children }) => {
   const { isCollapsed, isMobile } = useSidebar();

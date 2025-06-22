@@ -9,10 +9,7 @@ import Loading from "../components/common/Loading";
 import { fetchProfileSuccess, setEditedUser } from "../redux/reducers/profileReducer";
 import { setIsEditing, setLoading, setError } from "../redux/reducers/uiReducer";
 import { showSuccessToast, showErrorToast } from "../redux/reducers/toastReducer";
-<<<<<<< HEAD
 import API_ENDPOINTS from "../config/apiConfig";
-=======
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
 import "../styles/pages/Profile.css";
 
 const Profile = () => {
@@ -35,11 +32,7 @@ const Profile = () => {
     const fetchUserData = async () => {
       try {
         // Get user settings
-<<<<<<< HEAD
         const response = await axios.get(API_ENDPOINTS.SETTINGS.BASE, {
-=======
-        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/settings`, {
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
           headers: {
             Authorization: `Bearer ${localStorage.getItem('authToken')}`
           }
@@ -55,11 +48,7 @@ const Profile = () => {
             phoneNumber: userData.phoneNumber || "",
             joinDate: userData.createdAt || new Date().toISOString(),
             profileImage: userData.profileImage
-<<<<<<< HEAD
               ? API_ENDPOINTS.UPLOADS(userData.profileImage)
-=======
-              ? `${import.meta.env.VITE_API_BASE_URL}/uploads/${userData.profileImage}`
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
               : "https://randomuser.me/api/portraits/lego/1.jpg",
             tradingExperience: userData.tradingExperience || "Beginner",
             preferredMarkets: userData.preferredMarkets || ["Stocks"],
@@ -236,21 +225,11 @@ const Profile = () => {
         console.log('Uploading new profile image:', editedUser.profileImage.name);
       }
 
-<<<<<<< HEAD
       // Send data to API with timeout and retry logic
       const maxRetries = 2;
       let retries = 0;
       let success = false;
       let response;
-=======
-      // Send data to API
-      const response = await axios.put(`${import.meta.env.VITE_API_BASE_URL}/api/settings`, formData, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-          'Content-Type': 'multipart/form-data'
-        }
-      });
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
 
       while (retries <= maxRetries && !success) {
         try {
@@ -276,7 +255,6 @@ const Profile = () => {
         const updatedUserData = {
           ...editedUser,
           profileImage: response.data.userSettings.profileImage
-<<<<<<< HEAD
             ? API_ENDPOINTS.UPLOADS(response.data.userSettings.profileImage)
             : editedUser.profileImage
         };
@@ -289,16 +267,6 @@ const Profile = () => {
           stats,
           recentActivity
         }));
-=======
-            ? `${import.meta.env.VITE_API_BASE_URL}/uploads/${response.data.userSettings.profileImage}`
-            : editedUser.profileImage
-        };
-
-        // Update the user data in Redux
-        dispatch(updateProfileSuccess(updatedUserData));
-
-        // Exit editing mode
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
         dispatch(setIsEditing(false));
 
         // Show success message
@@ -316,7 +284,6 @@ const Profile = () => {
       dispatch(showErrorToast(err.response?.data?.message || 'Failed to update profile. Please try again.'));
 
       // For development, still update the UI
-<<<<<<< HEAD
       if (process.env.NODE_ENV === 'development') {
         const updatedUserData = { ...editedUser };
 
@@ -336,11 +303,6 @@ const Profile = () => {
         dispatch(setIsEditing(false));
         dispatch(showSuccessToast('Profile updated in development mode'));
       }
-=======
-      // This allows testing the UI without a working backend
-      dispatch(updateProfileSuccess(editedUser));
-      dispatch(setIsEditing(false));
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
     } finally {
       dispatch(setLoading(false));
     }

@@ -3,12 +3,8 @@ import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import { motion } from "framer-motion";
 import { FiUser, FiMail, FiLock, FiUserPlus } from "react-icons/fi";
-import { motion } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
-<<<<<<< HEAD
-import API_ENDPOINTS from "../config/apiConfig";
-=======
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
+import { API_ENDPOINTS } from "../config/apiConfig";
 import "../styles/pages/AuthPages.css";
 import Squares from "../UI/squares";
 
@@ -39,11 +35,7 @@ const Signup = () => {
     setLoading(true);
     try {
       const res = await axios.post(
-<<<<<<< HEAD
         API_ENDPOINTS.AUTH.SIGNUP,
-=======
-        `${import.meta.env.VITE_API_BASE_URL}/api/auth/signup`,
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
         {
           username: form.username,
           email: form.email,
@@ -91,14 +83,7 @@ const Signup = () => {
   };
 
   const handleGoogleSignup = () => {
-<<<<<<< HEAD
     window.location.href = API_ENDPOINTS.AUTH.GOOGLE;
-=======
-    // Use the API base URL from environment variables
-    const redirectUrl = `${import.meta.env.VITE_API_BASE_URL}/api/auth/google`;
-    console.log("Redirecting to:", redirectUrl);
-    window.location.href = redirectUrl;
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
   };
 
   return (
@@ -174,7 +159,6 @@ const Signup = () => {
             type="submit"
             className="auth-btn"
             disabled={loading}
-<<<<<<< HEAD
             whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.98 }}
             animate={success ? {
@@ -199,19 +183,6 @@ const Signup = () => {
                 <FiUserPlus style={{ marginRight: '8px' }} /> Sign Up
               </>
             )}
-=======
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            initial={{ opacity: 0.9 }}
-            animate={{ opacity: 1 }}
-            transition={{
-              type: "spring",
-              stiffness: 500,
-              damping: 30
-            }}
-          >
-            {loading ? "Processing..." : <><FiUserPlus style={{ marginRight: '8px' }} /> Sign Up</>}
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
           </motion.button>
         </form>
         <p className="auth-option">
@@ -223,17 +194,8 @@ const Signup = () => {
             className="google-button"
             onClick={handleGoogleSignup}
             whileHover={{ scale: 1.02, y: -2 }}
-<<<<<<< HEAD
             whileTap={{ scale: 0.98 }}
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
-=======
-            whileTap={{ scale: 0.98, y: 1 }}
-            transition={{
-              type: "spring",
-              stiffness: 400,
-              damping: 25
-            }}
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
           >
             <img
               src="/Google.png"

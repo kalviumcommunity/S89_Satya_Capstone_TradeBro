@@ -29,7 +29,7 @@ import store from "./redux/store";
 import { initializeTheme } from "./redux/reducers/themeReducer";
 import { checkAuth } from "./redux/reducers/authReducer";
 // import useVoiceAssistant from "./hooks/useVoiceAssistant";
-import "./styles/theme.css";
+import "./styles/themes/theme.css";
 import "./styles/DarkMode.css";
 import "./styles/App.css";
 import "./styles/components/ErrorBoundary.css";

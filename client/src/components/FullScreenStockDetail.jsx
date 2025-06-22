@@ -15,7 +15,7 @@ import FixedHeader from "./FixedHeader";
 import BuySellModal from "./forms/BuySellModal";
 import API_ENDPOINTS from "../config/apiConfig";
 import { formatIndianRupees, formatLargeIndianRupees } from '../utils/currencyUtils';
-import "../styles/FullScreenStockDetail.css";
+import "../styles/components/FullScreenStockDetail.css";
 
 const FullScreenStockDetail = ({ symbol, onClose, onBuySuccess, onSellSuccess }) => {
   const { isAuthenticated } = useAuth();
