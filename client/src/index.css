@@ -1,11 +1,10 @@
-/* ===== PROFESSIONAL UI THEME IMPORTS ===== */
-/* Import order is important - variables first, then theme, then overrides */
-@import url('./styles/themes/variables.css');
+/* Import clean styles */
 @import url('./styles/themes/theme.css');
-@import url('./styles/themes/color-override.css');
 @import url('./styles/utils/responsive.css');
 @import url('./styles/utils/animations.css');
 @import url('./styles/mobile-enhancements.css');
+@import url('./styles/el-classico-theme.css');
+@import url('./styles/color-override.css'); /* Must be last to override all other styles */
 
 /* Global reset */
 * {

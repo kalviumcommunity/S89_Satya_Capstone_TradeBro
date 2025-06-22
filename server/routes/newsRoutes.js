@@ -1,102 +1,4 @@
 
-const express = require('express');
-const axios = require('axios');
-const router = express.Router();
-const { verifyToken } = require('../middleware/auth');
-
-// Get all news
-router.get('/', async (req, res) => {
-  try {
-    const apiKey = process.env.REACT_APP_NEWS_API_KEY;
-    const category = req.query.category || 'business';
-    const query = req.query.q || 'stocks';
-    const language = req.query.language || 'en';
-    
-    const url = `https://newsdata.io/api/1/news?apikey=${apiKey}&q=${query}&language=${language}&category=${category}`;
-    
-    const response = await axios.get(url);
-    
-    if (response.data && response.data.results) {
-      // Transform the data to match our application's format
-      const transformedData = response.data.results.map((article, index) => ({
-        id: article.article_id || `news-${index}`,
-        title: article.title,
-        description: article.description || article.content || 'No description available',
-        image: article.image_url || 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
-        source: article.source_id || article.source || 'Unknown',
-        publishedAt: article.pubDate || new Date().toISOString(),
-        url: article.link || '#',
-        category: article.category || ['business']
-      }));
-      
-      res.status(200).json({
-        success: true,
-        data: transformedData,
-        totalResults: response.data.totalResults || transformedData.length,
-        nextPage: response.data.nextPage
-      });
-    } else {
-      throw new Error('Invalid response from news API');
-    }
-  } catch (error) {
-    console.error('Error fetching news:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch news',
-      error: error.message
-    });
-  }
-});
-
-// Get news by category
-router.get('/category/:category', async (req, res) => {
-  try {
-    const { category } = req.params;
-    const apiKey = process.env.REACT_APP_NEWS_API_KEY;
-    const query = req.query.q || 'stocks';
-    const language = req.query.language || 'en';
-    
-    const url = `https://newsdata.io/api/1/news?apikey=${apiKey}&q=${query}&language=${language}&category=${category}`;
-    
-    const response = await axios.get(url);
-    
-    if (response.data && response.data.results) {
-      // Transform the data to match our application's format
-      const transformedData = response.data.results.map((article, index) => ({
-        id: article.article_id || `news-${index}`,
-        title: article.title,
-        description: article.description || article.content || 'No description available',
-        image: article.image_url || 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
-        source: article.source_id || article.source || 'Unknown',
-        publishedAt: article.pubDate || new Date().toISOString(),
-        url: article.link || '#',
-        category: article.category || [category]
-      }));
-      
-      res.status(200).json({
-        success: true,
-        data: transformedData,
-        totalResults: response.data.totalResults || transformedData.length,
-        nextPage: response.data.nextPage
-      });
-    } else {
-      throw new Error('Invalid response from news API');
-    }
-  } catch (error) {
-    console.error('Error fetching news by category:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch news by category',
-      error: error.message
-    });
-  }
-});
-
-// Search news
-router.get('/search', async (req, res) => {
-  try {
-    const { q } = req.query;
-    
 /**
  * News Routes
  * This file handles all news-related API endpoints
@@ -152,81 +54,45 @@ router.get('/', async (req, res) => {
       });
     }
 
-    // Fetch from FMP API
-    console.log(`Fetching news from FMP API with query: ${q || 'general'}`);
+    // For now, always use mock data since API key might be expired
+    console.log(`Returning mock news data for query: ${q || 'general'}`);
 
-    // If we have a search query, use it to filter news
-    const apiUrl = q
-      ? `https://financialmodelingprep.com/api/v3/stock_news?tickers=${q}&limit=50&apikey=${FMP_API_KEY}`
-      : `https://financialmodelingprep.com/api/v3/stock_news?limit=50&apikey=${FMP_API_KEY}`;
+    // Return mock data, filtered by query if provided
+    const mockNews = generateMockNews('general', q);
 
-    const response = await axios.get(apiUrl, { timeout: 8000 }); // 8 second timeout
+    // Update cache with mock data
+    cache.data[cacheKey] = mockNews;
+    cache.timestamps[cacheKey] = Date.now();
 
-    if (response.data && Array.isArray(response.data)) {
-      // Format the news data
-      const formattedNews = response.data.map((item, index) => ({
-        id: item.id || index,
-        title: item.title,
-        description: item.text,
-        source: item.site,
-        url: item.url,
-        image: item.image || `https://source.unsplash.com/random/800x600?finance,${index}`,
-        publishedAt: item.publishedDate,
-        category: item.category || 'general',
-        symbol: item.symbol
-      }));
+    return res.json({
+      success: true,
+      source: 'mock',
+      data: mockNews,
+      message: 'Using mock data - API temporarily unavailable'
+    });
 
-      // Update cache
-      cache.data[cacheKey] = formattedNews;
-      cache.timestamps[cacheKey] = Date.now();
-
-      return res.json({
-        success: true,
-        source: 'fmp',
-        data: formattedNews
-      });
-    } else {
-      throw new Error('Invalid response format from FMP API');
-    }
   } catch (error) {
-    console.error('Error fetching news:', error.message);
+    console.error('Error in news route:', error.message);
 
-    // Get query parameter for mock data filtering
-    const { q } = req.query;
-
-    try {
-      // Return mock data if API fails, filtered by query if provided
-      const mockNews = generateMockNews('general', q);
-
-      return res.json({
-        success: true,
-        source: 'mock',
-        data: mockNews,
-        message: 'Using mock data due to API errors'
-      });
-    } catch (mockError) {
-      console.error('Error generating mock news:', mockError.message);
-
-      // Fallback to a minimal set of news data if even mock generation fails
-      return res.json({
-        success: true,
-        source: 'fallback',
-        data: [
-          {
-            id: 1,
-            title: "Market Update",
-            description: "Latest market news and updates.",
-            source: "TradeBro",
-            url: "#",
-            image: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1470&q=80",
-            publishedAt: new Date().toISOString(),
-            category: "general",
-            symbol: "MARKET"
-          }
-        ],
-        message: 'Using fallback data due to API errors'
-      });
-    }
+    // Fallback to a minimal set of news data if even mock generation fails
+    return res.json({
+      success: true,
+      source: 'fallback',
+      data: [
+        {
+          id: 1,
+          title: "Market Update",
+          description: "Latest market news and updates.",
+          source: "TradeBro",
+          url: "#",
+          image: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1470&q=80",
+          publishedAt: new Date().toISOString(),
+          category: "general",
+          symbol: "MARKET"
+        }
+      ],
+      message: 'Using fallback data due to errors'
+    });
   }
 });
 
@@ -352,45 +218,6 @@ router.get('/search', async (req, res) => {
         message: 'Search query is required'
       });
     }
-    
-    const apiKey = process.env.REACT_APP_NEWS_API_KEY;
-    const language = req.query.language || 'en';
-    
-    const url = `https://newsdata.io/api/1/news?apikey=${apiKey}&q=${q}&language=${language}`;
-    
-    const response = await axios.get(url);
-    
-    if (response.data && response.data.results) {
-      // Transform the data to match our application's format
-      const transformedData = response.data.results.map((article, index) => ({
-        id: article.article_id || `news-${index}`,
-        title: article.title,
-        description: article.description || article.content || 'No description available',
-        image: article.image_url || 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
-        source: article.source_id || article.source || 'Unknown',
-        publishedAt: article.pubDate || new Date().toISOString(),
-        url: article.link || '#',
-        category: article.category || ['business']
-      }));
-      
-      res.status(200).json({
-        success: true,
-        data: transformedData,
-        totalResults: response.data.totalResults || transformedData.length,
-        nextPage: response.data.nextPage
-      });
-    } else {
-      throw new Error('Invalid response from news API');
-    }
-  } catch (error) {
-    console.error('Error searching news:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to search news',
-      error: error.message
-    });
-  }
-});
 
     const cacheKey = `news-search-${q}`;
 
