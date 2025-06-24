@@ -38,15 +38,41 @@ const MONGO_URI = process.env.MONGO_URI;
 // FMP API key for stock data
 const FMP_API = process.env.FMP_API_KEY;
 
-// CORS configuration
+// CORS configuration - Allow requests from frontend
+const allowedOrigins = [
+  process.env.CLIENT_URL || "https://tradebro.netlify.app",  // Production frontend
+  "http://localhost:5173",         // Local development (Vite)
+  "http://localhost:3000",         // Alternative local development port
+  "https://s89-satya-capstone-tradebro.onrender.com"  // Backend self-reference
+];
+
+console.log('🔒 CORS allowed origins:', allowedOrigins);
+
 app.use(cors({
-  origin: [
-    "http://tradebro.netlify.app",
-    "https://s89-satya-capstone-tradebro.onrender.com"
-  ],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.warn('❌ CORS blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "X-Requested-With",
+    "Accept",
+    "Origin",
+    "Access-Control-Request-Method",
+    "Access-Control-Request-Headers"
+  ],
+  exposedHeaders: ["Set-Cookie"],
+  optionsSuccessStatus: 200 // Some legacy browsers (IE11, various SmartTVs) choke on 204
 }));
 
 // Basic middleware
@@ -73,6 +99,15 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 app.use("/uploads", express.static("uploads"));
+
+// Handle preflight requests manually for better compatibility
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin);
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Access-Control-Request-Method, Access-Control-Request-Headers');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.sendStatus(200);
+});
 
 // Ensure JSON responses and prevent HTML error pages
 app.use((req, res, next) => {

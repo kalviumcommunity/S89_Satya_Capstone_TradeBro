@@ -43,3 +43,7 @@ services:
         sync: false
       - key: password_nodemailer
         sync: false
+      - key: CLIENT_URL
+        value: https://tradebro.netlify.app
+      - key: API_BASE_URL
+        value: https://s89-satya-capstone-tradebro.onrender.com
