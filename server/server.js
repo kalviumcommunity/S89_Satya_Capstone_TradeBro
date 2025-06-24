@@ -45,7 +45,9 @@ app.use(cors({
     "http://localhost:5174",
     "http://localhost:3000",
     "http://localhost:3001",
-    "http://localhost:3002"
+    "http://localhost:3002",
+    "http://tradebro.netlify.app",
+    "https://s89-satya-capstone-tradebro.onrender.com"
   ],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
