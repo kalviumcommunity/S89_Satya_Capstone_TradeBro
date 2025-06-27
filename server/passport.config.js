@@ -20,8 +20,10 @@ console.log('- CALLBACK_URL:', CALLBACK_URL);
 
 // Only configure Google strategy if credentials are available
 if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
-  // Determine callback URL based on environment
-  const callbackURL = "https://s89-satya-capstone-tradebro.onrender.com/api/auth/google/callback";
+  // Use environment variable for callback URL to support different environments
+  const callbackURL = CALLBACK_URL || "https://s89-satya-capstone-tradebro.onrender.com/api/auth/google/callback";
+
+  console.log('Using Google OAuth callback URL:', callbackURL);
 
   passport.use(
     new GoogleStrategy(
@@ -29,7 +31,7 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
         clientID: GOOGLE_CLIENT_ID,
         clientSecret: GOOGLE_CLIENT_SECRET,
         callbackURL: callbackURL,
-        callbackURL: CALLBACK_URL,
+        scope: ['profile', 'email'],
         proxy: true
       },
 

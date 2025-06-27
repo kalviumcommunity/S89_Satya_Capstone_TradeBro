@@ -301,51 +301,61 @@ router.get('/user', verifyToken, async (req, res) => {
 
 // Google OAuth Login Route
 router.get('/google', (req, res, next) => {
-  console.log('Google OAuth login route hit');
-  console.log('Request URL:', req.originalUrl);
+  console.log('🔐 Google OAuth login route hit');
+  console.log('Request details:', {
+    url: req.originalUrl,
+    protocol: req.protocol,
+    host: req.get('host'),
+    userAgent: req.get('user-agent'),
+    referer: req.get('referer'),
+    forwardedProto: req.headers['x-forwarded-proto']
+  });
 
-  // Force HTTPS protocol regardless of what req.protocol reports
-  const protocol = 'https';
-  console.log('Protocol from request:', req.protocol);
-  console.log('X-Forwarded-Proto header:', req.headers['x-forwarded-proto']);
-  console.log('Using protocol:', protocol);
+  // Check if Google OAuth is configured
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+    console.error('❌ Google OAuth not configured - missing credentials');
+    return res.status(500).json({
+      success: false,
+      message: 'Google OAuth is not configured on the server'
+    });
+  }
 
-  console.log('Full URL:', `${protocol}://${req.get('host')}${req.originalUrl}`);
-  console.log('Headers:', req.headers);
-
-  // Define the callback URL using environment variables
-  const callbackURL = process.env.API_BASE_URL + "/api/auth/google/callback";
-  console.log('Using callback URL:', callbackURL);
-
-  passport.authenticate('google', {
-    scope: ['profile', 'email'],
-    prompt: 'select_account',
-    callbackURL: callbackURL // Pass the callback URL explicitly
-  })(req, res, next);
+  try {
+    passport.authenticate('google', {
+      scope: ['profile', 'email'],
+      prompt: 'select_account',
+      accessType: 'offline' // Request refresh token
+    })(req, res, next);
+  } catch (error) {
+    console.error('❌ Error initiating Google OAuth:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to initiate Google authentication'
+    });
+  }
 });
 
 // Google OAuth Callback Route
 router.get('/google/callback', (req, res, next) => {
-  console.log('Google OAuth callback route hit');
-  console.log('Request URL:', req.originalUrl);
+  console.log('🔄 Google OAuth callback route hit');
+  console.log('Callback details:', {
+    url: req.originalUrl,
+    query: req.query,
+    hasCode: !!req.query.code,
+    hasError: !!req.query.error,
+    error: req.query.error,
+    errorDescription: req.query.error_description
+  });
 
-  // Force HTTPS protocol regardless of what req.protocol reports
-  const protocol = 'https';
-  console.log('Protocol from request:', req.protocol);
-  console.log('X-Forwarded-Proto header:', req.headers['x-forwarded-proto']);
-  console.log('Using protocol:', protocol);
-
-  console.log('Full URL:', `${protocol}://${req.get('host')}${req.originalUrl}`);
-  console.log('Query params:', req.query);
-  console.log('Headers:', req.headers);
-
-  // Define the callback URL using environment variables
-  const callbackURL = process.env.API_BASE_URL + "/api/auth/google/callback";
-  console.log('Using callback URL:', callbackURL);
+  // Handle OAuth errors
+  if (req.query.error) {
+    console.error('❌ Google OAuth error:', req.query.error, req.query.error_description);
+    const clientUrl = process.env.CLIENT_URL || 'https://tradebro.netlify.app';
+    return res.redirect(`${clientUrl}/login?error=oauth_error&message=${encodeURIComponent(req.query.error_description || req.query.error)}`);
+  }
 
   passport.authenticate('google', {
-    callbackURL: callbackURL, // Pass the callback URL explicitly
-    failureRedirect: '/login',
+    failureRedirect: `${process.env.CLIENT_URL || 'https://tradebro.netlify.app'}/login?error=auth_failed`,
     failureMessage: true
   })(req, res, next);
 },
@@ -433,6 +443,5 @@ router.get('/logout', (req, res) => {
     res.status(200).json({ message: "Logout successful" });
   });
 });
-
 
 module.exports = router;
