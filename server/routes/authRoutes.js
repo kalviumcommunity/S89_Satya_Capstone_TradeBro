@@ -242,14 +242,21 @@ router.put('/resetpassword', async (req, res) => {
   }
 
   try {
-    const user = await User.findOne({ codeExpires: { $gt: Date.now() } }); // Ensure OTP is not expired
-    if (!user) {
-      return res.status(400).json({ message: 'Invalid or expired OTP' });
+    // Find all users with a non-expired code
+    const users = await User.find({ codeExpires: { $gt: Date.now() }, code: { $ne: null } });
+    let user = null;
+
+    // Compare OTP with each user's hashed code
+    for (const u of users) {
+      const isOtpValid = await bcrypt.compare(otp, u.code);
+      if (isOtpValid) {
+        user = u;
+        break;
+      }
     }
 
-    const isOtpValid = await bcrypt.compare(otp, user.code);
-    if (!isOtpValid) {
-      return res.status(400).json({ message: 'Invalid OTP' });
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired OTP' });
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
