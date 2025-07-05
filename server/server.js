@@ -374,6 +374,13 @@ app.use("/api/example", exampleRoutes);
 app.use("/api/userdata", userDataRoutes);
 app.use("/api/news", newsRoutes);
 
+// Legacy Google OAuth callback redirect (for old URLs)
+app.get('/auth/google/callback', (req, res) => {
+  console.log('Legacy Google OAuth callback hit, redirecting to correct path');
+  const queryString = req.url.split('?')[1] || '';
+  res.redirect(`/api/auth/google/callback?${queryString}`);
+});
+
 // 404 handler for API routes
 app.use((req, res, next) => {
   if (req.path.startsWith('/api/')) {

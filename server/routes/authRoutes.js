@@ -57,8 +57,8 @@ router.post('/signup', async (req, res) => {
 
     res.cookie('authToken', token, {
       httpOnly: true,
-      secure: false,
-      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     });
 
@@ -68,7 +68,14 @@ router.post('/signup', async (req, res) => {
       email: savedUser.email,
       username: savedUser.username,
       fullName: savedUser.fullName || savedUser.username,
-      profileImage: savedUser.profileImage
+      profileImage: savedUser.profileImage,
+      phoneNumber: savedUser.phoneNumber,
+      language: savedUser.language,
+      notifications: savedUser.notifications,
+      tradingExperience: savedUser.tradingExperience || 'Beginner',
+      bio: savedUser.bio || 'No bio provided yet.',
+      preferredMarkets: savedUser.preferredMarkets || ['Stocks'],
+      createdAt: savedUser.createdAt
     };
 
     res.status(201).json({
@@ -124,8 +131,8 @@ router.post('/login', async (req, res) => {
 
     res.cookie('authToken', token, {
       httpOnly: true,
-      secure: false,
-      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
     });
 
