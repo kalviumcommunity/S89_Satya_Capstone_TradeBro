@@ -43,7 +43,14 @@ export const buildUrl = (baseUrl, path) => {
  * @returns {string} - The API base URL with HTTP for localhost
  */
 export const getApiBaseUrl = () => {
-  // Use the deployed backend URL as default if environment variable is not set
+  // In development, use local server; in production, use deployed server
+  const isDevelopment = import.meta.env.DEV || window.location.hostname === 'localhost';
+
+  if (isDevelopment) {
+    return import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+  }
+
+  // Use the deployed backend URL for production
   const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://s89-satya-capstone-tradebro.onrender.com';
   return ensureHttpForLocalhost(apiUrl);
 };

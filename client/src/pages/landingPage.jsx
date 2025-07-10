@@ -13,9 +13,8 @@ import {
   ParallaxSection
 } from "../components/animations";
 
-// TradingAssistant component removed to eliminate microphone option
+import SaytrixTriggerButton from '../components/voice/SaytrixTriggerButton';
 
-// Memoized components for better performance
 const NavBar = memo(({ mobileMenuOpen, toggleMobileMenu, handleGetStarted }) => {
   const [scrolled, setScrolled] = useState(false);
 
@@ -80,6 +79,13 @@ const NavBar = memo(({ mobileMenuOpen, toggleMobileMenu, handleGetStarted }) => 
         >
           Get Started
         </motion.button>
+
+        {/* Saytrix Voice Trigger */}
+        <SaytrixTriggerButton
+          position="navbar"
+          size="medium"
+          showLabel={true}
+        />
       </nav>
     </motion.header>
   );
@@ -98,37 +104,104 @@ const HeroSection = memo(({ handleGetStarted }) => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: [0.6, 0.05, 0.01, 0.9] }}
       >
+        <motion.div
+          className="hero-badge"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <span className="badge-text">🚀 AI-Powered Trading Assistant</span>
+        </motion.div>
+
         <h1>
           <AnimatedText
-            text="Master the Markets with Confidence"
+            text="Your AI-powered NSE/BSE Trading Assistant"
             type="words"
             animation="fadeUp"
             className="hero-title"
-            style={{ fontSize: '3rem', lineHeight: '1.2',  maxWidth: '90%' }}
+            style={{ fontSize: 'clamp(2.5rem, 6vw, 4rem)', lineHeight: '1.2', maxWidth: '100%' }}
           />
         </h1>
+
         <motion.p
+          className="hero-subtitle"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.4 }}
         >
-          TradeBro is your personal stock market companion — track live data, simulate portfolios, and unlock insights with AI-powered tools.
+          Master the Indian stock markets with confidence. Track live NSE/BSE data, simulate portfolios, get AI-powered insights, and make informed trading decisions.
         </motion.p>
+
         <motion.div
-          className="hero-buttons"
+          className="hero-features"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.6 }}
         >
+          <div className="feature-item">
+            <span className="feature-icon">📊</span>
+            <span>Real-time Market Data</span>
+          </div>
+          <div className="feature-item">
+            <span className="feature-icon">🤖</span>
+            <span>AI-Powered Insights</span>
+          </div>
+          <div className="feature-item">
+            <span className="feature-icon">💼</span>
+            <span>Portfolio Simulation</span>
+          </div>
+          <div className="feature-item">
+            <span className="feature-icon">📈</span>
+            <span>Advanced Analytics</span>
+          </div>
+        </motion.div>
+        <motion.div
+          className="hero-buttons"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.8 }}
+        >
           <motion.button
-            className="primary-btn"
+            className="cta-button primary"
             onClick={handleGetStarted}
             whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.95 }}
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
-            Get Started <FiArrowRight style={{ marginLeft: '8px', verticalAlign: 'middle' }} />
+            <span className="button-icon">🚀</span>
+            Start Trading Now
+            <span className="button-badge">Free</span>
           </motion.button>
+          <motion.button
+            className="cta-button secondary"
+            whileHover={{ scale: 1.05, y: -2 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+            onClick={() => document.getElementById('features').scrollIntoView({ behavior: 'smooth' })}
+          >
+            <span className="button-icon">▶️</span>
+            See Features
+          </motion.button>
+        </motion.div>
+
+        <motion.div
+          className="hero-stats"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 1.0 }}
+        >
+          <div className="stat-item">
+            <span className="stat-number">10K+</span>
+            <span className="stat-label">Active Users</span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-number">₹50L+</span>
+            <span className="stat-label">Portfolio Value</span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-number">99.9%</span>
+            <span className="stat-label">Uptime</span>
+          </div>
         </motion.div>
       </motion.div>
       <FloatingElement amplitude={15} duration={4}>

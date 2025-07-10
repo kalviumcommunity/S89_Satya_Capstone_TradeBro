@@ -14,7 +14,7 @@ const Notifications = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const { isAuthenticated } = useAuth();
-  const toast = useToast();
+  const { success, error, info } = useToast();
   usePusher(); // Initialize Pusher connection
 
   // Fetch notifications from API
@@ -28,12 +28,12 @@ const Notifications = () => {
         if (response.data.success) {
           setNotifications(response.data.data);
         } else {
-          toast.error("Failed to fetch notifications");
+          error("Failed to fetch notifications");
           setNotifications([]);
         }
       } catch (error) {
         console.error("Error fetching notifications:", error);
-        toast.error("Failed to load notifications");
+        error("Failed to load notifications");
         setNotifications([]);
       } finally {
         setLoading(false);
@@ -41,7 +41,7 @@ const Notifications = () => {
     };
 
     fetchNotifications();
-  }, [isAuthenticated, toast]);
+  }, [isAuthenticated, error]);
 
   // Listen for real-time notification events
   useEffect(() => {
@@ -57,7 +57,7 @@ const Notifications = () => {
       );
 
       // Show toast for new notification
-      toast.info(`New notification: ${newNotification.title}`);
+      info(`New notification: ${newNotification.title}`);
     };
 
     // Handle notification update (mark as read)
@@ -103,7 +103,7 @@ const Notifications = () => {
       window.removeEventListener('notification-delete', handleNotificationDelete);
       window.removeEventListener('notifications-read-all', handleMarkAllRead);
     };
-  }, [isAuthenticated, toast]);
+  }, [isAuthenticated, info]);
 
   // Filter notifications
   const filteredNotifications = notifications.filter(notification => {
@@ -123,11 +123,11 @@ const Notifications = () => {
         // Update will happen via Pusher event
         console.log("Notification marked as read:", id);
       } else {
-        toast.error("Failed to mark notification as read");
+        error("Failed to mark notification as read");
       }
     } catch (error) {
       console.error("Error marking notification as read:", error);
-      toast.error("Failed to update notification");
+      error("Failed to update notification");
 
       // Fallback to local update
       setNotifications(prevNotifications =>
@@ -148,13 +148,13 @@ const Notifications = () => {
       if (response.data.success) {
         // Update will happen via Pusher event
         console.log("Notification deleted:", id);
-        toast.info("Notification deleted");
+        info("Notification deleted");
       } else {
-        toast.error("Failed to delete notification");
+        error("Failed to delete notification");
       }
     } catch (error) {
       console.error("Error deleting notification:", error);
-      toast.error("Failed to delete notification");
+      error("Failed to delete notification");
 
       // Fallback to local update
       setNotifications(prevNotifications =>
@@ -173,13 +173,13 @@ const Notifications = () => {
       if (response.data.success) {
         // Update will happen via Pusher event
         console.log("All notifications marked as read");
-        toast.success(`${response.data.count} notifications marked as read`);
+        success(`${response.data.count} notifications marked as read`);
       } else {
-        toast.error("Failed to update notifications");
+        error("Failed to update notifications");
       }
     } catch (error) {
       console.error("Error marking all notifications as read:", error);
-      toast.error("Failed to update notifications");
+      error("Failed to update notifications");
 
       // Fallback to local update
       setNotifications(prevNotifications =>

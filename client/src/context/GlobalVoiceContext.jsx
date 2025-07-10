@@ -13,7 +13,8 @@ export const useGlobalVoice = () => {
 };
 
 export const GlobalVoiceProvider = ({ children }) => {
-  const [isVoiceEnabled, setIsVoiceEnabled] = useState(true);
+  const [isVoiceEnabled, setIsVoiceEnabled] = useState(false); // Changed to false by default
+  const [hasUserConsent, setHasUserConsent] = useState(false); // Added user consent state
   const [isSaytrixOpen, setIsSaytrixOpen] = useState(false);
   const [shouldOpenSaytrix, setShouldOpenSaytrix] = useState(false);
   const [lastVoiceCommand, setLastVoiceCommand] = useState(null);
@@ -434,20 +435,51 @@ export const GlobalVoiceProvider = ({ children }) => {
 
 
 
-  // Auto-start voice listening when enabled
+  // Auto-start voice listening when enabled (with user consent)
   useEffect(() => {
-    if (isVoiceEnabled) {
+    // Only start if user has explicitly enabled voice and given permission
+    if (isVoiceEnabled && hasUserConsent) {
       console.log('🎤 Starting Perfect Voice AI for wake word detection...');
       perfectVoiceAI.startListening().catch(console.error);
     } else {
       console.log('🛑 Stopping Perfect Voice AI...');
       perfectVoiceAI.stopListening().catch(console.error);
     }
-  }, [isVoiceEnabled]);
+  }, [isVoiceEnabled, hasUserConsent]);
+
+  // Request user consent for voice features
+  const requestVoiceConsent = useCallback(async () => {
+    try {
+      console.log('🎤 Requesting user consent for voice features...');
+
+      // Request microphone permission
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(track => track.stop()); // Stop the stream immediately
+
+      setHasUserConsent(true);
+      console.log('✅ User consent granted for voice features');
+
+      return true;
+    } catch (error) {
+      console.error('❌ User denied voice consent:', error);
+      setHasUserConsent(false);
+      setError('Microphone permission is required for voice features');
+      return false;
+    }
+  }, []);
 
   // Enhanced real-time voice commands toggle
   const toggleVoiceCommands = useCallback(async () => {
     const newState = !isVoiceEnabled;
+
+    // Request consent if enabling voice for the first time
+    if (newState && !hasUserConsent) {
+      const consentGranted = await requestVoiceConsent();
+      if (!consentGranted) {
+        return; // Don't enable if consent not granted
+      }
+    }
+
     setIsVoiceEnabled(newState);
 
     try {
@@ -496,7 +528,7 @@ export const GlobalVoiceProvider = ({ children }) => {
         });
       }
     }
-  }, [isVoiceEnabled]);
+  }, [isVoiceEnabled, hasUserConsent, requestVoiceConsent]);
 
   // Enhanced real-time start listening
   const startListening = useCallback(async () => {
@@ -747,6 +779,7 @@ export const GlobalVoiceProvider = ({ children }) => {
   const value = {
     // Voice command state
     isVoiceEnabled,
+    hasUserConsent,
     isListening: isListening,
     isSupported: serviceStatus ? serviceStatus.browserSpeechEnabled : false,
     error: error,
@@ -765,6 +798,7 @@ export const GlobalVoiceProvider = ({ children }) => {
 
     // Actions
     toggleVoiceCommands,
+    requestVoiceConsent,
     speakResponse,
     updateSaytrixState,
     registerSaytrixHandlers,

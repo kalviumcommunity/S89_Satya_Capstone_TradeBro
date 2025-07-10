@@ -2,12 +2,9 @@
 import React, { useEffect } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
 import LandingPage from "./pages/landingPage";
-import ForgetPassword from './pages/ForgetPassword';
-import ResetPassword from './pages/ResetPassword';
-import PortfolioPage from "./pages/portfolio.jsx";
+import PortfolioPage from "./pages/portfolio";
+import ChartsPage from "./pages/charts";
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import News from "./pages/News";
@@ -17,6 +14,7 @@ import Watchlist from "./pages/Watchlist";
 import History from "./pages/History";
 import Orders from "./pages/Orders";
 import SaytrixPage from "./pages/SaytrixPage";
+import Login from "./pages/Login";
 import FloatingSaytrix from "./components/saytrix/FloatingSaytrix";
 import PageTransition from "./components/PageTransition";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -34,6 +32,11 @@ const AppRoutes = () => {
     <>
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
+          <Route path="/" element={
+            <PageTransition>
+              <LandingPage />
+            </PageTransition>
+          }/>
           <Route path="/login" element={
             <PageTransition>
               <Login />
@@ -41,24 +44,9 @@ const AppRoutes = () => {
           }/>
           <Route path="/signup" element={
             <PageTransition>
-              <Signup />
+              <Login />
             </PageTransition>
           }/>
-          <Route path="/" element={
-            <PageTransition>
-              <LandingPage />
-            </PageTransition>
-          }/>
-          <Route path="/forgotpassword" element={
-            <PageTransition>
-              <ForgetPassword />
-            </PageTransition>
-          } />
-          <Route path="/resetpassword" element={
-            <PageTransition>
-              <ResetPassword />
-            </PageTransition>
-          } />
           <Route path="/dashboard" element={
             <ProtectedRoute>
               <PageTransition>
@@ -66,12 +54,15 @@ const AppRoutes = () => {
               </PageTransition>
             </ProtectedRoute>
           }/>
+          <Route path="/charts" element={
+            <PageTransition>
+              <ChartsPage />
+            </PageTransition>
+          }/>
           <Route path="/portfolio" element={
-            <ProtectedRoute>
-              <PageTransition>
-                <PortfolioPage />
-              </PageTransition>
-            </ProtectedRoute>
+            <PageTransition>
+              <PortfolioPage />
+            </PageTransition>
           }/>
           <Route path="/settings" element={
             <ProtectedRoute>
@@ -123,24 +114,20 @@ const AppRoutes = () => {
             </ProtectedRoute>
           }/>
           <Route path="/saytrix" element={
-            <ProtectedRoute>
-              <PageTransition>
-                <SaytrixPage />
-              </PageTransition>
-            </ProtectedRoute>
+            <PageTransition>
+              <SaytrixPage />
+            </PageTransition>
           }/>
           {/* Legacy chatbot route redirects to Saytrix */}
           <Route path="/chatbot" element={
-            <ProtectedRoute>
-              <PageTransition>
-                <SaytrixPage />
-              </PageTransition>
-            </ProtectedRoute>
+            <PageTransition>
+              <SaytrixPage />
+            </PageTransition>
           }/>
         </Routes>
       </AnimatePresence>
 
-      {/* Floating Saytrix - Available on all protected pages except landing, login, signup, and saytrix page */}
+      {/* Floating Saytrix - Available on all pages except landing and saytrix page */}
       {location.pathname !== "/" &&
        location.pathname !== "/login" &&
        location.pathname !== "/signup" &&

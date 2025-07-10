@@ -8,7 +8,7 @@ import API_ENDPOINTS from "../config/apiConfig";
 import "../styles/components/WatchlistSearch.css";
 
 const WatchlistSearch = ({ onAddStock, watchlistSymbols = [] }) => {
-  const toast = useToast();
+  const { success, error } = useToast();
   const { isOffline } = useOfflineMode();
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -102,7 +102,7 @@ const WatchlistSearch = ({ onAddStock, watchlistSymbols = [] }) => {
         }));
         setSearchResults(results);
       } else {
-        toast.error("Failed to search for stocks");
+        error("Failed to search for stocks");
         // Use mock data as fallback
         const filteredResults = mockSearchResults
           .filter(stock =>
@@ -118,7 +118,7 @@ const WatchlistSearch = ({ onAddStock, watchlistSymbols = [] }) => {
       }
     } catch (error) {
       console.error("Error searching for stocks:", error);
-      toast.error("Failed to search for stocks");
+      error("Failed to search for stocks");
 
       // Use mock data as fallback
       const filteredResults = mockSearchResults
@@ -202,7 +202,7 @@ const WatchlistSearch = ({ onAddStock, watchlistSymbols = [] }) => {
       }, 1000);
     } catch (error) {
       console.error("Error adding stock to watchlist:", error);
-      toast.error("Failed to add stock to watchlist");
+      error("Failed to add stock to watchlist");
     }
   };
 

@@ -164,6 +164,14 @@
 
 
 
+.logo-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 8px;
+}
+
 .logo {
   font-size: 1.25rem; /* Perfect professional size */
   font-weight: 700; /* Bold for brand presence */
@@ -175,6 +183,11 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  margin: 0;
+}
+
+.sidebar-voice-btn {
+  flex-shrink: 0;
 }
 
 @media (max-width: 768px) {
@@ -248,8 +261,17 @@
 }
 
 .sidebar-link:hover {
-  background: rgba(107, 114, 128, 0.1);
-  color: #374151;
+  background: linear-gradient(135deg, rgba(0, 87, 255, 0.1), rgba(51, 153, 255, 0.05));
+  color: var(--accent-primary);
+  transform: translateX(4px);
+  box-shadow: var(--shadow-md);
+  border-left: 3px solid var(--accent-primary);
+}
+
+.sidebar-link:hover svg {
+  color: var(--accent-primary);
+  transform: scale(1.1);
+  filter: drop-shadow(0 2px 4px rgba(0, 87, 255, 0.3));
 }
 
 .sidebar-link.active {

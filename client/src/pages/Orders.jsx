@@ -9,7 +9,7 @@ import { API_ENDPOINTS } from "../config/apiConfig";
 import "../styles/pages/Orders.css";
 
 const Orders = () => {
-  const { showToast } = useToast();
+  const { success, error: showError } = useToast();
   const { isAuthenticated } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);

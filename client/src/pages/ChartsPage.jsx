@@ -20,7 +20,7 @@ const ChartsPage = () => {
     { symbol: '500325', name: 'Reliance Industries Ltd', price: 2485.75, change: 89.25, changePercent: 3.72, exchange: 'BSE' },
     { symbol: '532540', name: 'Tata Consultancy Services Ltd', price: 3567.80, change: 125.40, changePercent: 3.64, exchange: 'BSE' }
   ]);
-  const toast = useToast();
+  const { success, error, info } = useToast();
 
   // Chart modal functionality
   const { handleStockSelect, modalProps } = useChartModal();
@@ -36,7 +36,7 @@ const ChartsPage = () => {
     // Open chart modal
     handleStockSelect(symbol, name);
 
-    toast.success(`Loading chart for ${symbol}`);
+    success(`Loading chart for ${symbol}`);
   };
 
   // Popular stock card component

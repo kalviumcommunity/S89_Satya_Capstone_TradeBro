@@ -1,16 +1,16 @@
-/* Kalvium-inspired Textures and Patterns */
+/* TradeBro Textures and Patterns */
 
 /* Gradient Backgrounds */
-.kalvium-gradient-bg {
+.tradebro-gradient-bg {
   background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
 }
 
-.kalvium-dark-gradient-bg {
+.tradebro-dark-gradient-bg {
   background: linear-gradient(135deg, var(--secondary-color), var(--secondary-dark));
 }
 
 /* Texture Patterns */
-.kalvium-dots-pattern {
+.tradebro-dots-pattern {
   background-color: #ffffff;
   background-image: radial-gradient(var(--primary-color) 0.5px, transparent 0.5px), radial-gradient(var(--primary-color) 0.5px, #ffffff 0.5px);
   background-size: 20px 20px;
@@ -18,38 +18,38 @@
   opacity: 0.05;
 }
 
-.kalvium-grid-pattern {
-  background-image: 
-    linear-gradient(rgba(255, 80, 67, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 80, 67, 0.05) 1px, transparent 1px);
+.tradebro-grid-pattern {
+  background-image:
+    linear-gradient(rgba(37, 99, 235, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37, 99, 235, 0.05) 1px, transparent 1px);
   background-size: 20px 20px;
 }
 
 /* Decorative Elements */
-.kalvium-decorative-circle {
+.tradebro-decorative-circle {
   position: absolute;
   border-radius: 50%;
-  background: radial-gradient(circle at center, rgba(255, 80, 67, 0.1) 0%, transparent 70%);
+  background: radial-gradient(circle at center, rgba(37, 99, 235, 0.1) 0%, transparent 70%);
   z-index: -1;
 }
 
-.kalvium-decorative-circle.large {
+.tradebro-decorative-circle.large {
   width: 500px;
   height: 500px;
 }
 
-.kalvium-decorative-circle.medium {
+.tradebro-decorative-circle.medium {
   width: 300px;
   height: 300px;
 }
 
-.kalvium-decorative-circle.small {
+.tradebro-decorative-circle.small {
   width: 150px;
   height: 150px;
 }
 
 /* Section Backgrounds */
-.kalvium-section-bg {
+.tradebro-section-bg {
   position: relative;
   overflow: hidden;
 }

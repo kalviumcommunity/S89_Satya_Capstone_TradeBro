@@ -1,7 +1,6 @@
 import React from 'react';
 import { useSidebar } from '../context/SidebarContext';
 import Sidebar from './Sidebar';
-import VoiceStatusIndicator from './VoiceStatusIndicator';
 import '../styles/components/PageLayout.css';
 
 const PageLayout = ({ children }) => {
@@ -15,7 +14,6 @@ const PageLayout = ({ children }) => {
       >
         {children}
       </main>
-      <VoiceStatusIndicator position="bottom-left" showToggle={true} />
     </div>
   );
 };

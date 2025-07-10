@@ -15,7 +15,7 @@ import "../styles/StockDetail.css";
 
 const StockDetail = ({ symbol, onClose, onBuySuccess, onSellSuccess }) => {
   const { isAuthenticated } = useAuth();
-  const toast = useToast();
+  const { success, error, info } = useToast();
   const navigate = useNavigate();
   const { virtualMoney, updateVirtualMoney } = useVirtualMoney();
   const [stockData, setStockData] = useState(null);
@@ -104,7 +104,7 @@ const StockDetail = ({ symbol, onClose, onBuySuccess, onSellSuccess }) => {
 
           setStockData(mockIndianStock);
           setError(null);
-          toast.info("Using offline data for this stock");
+          info("Using offline data for this stock");
         } else {
           // Use mock data as fallback for common stocks
           const mockData = {
@@ -118,7 +118,7 @@ const StockDetail = ({ symbol, onClose, onBuySuccess, onSellSuccess }) => {
           if (mockData[symbol]) {
             setStockData(mockData[symbol]);
             setError(null);
-            toast.info("Using offline data for this stock");
+            info("Using offline data for this stock");
           } else {
             setError("Failed to fetch stock data. Please try again later.");
           }
@@ -156,7 +156,7 @@ const StockDetail = ({ symbol, onClose, onBuySuccess, onSellSuccess }) => {
 
   const handleBuy = async () => {
     if (!isAuthenticated) {
-      toast.error("Please log in to buy stocks");
+      error("Please log in to buy stocks");
       return;
     }
 
@@ -164,7 +164,7 @@ const StockDetail = ({ symbol, onClose, onBuySuccess, onSellSuccess }) => {
 
     // Validate limit price for limit orders
     if (orderType === "LIMIT" && (!limitPrice || parseFloat(limitPrice) <= 0)) {
-      toast.error("Please enter a valid limit price");
+      error("Please enter a valid limit price");
       return;
     }
 
@@ -176,7 +176,7 @@ const StockDetail = ({ symbol, onClose, onBuySuccess, onSellSuccess }) => {
 
       // For market orders, check if user has enough balance
       if (orderType === "MARKET" && totalCost > virtualMoney.balance) {
-        toast.error(`Insufficient funds. You need $${totalCost.toFixed(2)} but have $${virtualMoney.balance.toFixed(2)}`);
+        error(`Insufficient funds. You need $${totalCost.toFixed(2)} but have $${virtualMoney.balance.toFixed(2)}`);
         setProcessingTransaction(false);
         return;
       }
@@ -199,10 +199,10 @@ const StockDetail = ({ symbol, onClose, onBuySuccess, onSellSuccess }) => {
         if (response.data.success) {
           // If market order was executed immediately
           if (orderType === "MARKET") {
-            toast.success(`Successfully purchased ${quantity} shares of ${symbol}`);
+            success(`Successfully purchased ${quantity} shares of ${symbol}`);
             setVirtualMoney(response.data.data);
           } else {
-            toast.success(`Limit order placed successfully for ${quantity} shares of ${symbol}`);
+            success(`Limit order placed successfully for ${quantity} shares of ${symbol}`);
           }
 
           setShowBuyModal(false);
@@ -254,10 +254,10 @@ const StockDetail = ({ symbol, onClose, onBuySuccess, onSellSuccess }) => {
 
           setVirtualMoney(updatedVirtualMoney);
           localStorage.setItem('virtualMoney', JSON.stringify(updatedVirtualMoney));
-          toast.success(`Successfully purchased ${quantity} shares of ${symbol}`);
+          success(`Successfully purchased ${quantity} shares of ${symbol}`);
         } else {
           // For limit orders in offline mode
-          toast.info(`Limit order would be placed for ${quantity} shares of ${symbol} at $${limitPrice}`);
+          info(`Limit order would be placed for ${quantity} shares of ${symbol} at $${limitPrice}`);
         }
 
         setShowBuyModal(false);
@@ -265,7 +265,7 @@ const StockDetail = ({ symbol, onClose, onBuySuccess, onSellSuccess }) => {
       }
     } catch (err) {
       console.error("Error buying stock:", err);
-      toast.error("Failed to complete purchase. Please try again.");
+      error("Failed to complete purchase. Please try again.");
     } finally {
       setProcessingTransaction(false);
     }
@@ -273,7 +273,7 @@ const StockDetail = ({ symbol, onClose, onBuySuccess, onSellSuccess }) => {
 
   const handleSell = async () => {
     if (!isAuthenticated) {
-      toast.error("Please log in to sell stocks");
+      error("Please log in to sell stocks");
       return;
     }
 
@@ -283,18 +283,18 @@ const StockDetail = ({ symbol, onClose, onBuySuccess, onSellSuccess }) => {
     const stockInPortfolio = virtualMoney.portfolio.find(item => item.stockSymbol === symbol);
 
     if (!stockInPortfolio) {
-      toast.error(`You don't own any shares of ${symbol}`);
+      error(`You don't own any shares of ${symbol}`);
       return;
     }
 
     if (parseInt(quantity) > stockInPortfolio.quantity) {
-      toast.error(`You only have ${stockInPortfolio.quantity} shares to sell`);
+      error(`You only have ${stockInPortfolio.quantity} shares to sell`);
       return;
     }
 
     // Validate limit price for limit orders
     if (orderType === "LIMIT" && (!limitPrice || parseFloat(limitPrice) <= 0)) {
-      toast.error("Please enter a valid limit price");
+      error("Please enter a valid limit price");
       return;
     }
 
@@ -319,10 +319,10 @@ const StockDetail = ({ symbol, onClose, onBuySuccess, onSellSuccess }) => {
         if (response.data.success) {
           // If market order was executed immediately
           if (orderType === "MARKET") {
-            toast.success(`Successfully sold ${quantity} shares of ${symbol}`);
+            success(`Successfully sold ${quantity} shares of ${symbol}`);
             setVirtualMoney(response.data.data);
           } else {
-            toast.success(`Limit sell order placed successfully for ${quantity} shares of ${symbol}`);
+            success(`Limit sell order placed successfully for ${quantity} shares of ${symbol}`);
           }
 
           setShowSellModal(false);
@@ -368,11 +368,11 @@ const StockDetail = ({ symbol, onClose, onBuySuccess, onSellSuccess }) => {
 
             setVirtualMoney(updatedVirtualMoney);
             localStorage.setItem('virtualMoney', JSON.stringify(updatedVirtualMoney));
-            toast.success(`Successfully sold ${quantity} shares of ${symbol}`);
+            success(`Successfully sold ${quantity} shares of ${symbol}`);
           }
         } else {
           // For limit orders in offline mode
-          toast.info(`Limit sell order would be placed for ${quantity} shares of ${symbol} at $${limitPrice}`);
+          info(`Limit sell order would be placed for ${quantity} shares of ${symbol} at $${limitPrice}`);
         }
 
         setShowSellModal(false);
@@ -386,7 +386,7 @@ const StockDetail = ({ symbol, onClose, onBuySuccess, onSellSuccess }) => {
       }
     } catch (err) {
       console.error("Error selling stock:", err);
-      toast.error("Failed to complete sale. Please try again.");
+      error("Failed to complete sale. Please try again.");
     } finally {
       setProcessingTransaction(false);
     }

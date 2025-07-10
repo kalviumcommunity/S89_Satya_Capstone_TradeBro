@@ -13,7 +13,7 @@ const VirtualMoneyContext = createContext();
 // Create provider component
 export const VirtualMoneyProvider = ({ children }) => {
   const { isAuthenticated, user } = useAuth();
-  const toast = useToast();
+  const { success, error, info } = useToast();
   const [virtualMoney, setVirtualMoney] = useState(DEFAULT_VIRTUAL_MONEY);
   const [loading, setLoading] = useState(true);
   const fetchInProgress = useRef(false);
@@ -51,7 +51,7 @@ export const VirtualMoneyProvider = ({ children }) => {
         },
         onError: (error) => {
           console.error("Error fetching virtual money:", error);
-          toast.error("Could not fetch virtual money data");
+          error("Could not fetch virtual money data");
         }
       });
 

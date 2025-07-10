@@ -17,7 +17,7 @@ const BuySellModal = ({
   onSuccess,
   virtualMoney: propVirtualMoney
 }) => {
-  const { showToast } = useToast();
+  const { success, error } = useToast();
   const navigate = useNavigate();
   const { virtualMoney: contextVirtualMoney, updateVirtualMoney } = useVirtualMoney();
   // Use prop virtualMoney if provided, otherwise use context
@@ -169,12 +169,7 @@ const BuySellModal = ({
         });
 
         // Show success toast with detailed information
-        showToast({
-          type: 'success',
-          message: `You successfully ${type === 'BUY' ? 'bought' : 'sold'} ${quantity} shares of ${stockData.symbol} at ${formattedPrice} each!`,
-          position: 'top-right', // Ensure it appears at top-right
-          duration: 5000 // 5 seconds as per requirements
-        });
+        success(`You successfully ${type === 'BUY' ? 'bought' : 'sold'} ${quantity} shares of ${stockData.symbol} at ${formattedPrice} each!`);
 
         if (onSuccess) {
           onSuccess(response.data.data);
@@ -192,12 +187,7 @@ const BuySellModal = ({
         setError(response.data.message || 'Transaction failed');
 
         // Show error toast
-        showToast({
-          type: 'error',
-          message: response.data.message || `Failed to ${type === 'BUY' ? 'buy' : 'sell'} ${stockData.symbol}`,
-          position: 'top-right',
-          duration: 5000
-        });
+        error(response.data.message || `Failed to ${type === 'BUY' ? 'buy' : 'sell'} ${stockData.symbol}`);
       }
     } catch (err) {
       console.error(`Error ${type === 'BUY' ? 'buying' : 'selling'} stock:`, err);
@@ -208,12 +198,7 @@ const BuySellModal = ({
         setError(errorMessage);
 
         // Show error toast
-        showToast({
-          type: 'error',
-          message: errorMessage,
-          position: 'top-right',
-          duration: 5000
-        });
+        error(errorMessage);
       } else {
         // Simulate a successful transaction for offline mode
         const transactionPrice = parseFloat(price.toFixed(2));
@@ -232,12 +217,7 @@ const BuySellModal = ({
         });
 
         // Show success toast with detailed information
-        showToast({
-          type: 'success',
-          message: `You successfully ${type === 'BUY' ? 'bought' : 'sold'} ${quantity} shares of ${stockData.symbol} at ${formattedPrice} each! (offline mode)`,
-          position: 'top-right',
-          duration: 5000
-        });
+        success(`You successfully ${type === 'BUY' ? 'bought' : 'sold'} ${quantity} shares of ${stockData.symbol} at ${formattedPrice} each! (offline mode)`);
 
         if (onSuccess) {
           onSuccess(updatedVirtualMoney);

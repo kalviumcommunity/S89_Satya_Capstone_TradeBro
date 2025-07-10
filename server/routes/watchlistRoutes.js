@@ -2,14 +2,14 @@ const express = require('express');
 const router = express.Router();
 const Watchlist = require('../models/Watchlist');
 const User = require('../models/User');
-const { verifyToken } = require('../middleware/auth');
+const { provideDefaultUser } = require('../middleware/defaultUser');
 const axios = require('axios');
 require('dotenv').config();
 
 const FMP_API = process.env.FMP_API_KEY;
 
 // Get user's watchlist
-router.get('/stocks', verifyToken, async (req, res) => {
+router.get('/stocks', provideDefaultUser, async (req, res) => {
   try {
     // Get search query if provided
     const searchQuery = req.query.search ? req.query.search : '';
@@ -131,7 +131,7 @@ router.get('/stocks', verifyToken, async (req, res) => {
 });
 
 // Add stock to watchlist
-router.post('/add', verifyToken, async (req, res) => {
+router.post('/add', provideDefaultUser, async (req, res) => {
   try {
     const { symbol, name } = req.body;
 
@@ -189,7 +189,7 @@ router.post('/add', verifyToken, async (req, res) => {
 });
 
 // Remove stock from watchlist
-router.delete('/remove/:symbol', verifyToken, async (req, res) => {
+router.delete('/remove/:symbol', provideDefaultUser, async (req, res) => {
   try {
     const { symbol } = req.params;
 
@@ -229,7 +229,7 @@ router.delete('/remove/:symbol', verifyToken, async (req, res) => {
 });
 
 // Search for stocks (both in watchlist and external)
-router.get('/search', verifyToken, async (req, res) => {
+router.get('/search', provideDefaultUser, async (req, res) => {
   try {
     const { query } = req.query;
 

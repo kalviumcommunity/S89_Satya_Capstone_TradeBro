@@ -21,7 +21,7 @@ import {
 import { useSidebar } from "../context/SidebarContext";
 import { useAuth } from "../context/AuthContext";
 import { useVirtualMoney } from "../context/VirtualMoneyContext";
-import "../styles/Sidebar.kalvium.css";
+import "../styles/EnhancedSidebar.css";
 
 // Enhanced Sidebar Component with Tooltips
 const EnhancedSidebar = () => {

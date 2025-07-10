@@ -13,10 +13,9 @@ import { getCachedStockSymbols, cacheStockSymbols } from "../utils/stockCache";
 import { addToSearchHistory } from "../utils/searchUtils";
 import PageLayout from "../components/PageLayout";
 import Loading from "../components/common/Loading";
-import ChartModal from "../components/ChartModal";
-import FullScreenStockDetail from "../components/FullScreenStockDetail";
 import StockSearch from "../components/StockSearch";
-import { useChartModal } from "../hooks/useChartModal";
+import PortfolioDashboard from "../components/portfolio/PortfolioDashboard";
+import TradingIntegration from "../components/trading/TradingIntegration";
 import axios from "axios";
 import API_ENDPOINTS from "../config/apiConfig";
 import "../styles/pages/portfolio.css";
@@ -58,6 +57,45 @@ const additionalStyles = `
     justify-content: flex-start;
     gap: 8px;
   }
+
+  .portfolio-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+  }
+
+  .portfolio-toggle {
+    display: flex;
+    gap: 0.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.25rem;
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+  }
+
+  .toggle-btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+  }
+
+  .toggle-btn.active {
+    background: var(--primary-color);
+    color: white;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  }
+
+  .toggle-btn:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+  }
 `;
 
 const mockPortfolio = [
@@ -78,7 +116,7 @@ const mockPortfolio = [
 ];
 
 const PortfolioPage = () => {
-  const toast = useToast();
+  const { success, error, info, warning } = useToast();
   const { isAuthenticated, user } = useAuth();
   const { virtualMoney, fetchVirtualMoney, updateVirtualMoney } = useVirtualMoney();
   const [portfolio, setPortfolio] = useState(mockPortfolio);
@@ -95,13 +133,12 @@ const PortfolioPage = () => {
   const [errors, setErrors] = useState({});
   const [selectedStock, setSelectedStock] = useState(null);
   const [showFullScreenDetail, setShowFullScreenDetail] = useState(false);
+  const [useNewPortfolio, setUseNewPortfolio] = useState(true); // Toggle for new portfolio system
 
-  // Chart modal functionality
-  const { handleStockSelect: openChart, modalProps } = useChartModal();
-
-  // Handle stock selection for chart modal (quick view)
-  const handleStockSelectChart = (symbol, name = '') => {
-    openChart(symbol, name);
+  // Handle stock selection for chart view (redirect to charts page)
+  const handleStockSelectChart = (symbol) => {
+    // Navigate to charts page with the selected symbol
+    window.location.href = `/charts?symbol=${symbol}`;
   };
 
   // Handle stock selection from StockSearch
@@ -133,7 +170,7 @@ const PortfolioPage = () => {
     fetchVirtualMoneyData();
 
     // Show success toast
-    toast.success("Portfolio updated successfully!");
+    success("Portfolio updated successfully!");
 
     // Hide loading after a short delay
     setTimeout(() => {
@@ -371,7 +408,7 @@ const PortfolioPage = () => {
       window.history.replaceState({}, document.title, '/dashboard');
 
       // Show success message
-      toast.success('Successfully logged in with Google!');
+      success('Successfully logged in with Google!');
 
       // Fetch user data
       const fetchUserData = async () => {
@@ -430,7 +467,7 @@ const PortfolioPage = () => {
 
       fetchUserData();
     }
-  }, [login, toast, fetchVirtualMoneyData]);
+  }, [login, success, fetchVirtualMoneyData]);
 
   useEffect(() => {
     // Show loading indicator
@@ -453,7 +490,7 @@ const PortfolioPage = () => {
       window.history.replaceState({}, document.title, '/portfolio');
 
       // Show success toast
-      toast.success("Transaction completed successfully!");
+      success("Transaction completed successfully!");
 
       // Force refresh portfolio data
       setTimeout(() => {
@@ -484,7 +521,7 @@ const PortfolioPage = () => {
       clearInterval(intervalId);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [fetchVirtualMoneyData, toast]);
+  }, [fetchVirtualMoneyData, success]);
 
   // Function to claim daily login reward
   const claimDailyReward = async () => {
@@ -541,10 +578,10 @@ const PortfolioPage = () => {
           console.log("Successfully claimed reward from API");
 
           // Show personalized success message
-          toast.success(response.data.message || `Daily reward claimed: +₹${rewardAmount}`);
+          success(response.data.message || `Daily reward claimed: +₹${rewardAmount}`);
         } else {
           // Handle unsuccessful response
-          toast.error(response.data.message || "Failed to claim reward");
+          error(response.data.message || "Failed to claim reward");
           setIsLoading(false);
           return false;
         }
@@ -558,32 +595,32 @@ const PortfolioPage = () => {
             try {
               // Show personalized message if available
               const message = apiError.response.data?.message || "You've already claimed your daily reward today";
-              toast.info(message);
+              info(message);
 
               // If there's time remaining info, show it
               if (apiError.response.data?.timeRemaining) {
                 const { hours, minutes } = apiError.response.data.timeRemaining;
                 const timeMessage = `Next reward available in ${hours}h ${minutes}m`;
-                toast.info(timeMessage);
+                info(timeMessage);
               }
             } catch (parseError) {
               // If there's an error parsing the response data
               console.error("Error parsing response data:", parseError);
-              toast.info("You've already claimed your daily reward today");
+              info("You've already claimed your daily reward today");
             }
 
             setIsLoading(false);
             return false;
           } else {
             // Handle other HTTP error statuses
-            toast.error(`Server error (${apiError.response.status}): ${apiError.response.data?.message || apiError.message || 'Unknown error'}`);
+            error(`Server error (${apiError.response.status}): ${apiError.response.data?.message || apiError.message || 'Unknown error'}`);
           }
         } else if (apiError.code === 'ECONNABORTED') {
           // Handle timeout specifically
-          toast.warning("Connection to server timed out. Using local implementation.");
+          warning("Connection to server timed out. Using local implementation.");
         } else {
           // Handle other errors (network issues, etc.)
-          toast.error(`Error: ${apiError.message || 'Unknown error'}`);
+          error(`Error: ${apiError.message || 'Unknown error'}`);
         }
 
         // Local implementation for claiming reward
@@ -594,7 +631,7 @@ const PortfolioPage = () => {
         if (!virtualMoney.lastLoginReward || new Date(virtualMoney.lastLoginReward) < today) {
           rewardClaimed = true;
         } else {
-          toast.info("You've already claimed your daily reward today");
+          info("You've already claimed your daily reward today");
           setIsLoading(false);
           return false;
         }
@@ -621,7 +658,7 @@ const PortfolioPage = () => {
           setShowRewardAnimation(false);
         }, 3000);
 
-        toast.success(`Daily reward claimed: +₹${rewardAmount}`);
+        success(`Daily reward claimed: +₹${rewardAmount}`);
         return true;
       }
 
@@ -633,7 +670,7 @@ const PortfolioPage = () => {
       setIsLoading(false);
 
       // Show a user-friendly error message
-      toast.error("Something went wrong while claiming your reward. Please try again later.");
+      error("Something went wrong while claiming your reward. Please try again later.");
 
       // Log detailed error for debugging
       if (err instanceof Error) {
@@ -721,7 +758,7 @@ const PortfolioPage = () => {
 
     // Check if user has enough virtual money
     if (totalCost > virtualMoney.balance) {
-      toast.error(`Insufficient funds. You need ₹${totalCost.toLocaleString('en-IN')} but have ₹${virtualMoney.balance.toLocaleString('en-IN')}.`);
+      error(`Insufficient funds. You need ₹${totalCost.toLocaleString('en-IN')} but have ₹${virtualMoney.balance.toLocaleString('en-IN')}.`);
       return;
     }
 
@@ -743,7 +780,7 @@ const PortfolioPage = () => {
           // Fetch updated portfolio data
           fetchVirtualMoneyData();
 
-          toast.success(`Successfully purchased ${quantity} shares of ${symbol.toUpperCase()}`);
+          success(`Successfully purchased ${quantity} shares of ${symbol.toUpperCase()}`);
         }
       } catch (apiError) {
         console.log("Backend API not available, using local implementation");
@@ -780,7 +817,7 @@ const PortfolioPage = () => {
         updateVirtualMoney(updatedVirtualMoney);
         localStorage.setItem('virtualMoney', JSON.stringify(updatedVirtualMoney));
 
-        toast.success(`${symbol.toUpperCase()} added to portfolio! Spent ₹${totalCost.toLocaleString('en-IN')}.`);
+        success(`${symbol.toUpperCase()} added to portfolio! Spent ₹${totalCost.toLocaleString('en-IN')}.`);
       }
 
       // Reset form
@@ -795,7 +832,7 @@ const PortfolioPage = () => {
       setShowModal(false);
     } catch (err) {
       console.error("Error buying stock:", err);
-      toast.error("Failed to buy stock. Please try again.");
+      error("Failed to buy stock. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -803,7 +840,7 @@ const PortfolioPage = () => {
 
   const resetPortfolio = async () => {
     if (portfolio.length === 0) {
-      toast.info("Portfolio is already empty");
+      info("Portfolio is already empty");
       return;
     }
 
@@ -816,7 +853,7 @@ const PortfolioPage = () => {
           if (response.data.success) {
             // Update virtual money and portfolio
             fetchVirtualMoneyData();
-            toast.success("Portfolio has been reset successfully");
+            success("Portfolio has been reset successfully");
           }
         } catch (apiError) {
           console.log("Backend API not available, using local implementation", apiError);
@@ -831,11 +868,11 @@ const PortfolioPage = () => {
           setPortfolio([]);
           localStorage.setItem('virtualMoney', JSON.stringify(updatedVirtualMoney));
 
-          toast.info("Portfolio has been reset");
+          info("Portfolio has been reset");
         }
       } catch (err) {
         console.error("Error resetting portfolio:", err);
-        toast.error("Failed to reset portfolio. Please try again.");
+        error("Failed to reset portfolio. Please try again.");
       }
     }
   };
@@ -858,14 +895,40 @@ const PortfolioPage = () => {
           >
             <FiBarChart2 className="title-icon" /> Portfolio Dashboard
           </motion.h1>
+
+          {/* Toggle between old and new portfolio */}
+          <motion.div
+            className="portfolio-toggle"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+          >
+            <button
+              className={`toggle-btn ${!useNewPortfolio ? 'active' : ''}`}
+              onClick={() => setUseNewPortfolio(false)}
+            >
+              Classic View
+            </button>
+            <button
+              className={`toggle-btn ${useNewPortfolio ? 'active' : ''}`}
+              onClick={() => setUseNewPortfolio(true)}
+            >
+              Trading Dashboard
+            </button>
+          </motion.div>
         </div>
 
-        <motion.div
-          className="portfolio-summary"
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.2 }}
-        >
+        {/* Conditional rendering based on toggle */}
+        {useNewPortfolio ? (
+          <PortfolioDashboard />
+        ) : (
+          <>
+            <motion.div
+              className="portfolio-summary"
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.2 }}
+            >
           <motion.div
             className="summary-card virtual-money-card"
             whileHover={{ y: -5, scale: 1.02 }}
@@ -1182,35 +1245,20 @@ const PortfolioPage = () => {
             </motion.div>
           )}
         </AnimatePresence>
+          </>
+        )}
       </motion.div>
 
-      {/* Full-screen stock detail */}
-      <AnimatePresence>
-        {showFullScreenDetail && selectedStock && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <FullScreenStockDetail
-              symbol={selectedStock}
-              onClose={handleCloseFullScreenDetail}
-              onBuySuccess={() => {
-                handleCloseFullScreenDetail();
-                handleTransactionSuccess();
-              }}
-              onSellSuccess={() => {
-                handleCloseFullScreenDetail();
-                handleTransactionSuccess();
-              }}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Chart Modal for quick chart view */}
-      <ChartModal {...modalProps} />
+      {/* Full-screen stock detail - Redirects to charts page */}
+      {showFullScreenDetail && selectedStock && (
+        <div className="redirect-message">
+          <p>Redirecting to charts page for {selectedStock}...</p>
+          {setTimeout(() => {
+            window.location.href = `/charts?symbol=${selectedStock}`;
+            setShowFullScreenDetail(false);
+          }, 1000)}
+        </div>
+      )}
     </PageLayout>
   );
 };

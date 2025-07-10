@@ -27,7 +27,6 @@ import SaytrixAssistant from "./components/voice/SaytrixAssistant";
 
 import store from "./redux/store";
 import { initializeTheme } from "./redux/reducers/themeReducer";
-import { checkAuth } from "./redux/reducers/authReducer";
 // import useVoiceAssistant from "./hooks/useVoiceAssistant";
 import "./styles/themes/theme.css";
 import "./styles/DarkMode.css";
@@ -44,9 +43,6 @@ const AppContent = () => {
   useEffect(() => {
     // Initialize theme
     store.dispatch(initializeTheme());
-
-    // Check authentication status
-    store.dispatch(checkAuth());
   }, []);
 
   return (

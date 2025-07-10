@@ -213,6 +213,62 @@ html {
   text-align: center;
   position: relative;
   overflow: hidden;
+  min-height: 90vh;
+}
+
+/* Hero Badge */
+.hero-badge {
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+  color: white;
+  padding: 0.5rem 1.5rem;
+  border-radius: 50px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.badge-text {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Hero Features Grid */
+.hero-features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+  max-width: 800px;
+  width: 100%;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.feature-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.feature-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.feature-item span:last-child {
+  font-weight: 500;
+  color: var(--text-primary);
 }
 
 .hero-section > * {
@@ -329,6 +385,93 @@ html {
   background: rgba(var(--primary-color-rgb), 0.1);
   color: var(--primary-color);
   transform: translateY(-2px);
+}
+
+/* Enhanced CTA Buttons */
+.cta-button {
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 50px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-medium);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-shadow: var(--landing-shadow-sm);
+  min-width: 180px;
+  position: relative;
+  overflow: hidden;
+}
+
+.cta-button.primary {
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+  color: white;
+}
+
+.cta-button.secondary {
+  background: transparent;
+  color: var(--primary-color);
+  border: 2px solid var(--primary-color);
+}
+
+.cta-button:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--landing-shadow-md);
+}
+
+.cta-button.primary:hover {
+  background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
+}
+
+.cta-button.secondary:hover {
+  background: var(--primary-color);
+  color: white;
+}
+
+.button-icon {
+  font-size: 1.2rem;
+}
+
+.button-badge {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 0.25rem 0.5rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  margin-left: 0.5rem;
+}
+
+/* Hero Stats */
+.hero-stats {
+  display: flex;
+  justify-content: center;
+  gap: 3rem;
+  margin-top: 3rem;
+  flex-wrap: wrap;
+}
+
+.stat-item {
+  text-align: center;
+  padding: 1rem;
+}
+
+.stat-number {
+  display: block;
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--primary-color);
+  line-height: 1;
+}
+
+.stat-label {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-top: 0.5rem;
+  font-weight: 500;
 }
 
 /* Hero Visual */

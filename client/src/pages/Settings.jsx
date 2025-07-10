@@ -9,7 +9,7 @@ import API_ENDPOINTS from "../config/apiConfig";
 
 const SettingsPage = () => {
   const navigate = useNavigate();
-  const toast = useToast();
+  const { success, error, info } = useToast();
   const { logout } = useAuth();
   const [notifications, setNotifications] = useState(false); // Notifications setting
   const [successMessage, setSuccessMessage] = useState("");
@@ -53,10 +53,10 @@ const SettingsPage = () => {
       }, 3000);
 
       // Show toast notification
-      toast.success("Notifications " + (newValue ? "enabled" : "disabled"));
+      success("Notifications " + (newValue ? "enabled" : "disabled"));
     } catch (error) {
       console.error("Error updating notification settings:", error);
-      toast.error("Failed to update notification settings");
+      error("Failed to update notification settings");
       // Revert the toggle if the API call fails
       setNotifications(!newValue);
     } finally {
@@ -71,7 +71,7 @@ const SettingsPage = () => {
       await logout();
 
       // Show success message
-      toast.success("Successfully signed out");
+      success("Successfully signed out");
 
       // Redirect to login page after a short delay
       setTimeout(() => {
@@ -79,7 +79,7 @@ const SettingsPage = () => {
       }, 1500);
     } catch (error) {
       console.error("Error signing out:", error);
-      toast.error("Failed to sign out. Please try again.");
+      error("Failed to sign out. Please try again.");
       setIsSigningOut(false);
     }
   };

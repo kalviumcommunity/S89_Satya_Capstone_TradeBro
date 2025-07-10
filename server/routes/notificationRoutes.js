@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Notification = require('../models/Notification');
 const User = require('../models/User');
-const { verifyToken } = require('../middleware/auth');
+const { provideDefaultUser } = require('../middleware/defaultUser');
 const Pusher = require("pusher");
 
 // Initialize Pusher
@@ -15,7 +15,7 @@ const pusher = new Pusher({
 });
 
 // Get all notifications for the current user
-router.get('/', verifyToken, async (req, res) => {
+router.get('/', provideDefaultUser, async (req, res) => {
   try {
     const notifications = await Notification.find({ userId: req.user.id })
       .sort({ createdAt: -1 });
@@ -35,7 +35,7 @@ router.get('/', verifyToken, async (req, res) => {
 });
 
 // Create a new notification
-router.post('/', verifyToken, async (req, res) => {
+router.post('/', provideDefaultUser, async (req, res) => {
   try {
     const { type, title, message, link } = req.body;
 
@@ -105,7 +105,7 @@ router.post('/', verifyToken, async (req, res) => {
 });
 
 // Mark a notification as read
-router.put('/:id/read', verifyToken, async (req, res) => {
+router.put('/:id/read', provideDefaultUser, async (req, res) => {
   try {
     const notification = await Notification.findOne({
       _id: req.params.id,
@@ -144,7 +144,7 @@ router.put('/:id/read', verifyToken, async (req, res) => {
 });
 
 // Mark all notifications as read
-router.put('/read-all', verifyToken, async (req, res) => {
+router.put('/read-all', provideDefaultUser, async (req, res) => {
   try {
     const result = await Notification.updateMany(
       { userId: req.user.id, read: false },
@@ -172,7 +172,7 @@ router.put('/read-all', verifyToken, async (req, res) => {
 });
 
 // Delete a notification
-router.delete('/:id', verifyToken, async (req, res) => {
+router.delete('/:id', provideDefaultUser, async (req, res) => {
   try {
     const notification = await Notification.findOneAndDelete({
       _id: req.params.id,
@@ -206,7 +206,7 @@ router.delete('/:id', verifyToken, async (req, res) => {
 });
 
 // Create a notification for a specific user (admin only)
-router.post('/admin/create', verifyToken, async (req, res) => {
+router.post('/admin/create', provideDefaultUser, async (req, res) => {
   try {
     const { userId, userEmail, type, title, message, link } = req.body;
 

@@ -10,9 +10,7 @@ import {
   FiBarChart2,
   FiLoader
 } from 'react-icons/fi';
-import { useToast } from '../hooks/useToast';
-import { useChartModal } from '../hooks/useChartModal';
-import ChartModal from './ChartModal';
+import { useToast } from '../context/ToastContext';
 import {
   addToSearchHistory,
   getRecentSearches,
@@ -41,8 +39,12 @@ const StockSearch = ({
   
   const searchRef = useRef(null);
   const resultsRef = useRef(null);
-  const toast = useToast();
-  const { handleStockSelect: openChart, modalProps } = useChartModal();
+  const { success, error } = useToast();
+
+  // Handle chart opening by redirecting to charts page
+  const openChart = (symbol) => {
+    window.location.href = `/charts?symbol=${symbol}`;
+  };
 
   // Get recent searches and trending stocks
   const recentSearches = getRecentSearches(5);
@@ -68,17 +70,17 @@ const StockSearch = ({
           setActiveSection('results');
         } else {
           setResults([]);
-          toast.error('Failed to search stocks');
+          error('Failed to search stocks');
         }
       } catch (error) {
         console.error('Search error:', error);
         setResults([]);
-        toast.error('Search failed. Please try again.');
+        error('Search failed. Please try again.');
       } finally {
         setIsLoading(false);
       }
     }, 300),
-    [toast]
+    [error]
   );
 
   // Handle input change
@@ -123,7 +125,7 @@ const StockSearch = ({
       onStockSelect(stock.symbol, stock.name);
     }
     
-    toast.success(`Selected ${formatStockSymbol(stock.symbol)}`);
+    success(`Selected ${formatStockSymbol(stock.symbol)}`);
   };
 
   // Handle add to watchlist
@@ -134,7 +136,7 @@ const StockSearch = ({
       onAddToWatchlist(stock.symbol, stock.name);
     }
     
-    toast.success(`Added ${formatStockSymbol(stock.symbol)} to watchlist`);
+    success(`Added ${formatStockSymbol(stock.symbol)} to watchlist`);
   };
 
   // Handle chart view
@@ -331,8 +333,7 @@ const StockSearch = ({
         )}
       </AnimatePresence>
 
-      {/* Chart Modal */}
-      <ChartModal {...modalProps} />
+      {/* Chart functionality moved to dedicated charts page */}
     </div>
   );
 };

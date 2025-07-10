@@ -3,11 +3,11 @@ const router = express.Router();
 const Order = require('../models/Order');
 const VirtualMoney = require('../models/VirtualMoney');
 const User = require('../models/User');
-const { verifyToken } = require('../middleware/auth');
+const { provideDefaultUser } = require('../middleware/defaultUser');
 const axios = require('axios');
 
 // Get all orders for the current user
-router.get('/all', verifyToken, async (req, res) => {
+router.get('/all', provideDefaultUser, async (req, res) => {
   try {
     const orders = await Order.find({ userId: req.user.id })
       .sort({ createdAt: -1 });
@@ -27,7 +27,7 @@ router.get('/all', verifyToken, async (req, res) => {
 });
 
 // Place a new order
-router.post('/place', verifyToken, async (req, res) => {
+router.post('/place', provideDefaultUser, async (req, res) => {
   try {
     const {
       type,
@@ -185,7 +185,7 @@ router.post('/place', verifyToken, async (req, res) => {
 });
 
 // Cancel an order
-router.post('/cancel/:orderId', verifyToken, async (req, res) => {
+router.post('/cancel/:orderId', provideDefaultUser, async (req, res) => {
   try {
     const { orderId } = req.params;
 

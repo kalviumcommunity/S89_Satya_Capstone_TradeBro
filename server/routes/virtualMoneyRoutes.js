@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const VirtualMoney = require('../models/VirtualMoney');
 const User = require('../models/User');
-const { verifyToken } = require('../middleware/auth');
+const { provideDefaultUser } = require('../middleware/defaultUser');
 
 /**
  * Calculate the day streak for a user (consecutive days they've claimed rewards)
@@ -50,7 +50,7 @@ async function calculateDayStreak(virtualMoney) {
 }
 
 // Get user's virtual money account
-router.get('/account', verifyToken, async (req, res) => {
+router.get('/account', provideDefaultUser, async (req, res) => {
   try {
     // Find or create virtual money account - use lean() for better performance
     let virtualMoney = await VirtualMoney.findOne({ userId: req.user.id });
@@ -131,7 +131,7 @@ router.get('/account', verifyToken, async (req, res) => {
 });
 
 // Get user's transaction history
-router.get('/transactions', verifyToken, async (req, res) => {
+router.get('/transactions', provideDefaultUser, async (req, res) => {
   try {
     const virtualMoney = await VirtualMoney.findOne({ userId: req.user.id });
 
@@ -162,7 +162,7 @@ router.get('/transactions', verifyToken, async (req, res) => {
 });
 
 // Claim daily login reward
-router.post('/claim-reward', verifyToken, async (req, res) => {
+router.post('/claim-reward', provideDefaultUser, async (req, res) => {
   try {
     // Log the request for debugging
     console.log('Claim reward request received for user:', req.user);
@@ -409,7 +409,7 @@ router.get('/reward-status-public', async (req, res) => {
 });
 
 // Check reward status (authenticated version)
-router.get('/reward-status', verifyToken, async (req, res) => {
+router.get('/reward-status', provideDefaultUser, async (req, res) => {
   try {
     // Get user details
     const user = await User.findById(req.user.id);
@@ -511,7 +511,7 @@ router.get('/reward-status', verifyToken, async (req, res) => {
 });
 
 // Buy stock
-router.post('/buy', verifyToken, async (req, res) => {
+router.post('/buy', provideDefaultUser, async (req, res) => {
   try {
     const { stockSymbol, quantity, price } = req.body;
 
@@ -595,7 +595,7 @@ router.post('/buy', verifyToken, async (req, res) => {
 });
 
 // Sell stock
-router.post('/sell', verifyToken, async (req, res) => {
+router.post('/sell', provideDefaultUser, async (req, res) => {
   try {
     const { stockSymbol, quantity, price } = req.body;
 
@@ -673,7 +673,7 @@ router.post('/sell', verifyToken, async (req, res) => {
 });
 
 // Get portfolio
-router.get('/portfolio', verifyToken, async (req, res) => {
+router.get('/portfolio', provideDefaultUser, async (req, res) => {
   try {
     // Get user details
     const user = await User.findById(req.user.id);

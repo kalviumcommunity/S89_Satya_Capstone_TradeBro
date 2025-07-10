@@ -32,7 +32,7 @@ const ModernStockDashboard = () => {
 
   const { theme } = useContext(ThemeContext);
   const { virtualMoney, updateVirtualMoney } = useVirtualMoney();
-  const toast = useToast();
+  const { success, error } = useToast();
 
   // Chart type options
   const chartTypeOptions = [
@@ -70,7 +70,7 @@ const ModernStockDashboard = () => {
         });
       } catch (error) {
         console.error('Error fetching market data:', error);
-        toast.error('Failed to fetch market data. Using mock data instead.');
+        error('Failed to fetch market data. Using mock data instead.');
 
         // Use mock data as fallback
         setMarketData({
@@ -119,7 +119,7 @@ const ModernStockDashboard = () => {
         }
       } catch (error) {
         console.error('Error fetching stock data:', error);
-        toast.error('Failed to fetch stock data');
+        error('Failed to fetch stock data');
       } finally {
         setStockLoading(false);
       }
@@ -137,14 +137,14 @@ const ModernStockDashboard = () => {
   const handleBuySuccess = (data) => {
     updateVirtualMoney(data);
     setShowBuyModal(false);
-    toast.success('Stock purchased successfully!');
+    success('Stock purchased successfully!');
   };
 
   // Handle sell success
   const handleSellSuccess = (data) => {
     updateVirtualMoney(data);
     setShowSellModal(false);
-    toast.success('Stock sold successfully!');
+    success('Stock sold successfully!');
   };
 
   // Format date

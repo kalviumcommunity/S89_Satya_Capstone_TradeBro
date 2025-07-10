@@ -1,10 +1,9 @@
-// AudioVisualizer.jsx - Real-time audio visualization component
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 
 const AudioVisualizer = ({ 
   isActive = false, 
-  type = 'waveform', // 'waveform', 'circular', 'bars'
+  type = 'waveform',
   color = '#00ffff',
   size = 'medium', // 'small', 'medium', 'large'
   sensitivity = 1.0,

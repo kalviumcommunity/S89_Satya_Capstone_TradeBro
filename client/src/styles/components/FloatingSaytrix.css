@@ -1,8 +1,8 @@
 /* Floating Saytrix Styles - El-Classico Professional Theme */
 .floating-saytrix-fab {
   position: fixed;
-  bottom: 128px; /* Positioned above the voice microphone button (32px + 64px + 32px spacing) */
-  right: 2rem; /* Exactly aligned with voice microphone button (2rem = 32px) */
+  bottom: 2rem; /* Perfect bottom positioning */
+  right: 2rem; /* Perfect right positioning */
   width: 60px;
   height: 60px;
   background: linear-gradient(135deg, #C19A6B 0%, #87BBA2 50%, #55828B 100%);
@@ -15,7 +15,7 @@
     0 8px 32px rgba(193, 154, 107, 0.25),
     0 4px 16px rgba(85, 130, 139, 0.15),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  z-index: 999; /* Below voice button but above chat window */
+  z-index: 999; /* High z-index for floating button */
   color: white;
   border: 2px solid rgba(255, 255, 255, 0.1);
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -60,8 +60,8 @@
 /* Chat Window - El-Classico Professional Design */
 .floating-saytrix-window {
   position: fixed;
-  bottom: 208px; /* Positioned above Saytrix FAB (128px + 60px + 20px spacing) */
-  right: 2rem; /* Exactly aligned with Saytrix FAB and voice button */
+  bottom: 100px; /* Positioned above Saytrix FAB with perfect spacing */
+  right: 2rem; /* Exactly aligned with Saytrix FAB */
   width: 380px;
   height: 600px;
   background: linear-gradient(145deg, #F9F9F6 0%, #FFFFFF 50%, #F5F5F2 100%);
@@ -384,12 +384,15 @@
     width: calc(100vw - 32px);
     right: 1rem;
     left: 1rem;
-    bottom: 188px; /* Adjusted for mobile positioning above FAB (100px + 56px + 32px spacing) */
+    bottom: 100px; /* Perfect mobile positioning above FAB */
+    height: 500px; /* Slightly smaller on mobile */
   }
 
   .floating-saytrix-fab {
-    bottom: 100px; /* Positioned above voice button on mobile (16px + 56px + 28px spacing) */
-    right: 1rem; /* Exactly aligned with voice button on mobile */
+    bottom: 1rem; /* Perfect mobile bottom positioning */
+    right: 1rem; /* Perfect mobile right positioning */
+    width: 56px; /* Slightly smaller on mobile */
+    height: 56px;
   }
 }
 

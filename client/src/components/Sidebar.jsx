@@ -24,6 +24,7 @@ import {
 
 import { useSidebar } from "../context/SidebarContext";
 import { useAuth } from "../context/AuthContext";
+import SaytrixTriggerButton from "./voice/SaytrixTriggerButton";
 import axios from "axios";
 import API_ENDPOINTS from "../config/apiConfig";
 import "../styles/components/Sidebar.css";
@@ -112,9 +113,17 @@ const Sidebar = () => {
 
 
         {!isCollapsed && (
-          <h1 className="logo" role="banner">
-            ⚡ TradeBro
-          </h1>
+          <div className="logo-section">
+            <h1 className="logo" role="banner">
+              ⚡ TradeBro
+            </h1>
+            <SaytrixTriggerButton
+              position="navbar"
+              size="small"
+              showLabel={false}
+              className="sidebar-voice-btn"
+            />
+          </div>
         )}
       </div>
 
@@ -143,6 +152,12 @@ const Sidebar = () => {
               {!isCollapsed && <span>Dashboard</span>}
             </Link>
           </li>
+        <li>
+          <Link to="/charts" className={`sidebar-link ${location.pathname === "/charts" ? "active" : ""}`}>
+            <FiTrendingUp />
+            {!isCollapsed && <span>Charts</span>}
+          </Link>
+        </li>
         <li>
           <Link to="/portfolio" className={`sidebar-link ${location.pathname === "/portfolio" ? "active" : ""}`}>
             <FiPieChart />

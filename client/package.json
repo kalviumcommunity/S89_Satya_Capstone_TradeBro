@@ -5,9 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:kalvium": "vite --config vite.kalvium.config.js",
     "build": "vite build",
-    "build:kalvium": "vite build --config vite.kalvium.config.js",
     "netlify-build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"

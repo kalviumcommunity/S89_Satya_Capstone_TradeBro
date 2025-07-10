@@ -14,10 +14,10 @@ const SaytrixAssistant = () => {
   const [error, setError] = useState(null);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Initialize perfectVoiceAI integration
+  // Initialize perfectVoiceAI integration (without autostart)
   useEffect(() => {
-    console.log('🚀 Initializing Saytrix with perfectVoiceAI...');
-    
+    console.log('🚀 Initializing Saytrix with perfectVoiceAI (manual activation required)...');
+
     // Set up perfectVoiceAI event handlers
     perfectVoiceAI.setOnWakeWordDetected(() => {
       console.log('🎯 Wake word detected - activating Saytrix');
@@ -46,10 +46,10 @@ const SaytrixAssistant = () => {
       setIsSpeaking(newStatus.isSpeaking || false);
     });
 
-    // Initialize the service
+    // Initialize the service but don't start listening automatically
     perfectVoiceAI.initialize().then(() => {
-      console.log('✅ PerfectVoiceAI initialized successfully');
-      setStatus('Say "Saytrix" to activate');
+      console.log('✅ PerfectVoiceAI initialized successfully (manual activation required)');
+      setStatus('Click to enable voice commands');
       setIsInitialized(true);
     }).catch((error) => {
       console.error('❌ Failed to initialize PerfectVoiceAI:', error);

@@ -1,8 +1,8 @@
-/* ===== PROFESSIONAL UI THEME SYSTEM ===== */
-/* High-quality, accessible color palette with light and dark mode support */
-/* Designed for optimal contrast ratios (4.5:1+) and modern aesthetics */
+/* ===== EL-CLASSICO PROFESSIONAL THEME SYSTEM ===== */
+/* Perfect light and dark themes with optimal contrast and aesthetics */
+/* Designed for professional trading applications with accessibility in mind */
 
-/* ===== LIGHT MODE THEME ===== */
+/* ===== LIGHT MODE THEME (El-Classico Professional) ===== */
 :root,
 [data-theme="light"],
 .light-theme {
@@ -86,15 +86,15 @@
   --shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
-/* ===== DARK MODE THEME ===== */
+/* ===== DARK MODE THEME (El-Classico Professional Dark) ===== */
 [data-theme="dark"],
 .dark-theme {
   /* === CORE BACKGROUND COLORS === */
-  --bg-color: #0F172A;                               /* Slate-900 background */
+  --bg-color: #0F172A;                               /* Deep slate background */
   --background-color: #0F172A;
   --bg-primary: #0F172A;
-  --bg-secondary: #1E293B;                           /* Slate-800 surface */
-  --bg-tertiary: #334155;                            /* Slate-700 for sections */
+  --bg-secondary: #1E293B;                           /* Elevated surface */
+  --bg-tertiary: #334155;                            /* Section backgrounds */
 
   /* === SURFACE COLORS === */
   --surface-color: #1E293B;                          /* Card/modal surfaces */

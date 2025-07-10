@@ -19,7 +19,7 @@ import "../styles/components/FullScreenStockDetail.css";
 
 const FullScreenStockDetail = ({ symbol, onClose, onBuySuccess, onSellSuccess }) => {
   const { isAuthenticated } = useAuth();
-  const toast = useToast();
+  const { success, error, info } = useToast();
   const { virtualMoney, updateVirtualMoney } = useVirtualMoney();
   const [stockData, setStockData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -82,7 +82,7 @@ const FullScreenStockDetail = ({ symbol, onClose, onBuySuccess, onSellSuccess })
         if (mockData[symbol]) {
           setStockData(mockData[symbol]);
           setError(null);
-          toast.info("Using offline data for this stock", 3000);
+          info("Using offline data for this stock");
         }
       } finally {
         setLoading(false);
@@ -90,7 +90,7 @@ const FullScreenStockDetail = ({ symbol, onClose, onBuySuccess, onSellSuccess })
     };
 
     fetchStockData();
-  }, [symbol, isAuthenticated, toast]);
+  }, [symbol, isAuthenticated, info]);
 
   // Format large numbers
   const formatLargeNumber = (num) => {

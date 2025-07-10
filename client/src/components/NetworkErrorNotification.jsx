@@ -11,7 +11,7 @@ const NetworkErrorNotification = () => {
   const { isOffline, setOfflineMode } = useOfflineMode();
   const [showNotification, setShowNotification] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const toast = useToast();
+  const { success, error, info } = useToast();
 
   // Listen for network error events
   useEffect(() => {
@@ -40,7 +40,7 @@ const NetworkErrorNotification = () => {
   const enableOfflineMode = () => {
     setOfflineMode(true);
     setShowNotification(false);
-    toast.info('Switched to offline mode. Using cached data.');
+    info('Switched to offline mode. Using cached data.');
   };
 
   // Handle dismissing the notification

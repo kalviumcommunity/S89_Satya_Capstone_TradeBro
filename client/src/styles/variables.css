@@ -1,0 +1,207 @@
+/* Perfect Color Scheme - Light & Dark Mode Variables */
+/* Based on WCAG contrast ratios and modern design principles */
+
+:root {
+  /* ========================================
+     🌞 BRIGHT MODE (Light Theme) Colors
+     ======================================== */
+  
+  /* Primary Text & Backgrounds */
+  --text-primary-light: #1A1A1A;        /* Almost Black - Primary Text */
+  --text-secondary-light: #4F4F4F;      /* Dark Gray - Secondary Text */
+  --bg-primary-light: #FFFFFF;          /* White - Main Background */
+  --bg-secondary-light: #F9F9F9;        /* Off White - Card Backgrounds */
+  
+  /* Accent & Interactive Elements */
+  --accent-primary-light: #0057FF;      /* Bright Blue - Primary Accent */
+  --accent-hover-light: #0041CC;        /* Darker Blue - Hover State */
+  --accent-light-bg: #E3EEFF;           /* Light Blue - Light Buttons */
+  
+  /* Borders & Dividers */
+  --border-light: #E0E0E0;              /* Light Gray - Borders */
+  --border-focus-light: #0057FF;        /* Blue - Focus States */
+  --divider-light: #F0F0F0;             /* Subtle Dividers */
+  
+  /* Status Colors - Light Mode */
+  --success-light: #2E7D32;             /* Green - Success Text */
+  --success-bg-light: #E8F5E9;          /* Light Green - Success Background */
+  --warning-light: #ED6C02;             /* Orange - Warning Text */
+  --warning-bg-light: #FFF3E0;          /* Light Orange - Warning Background */
+  --error-light: #D32F2F;               /* Red - Error Text */
+  --error-bg-light: #FFEBEE;            /* Light Red - Error Background */
+  
+  /* Shadows & Effects */
+  --shadow-sm-light: 0 1px 2px 0 rgba(26, 26, 26, 0.05);
+  --shadow-md-light: 0 4px 6px -1px rgba(26, 26, 26, 0.1), 0 2px 4px -1px rgba(26, 26, 26, 0.06);
+  --shadow-lg-light: 0 10px 15px -3px rgba(26, 26, 26, 0.1), 0 4px 6px -2px rgba(26, 26, 26, 0.05);
+  --shadow-xl-light: 0 20px 25px -5px rgba(26, 26, 26, 0.1), 0 10px 10px -5px rgba(26, 26, 26, 0.04);
+  
+  /* ========================================
+     🌚 DARK MODE Colors
+     ======================================== */
+  
+  /* Primary Text & Backgrounds */
+  --text-primary-dark: #FFFFFF;         /* White - Primary Text */
+  --text-secondary-dark: #B0B0B0;       /* Gray - Secondary Text */
+  --bg-primary-dark: #121212;           /* Dark Gray - Main Background */
+  --bg-secondary-dark: #1E1E1E;         /* Darker Gray - Card Backgrounds */
+  
+  /* Accent & Interactive Elements */
+  --accent-primary-dark: #3399FF;       /* Sky Blue - Primary Accent */
+  --accent-hover-dark: #5CADFF;         /* Lighter Blue - Hover State */
+  --accent-dark-bg: #263238;            /* Blue-Black - Dark Buttons */
+  
+  /* Borders & Dividers */
+  --border-dark: #2C2C2C;               /* Dark Gray - Borders */
+  --border-focus-dark: #3399FF;         /* Sky Blue - Focus States */
+  --divider-dark: #252525;              /* Subtle Dividers */
+  
+  /* Status Colors - Dark Mode */
+  --success-dark: #81C784;              /* Soft Green - Success Text */
+  --success-bg-dark: #1B5E20;           /* Dark Green - Success Background */
+  --warning-dark: #FFB74D;              /* Amber - Warning Text */
+  --warning-bg-dark: #FF8F00;           /* Dark Orange - Warning Background */
+  --error-dark: #EF5350;                /* Red - Error Text */
+  --error-bg-dark: #C62828;             /* Dark Red - Error Background */
+  
+  /* Shadows & Effects */
+  --shadow-sm-dark: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md-dark: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg-dark: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+  --shadow-xl-dark: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+  
+  /* ========================================
+     🎨 DYNAMIC THEME VARIABLES
+     ======================================== */
+  
+  /* These change based on theme */
+  --text-primary: var(--text-primary-light);
+  --text-secondary: var(--text-secondary-light);
+  --bg-primary: var(--bg-primary-light);
+  --bg-secondary: var(--bg-secondary-light);
+  --accent-primary: var(--accent-primary-light);
+  --accent-hover: var(--accent-hover-light);
+  --border-color: var(--border-light);
+  --border-focus: var(--border-focus-light);
+  --divider-color: var(--divider-light);
+  
+  /* Status Colors */
+  --success-color: var(--success-light);
+  --success-bg: var(--success-bg-light);
+  --warning-color: var(--warning-light);
+  --warning-bg: var(--warning-bg-light);
+  --error-color: var(--error-light);
+  --error-bg: var(--error-bg-light);
+  
+  /* Shadows */
+  --shadow-sm: var(--shadow-sm-light);
+  --shadow-md: var(--shadow-md-light);
+  --shadow-lg: var(--shadow-lg-light);
+  --shadow-xl: var(--shadow-xl-light);
+  
+  /* ========================================
+     📱 RESPONSIVE & PERFORMANCE
+     ======================================== */
+  
+  /* Typography Scale */
+  --font-family-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-family-secondary: 'Poppins', sans-serif;
+  
+  /* Spacing Scale (8px grid) */
+  --space-xs: 0.25rem;    /* 4px */
+  --space-sm: 0.5rem;     /* 8px */
+  --space-md: 1rem;       /* 16px */
+  --space-lg: 1.5rem;     /* 24px */
+  --space-xl: 2rem;       /* 32px */
+  --space-2xl: 3rem;      /* 48px */
+  
+  /* Border Radius Scale */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
+  
+  /* Transitions for Performance */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.2s ease;
+  --transition-slow: 0.3s ease;
+  
+  /* Z-Index Scale */
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+  --z-toast: 1080;
+}
+
+/* ========================================
+   🌚 DARK MODE THEME SWITCHING
+   ======================================== */
+
+[data-theme="dark"] {
+  --text-primary: var(--text-primary-dark);
+  --text-secondary: var(--text-secondary-dark);
+  --bg-primary: var(--bg-primary-dark);
+  --bg-secondary: var(--bg-secondary-dark);
+  --accent-primary: var(--accent-primary-dark);
+  --accent-hover: var(--accent-hover-dark);
+  --border-color: var(--border-dark);
+  --border-focus: var(--border-focus-dark);
+  --divider-color: var(--divider-dark);
+  
+  /* Status Colors */
+  --success-color: var(--success-dark);
+  --success-bg: var(--success-bg-dark);
+  --warning-color: var(--warning-dark);
+  --warning-bg: var(--warning-bg-dark);
+  --error-color: var(--error-dark);
+  --error-bg: var(--error-bg-dark);
+  
+  /* Shadows */
+  --shadow-sm: var(--shadow-sm-dark);
+  --shadow-md: var(--shadow-md-dark);
+  --shadow-lg: var(--shadow-lg-dark);
+  --shadow-xl: var(--shadow-xl-dark);
+}
+
+/* ========================================
+   🚀 PERFORMANCE OPTIMIZATIONS
+   ======================================== */
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --transition-fast: 0.01ms;
+    --transition-normal: 0.01ms;
+    --transition-slow: 0.01ms;
+  }
+}
+
+/* System theme detection */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --text-primary: var(--text-primary-dark);
+    --text-secondary: var(--text-secondary-dark);
+    --bg-primary: var(--bg-primary-dark);
+    --bg-secondary: var(--bg-secondary-dark);
+    --accent-primary: var(--accent-primary-dark);
+    --accent-hover: var(--accent-hover-dark);
+    --border-color: var(--border-dark);
+    --border-focus: var(--border-focus-dark);
+    --divider-color: var(--divider-dark);
+    --success-color: var(--success-dark);
+    --success-bg: var(--success-bg-dark);
+    --warning-color: var(--warning-dark);
+    --warning-bg: var(--warning-bg-dark);
+    --error-color: var(--error-dark);
+    --error-bg: var(--error-bg-dark);
+    --shadow-sm: var(--shadow-sm-dark);
+    --shadow-md: var(--shadow-md-dark);
+    --shadow-lg: var(--shadow-lg-dark);
+    --shadow-xl: var(--shadow-xl-dark);
+  }
+}

@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
     username: {
@@ -14,11 +13,7 @@ const userSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-    },
-    googleId: {
-        type: String,
-        unique: true,
-        sparse: true // Allows null values for non-Google users
+        required: false // Not required for Google OAuth users
     },
     fullName: {
         type: String,
@@ -52,12 +47,6 @@ const userSchema = new mongoose.Schema({
     bio: {
         type: String,
         default: 'No bio provided yet.'
-    },
-    code: {
-        type: String
-    },
-    codeExpires: {
-        type: Date
     },
     createdAt: {
         type: Date,

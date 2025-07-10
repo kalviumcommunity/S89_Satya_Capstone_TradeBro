@@ -5,7 +5,7 @@ const fs = require("fs");
 const validator = require("validator");
 const router = express.Router();
 const User = require("../models/User");
-const { verifyToken } = require("../middleware/auth");
+const { provideDefaultUser } = require("../middleware/defaultUser");
 
 // Ensure the uploads directory exists
 if (!fs.existsSync("uploads")) {
@@ -34,7 +34,7 @@ const upload = multer({
 });
 
 // Get user settings
-router.get("/", verifyToken, async (req, res) => {
+router.get("/", provideDefaultUser, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
 
@@ -63,7 +63,7 @@ router.get("/", verifyToken, async (req, res) => {
 });
 
 // Update user settings
-router.put("/", verifyToken, upload.single("profileImage"), async (req, res) => {
+router.put("/", provideDefaultUser, upload.single("profileImage"), async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
 
@@ -127,7 +127,7 @@ router.put("/", verifyToken, upload.single("profileImage"), async (req, res) => 
 });
 
 // Delete user settings
-router.delete("/", verifyToken, async (req, res) => {
+router.delete("/", provideDefaultUser, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
 
@@ -153,7 +153,7 @@ router.delete("/", verifyToken, async (req, res) => {
 });
 
 // Get notification settings
-router.get("/notifications", verifyToken, async (req, res) => {
+router.get("/notifications", provideDefaultUser, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
 
@@ -180,7 +180,7 @@ router.get("/notifications", verifyToken, async (req, res) => {
 });
 
 // Update notification settings
-router.put("/notifications", verifyToken, async (req, res) => {
+router.put("/notifications", provideDefaultUser, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
 

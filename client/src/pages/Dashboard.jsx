@@ -15,27 +15,24 @@ import { safeApiCall, createDummyData } from "../utils/apiUtils";
 import API_ENDPOINTS from "../config/apiConfig";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { login as reduxLogin } from "../redux/reducers/authReducer";
 import { showSuccessToast } from "../redux/reducers/toastReducer";
 import PageLayout from "../components/PageLayout";
 import Loading from "../components/common/Loading";
-
-import ChartModal from "../components/ChartModal";
 import StockSearch from "../components/StockSearch";
-
-import { useChartModal } from "../hooks/useChartModal";
 import "../styles/pages/Dashboard.css";
 
 const Dashboard = () => {
   const { isAuthenticated, login } = useAuth();
-  const toast = useToast();
+  const { success, error, info } = useToast();
   const { virtualMoney, loading: virtualMoneyLoading, fetchVirtualMoney } = useVirtualMoney();
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  // Chart modal functionality
-  const { handleStockSelect, modalProps } = useChartModal();
+  // Handle stock selection for chart view (redirect to charts page)
+  const handleStockSelect = (symbol) => {
+    navigate(`/charts?symbol=${symbol}`);
+  };
   const [marketData, setMarketData] = useState({
     indices: [],
     marketStatus: "open"
@@ -66,17 +63,17 @@ const Dashboard = () => {
     // Check for token in URL (from Google OAuth callback)
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
-    const success = urlParams.get('success');
+    const successParam = urlParams.get('success');
     const google = urlParams.get('google');
 
-    if (token && success === 'true' && google === 'true') {
+    if (token && successParam === 'true' && google === 'true') {
       console.log('Google OAuth token found in URL');
 
       // Remove token from URL to prevent issues on refresh
       window.history.replaceState({}, document.title, '/dashboard');
 
       // Show success message
-      toast.success('Successfully logged in with Google!');
+      success('Successfully logged in with Google!');
 
       // Store token in localStorage first to ensure it's available
       localStorage.setItem('authToken', token);
@@ -120,7 +117,7 @@ const Dashboard = () => {
         fetchVirtualMoney();
       }, 500);
     }
-  }, [dispatch, login, toast, fetchVirtualMoney]);
+  }, [dispatch, login, success, fetchVirtualMoney]);
 
   // Fetch market data
   useEffect(() => {
@@ -139,7 +136,7 @@ const Dashboard = () => {
         setLoading(false);
       } catch (error) {
         console.error("Error fetching market data:", error);
-        toast.error("Failed to fetch market data. Using mock data instead.");
+        error("Failed to fetch market data. Using mock data instead.");
 
         // Use mock data as fallback with Indian indices
         setMarketData({
@@ -368,14 +365,7 @@ const Dashboard = () => {
 
   const handleRefreshMovers = () => {
     fetchMarketMovers(true);
-    toast.success("Market movers refreshed!", {
-      icon: "🔄",
-      style: {
-        borderRadius: '16px',
-        background: 'linear-gradient(135deg, var(--primary-color), var(--accent-color))',
-        color: '#fff',
-      },
-    });
+    success("Market movers refreshed!");
   };
 
   const toggleAutoRefresh = () => {
@@ -385,23 +375,9 @@ const Dashboard = () => {
     }));
 
     if (!marketMovers.autoRefresh) {
-      toast.success("Auto-refresh enabled!", {
-        icon: "⚡",
-        style: {
-          borderRadius: '16px',
-          background: 'linear-gradient(135deg, #27ae60, #2ecc71)',
-          color: '#fff',
-        },
-      });
+      success("Auto-refresh enabled!");
     } else {
-      toast.info("Auto-refresh disabled", {
-        icon: "⏸️",
-        style: {
-          borderRadius: '16px',
-          background: 'linear-gradient(135deg, #f39c12, #e67e22)',
-          color: '#fff',
-        },
-      });
+      info("Auto-refresh disabled");
     }
   };
 
@@ -615,7 +591,7 @@ const Dashboard = () => {
   // Function to claim daily login reward
   const handleClaimDailyReward = async () => {
     if (!rewardStatus.canClaim) {
-      toast.info(rewardStatus.message);
+      info(rewardStatus.message);
       return false;
     }
 
@@ -633,7 +609,7 @@ const Dashboard = () => {
           setShowRewardAnimation(false);
         }, 3000);
 
-        toast.success(`Daily reward claimed: +₹1`);
+        success(`Daily reward claimed: +₹1`);
 
         // Refresh virtual money data
         fetchVirtualMoney(true);
@@ -646,12 +622,12 @@ const Dashboard = () => {
 
         return true;
       } else {
-        toast.info(response.data?.message || "Failed to claim reward");
+        info(response.data?.message || "Failed to claim reward");
         return false;
       }
     } catch (error) {
       console.error("Error claiming daily reward:", error);
-      toast.error("Failed to claim daily reward");
+      error("Failed to claim daily reward");
       return false;
     }
   };
@@ -670,7 +646,7 @@ const Dashboard = () => {
     handleStockSelect(symbol, stockName);
 
     // Show a toast notification to confirm selection
-    toast.success(`Loading chart for ${symbol} - ${stockData.name || 'Stock'}`);
+    success(`Loading chart for ${symbol} - ${stockData.name || 'Stock'}`);
   };
 
   // Handle transaction success
@@ -682,7 +658,7 @@ const Dashboard = () => {
   // Add stock to watchlist
   const addToWatchlist = async (symbol, name) => {
     if (!isAuthenticated) {
-      toast.error("Please log in to add stocks to your watchlist");
+      error("Please log in to add stocks to your watchlist");
       return;
     }
 
@@ -694,13 +670,13 @@ const Dashboard = () => {
       });
 
       if (response.data.success) {
-        toast.success(`${symbol} added to watchlist`);
+        success(`${symbol} added to watchlist`);
       } else {
-        toast.error(response.data.message || "Failed to add stock to watchlist");
+        error(response.data.message || "Failed to add stock to watchlist");
       }
     } catch (err) {
       console.error("Error adding stock to watchlist:", err);
-      toast.info(`${symbol} would be added to your watchlist (server unavailable)`);
+      info(`${symbol} would be added to your watchlist (server unavailable)`);
     }
   };
 
@@ -1009,8 +985,7 @@ const Dashboard = () => {
           )}
         </AnimatePresence>
 
-        {/* Chart Modal */}
-        <ChartModal {...modalProps} />
+        {/* Chart functionality moved to dedicated charts page */}
       </div>
     </PageLayout>
   );

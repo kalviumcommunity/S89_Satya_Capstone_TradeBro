@@ -2,14 +2,10 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiPlus, FiTrash2, FiRefreshCw, FiTrendingUp, FiTrendingDown, FiSearch, FiAlertCircle, FiX, FiMaximize2 } from "react-icons/fi";
 import PageLayout from "../components/PageLayout";
-
-import ChartModal from "../components/ChartModal";
 import StockSearch from "../components/StockSearch";
-import { useToast } from "../hooks/useToast";
+import { useToast } from "../context/ToastContext";
 import { useAuth } from "../context/AuthContext";
 import { useOfflineMode } from "../context/OfflineContext";
-import { useChartModal } from "../hooks/useChartModal";
-import FullScreenStockDetail from "../components/FullScreenStockDetail";
 import axios from "axios";
 import API_ENDPOINTS from "../config/apiConfig";
 import "../styles/pages/Watchlist.css";
@@ -52,7 +48,7 @@ const additionalStyles = `
 `;
 
 const Watchlist = () => {
-  const toast = useToast();
+  const { success, error: showError, info } = useToast();
   const { isAuthenticated } = useAuth();
   const { isOffline } = useOfflineMode();
   const [watchlist, setWatchlist] = useState([]);
@@ -67,8 +63,10 @@ const Watchlist = () => {
   const [showFullScreenDetail, setShowFullScreenDetail] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
 
-  // Chart modal functionality
-  const { handleStockSelect: openChart, modalProps } = useChartModal();
+  // Handle stock selection for chart view (redirect to charts page)
+  const openChart = (symbol) => {
+    window.location.href = `/charts?symbol=${symbol}`;
+  };
 
   // Mock data for demonstration
   const mockWatchlist = [
@@ -233,18 +231,18 @@ const Watchlist = () => {
   // Add stock to watchlist directly from search
   const addStockToWatchlist = async (symbol, name) => {
     if (!isAuthenticated) {
-      toast.error("Please log in to add stocks to your watchlist");
+      showError("Please log in to add stocks to your watchlist");
       return;
     }
 
     if (!symbol.trim()) {
-      toast.error("Please enter a stock symbol");
+      showError("Please enter a stock symbol");
       return;
     }
 
     // Check if stock already exists in watchlist
     if (watchlist.some((stock) => stock.symbol === symbol.toUpperCase())) {
-      toast.info(`${symbol.toUpperCase()} is already in your watchlist`);
+      info(`${symbol.toUpperCase()} is already in your watchlist`);
       return;
     }
 
@@ -263,7 +261,7 @@ const Watchlist = () => {
         };
 
         setWatchlist([...watchlist, newStockData]);
-        toast.success(`${newStockData.symbol} added to watchlist (offline mode)`);
+        success(`${newStockData.symbol} added to watchlist (offline mode)`);
         return;
       }
 
@@ -302,13 +300,13 @@ const Watchlist = () => {
 
         // Then refresh to get the actual data
         refreshWatchlist();
-        toast.success(`${symbol.toUpperCase()} added to watchlist`);
+        success(`${symbol.toUpperCase()} added to watchlist`);
       } else {
-        toast.error(response.data?.message || "Failed to add stock to watchlist");
+        showError(response.data?.message || "Failed to add stock to watchlist");
       }
     } catch (err) {
       console.error("Error adding stock to watchlist:", err);
-      toast.error("Failed to add stock to watchlist");
+      showError("Failed to add stock to watchlist");
 
       // Fallback to local implementation
       const newStockData = {
@@ -334,25 +332,25 @@ const Watchlist = () => {
         console.error("Error updating localStorage:", storageError);
       }
 
-      toast.info(`${newStockData.symbol} added to watchlist (local only)`);
+      info(`${newStockData.symbol} added to watchlist (local only)`);
     }
   };
 
   // Add stock to watchlist from input field
   const addToWatchlist = async () => {
     if (!isAuthenticated) {
-      toast.error("Please log in to add stocks to your watchlist");
+      showError("Please log in to add stocks to your watchlist");
       return;
     }
 
     if (!newStock.trim()) {
-      toast.error("Please enter a stock symbol");
+      showError("Please enter a stock symbol");
       return;
     }
 
     // Check if stock already exists in watchlist
     if (watchlist.some((stock) => stock.symbol === newStock.toUpperCase())) {
-      toast.info(`${newStock.toUpperCase()} is already in your watchlist`);
+      info(`${newStock.toUpperCase()} is already in your watchlist`);
       return;
     }
 
@@ -366,7 +364,7 @@ const Watchlist = () => {
   // Remove stock from watchlist
   const removeFromWatchlist = async (id) => {
     if (!isAuthenticated) {
-      toast.error("Please log in to manage your watchlist");
+      showError("Please log in to manage your watchlist");
       return;
     }
 
@@ -377,7 +375,7 @@ const Watchlist = () => {
       if (isOffline) {
         // Offline mode - just update local state
         setWatchlist(watchlist.filter((stock) => stock.id !== id));
-        toast.info(`${stockToRemove.symbol} removed from watchlist (offline mode)`);
+        info(`${stockToRemove.symbol} removed from watchlist (offline mode)`);
         return;
       }
 
@@ -386,24 +384,24 @@ const Watchlist = () => {
 
       if (response.data.success) {
         setWatchlist(watchlist.filter((stock) => stock.id !== id));
-        toast.info(`${stockToRemove.symbol} removed from watchlist`);
+        info(`${stockToRemove.symbol} removed from watchlist`);
       } else {
-        toast.error(response.data.message || "Failed to remove stock from watchlist");
+        showError(response.data.message || "Failed to remove stock from watchlist");
       }
     } catch (err) {
       console.error("Error removing stock from watchlist:", err);
-      toast.error("Failed to remove stock from watchlist");
+      showError("Failed to remove stock from watchlist");
 
       // Fallback to local implementation
       setWatchlist(watchlist.filter((stock) => stock.id !== id));
-      toast.info(`${stockToRemove.symbol} removed from watchlist (local only)`);
+      info(`${stockToRemove.symbol} removed from watchlist (local only)`);
     }
   };
 
   // Refresh watchlist data
   const refreshWatchlist = async () => {
     if (!isAuthenticated) {
-      toast.error("Please log in to refresh your watchlist");
+      showError("Please log in to refresh your watchlist");
       return;
     }
 
@@ -440,7 +438,7 @@ const Watchlist = () => {
         });
 
         setWatchlist(updatedWatchlist);
-        toast.success("Watchlist refreshed (offline mode)");
+        success("Watchlist refreshed (offline mode)");
         return;
       }
 
@@ -451,15 +449,15 @@ const Watchlist = () => {
         // If we get data from the API, update the watchlist
         if (response.data.data && Array.isArray(response.data.data)) {
           setWatchlist(response.data.data);
-          toast.success("Watchlist refreshed");
+          success("Watchlist refreshed");
         } else if (response.data.stocks && Array.isArray(response.data.stocks)) {
           // Alternative data structure
           setWatchlist(response.data.stocks);
-          toast.success("Watchlist refreshed");
+          success("Watchlist refreshed");
         } else {
           // Handle empty or invalid data
           setError("Invalid watchlist data received");
-          toast.error("Failed to refresh watchlist: Invalid data format");
+          showError("Failed to refresh watchlist: Invalid data format");
 
           // Update any "Loading..." data with random values
           const updatedWatchlist = watchlist.map((stock) => {
@@ -479,7 +477,7 @@ const Watchlist = () => {
         }
       } else {
         setError("Failed to refresh watchlist");
-        toast.error("Failed to refresh watchlist");
+        showError("Failed to refresh watchlist");
 
         // Update any "Loading..." data with random values
         const updatedWatchlist = watchlist.map((stock) => {
@@ -500,7 +498,7 @@ const Watchlist = () => {
     } catch (err) {
       console.error("Error refreshing watchlist:", err);
       setError("Failed to refresh watchlist");
-      toast.error("Failed to refresh watchlist");
+      showError("Failed to refresh watchlist");
 
       // Fallback to local implementation
       const updatedWatchlist = watchlist.map((stock) => {
@@ -530,7 +528,7 @@ const Watchlist = () => {
       });
 
       setWatchlist(updatedWatchlist);
-      toast.info("Watchlist refreshed (local only)");
+      info("Watchlist refreshed (local only)");
     } finally {
       setRefreshing(false);
     }
@@ -709,33 +707,16 @@ const Watchlist = () => {
         )}
       </div>
 
-      {/* Full-screen stock detail */}
-      <AnimatePresence>
-        {showFullScreenDetail && selectedStock && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <FullScreenStockDetail
-              symbol={selectedStock}
-              onClose={handleCloseFullScreenDetail}
-              onBuySuccess={() => {
-                handleCloseFullScreenDetail();
-                refreshWatchlist();
-              }}
-              onSellSuccess={() => {
-                handleCloseFullScreenDetail();
-                refreshWatchlist();
-              }}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Chart Modal for quick chart view */}
-      <ChartModal {...modalProps} />
+      {/* Stock detail functionality moved to charts page */}
+      {showFullScreenDetail && selectedStock && (
+        <div className="redirect-message">
+          <p>Redirecting to charts page for {selectedStock}...</p>
+          {setTimeout(() => {
+            window.location.href = `/charts?symbol=${selectedStock}`;
+            setShowFullScreenDetail(false);
+          }, 1000)}
+        </div>
+      )}
     </PageLayout>
   );
 };

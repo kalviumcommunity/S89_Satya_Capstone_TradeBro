@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import Pusher from 'pusher-js';
 import { useAuth } from './AuthContext';
-import { useToast } from '../hooks/useToast';
+import { useToast } from './ToastContext';
 
 // Create context
 const PusherContext = createContext();
@@ -19,28 +19,43 @@ export const PusherProvider = ({ children }) => {
   const [channel, setChannel] = useState(null);
   const [connectionError, setConnectionError] = useState(false);
   const { user, isAuthenticated } = useAuth();
-  const toast = useToast();
+  const { error, info } = useToast();
 
   useEffect(() => {
-    // Only initialize Pusher if user is authenticated
-    if (isAuthenticated && user && user._id) {
-      try {
-        // Initialize Pusher with better error handling
-        const pusherClient = new Pusher(pusherConfig.key, {
+    // Only initialize Pusher if user is authenticated and has valid data
+    const userId = user?._id || user?.id;
+    if (!isAuthenticated || !user || !userId) {
+      console.log('Pusher: User not authenticated or user data not available', { isAuthenticated, user, userId });
+      return;
+    }
+
+    try {
+      // Check if pusherConfig is properly defined
+      if (!pusherConfig || !pusherConfig.key) {
+        console.error('Pusher configuration is missing');
+        return;
+      }
+
+      // Initialize Pusher with better error handling
+      const pusherClient = new Pusher(pusherConfig.key, {
           cluster: pusherConfig.cluster,
           encrypted: pusherConfig.useTLS,
-          enabledTransports: ['ws', 'wss'], // Only use WebSocket for real-time performance
+          enabledTransports: ['ws', 'wss'],
           disabledTransports: ['xhr_streaming', 'xhr_polling', 'sockjs'],
-          timeout: 5000, // Faster connection timeout for real-time experience
-          activityTimeout: 30000, // Keep connection alive
-          pongTimeout: 6000 // Faster pong timeout
+          timeout: 10000,
+          activityTimeout: 60000,
+          pongTimeout: 10000,
+          forceTLS: true,
+          // Disable auto-reconnect in development to prevent multiple connections
+          enableStats: false,
+          enableLogging: process.env.NODE_ENV === 'development'
         });
 
         // Handle connection errors
         pusherClient.connection.bind('error', (err) => {
           console.error('Pusher connection error:', err);
           setConnectionError(true);
-          toast.error('Notification service connection error. Some features may not work properly.', 5000);
+          error('Notification service connection error. Some features may not work properly.');
         });
 
         // Handle successful connection
@@ -50,18 +65,18 @@ export const PusherProvider = ({ children }) => {
         });
 
         // Subscribe to user's channel
-        const userChannel = pusherClient.subscribe(`user-${user._id}`);
+        const userChannel = pusherClient.subscribe(`user-${userId}`);
 
         // Handle subscription errors
         userChannel.bind('pusher:subscription_error', (error) => {
           console.error('Pusher subscription error:', error);
-          toast.error('Failed to subscribe to notification channel', 5000);
+          error('Failed to subscribe to notification channel');
         });
 
         // Set up event listeners
         userChannel.bind('notification', (data) => {
           // Show toast notification
-          toast.info(`${data.title}: ${data.message}`, 5000);
+          info(`${data.title}: ${data.message}`);
 
           // Dispatch custom event for components to listen to
           window.dispatchEvent(new CustomEvent('new-notification', { detail: data }));
@@ -93,13 +108,12 @@ export const PusherProvider = ({ children }) => {
             pusherClient.disconnect();
           }
         };
-      } catch (error) {
-        console.error('Error initializing Pusher:', error);
-        toast.error('Failed to initialize notification service', 5000);
-        setConnectionError(true);
-      }
+    } catch (error) {
+      console.error('Error initializing Pusher:', error);
+      error('Failed to initialize notification service');
+      setConnectionError(true);
     }
-  }, [isAuthenticated, user, toast]);
+  }, [isAuthenticated, user, error, info]);
 
   return (
     <PusherContext.Provider value={{ pusher, channel, connectionError }}>

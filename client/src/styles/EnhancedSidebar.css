@@ -91,7 +91,7 @@
 }
 
 /* Virtual Money Display */
-.sidebar-kalvium.enhanced .virtual-money-display {
+.sidebar.enhanced .virtual-money-display {
   padding: 1rem 1.25rem;
   margin: 0.5rem 1.25rem;
   background: linear-gradient(135deg, rgba(16, 163, 127, 0.15), rgba(16, 163, 127, 0.25));
@@ -103,7 +103,7 @@
   border: 1px solid rgba(16, 163, 127, 0.3);
 }
 
-.sidebar-kalvium.enhanced .money-icon {
+.sidebar.enhanced .money-icon {
   width: 40px;
   height: 40px;
   border-radius: 10px;
@@ -116,7 +116,7 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.sidebar-kalvium.enhanced .money-details {
+.sidebar.enhanced .money-details {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
@@ -161,7 +161,7 @@
   margin-bottom: 0.5rem;
 }
 
-.sidebar-kalvium.enhanced .menu-items a {
+.sidebar.enhanced .menu-items a {
   display: flex;
   align-items: center;
   padding: 0.75rem 1.25rem;
@@ -172,7 +172,7 @@
   position: relative;
 }
 
-.sidebar-kalvium.enhanced .menu-items a::before {
+.sidebar.enhanced .menu-items a::before {
   content: '';
   position: absolute;
   left: 0;
@@ -183,16 +183,16 @@
   transition: all 0.3s ease;
 }
 
-.sidebar-kalvium.enhanced .menu-items a:hover {
+.sidebar.enhanced .menu-items a:hover {
   background-color: rgba(51, 51, 66, 0.8);
   color: #f0f0f0;
 }
 
-.sidebar-kalvium.enhanced .menu-items a:hover::before {
+.sidebar.enhanced .menu-items a:hover::before {
   background-color: rgba(16, 163, 127, 0.5);
 }
 
-.sidebar-kalvium.enhanced .menu-items a.active {
+.sidebar.enhanced .menu-items a.active {
   background-color: rgba(16, 163, 127, 0.15);
   color: #10a37f;
 }

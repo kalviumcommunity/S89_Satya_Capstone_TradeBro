@@ -6,7 +6,11 @@ require('dotenv').config();
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-const CALLBACK_URL = (process.env.API_BASE_URL || "https://s89-satya-capstone-tradebro.onrender.com") + "/api/auth/google/callback";
+
+// Use localhost for development, production URL for production
+const isDevelopment = process.env.NODE_ENV !== 'production' || process.env.API_BASE_URL?.includes('localhost');
+const BASE_URL = isDevelopment ? "http://localhost:5000" : (process.env.API_BASE_URL || "https://s89-satya-capstone-tradebro.onrender.com");
+const CALLBACK_URL = BASE_URL + "/api/auth/google/callback";
 
 console.log('Google OAuth Configuration:');
 console.log('- GOOGLE_CLIENT_ID:', GOOGLE_CLIENT_ID ? 'Set' : 'Not set');
