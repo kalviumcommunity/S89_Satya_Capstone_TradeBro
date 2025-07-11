@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const passport = require("passport");
+const session = require("express-session");
 const cookieParser = require("cookie-parser");
 const axios = require("axios");
 
@@ -175,14 +176,27 @@ app.use((req, res, next) => {
 // Apply response middleware to standardize API responses
 app.use(responseMiddleware);
 
-// JWT-BASED AUTHENTICATION - SESSION HANDLING REMOVED
-// Since this application uses JWT for stateless authentication,
-// express-session and passport.session() are not needed and have been removed
-// to avoid conflicts and improve performance.
+// HYBRID AUTHENTICATION SETUP
+// JWT for API routes (stateless) + Sessions for OAuth flow (stateful)
+// This allows OAuth redirects to work while keeping API authentication stateless
 
-// Initialize passport (without session support)
+// Session middleware - ONLY for OAuth routes
+app.use('/api/auth/google', session({
+  secret: SESSION_SECRET || 'fallback-secret-for-oauth',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 10 * 60 * 1000 // 10 minutes - just for OAuth flow
+  }
+}));
+
+// Initialize passport
 app.use(passport.initialize());
-// Note: passport.session() removed as we use JWT for stateless auth
+
+// Enable passport sessions ONLY for OAuth routes
+app.use('/api/auth/google', passport.session());
 
 // Health check endpoint - Production-safe version
 app.get('/api/health', (_, res) => {

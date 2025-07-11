@@ -220,7 +220,7 @@ router.put('/profile', verifyTokenMiddleware, validateProfileUpdate, asyncHandle
 }));
 
 // Google OAuth endpoint for frontend credential verification
-router.post('/google', authRateLimit, asyncHandler(async (req, res) => {
+router.post('/google/verify', authRateLimit, asyncHandler(async (req, res) => {
   try {
     const { credential } = req.body;
 
@@ -358,13 +358,42 @@ router.post('/google', authRateLimit, asyncHandler(async (req, res) => {
 
 // Google OAuth routes (existing Passport.js implementation)
 router.get('/google', passport.authenticate('google', {
-  scope: ['profile', 'email']
+  scope: ['profile', 'email'],
+  accessType: 'offline',
+  prompt: 'consent'
 }));
+
+// OAuth failure handler
+router.get('/google/failure', (req, res) => {
+  console.log('Google OAuth failure route reached');
+  console.log('Session messages:', req.session?.messages);
+
+  const clientUrl = process.env.NODE_ENV === 'production'
+    ? process.env.CLIENT_URL
+    : 'http://localhost:5173';
+
+  const redirectUrl = `${clientUrl}/auth/oauth-callback?success=false&error=oauth_failed`;
+  res.redirect(redirectUrl);
+});
 
 // Secure OAuth callback - uses HTTP-only cookies instead of URL tokens
 router.get('/google/callback',
-  passport.authenticate('google', { failureRedirect: '/login' }),
+  passport.authenticate('google', {
+    failureRedirect: '/api/auth/google/failure',
+    failureMessage: true
+  }),
   asyncHandler(async (req, res) => {
+    console.log('Google OAuth callback reached');
+    console.log('User from passport:', req.user);
+
+    if (!req.user) {
+      console.error('No user found in OAuth callback');
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication failed - no user data'
+      });
+    }
+
     const user = req.user;
     const isNewUser = user.isNewUser;
 

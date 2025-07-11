@@ -29,7 +29,10 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
       {
         clientID: GOOGLE_CLIENT_ID,
         clientSecret: GOOGLE_CLIENT_SECRET,
-        callbackURL: CALLBACK_URL
+        callbackURL: CALLBACK_URL,
+        scope: ['profile', 'email'],
+        accessType: 'offline',
+        prompt: 'consent'
       },
       async (_accessToken, _refreshToken, profile, done) => {
         try {
@@ -118,5 +121,20 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
   console.warn("Google OAuth credentials not found. Google authentication will not be available.");
 }
 
+// Passport session serialization (required for OAuth flow)
+passport.serializeUser((user, done) => {
+  // Store minimal user data in session
+  done(null, {
+    id: user._id || user.id,
+    email: user.email,
+    isNewUser: user.isNewUser,
+    token: user.token
+  });
+});
+
+passport.deserializeUser((sessionUser, done) => {
+  // Return the user data from session
+  done(null, sessionUser);
+});
 
 module.exports = passport;
