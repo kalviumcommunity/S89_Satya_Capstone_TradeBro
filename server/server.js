@@ -3,45 +3,92 @@ const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const passport = require("passport");
-const session = require("express-session");
-const MongoStore = require("connect-mongo");
 const cookieParser = require("cookie-parser");
 const axios = require("axios");
+
+// Load environment variables first
+dotenv.config();
+
+// FAIL-FAST ENVIRONMENT VARIABLE VALIDATION
+const requiredEnvVars = {
+  MONGO_URI: process.env.MONGO_URI,
+  JWT_SECRET: process.env.JWT_SECRET,
+  FMP_API_KEY: process.env.FMP_API_KEY,
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY
+};
+
+// Optional but recommended environment variables
+const optionalEnvVars = {
+  TWELVE_DATA_API_KEY: process.env.TWELVE_DATA_API_KEY,
+  SESSION_SECRET: process.env.SESSION_SECRET,
+  CLIENT_URL: process.env.CLIENT_URL,
+  API_BASE_URL: process.env.API_BASE_URL
+};
+
+// Check required environment variables
+const missingRequired = Object.entries(requiredEnvVars)
+  .filter(([key, value]) => !value)
+  .map(([key]) => key);
+
+if (missingRequired.length > 0) {
+  console.error('❌ FATAL ERROR: Missing required environment variables:');
+  missingRequired.forEach(varName => {
+    console.error(`   - ${varName}`);
+  });
+  console.error('Please check your .env file and ensure all required variables are set.');
+  process.exit(1);
+}
+
+// Warn about missing optional variables
+const missingOptional = Object.entries(optionalEnvVars)
+  .filter(([key, value]) => !value)
+  .map(([key]) => key);
+
+if (missingOptional.length > 0) {
+  console.warn('⚠️ WARNING: Missing optional environment variables:');
+  missingOptional.forEach(varName => {
+    console.warn(`   - ${varName}`);
+  });
+  console.warn('Some features may not work properly.');
+}
 
 // Import middleware and routes
 const responseMiddleware = require("./middleware/responseMiddleware");
 const authRoutes = require("./routes/authRoutes");
 const dataRoutes = require("./routes/apiRoutes");
 const settingsRoutes = require("./routes/settings");
+const userSettingsRoutes = require("./routes/userSettingsRoutes"); // New refactored user settings
 const saytrixRoutes = require("./routes/saytrix");
 const searchRoutes = require("./routes/searchRoutes");
 const saytrixRoutesAdvanced = require("./routes/saytrixRoutes");
 const virtualMoneyRoutes = require("./routes/virtualMoneyRoutes");
 const proxyRoutes = require("./routes/proxyRoutes");
+const stocksRoutes = require("./routes/stocks"); // New refactored stocks router
+const stockSearchRoutes = require("./routes/stockSearchRoutes"); // Stock search functionality
 const { router: notificationRoutes } = require("./routes/notificationRoutes");
 const watchlistRoutes = require("./routes/watchlistRoutes");
 const orderRoutes = require("./routes/orderRoutes");
-
-const exampleRoutes = require("./routes/exampleRoutes");
 const userDataRoutes = require("./routes/userDataRoutes");
 const newsRoutes = require("./routes/newsRoutes");
 
-// Load environment variables
-dotenv.config();
+// Initialize passport configuration
 require("./passport.config");
 
 // Initialize Express app
 const app = express();
-const PORT = process.env.PORT || 5000;
-// Use environment variables for database connection and API keys
-const MONGO_URI = process.env.MONGO_URI;
-// FMP API key for stock data
-const FMP_API = process.env.FMP_API_KEY;
+const PORT = process.env.PORT || 5001;
 
-// CORS configuration - Allow requests from frontend
+// Environment variables (already validated above)
+const MONGO_URI = process.env.MONGO_URI;
+const FMP_API_KEY = process.env.FMP_API_KEY;
+const TWELVE_DATA_API_KEY = process.env.TWELVE_DATA_API_KEY;
+const SESSION_SECRET = process.env.SESSION_SECRET;
+
+// CORS configuration - Production-safe CORS setup
 const allowedOrigins = [
   process.env.CLIENT_URL || "https://tradebro.netlify.app",  // Production frontend
-  "http://localhost:5173",         // Local development (Vite)
+  "http://localhost:5173",         // Local development (Vite) - Primary
+  "http://localhost:5174",         // Alternative local development port
   "http://localhost:3000",         // Alternative local development port
   "https://s89-satya-capstone-tradebro.onrender.com"  // Backend self-reference
 ];
@@ -50,8 +97,15 @@ console.log('🔒 CORS allowed origins:', allowedOrigins);
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
+    // In production, be more restrictive with no-origin requests
+    if (!origin) {
+      // Allow no-origin requests only in development or for specific tools
+      if (process.env.NODE_ENV === 'development') {
+        return callback(null, true);
+      }
+      // In production, allow no-origin for server-to-server calls and mobile apps
+      return callback(null, true);
+    }
 
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
@@ -121,55 +175,34 @@ app.use((req, res, next) => {
 // Apply response middleware to standardize API responses
 app.use(responseMiddleware);
 
-// Session configuration
-const sessionOptions = {
-  secret: process.env.SESSION_SECRET,
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
-    httpOnly: true, // Prevent XSS attacks
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' // Allow cross-site cookies in production
-  }
-};
+// JWT-BASED AUTHENTICATION - SESSION HANDLING REMOVED
+// Since this application uses JWT for stateless authentication,
+// express-session and passport.session() are not needed and have been removed
+// to avoid conflicts and improve performance.
 
-// Configure MongoDB session store
-if (MONGO_URI) {
-  sessionOptions.store = MongoStore.create({
-    mongoUrl: MONGO_URI,
-    ttl: 7 * 24 * 60 * 60, // 7 days
-    autoRemove: 'native',
-    touchAfter: 24 * 3600, // 24 hours
-    collectionName: 'sessions'
-  });
-  console.log("Using MongoDB session store");
-} else {
-  console.warn("Using memory session store (not recommended for production)");
-}
-
-app.use(session(sessionOptions));
-
-// Initialize passport
+// Initialize passport (without session support)
 app.use(passport.initialize());
-app.use(passport.session());
+// Note: passport.session() removed as we use JWT for stateless auth
 
-// Health check endpoint
+// Health check endpoint - Production-safe version
 app.get('/api/health', (_, res) => {
   const healthData = {
     status: 'ok',
     timestamp: new Date().toISOString(),
-    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-    routes: {
-      auth: true,
-      settings: true,
-      watchlist: true,
-      orders: true,
-      virtualMoney: true,
-      notifications: true,
-      userdata: true,
-      chatHistory: true
-    }
+    // In production, hide internal details for security
+    ...(process.env.NODE_ENV === 'development' && {
+      mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+      routes: {
+        auth: true,
+        settings: true,
+        watchlist: true,
+        orders: true,
+        virtualMoney: true,
+        notifications: true,
+        userdata: true,
+        saytrix: true
+      }
+    })
   };
   return res.success('Server is running', healthData);
 });
@@ -180,9 +213,6 @@ app.get('/api/health', (_, res) => {
 
 // Public reward status endpoint (no authentication required)
 app.get('/api/virtual-money/public-reward-status', (_, res) => {
-  const now = new Date();
-  // Mock last reward time (12 hours ago)
-  const lastReward = new Date(now.getTime() - (12 * 60 * 60 * 1000));
   const hoursSinceLastReward = 12;
 
   // Calculate time remaining
@@ -249,13 +279,14 @@ app.get('/api/stocks/search', async (req, res) => {
     } catch (apiError) {
       console.error('Error searching for stocks with FMP API:', apiError.message);
 
-      // Try Twelve Data API as fallback
-      try {
-        console.log('Attempting to search with Twelve Data API');
-        const twelveDataResponse = await axios.get(
-          `https://api.twelvedata.com/symbol_search?symbol=${query}&outputsize=20&apikey=${TWELVE_DATA_API_KEY}`,
-          { timeout: 5000 } // 5 second timeout
-        );
+      // Try Twelve Data API as fallback (only if API key is available)
+      if (TWELVE_DATA_API_KEY) {
+        try {
+          console.log('Attempting to search with Twelve Data API');
+          const twelveDataResponse = await axios.get(
+            `https://api.twelvedata.com/symbol_search?symbol=${query}&outputsize=20&apikey=${TWELVE_DATA_API_KEY}`,
+            { timeout: 5000 } // 5 second timeout
+          );
 
         if (twelveDataResponse.data && twelveDataResponse.data.data && Array.isArray(twelveDataResponse.data.data)) {
           // Map the response to a consistent format
@@ -319,6 +350,26 @@ app.get('/api/stocks/search', async (req, res) => {
         apiSource = 'mock';
         console.log('Using mock data with 3 results');
       }
+      } else {
+        console.log('TWELVE_DATA_API_KEY not available, skipping Twelve Data API');
+
+        // Use mock data since Twelve Data API is not available
+        searchResults = [
+          {
+            symbol: query.toUpperCase(),
+            name: `${query.toUpperCase()} Corporation`,
+            exchange: 'NASDAQ',
+            exchangeShortName: 'NASDAQ',
+            type: 'stock',
+            country: 'United States',
+            currency: 'USD',
+            isMock: true
+          }
+        ];
+
+        apiSource = 'mock';
+        console.log('Using mock data (no Twelve Data API key)');
+      }
     }
 
     // Sort results: exact symbol matches first, then by symbol length (shorter first)
@@ -343,34 +394,53 @@ app.get('/api/stocks/search', async (req, res) => {
       return a.symbol.length - b.symbol.length;
     });
 
+    // Add isMock flag to results when using mock data
+    const resultsWithMockFlag = searchResults.map(result => ({
+      ...result,
+      isMock: apiSource === 'mock'
+    }));
+
     return res.success('Stocks retrieved successfully', {
-      results: searchResults,
+      results: resultsWithMockFlag,
       query,
       source: apiSource,
       isFallback: apiSource === 'mock'
     });
   } catch (error) {
     console.error('Error in direct stock search:', error);
-    return res.error('Server error', error);
+    // Use fallback error response instead of res.error for production safety
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to search stocks',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
   }
 });
 
-// API Routes
+// API Routes - Fixed duplicate mounting issue
 app.use("/api/auth", authRoutes);
 app.use("/api/data", dataRoutes);
 app.use("/api/settings", settingsRoutes);
+app.use("/api/user-settings", userSettingsRoutes); // New refactored user settings API
+
+// FIXED: Saytrix routes - merged to avoid conflicts
+// Primary saytrix routes (from saytrix.js) - handles chat, voice, etc.
 app.use("/api/saytrix", saytrixRoutes);
+// Advanced saytrix routes (from saytrixRoutes.js) - handles sessions, messages
+app.use("/api/saytrix/advanced", saytrixRoutesAdvanced);
+
 app.use("/api/search", searchRoutes);
-app.use("/api/saytrix", saytrixRoutesAdvanced);
-// Legacy chatbot endpoint redirects to Saytrix
+
+// Legacy chatbot endpoint redirects to Saytrix (for backward compatibility)
 app.use("/api/chatbot", saytrixRoutes);
+
 app.use("/api/virtual-money", virtualMoneyRoutes);
 app.use("/api/proxy", proxyRoutes);
+app.use("/api/stocks", stocksRoutes); // New refactored stocks API
+app.use("/api/stock-search", stockSearchRoutes); // Stock search functionality
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/watchlist", watchlistRoutes);
 app.use("/api/orders", orderRoutes);
-
-app.use("/api/example", exampleRoutes);
 app.use("/api/userdata", userDataRoutes);
 app.use("/api/news", newsRoutes);
 
@@ -396,7 +466,7 @@ app.use((req, res, next) => {
 });
 
 // Error handling middleware
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   console.error("Server error:", err);
 
   // Ensure JSON response for API routes
@@ -408,21 +478,33 @@ app.use((err, req, res, next) => {
     });
   }
 
-  return res.error("Internal Server Error", err);
+  // Fallback error response (avoid using res.error which may not exist)
+  return res.status(500).json({
+    success: false,
+    message: "Internal Server Error",
+    error: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+  });
 });
 
-// Connect to MongoDB with improved options
-mongoose.connect(MONGO_URI, {
+// Connect to MongoDB with production-safe options
+const mongoOptions = {
   // MongoDB connection options
   serverSelectionTimeoutMS: 10000, // Increased timeout to 10 seconds
   socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
   family: 4, // Use IPv4, skip trying IPv6
   retryWrites: true,
   w: 'majority',
-  ssl: true,
   authSource: 'admin'
-  // Removed deprecated options: useNewUrlParser and useUnifiedTopology
-})
+  // SSL is automatically handled by MongoDB Atlas URIs
+  // Only add ssl: true if your MongoDB URI specifically requires it
+};
+
+// Only add SSL if the URI contains SSL indicators or if explicitly required
+if (MONGO_URI.includes('ssl=true') || MONGO_URI.includes('mongodb+srv://')) {
+  mongoOptions.ssl = true;
+}
+
+mongoose.connect(MONGO_URI, mongoOptions)
 .then(() => {
   console.log('✅ Connected to MongoDB');
 

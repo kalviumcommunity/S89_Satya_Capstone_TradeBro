@@ -6,15 +6,21 @@ require('dotenv').config();
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET;
 
-// Use localhost for development, production URL for production
+if (!JWT_SECRET) {
+  console.error('FATAL ERROR: JWT_SECRET environment variable is not set');
+  process.exit(1);
+}
+
 const isDevelopment = process.env.NODE_ENV !== 'production' || process.env.API_BASE_URL?.includes('localhost');
-const BASE_URL = isDevelopment ? "http://localhost:5000" : (process.env.API_BASE_URL || "https://s89-satya-capstone-tradebro.onrender.com");
+const BASE_URL = isDevelopment ? "http://localhost:5001" : (process.env.API_BASE_URL || "https://s89-satya-capstone-tradebro.onrender.com");
 const CALLBACK_URL = BASE_URL + "/api/auth/google/callback";
 
 console.log('Google OAuth Configuration:');
 console.log('- GOOGLE_CLIENT_ID:', GOOGLE_CLIENT_ID ? 'Set' : 'Not set');
 console.log('- GOOGLE_CLIENT_SECRET:', GOOGLE_CLIENT_SECRET ? 'Set' : 'Not set');
+console.log('- JWT_SECRET:', JWT_SECRET ? 'Set' : 'Not set');
 console.log('- CALLBACK_URL:', CALLBACK_URL);
 
 if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
@@ -25,22 +31,34 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
         clientSecret: GOOGLE_CLIENT_SECRET,
         callbackURL: CALLBACK_URL
       },
-      async (accessToken, refreshToken, profile, done) => {
+      async (_accessToken, _refreshToken, profile, done) => {
         try {
           console.log("Google Profile:", profile);
 
-          let user = await User.findOne({ email: profile.emails[0].value });
+          // Safely access profile.emails with proper validation
+          if (!profile.emails || !Array.isArray(profile.emails) || profile.emails.length === 0) {
+            console.error("Google profile missing email information");
+            return done(new Error("Email not provided by Google"), null);
+          }
+
+          const email = profile.emails[0].value;
+          if (!email) {
+            console.error("Google profile email is empty");
+            return done(new Error("Invalid email from Google"), null);
+          }
+
+          let user = await User.findOne({ email });
           let isNewUser = false;
 
           if (!user) {
             isNewUser = true;
             user = new User({
-              username: profile.displayName || profile.emails[0].value.split('@')[0],
-              email: profile.emails[0].value,
+              username: profile.displayName || email.split('@')[0],
+              email: email,
               fullName: profile.displayName ||
                 ((profile.name?.givenName || "") + " " + (profile.name?.familyName || "")).trim() ||
-                profile.emails[0].value.split('@')[0],
-              password: "", // Use empty string for Google users
+                email.split('@')[0],
+              authProvider: "google",
               profileImage: profile.photos?.[0]?.value || null,
             });
             await user.save();
@@ -59,9 +77,11 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
             }
           }
 
-          user.isNewUser = isNewUser;
+          if (!JWT_SECRET) {
+            console.error("JWT_SECRET is not defined when trying to sign token");
+            return done(new Error("Server configuration error"), null);
+          }
 
-          // Generate JWT token
           const token = jwt.sign(
             {
               id: user._id,
@@ -69,13 +89,24 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
               username: user.username,
               fullName: user.fullName
             },
-            process.env.JWT_SECRET,
+            JWT_SECRET,
             { expiresIn: "7d" }
           );
 
-          user.token = token;
+          
+          const userResponse = {
+            _id: user._id,
+            id: user._id,
+            email: user.email,
+            username: user.username,
+            fullName: user.fullName,
+            profileImage: user.profileImage,
+            authProvider: user.authProvider || "google",
+            isNewUser: isNewUser,
+            token: token
+          };
 
-          return done(null, user);
+          return done(null, userResponse);
         } catch (err) {
           console.error("Error during Google authentication:", err);
           return done(err, null);
@@ -87,21 +118,5 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
   console.warn("Google OAuth credentials not found. Google authentication will not be available.");
 }
 
-passport.serializeUser((user, done) => {
-  done(null, user.id || user._id);
-});
-
-passport.deserializeUser(async (id, done) => {
-  try {
-    const user = await User.findById(id);
-    if (!user) {
-      return done(new Error("User not found"), null);
-    }
-    done(null, user);
-  } catch (err) {
-    console.error("Error during deserialization:", err);
-    done(err, null);
-  }
-});
 
 module.exports = passport;

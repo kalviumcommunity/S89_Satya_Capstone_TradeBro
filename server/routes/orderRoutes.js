@@ -4,190 +4,242 @@ const Order = require('../models/Order');
 const VirtualMoney = require('../models/VirtualMoney');
 const User = require('../models/User');
 const { provideDefaultUser } = require('../middleware/defaultUser');
-const axios = require('axios');
+const { createRateLimit } = require('../middleware/rateLimiter');
+const {
+  validateOrderPlacement,
+  validateOrderQuery
+} = require('../middleware/validation');
+const {
+  calculateOrderTotal,
+  validateOrderBusinessRules,
+  executeMarketOrder,
+  createLimitOrder,
+  sendOrderNotification,
+  generateIdempotencyKey
+} = require('../utils/orderHelpers');
 
-// Get all orders for the current user
-router.get('/all', provideDefaultUser, async (req, res) => {
+// Rate limiting for order placement
+const orderRateLimit = createRateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 10, // 10 orders per minute per user
+  message: {
+    success: false,
+    message: 'Too many orders placed. Please try again later.',
+    code: 'RATE_LIMIT_EXCEEDED',
+    retryAfter: '1 minute'
+  },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// Idempotency store (in production, use Redis)
+const idempotencyStore = new Map();
+
+// Get all orders for the current user with pagination and filters
+router.get('/all', provideDefaultUser, validateOrderQuery, async (req, res) => {
   try {
-    const orders = await Order.find({ userId: req.user.id })
-      .sort({ createdAt: -1 });
+    const {
+      page = 1,
+      limit = 20,
+      status,
+      type,
+      orderType,
+      stockSymbol,
+      sort = '-createdAt'
+    } = req.query;
+
+    const skip = (page - 1) * limit;
+
+    // Build query with filters
+    const query = { userId: req.user.id };
+    if (status) query.status = status;
+    if (type) query.type = type;
+    if (orderType) query.orderType = orderType;
+    if (stockSymbol) query.stockSymbol = stockSymbol.toUpperCase();
+
+    // Get total count for pagination
+    const totalCount = await Order.countDocuments(query);
+    const totalPages = Math.ceil(totalCount / limit);
+
+    // Get orders with pagination
+    const orders = await Order.find(query)
+      .sort(sort)
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean();
+
+    // Calculate summary statistics
+    const summary = await Order.aggregate([
+      { $match: { userId: req.user.id } },
+      {
+        $group: {
+          _id: null,
+          totalOrders: { $sum: 1 },
+          filledOrders: {
+            $sum: { $cond: [{ $eq: ['$status', 'FILLED'] }, 1, 0] }
+          },
+          openOrders: {
+            $sum: { $cond: [{ $in: ['$status', ['PENDING', 'OPEN']] }, 1, 0] }
+          },
+          cancelledOrders: {
+            $sum: { $cond: [{ $eq: ['$status', 'CANCELLED'] }, 1, 0] }
+          },
+          totalValue: {
+            $sum: { $cond: [{ $eq: ['$status', 'FILLED'] }, '$total', 0] }
+          }
+        }
+      }
+    ]);
 
     res.status(200).json({
       success: true,
-      data: orders
+      data: orders,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages,
+        totalCount,
+        limit: parseInt(limit),
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1
+      },
+      summary: summary[0] || {
+        totalOrders: 0,
+        filledOrders: 0,
+        openOrders: 0,
+        cancelledOrders: 0,
+        totalValue: 0
+      },
+      filters: {
+        status,
+        type,
+        orderType,
+        stockSymbol,
+        sort
+      }
     });
   } catch (error) {
     console.error('Error getting orders:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error',
-      error: error.message
+      message: 'Failed to retrieve orders',
+      code: 'FETCH_ERROR',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
     });
   }
 });
 
-// Place a new order
-router.post('/place', provideDefaultUser, async (req, res) => {
+// Place a new order with comprehensive validation and business logic
+router.post('/place', provideDefaultUser, orderRateLimit, validateOrderPlacement, async (req, res) => {
   try {
-    const {
+    let {
       type,
       stockSymbol,
       stockName,
       quantity,
       price,
       orderType,
-      limitPrice
+      limitPrice,
+      idempotencyKey
     } = req.body;
 
-    // Validate input
-    if (!type || !stockSymbol || !stockName || !quantity || !price || !orderType) {
-      return res.status(400).json({
-        success: false,
-        message: 'Missing required fields'
-      });
+    // Generate idempotency key if not provided
+    if (!idempotencyKey) {
+      idempotencyKey = generateIdempotencyKey();
     }
 
-    if (quantity <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Quantity must be greater than 0'
-      });
+    // Check for duplicate idempotency key
+    if (idempotencyStore.has(idempotencyKey)) {
+      const existingResult = idempotencyStore.get(idempotencyKey);
+      return res.status(200).json(existingResult);
     }
 
-    if (price <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Price must be greater than 0'
-      });
-    }
-
-    if (orderType === 'LIMIT' && (!limitPrice || limitPrice <= 0)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Limit price is required for limit orders and must be greater than 0'
-      });
-    }
+    // Normalize stock symbol
+    stockSymbol = stockSymbol.toUpperCase();
 
     // Get user details
     const user = await User.findById(req.user.id);
     if (!user) {
-      return res.status(404).json({
+      const errorResponse = {
         success: false,
-        message: 'User not found'
-      });
+        message: 'User not found',
+        code: 'USER_NOT_FOUND'
+      };
+      idempotencyStore.set(idempotencyKey, errorResponse);
+      return res.status(404).json(errorResponse);
     }
 
-    // For market orders, execute immediately
+    // Get or create virtual money account
+    let virtualMoney = await VirtualMoney.findOne({ userId: req.user.id });
+    if (!virtualMoney) {
+      virtualMoney = new VirtualMoney({
+        userId: req.user.id,
+        userEmail: user.email,
+        balance: 10000
+      });
+      await virtualMoney.save();
+    }
+
+    // Validate business rules
+    const orderData = { type, stockSymbol, stockName, quantity, price, orderType, limitPrice, idempotencyKey };
+    const validation = await validateOrderBusinessRules(orderData, user, virtualMoney);
+
+    if (!validation.success) {
+      idempotencyStore.set(idempotencyKey, validation);
+      return res.status(400).json(validation);
+    }
+
+    let result;
+
+    // Execute based on order type
     if (orderType === 'MARKET') {
-      // Get virtual money account
-      let virtualMoney = await VirtualMoney.findOne({ userId: req.user.id });
-
-      if (!virtualMoney) {
-        virtualMoney = new VirtualMoney({
-          userId: req.user.id,
-          userEmail: user.email,
-          balance: 10000
-        });
-        await virtualMoney.save();
-      }
-
-      // Calculate total
-      const total = quantity * price;
-
-      // For buy orders, check if user has enough balance
-      if (type === 'BUY') {
-        if (virtualMoney.balance < total) {
-          return res.status(400).json({
-            success: false,
-            message: `Insufficient balance. You need ₹${total.toLocaleString('en-IN')} but have ₹${virtualMoney.balance.toLocaleString('en-IN')}.`
-          });
-        }
-
-        // Execute buy
-        const result = await virtualMoney.buyStock(stockSymbol, quantity, price);
-
-        if (!result.success) {
-          return res.status(400).json({
-            success: false,
-            message: result.message
-          });
-        }
-      } else if (type === 'SELL') {
-        // For sell orders, check if user has enough shares
-        const result = await virtualMoney.sellStock(stockSymbol, quantity, price);
-
-        if (!result.success) {
-          return res.status(400).json({
-            success: false,
-            message: result.message
-          });
-        }
-      }
-
-      // Create and save the order as FILLED
-      const order = new Order({
-        userId: req.user.id,
-        userEmail: user.email,
-        type,
-        stockSymbol,
-        stockName,
-        quantity,
-        price,
-        orderType,
-        limitPrice: orderType === 'LIMIT' ? limitPrice : null,
-        status: 'FILLED',
-        filledAt: new Date(),
-        total: quantity * price
-      });
-
-      await order.save();
-
-      return res.status(201).json({
-        success: true,
-        message: `${type === 'BUY' ? 'Buy' : 'Sell'} order executed successfully`,
-        data: {
-          order,
-          balance: virtualMoney.balance,
-          portfolio: virtualMoney.portfolio
-        }
-      });
+      result = await executeMarketOrder(orderData, user, virtualMoney);
     } else {
-      // For limit orders, just create the order
-      const order = new Order({
-        userId: req.user.id,
-        userEmail: user.email,
-        type,
-        stockSymbol,
-        stockName,
-        quantity,
-        price,
-        orderType,
-        limitPrice,
-        total: quantity * price
-      });
-
-      await order.save();
-
-      return res.status(201).json({
-        success: true,
-        message: `${type === 'BUY' ? 'Buy' : 'Sell'} limit order placed successfully`,
-        data: { order }
-      });
+      result = await createLimitOrder(orderData, user);
     }
+
+    // Store result in idempotency cache (expire after 1 hour)
+    idempotencyStore.set(idempotencyKey, result);
+    setTimeout(() => idempotencyStore.delete(idempotencyKey), 60 * 60 * 1000);
+
+    if (result.success) {
+      res.status(201).json(result);
+    } else {
+      res.status(400).json(result);
+    }
+
   } catch (error) {
     console.error('Error placing order:', error);
-    res.status(500).json({
+
+    const errorResponse = {
       success: false,
-      message: 'Server error',
-      error: error.message
-    });
+      message: 'Order placement failed',
+      code: 'PLACEMENT_ERROR',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    };
+
+    // Store error in idempotency cache
+    if (idempotencyKey) {
+      idempotencyStore.set(idempotencyKey, errorResponse);
+    }
+
+    res.status(500).json(errorResponse);
   }
 });
 
-// Cancel an order
+// Cancel an order with enhanced validation and notifications
 router.post('/cancel/:orderId', provideDefaultUser, async (req, res) => {
   try {
     const { orderId } = req.params;
+    const { reason } = req.body;
+
+    // Validate ObjectId format
+    if (!orderId.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid order ID format',
+        code: 'INVALID_ORDER_ID'
+      });
+    }
 
     const order = await Order.findOne({
       _id: orderId,
@@ -197,30 +249,77 @@ router.post('/cancel/:orderId', provideDefaultUser, async (req, res) => {
     if (!order) {
       return res.status(404).json({
         success: false,
-        message: 'Order not found'
+        message: 'Order not found or does not belong to you',
+        code: 'ORDER_NOT_FOUND'
       });
     }
 
-    const result = await order.cancelOrder();
+    const result = await order.cancelOrder(reason);
 
     if (result.success) {
+      // Send cancellation notification
+      const user = await User.findById(req.user.id);
+      if (user) {
+        await sendOrderNotification(user, order, 'CANCELLED');
+      }
+
       res.status(200).json({
         success: true,
         message: result.message,
-        data: { order }
+        data: result.data
       });
     } else {
-      res.status(400).json({
-        success: false,
-        message: result.message
-      });
+      res.status(400).json(result);
     }
   } catch (error) {
     console.error('Error cancelling order:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error',
-      error: error.message
+      message: 'Order cancellation failed',
+      code: 'CANCELLATION_ERROR',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+});
+
+// Get order by ID
+router.get('/:orderId', provideDefaultUser, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    // Validate ObjectId format
+    if (!orderId.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid order ID format',
+        code: 'INVALID_ORDER_ID'
+      });
+    }
+
+    const order = await Order.findOne({
+      _id: orderId,
+      userId: req.user.id
+    });
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found',
+        code: 'ORDER_NOT_FOUND'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: order
+    });
+  } catch (error) {
+    console.error('Error getting order:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve order',
+      code: 'FETCH_ERROR',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
     });
   }
 });

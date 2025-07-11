@@ -48,9 +48,23 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: 'No bio provided yet.'
     },
+    authProvider: {
+        type: String,
+        enum: ['local', 'google'],
+        default: 'local'
+    },
     createdAt: {
         type: Date,
         default: Date.now
+    },
+    referralCode: {
+        type: String,
+        unique: true,
+        sparse: true // Allows multiple null values
+    },
+    referredBy: {
+        type: String,
+        default: null
     }
 });
 

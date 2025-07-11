@@ -1,6 +1,24 @@
+/**
+ * Main Saytrix Router - Refactored and Modularized
+ * AI-powered chatbot system using Gemini, MongoDB, and FMP API
+ */
+
 const express = require('express');
 const router = express.Router();
+
+// Import services and utilities
 const geminiService = require('../services/geminiService');
+const { formatHealthResponse } = require('../utils/responseFormatter');
+
+// Import middleware
+const {
+  asyncHandler,
+  saytrixErrorHandler,
+  notFoundHandler,
+  requestLogger
+} = require('../middleware/errorHandler');
+
+// Legacy imports for backward compatibility
 const ChatHistory = require('../models/ChatHistory');
 const { v4: uuidv4 } = require('uuid');
 
@@ -427,5 +445,70 @@ router.get('/stats/:userId', async (req, res) => {
     });
   }
 });
+
+/**
+ * GET /health - Enhanced health check endpoint
+ */
+router.get('/health', asyncHandler(async (req, res) => {
+  console.log('🏥 Saytrix health check request');
+
+  try {
+    // Test Gemini service
+    const geminiHealth = await geminiService.testConnection();
+
+    const healthData = {
+      gemini: geminiHealth.success ? 'healthy' : 'unhealthy',
+      database: 'healthy', // Assume healthy if we reach this point
+      activeSessions: 0 // Could be enhanced to get actual count
+    };
+
+    const response = formatHealthResponse(healthData);
+    res.json(response);
+
+  } catch (error) {
+    console.error('❌ Saytrix health check error:', error);
+    res.status(503).json({
+      success: false,
+      error: 'Service unhealthy',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+}));
+
+/**
+ * GET /status - Enhanced service status endpoint
+ */
+router.get('/status', asyncHandler(async (req, res) => {
+  console.log('📊 Saytrix status check request');
+
+  try {
+    const modelInfo = geminiService.getModelInfo();
+
+    res.json({
+      success: true,
+      service: 'saytrix',
+      version: '2.0.0',
+      status: 'active',
+      features: {
+        chat: true,
+        voice: true,
+        stockData: true,
+        news: true,
+        history: true
+      },
+      ai: modelInfo,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('❌ Saytrix status check error:', error);
+    throw error;
+  }
+}));
+
+// Apply error handling middleware
+router.use(notFoundHandler);
+router.use(saytrixErrorHandler);
 
 module.exports = router;

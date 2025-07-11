@@ -1,35 +1,57 @@
 
 /**
- * News Routes
- * This file handles all news-related API endpoints
+ * Enhanced News Routes
+ * Features: External cache, Winston logging, rate limiting, validation, sentiment analysis
  */
 
 const express = require('express');
 const axios = require('axios');
+const rateLimit = require('express-rate-limit');
 const router = express.Router();
-require('dotenv').config();
 
-// Get API key from environment variables
+// Import services and utilities
+const cacheService = require('../services/cacheService');
+const logger = require('../config/logger');
+const {
+  generateMockNews,
+  formatNewsData,
+  createCacheKey
+} = require('../utils/newsUtils');
+const {
+  validateSearchMiddleware,
+  validateCategoryMiddleware,
+  validateGeneralMiddleware
+} = require('../validation/newsValidation');
+const asyncHandler = require('../utils/asyncHandler');
+
+// Configuration
 const FMP_API_KEY = process.env.FMP_API_KEY;
+const API_TIMEOUT = 10000; // 10 seconds
 
-// Check if API key is available
+// Validate FMP API key
 if (!FMP_API_KEY) {
-  console.warn('WARNING: FMP_API_KEY environment variable is not set. News API will use mock data.');
+  logger.error('FMP_API_KEY not found in environment variables');
 }
 
-// Cache for API responses to reduce redundant calls
-const cache = {
-  data: {},
-  timestamps: {},
-  maxAge: 15 * 60 * 1000, // 15 minutes cache
-};
+// Rate limiting for news endpoints (20 requests per 10 minutes per IP)
+const newsRateLimit = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 minutes
+  max: 20, // Limit each IP to 20 requests per windowMs
+  message: {
+    success: false,
+    message: 'Too many news requests. Please try again in 10 minutes.',
+    retryAfter: '10 minutes'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Custom key generator for better tracking
+  keyGenerator: (req) => {
+    return `news_${req.ip}_${req.method}_${req.path}`;
+  }
+});
 
-// Helper function to check if cache is valid
-const isCacheValid = (endpoint) => {
-  if (!cache.timestamps[endpoint]) return false;
-  const now = Date.now();
-  return now - cache.timestamps[endpoint] < cache.maxAge;
-};
+// Apply rate limiting to all news routes
+router.use(newsRateLimit);
 
 /**
  * @route   GET /api/news
@@ -304,64 +326,5 @@ router.get('/search', async (req, res) => {
     }
   }
 });
-
-// Helper function to generate mock news data
-function generateMockNews(category = 'general', query = null) {
-  // Define mock news data with different categories
-
-  const mockNews = [
-    {
-      id: 1,
-      title: "Stock Market Reaches All-Time High",
-      description: "Major indices hit record levels as tech stocks surge on positive earnings reports.",
-      source: "Financial Times",
-      url: "https://example.com/news/1",
-      image: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80",
-      publishedAt: new Date(Date.now() - 3600000).toISOString(),
-      category: "markets",
-      symbol: "SPY"
-    },
-    {
-      id: 2,
-      title: "Central Bank Announces Interest Rate Decision",
-      description: "The central bank has decided to maintain current interest rates, citing stable inflation and employment figures.",
-      source: "Bloomberg",
-      url: "https://example.com/news/2",
-      image: "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80",
-      publishedAt: new Date(Date.now() - 7200000).toISOString(),
-      category: "economy",
-      symbol: "DJI"
-    },
-    {
-      id: 3,
-      title: "Tech Giant Announces New Product Line",
-      description: "Leading technology company unveils innovative products expected to disrupt the market.",
-      source: "TechCrunch",
-      url: "https://example.com/news/3",
-      image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80",
-      publishedAt: new Date(Date.now() - 10800000).toISOString(),
-      category: "technology",
-      symbol: "AAPL"
-    }
-  ];
-
-  // Filter by category if provided
-  let filteredNews = mockNews;
-  if (category && category !== 'general') {
-    filteredNews = mockNews.filter(item => item.category === category);
-  }
-
-  // Filter by query if provided
-  if (query) {
-    const lowerQuery = query.toLowerCase();
-    filteredNews = filteredNews.filter(item =>
-      item.title.toLowerCase().includes(lowerQuery) ||
-      item.description.toLowerCase().includes(lowerQuery) ||
-      (item.symbol && item.symbol.toLowerCase().includes(lowerQuery))
-    );
-  }
-
-  return filteredNews.length > 0 ? filteredNews : mockNews;
-}
 
 module.exports = router;
