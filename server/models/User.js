@@ -53,6 +53,15 @@ const userSchema = new mongoose.Schema({
         enum: ['local', 'google'],
         default: 'local'
     },
+    googleId: {
+        type: String,
+        unique: true,
+        sparse: true // Allows multiple null values
+    },
+    emailVerified: {
+        type: Boolean,
+        default: false
+    },
     createdAt: {
         type: Date,
         default: Date.now

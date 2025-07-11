@@ -1,6 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const passport = require('passport');
+const { OAuth2Client } = require('google-auth-library');
 
 // Import models
 const User = require('../models/User');
@@ -21,6 +22,9 @@ const {
 } = require('../config/constants');
 
 const router = express.Router();
+
+// Initialize Google OAuth2 client
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // Rate limiting for auth routes
 const authRateLimit = createRateLimit({
@@ -215,7 +219,144 @@ router.put('/profile', verifyTokenMiddleware, validateProfileUpdate, asyncHandle
   });
 }));
 
-// Google OAuth routes
+// Google OAuth endpoint for frontend credential verification
+router.post('/google', authRateLimit, asyncHandler(async (req, res) => {
+  try {
+    const { credential } = req.body;
+
+    // Validate input
+    if (!credential) {
+      return res.status(400).json({
+        success: false,
+        message: 'Google credential is required'
+      });
+    }
+
+    // Verify the Google ID token
+    let ticket;
+    try {
+      ticket = await googleClient.verifyIdToken({
+        idToken: credential,
+        audience: process.env.GOOGLE_CLIENT_ID
+      });
+    } catch (verifyError) {
+      console.error('Google token verification failed:', verifyError.message);
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid Google credential'
+      });
+    }
+
+    // Extract user information from the verified token
+    const payload = ticket.getPayload();
+    const {
+      sub: googleId,
+      email,
+      name,
+      given_name: firstName,
+      family_name: lastName,
+      picture: profileImage,
+      email_verified: emailVerified
+    } = payload;
+
+    // Validate required fields
+    if (!email || !emailVerified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email verification required'
+      });
+    }
+
+    // Check if user already exists
+    let user = await User.findOne({ email });
+    let isNewUser = false;
+
+    if (user) {
+      // Update existing user with Google info if needed
+      let updateFields = {};
+
+      if (!user.googleId) updateFields.googleId = googleId;
+      if (!user.profileImage && profileImage) updateFields.profileImage = profileImage;
+      if (!user.fullName && name) updateFields.fullName = name;
+
+      if (Object.keys(updateFields).length > 0) {
+        user = await User.findByIdAndUpdate(
+          user._id,
+          { $set: updateFields },
+          { new: true, runValidators: true }
+        );
+      }
+    } else {
+      // Create new user
+      isNewUser = true;
+
+      // Generate unique username from email
+      let username = email.split('@')[0];
+      let usernameExists = await User.findOne({ username });
+      let counter = 1;
+
+      while (usernameExists) {
+        username = `${email.split('@')[0]}${counter}`;
+        usernameExists = await User.findOne({ username });
+        counter++;
+      }
+
+      user = new User({
+        username,
+        email,
+        fullName: name || `${firstName || ''} ${lastName || ''}`.trim() || username,
+        profileImage: profileImage || null,
+        googleId,
+        authProvider: 'google',
+        emailVerified: true,
+        ...USER_DEFAULTS
+      });
+
+      await user.save();
+    }
+
+    // Generate JWT token
+    const token = generateToken(user);
+
+    // Create or update user data
+    const userData = await createOrUpdateUserData(user._id, user.email);
+    if (!userData) {
+      console.warn('Failed to create/update user data for Google OAuth user:', user._id);
+    }
+
+    // Prepare user response
+    const userResponse = createUserResponse(user);
+
+    // Log successful authentication
+    console.log(`Google OAuth ${isNewUser ? 'signup' : 'login'} successful:`, {
+      userId: user._id,
+      email: user.email,
+      isNewUser
+    });
+
+    // Return success response
+    res.status(200).json({
+      success: true,
+      message: isNewUser ? SUCCESS_MESSAGES.SIGNUP_SUCCESS : SUCCESS_MESSAGES.LOGIN_SUCCESS,
+      token,
+      user: userResponse,
+      isNewUser
+    });
+
+  } catch (error) {
+    console.error('Google OAuth error:', {
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error during Google authentication'
+    });
+  }
+}));
+
+// Google OAuth routes (existing Passport.js implementation)
 router.get('/google', passport.authenticate('google', {
   scope: ['profile', 'email']
 }));
