@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast, ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
-import AppRoutes from './AppRoutes';
+import AppRoutes from './Approutes';
 import Sidebar from './components/layout/Sidebar'
 import AuthStatus from './components/auth/AuthStatus'
 import GlobalSearchModal from './components/common/GlobalSearchModal'
