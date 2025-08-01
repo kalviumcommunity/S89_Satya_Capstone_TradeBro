@@ -3,6 +3,7 @@ const router = express.Router();
 const VirtualMoney = require('../models/VirtualMoney');
 const User = require('../models/User');
 const { provideDefaultUser } = require('../middleware/defaultUser');
+const { verifyToken } = require('../middleware/auth');
 
 /**
  * Calculate the day streak for a user (consecutive days they've claimed rewards)
@@ -708,6 +709,59 @@ router.get('/portfolio', provideDefaultUser, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
+      error: error.message
+    });
+  }
+});
+
+// Sync balance from client
+router.post('/sync-balance', verifyToken, async (req, res) => {
+  try {
+    const { balance, totalRewards, loginStreak, lastClaimDate } = req.body;
+
+    let virtualMoney = await VirtualMoney.findOne({ userId: req.user.id });
+
+    if (!virtualMoney) {
+      // Create new account if doesn't exist
+      const user = await User.findById(req.user.id);
+      virtualMoney = new VirtualMoney({
+        userId: req.user.id,
+        userEmail: user.email,
+        balance: balance || 10000
+      });
+    } else {
+      // Update existing account
+      virtualMoney.balance = balance;
+      virtualMoney.availableCash = balance;
+
+      // Update daily rewards info if provided
+      if (totalRewards !== undefined) {
+        virtualMoney.totalRewards = totalRewards;
+      }
+      if (loginStreak !== undefined) {
+        virtualMoney.loginStreak = loginStreak;
+      }
+      if (lastClaimDate) {
+        virtualMoney.lastLoginReward = new Date(lastClaimDate);
+      }
+    }
+
+    await virtualMoney.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Balance synced successfully',
+      data: {
+        balance: virtualMoney.balance,
+        balanceFormatted: `₹${virtualMoney.balance.toLocaleString('en-IN')}`
+      }
+    });
+
+  } catch (error) {
+    console.error('Error syncing balance:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to sync balance',
       error: error.message
     });
   }
