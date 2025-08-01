@@ -32,17 +32,66 @@ const chatHistorySchema = new mongoose.Schema({
         required: true
       },
 
-      // Who sent the message: 'user' or 'bot'
+      // Who sent the message: 'user' or 'assistant'
       sender: {
         type: String,
-        enum: ['user', 'bot'],
+        enum: ['user', 'assistant', 'bot'],
         required: true
+      },
+
+      // Message type for better categorization
+      messageType: {
+        type: String,
+        enum: ['text', 'stock_query', 'news_query', 'educational', 'voice_input'],
+        default: 'text'
+      },
+
+      // Stock data associated with the message (if any)
+      stockData: {
+        symbol: String,
+        name: String,
+        price: Number,
+        change: Number,
+        changesPercentage: Number,
+        marketCap: Number,
+        pe: Number,
+        eps: Number,
+        sector: String,
+        industry: String
+      },
+
+      // Additional data (news, market movers, etc.)
+      additionalData: {
+        type: mongoose.Schema.Types.Mixed,
+        default: null
+      },
+
+      // Voice input metadata
+      voiceMetadata: {
+        isVoiceInput: {
+          type: Boolean,
+          default: false
+        },
+        confidence: {
+          type: Number,
+          default: null
+        },
+        language: {
+          type: String,
+          default: 'en-US'
+        }
       },
 
       // When the message was sent
       timestamp: {
         type: Date,
         default: Date.now
+      },
+
+      // Message ID for tracking
+      messageId: {
+        type: String,
+        default: () => new mongoose.Types.ObjectId().toString()
       }
     }
   ],

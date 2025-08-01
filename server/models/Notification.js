@@ -27,6 +27,10 @@ const notificationSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  readAt: {
+    type: Date,
+    default: null
+  },
   link: {
     type: String,
     default: null
@@ -37,8 +41,11 @@ const notificationSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-// Add index for sorting by createdAt
+// Add indexes for better query performance
 notificationSchema.index({ createdAt: -1 });
+notificationSchema.index({ userId: 1, createdAt: -1 });
+notificationSchema.index({ userId: 1, read: 1 });
+notificationSchema.index({ userId: 1, type: 1, title: 1 }); // For duplicate detection
 
 const Notification = mongoose.model('Notification', notificationSchema);
 

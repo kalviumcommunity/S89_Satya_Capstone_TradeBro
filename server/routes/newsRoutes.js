@@ -1,35 +1,57 @@
 
 /**
- * News Routes
- * This file handles all news-related API endpoints
+ * Enhanced News Routes
+ * Features: External cache, Winston logging, rate limiting, validation, sentiment analysis
  */
 
 const express = require('express');
 const axios = require('axios');
+const rateLimit = require('express-rate-limit');
 const router = express.Router();
-require('dotenv').config();
 
-// Get API key from environment variables
+// Import services and utilities
+const cacheService = require('../services/cacheService');
+const logger = require('../config/logger');
+const {
+  generateMockNews,
+  formatNewsData,
+  createCacheKey
+} = require('../utils/newsUtils');
+const {
+  validateSearchMiddleware,
+  validateCategoryMiddleware,
+  validateGeneralMiddleware
+} = require('../validation/newsValidation');
+const asyncHandler = require('../utils/asyncHandler');
+
+// Configuration
 const FMP_API_KEY = process.env.FMP_API_KEY;
+const API_TIMEOUT = 10000; // 10 seconds
 
-// Check if API key is available
+// Validate FMP API key
 if (!FMP_API_KEY) {
-  console.warn('WARNING: FMP_API_KEY environment variable is not set. News API will use mock data.');
+  logger.error('FMP_API_KEY not found in environment variables');
 }
 
-// Cache for API responses to reduce redundant calls
-const cache = {
-  data: {},
-  timestamps: {},
-  maxAge: 15 * 60 * 1000, // 15 minutes cache
-};
+// Rate limiting for news endpoints (20 requests per 10 minutes per IP)
+const newsRateLimit = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 minutes
+  max: 20, // Limit each IP to 20 requests per windowMs
+  message: {
+    success: false,
+    message: 'Too many news requests. Please try again in 10 minutes.',
+    retryAfter: '10 minutes'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Custom key generator for better tracking
+  keyGenerator: (req) => {
+    return `news_${req.ip}_${req.method}_${req.path}`;
+  }
+});
 
-// Helper function to check if cache is valid
-const isCacheValid = (endpoint) => {
-  if (!cache.timestamps[endpoint]) return false;
-  const now = Date.now();
-  return now - cache.timestamps[endpoint] < cache.maxAge;
-};
+// Apply rate limiting to all news routes
+router.use(newsRateLimit);
 
 /**
  * @route   GET /api/news
@@ -54,81 +76,45 @@ router.get('/', async (req, res) => {
       });
     }
 
-    // Fetch from FMP API
-    console.log(`Fetching news from FMP API with query: ${q || 'general'}`);
+    // For now, always use mock data since API key might be expired
+    console.log(`Returning mock news data for query: ${q || 'general'}`);
 
-    // If we have a search query, use it to filter news
-    const apiUrl = q
-      ? `https://financialmodelingprep.com/api/v3/stock_news?tickers=${q}&limit=50&apikey=${FMP_API_KEY}`
-      : `https://financialmodelingprep.com/api/v3/stock_news?limit=50&apikey=${FMP_API_KEY}`;
+    // Return mock data, filtered by query if provided
+    const mockNews = generateMockNews('general', q);
 
-    const response = await axios.get(apiUrl, { timeout: 8000 }); // 8 second timeout
+    // Update cache with mock data
+    cache.data[cacheKey] = mockNews;
+    cache.timestamps[cacheKey] = Date.now();
 
-    if (response.data && Array.isArray(response.data)) {
-      // Format the news data
-      const formattedNews = response.data.map((item, index) => ({
-        id: item.id || index,
-        title: item.title,
-        description: item.text,
-        source: item.site,
-        url: item.url,
-        image: item.image || `https://source.unsplash.com/random/800x600?finance,${index}`,
-        publishedAt: item.publishedDate,
-        category: item.category || 'general',
-        symbol: item.symbol
-      }));
+    return res.json({
+      success: true,
+      source: 'mock',
+      data: mockNews,
+      message: 'Using mock data - API temporarily unavailable'
+    });
 
-      // Update cache
-      cache.data[cacheKey] = formattedNews;
-      cache.timestamps[cacheKey] = Date.now();
-
-      return res.json({
-        success: true,
-        source: 'fmp',
-        data: formattedNews
-      });
-    } else {
-      throw new Error('Invalid response format from FMP API');
-    }
   } catch (error) {
-    console.error('Error fetching news:', error.message);
+    console.error('Error in news route:', error.message);
 
-    // Get query parameter for mock data filtering
-    const { q } = req.query;
-
-    try {
-      // Return mock data if API fails, filtered by query if provided
-      const mockNews = generateMockNews('general', q);
-
-      return res.json({
-        success: true,
-        source: 'mock',
-        data: mockNews,
-        message: 'Using mock data due to API errors'
-      });
-    } catch (mockError) {
-      console.error('Error generating mock news:', mockError.message);
-
-      // Fallback to a minimal set of news data if even mock generation fails
-      return res.json({
-        success: true,
-        source: 'fallback',
-        data: [
-          {
-            id: 1,
-            title: "Market Update",
-            description: "Latest market news and updates.",
-            source: "TradeBro",
-            url: "#",
-            image: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1470&q=80",
-            publishedAt: new Date().toISOString(),
-            category: "general",
-            symbol: "MARKET"
-          }
-        ],
-        message: 'Using fallback data due to API errors'
-      });
-    }
+    // Fallback to a minimal set of news data if even mock generation fails
+    return res.json({
+      success: true,
+      source: 'fallback',
+      data: [
+        {
+          id: 1,
+          title: "Market Update",
+          description: "Latest market news and updates.",
+          source: "TradeBro",
+          url: "#",
+          image: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1470&q=80",
+          publishedAt: new Date().toISOString(),
+          category: "general",
+          symbol: "MARKET"
+        }
+      ],
+      message: 'Using fallback data due to errors'
+    });
   }
 });
 
@@ -340,64 +326,5 @@ router.get('/search', async (req, res) => {
     }
   }
 });
-
-// Helper function to generate mock news data
-function generateMockNews(category = 'general', query = null) {
-  // Define mock news data with different categories
-
-  const mockNews = [
-    {
-      id: 1,
-      title: "Stock Market Reaches All-Time High",
-      description: "Major indices hit record levels as tech stocks surge on positive earnings reports.",
-      source: "Financial Times",
-      url: "https://example.com/news/1",
-      image: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80",
-      publishedAt: new Date(Date.now() - 3600000).toISOString(),
-      category: "markets",
-      symbol: "SPY"
-    },
-    {
-      id: 2,
-      title: "Central Bank Announces Interest Rate Decision",
-      description: "The central bank has decided to maintain current interest rates, citing stable inflation and employment figures.",
-      source: "Bloomberg",
-      url: "https://example.com/news/2",
-      image: "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80",
-      publishedAt: new Date(Date.now() - 7200000).toISOString(),
-      category: "economy",
-      symbol: "DJI"
-    },
-    {
-      id: 3,
-      title: "Tech Giant Announces New Product Line",
-      description: "Leading technology company unveils innovative products expected to disrupt the market.",
-      source: "TechCrunch",
-      url: "https://example.com/news/3",
-      image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80",
-      publishedAt: new Date(Date.now() - 10800000).toISOString(),
-      category: "technology",
-      symbol: "AAPL"
-    }
-  ];
-
-  // Filter by category if provided
-  let filteredNews = mockNews;
-  if (category && category !== 'general') {
-    filteredNews = mockNews.filter(item => item.category === category);
-  }
-
-  // Filter by query if provided
-  if (query) {
-    const lowerQuery = query.toLowerCase();
-    filteredNews = filteredNews.filter(item =>
-      item.title.toLowerCase().includes(lowerQuery) ||
-      item.description.toLowerCase().includes(lowerQuery) ||
-      (item.symbol && item.symbol.toLowerCase().includes(lowerQuery))
-    );
-  }
-
-  return filteredNews.length > 0 ? filteredNews : mockNews;
-}
 
 module.exports = router;

@@ -1,183 +1,148 @@
+/**
+ * Enhanced Contact Routes
+ * Features: OAuth2 support, Joi validation, rate limiting, unified endpoint, comprehensive logging
+ */
+
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const router = express.Router();
-const nodemailer = require('nodemailer');
-const dotenv = require('dotenv');
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-const { verifyToken } = require('../middleware/auth');
 
-dotenv.config();
+// Import utilities and services
+const { sendContactEmail, validateEmailCredentials } = require('../services/emailService');
+const { getUserInfoFromToken } = require('../utils/emailUtils');
+const { validateContactMiddleware, checkSuspiciousContent } = require('../validation/contactValidation');
+const asyncHandler = require('../utils/asyncHandler');
 
-// Create a transporter object using SMTP transport
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS // This should be set in your .env file
-  }
-});
-
-// Check if email credentials are available
-if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-  console.error('WARNING: Email credentials (EMAIL_USER or EMAIL_PASS) are not set in environment variables');
+// Validate email credentials at startup
+try {
+  validateEmailCredentials();
+} catch (error) {
+  console.error('❌ Contact routes disabled - Email configuration error:', error.message);
 }
 
-// Send contact form email
-router.post('/send', async (req, res) => {
-  try {
-    const { name, email, subject, message } = req.body;
-
-    // Validate input
-    if (!name || !email || !message) {
-      return res.status(400).json({
-        success: false,
-        message: 'Name, email, and message are required'
-      });
-    }
-
-    // Email validation regex
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid email format'
-      });
-    }
-
-    // Get user information if authenticated
-    let userInfo = '';
+// Rate limiting for contact form (5 requests per hour per IP)
+const contactRateLimit = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5, // Limit each IP to 5 requests per windowMs
+  message: {
+    success: false,
+    message: 'Too many contact form submissions. Please try again in an hour.',
+    retryAfter: '1 hour'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Custom key generator to include user info if available
+  keyGenerator: (req) => {
+    // Use IP + user ID if authenticated, otherwise just IP
+    const baseKey = req.ip || req.connection.remoteAddress || 'unknown';
     if (req.headers.authorization) {
       try {
         const token = req.headers.authorization.split(' ')[1];
+        const jwt = require('jsonwebtoken');
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await User.findById(decoded.id);
-        if (user) {
-          userInfo = `\n\nUser Account Information:\nUsername: ${user.username}\nUser ID: ${user._id}`;
-        }
+        return `${baseKey}_user_${decoded.id}`;
       } catch (error) {
-        console.log('Non-critical error getting user info:', error.message);
+        // If token is invalid, just use IP
       }
     }
-
-    // Set up email options
-    const mailOptions = {
-      from: `"${name}" <${email}>`,
-      to: process.env.EMAIL_USER,
-      subject: subject || `Contact Form: Message from ${name}`,
-      text: `Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}${userInfo}`,
-      html: `
-        <h3>New Contact Form Submission</h3>
-        <p><strong>Name:</strong> ${name}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Subject:</strong> ${subject || 'N/A'}</p>
-        <p><strong>Message:</strong></p>
-        <p>${message.replace(/\n/g, '<br>')}</p>
-        ${userInfo ? `
-        <h4>User Account Information:</h4>
-        <p><strong>Username:</strong> ${userInfo.split('\n')[2].split(':')[1].trim()}</p>
-        <p><strong>User ID:</strong> ${userInfo.split('\n')[3].split(':')[1].trim()}</p>
-        ` : ''}
-        <hr>
-        <p><em>This email was sent from the TradeBro contact form.</em></p>
-      `
-    };
-
-    // Send email
-    await transporter.sendMail(mailOptions);
-
-    res.status(200).json({
-      success: true,
-      message: 'Email sent successfully'
-    });
-  } catch (error) {
-    console.error('Error sending email:', error);
-
-    // Check if it's an authentication error
-    if (error.code === 'EAUTH') {
-      return res.status(500).json({
-        success: false,
-        message: 'Email authentication failed. Please check your email credentials.',
-        error: error.message
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      message: 'Failed to send email',
-      error: error.message
-    });
-  }
+    return baseKey;
+  },
+  // Skip rate limiting for successful requests to be more lenient
+  skipSuccessfulRequests: false
 });
 
-// Send authenticated contact form email (with user details)
-router.post('/send-auth', verifyToken, async (req, res) => {
-  try {
-    const { subject, message } = req.body;
+/**
+ * Unified Contact Route
+ * Handles both public and authenticated contact form submissions
+ * POST /api/contact/send
+ */
+router.post('/send', contactRateLimit, validateContactMiddleware, asyncHandler(async (req, res) => {
+  const { name, email, subject, message } = req.body;
+  const authHeader = req.headers.authorization;
 
-    // Validate input
-    if (!message) {
-      return res.status(400).json({
-        success: false,
-        message: 'Message is required'
-      });
-    }
-
-    // Get user details
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    // Set up email options
-    const mailOptions = {
-      from: `"${user.username}" <${user.email}>`,
-      to: process.env.EMAIL_USER,
-      subject: subject ? `Contact Form: ${subject}` : `Contact Form from ${user.username}`,
-      text: `Name: ${user.username}\nEmail: ${user.email}\nUser ID: ${user._id}\n\nMessage:\n${message}`,
-      html: `
-        <h3>New Contact Form Submission (Authenticated User)</h3>
-        <p><strong>Name:</strong> ${user.username}</p>
-        <p><strong>Email:</strong> ${user.email}</p>
-        <p><strong>Subject:</strong> ${subject || 'N/A'}</p>
-        <p><strong>Message:</strong></p>
-        <p>${message.replace(/\n/g, '<br>')}</p>
-        <h4>User Account Information:</h4>
-        <p><strong>Username:</strong> ${user.username}</p>
-        <p><strong>User ID:</strong> ${user._id}</p>
-        <hr>
-        <p><em>This email was sent from the TradeBro contact form by an authenticated user.</em></p>
-      `
-    };
-
-    // Send email
-    await transporter.sendMail(mailOptions);
-
-    res.status(200).json({
-      success: true,
-      message: 'Email sent successfully'
+  // Check for suspicious content
+  const suspiciousCheck = checkSuspiciousContent({ name, email, subject, message });
+  if (suspiciousCheck.isSuspicious) {
+    console.warn('🚨 Suspicious contact form submission blocked:', {
+      email,
+      name,
+      reason: suspiciousCheck.reason,
+      ip: req.ip,
+      timestamp: new Date().toISOString()
     });
-  } catch (error) {
-    console.error('Error sending email:', error);
 
-    // Check if it's an authentication error
-    if (error.code === 'EAUTH') {
-      return res.status(500).json({
-        success: false,
-        message: 'Email authentication failed. Please check your email credentials.',
-        error: error.message
-      });
-    }
-
-    res.status(500).json({
+    return res.status(400).json({
       success: false,
-      message: 'Failed to send email',
-      error: error.message
+      message: 'Your submission contains content that cannot be processed. Please review and try again.'
     });
   }
+
+  // Try to get user information from token (if provided)
+  const userInfo = await getUserInfoFromToken(authHeader);
+  const isAuthenticated = !!userInfo;
+
+  // Log the contact attempt
+  console.log('📧 Contact form submission:', {
+    from: email,
+    name,
+    subject: subject || 'No subject',
+    isAuthenticated,
+    userId: userInfo?.id || null,
+    ip: req.ip,
+    userAgent: req.get('User-Agent'),
+    timestamp: new Date().toISOString()
+  });
+
+  try {
+    // Send email using the enhanced email service
+    const result = await sendContactEmail({
+      name,
+      email,
+      subject,
+      message,
+      userInfo,
+      isAuthenticated
+    });
+
+    if (result.success) {
+      return res.json({
+        success: true,
+        message: 'Your message has been sent successfully. We\'ll get back to you soon!',
+        messageId: result.messageId,
+        timestamp: result.timestamp
+      });
+    } else {
+      // Email service returned an error
+      return res.status(500).json({
+        success: false,
+        message: result.error.message,
+        errorType: result.error.type
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ Unexpected error in contact route:', {
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      from: email,
+      name,
+      timestamp: new Date().toISOString()
+    });
+
+    return res.status(500).json({
+      success: false,
+      message: 'An unexpected error occurred. Please try again later.'
+    });
+  }
+}));
+
+// Legacy route for backward compatibility (redirects to unified endpoint)
+router.post('/send-auth', (req, res) => {
+  console.log('📍 Legacy /send-auth route accessed, redirecting to unified /send endpoint');
+
+  // Forward the request to the unified endpoint
+  req.url = '/send';
+  router.handle(req, res);
 });
 
 module.exports = router;

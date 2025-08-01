@@ -1,624 +1,470 @@
-import { useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { motion } from "framer-motion";
-import { FiUser, FiMail, FiPhone, FiEdit2, FiCamera, FiCheckCircle, FiBarChart2, FiDollarSign, FiClock, FiAlertCircle } from "react-icons/fi";
-import PageLayout from "../components/PageLayout";
-import { useAuth } from "../context/AuthContext";
-import axios from "axios";
-import Loading from "../components/common/Loading";
-import { fetchProfileSuccess, setEditedUser } from "../redux/reducers/profileReducer";
-import { setIsEditing, setLoading, setError } from "../redux/reducers/uiReducer";
-import { showSuccessToast, showErrorToast } from "../redux/reducers/toastReducer";
-<<<<<<< HEAD
-import API_ENDPOINTS from "../config/apiConfig";
-=======
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
-import "../styles/pages/Profile.css";
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import {
+  FiUser,
+  FiEdit,
+  FiSave,
+  FiCamera,
+  FiMail,
+  FiPhone,
+  FiMapPin,
+  FiCalendar,
+  FiTrendingUp,
+  FiDollarSign,
+  FiAward,
+  FiTarget,
+  FiActivity,
+  FiShield,
+  FiSettings,
+  FiLogOut
+} from 'react-icons/fi';
+import PageHeader from '../components/layout/PageHeader';
+import { usePortfolio } from '../contexts/PortfolioContext';
+import '../styles/profile.css';
 
-const Profile = () => {
-  const dispatch = useDispatch();
-  const { isAuthenticated } = useAuth();
+const Profile = ({ user, onUpdateProfile, theme, toggleTheme, onLogout }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const { portfolioData } = usePortfolio();
 
-  // Get state from Redux
-  const { userData: user, editedUser, stats, recentActivity } = useSelector(state => state.profile);
-  const { isEditing, loading, error } = useSelector(state => state.ui);
+  const [profileData, setProfileData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    location: '',
+    bio: '',
+    joinDate: '',
+    avatar: null
+  });
 
-  // Fetch user data
+  // Update profile data when user changes
   useEffect(() => {
-    if (!isAuthenticated) {
-      dispatch(setLoading(false));
-      return;
+    if (user) {
+      const fullName = user.fullName || user.name || '';
+      const nameParts = fullName.split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
+      setProfileData({
+        firstName,
+        lastName,
+        email: user.email || '',
+        phone: user.phoneNumber || user.phone || '',
+        location: user.location || '',
+        bio: user.bio || 'Welcome to TradeBro! Start your trading journey today.',
+        joinDate: user.createdAt ? new Date(user.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        avatar: user.profilePicture || user.profileImage || user.avatar || null
+      });
     }
+  }, [user]);
 
-    dispatch(setLoading(true));
-
-    const fetchUserData = async () => {
-      try {
-        // Get user settings
-<<<<<<< HEAD
-        const response = await axios.get(API_ENDPOINTS.SETTINGS.BASE, {
-=======
-        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/settings`, {
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('authToken')}`
-          }
-        });
-
-        if (response.data.success) {
-          const userData = response.data.userSettings;
-
-          // Format the data
-          const formattedUserData = {
-            fullName: userData.fullName || "User",
-            email: userData.email || "",
-            phoneNumber: userData.phoneNumber || "",
-            joinDate: userData.createdAt || new Date().toISOString(),
-            profileImage: userData.profileImage
-<<<<<<< HEAD
-              ? API_ENDPOINTS.UPLOADS(userData.profileImage)
-=======
-              ? `${import.meta.env.VITE_API_BASE_URL}/uploads/${userData.profileImage}`
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
-              : "https://randomuser.me/api/portraits/lego/1.jpg",
-            tradingExperience: userData.tradingExperience || "Beginner",
-            preferredMarkets: userData.preferredMarkets || ["Stocks"],
-            bio: userData.bio || "No bio provided yet."
-          };
-
-          // Mock statistics data
-          const statsData = {
-            totalTrades: 24,
-            successRate: 65,
-            avgReturn: 8.7,
-            portfolioValue: 12500.00,
-            activeWatchlists: 3
-          };
-
-          // Mock recent activity data
-          const activityData = [
-            {
-              id: 1,
-              type: "trade",
-              action: "Bought",
-              symbol: "AAPL",
-              quantity: 5,
-              price: 178.25,
-              date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() // 2 days ago
-            },
-            {
-              id: 2,
-              type: "watchlist",
-              action: "Added",
-              symbol: "TSLA",
-              date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() // 3 days ago
-            },
-            {
-              id: 3,
-              type: "trade",
-              action: "Sold",
-              symbol: "MSFT",
-              quantity: 2,
-              price: 332.80,
-              date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString() // 5 days ago
-            }
-          ];
-
-          // Dispatch to Redux
-          dispatch(fetchProfileSuccess({
-            userData: formattedUserData,
-            stats: statsData,
-            recentActivity: activityData
-          }));
-
-          // Also set the edited user data
-          dispatch(setEditedUser(formattedUserData));
-        }
-      } catch (err) {
-        console.error("Error fetching user data:", err);
-        dispatch(setError("Failed to load user data. Please try again later."));
-
-        // Set default data for development
-        const defaultUserData = {
-          fullName: "Demo User",
-          email: "demo@example.com",
-          phoneNumber: "+1 (555) 123-4567",
-          joinDate: new Date().toISOString(),
-          profileImage: "https://randomuser.me/api/portraits/lego/1.jpg",
-          tradingExperience: "Beginner",
-          preferredMarkets: ["Stocks", "ETFs"],
-          bio: "This is a demo account."
-        };
-
-        // Dispatch default data to Redux
-        dispatch(fetchProfileSuccess({
-          userData: defaultUserData,
-          stats: {
-            totalTrades: 24,
-            successRate: 65,
-            avgReturn: 8.7,
-            portfolioValue: 12500.00,
-            activeWatchlists: 3
-          },
-          recentActivity: []
-        }));
-
-        // Also set the edited user data
-        dispatch(setEditedUser(defaultUserData));
-      } finally {
-        dispatch(setLoading(false));
-      }
-    };
-
-    fetchUserData();
-  }, [isAuthenticated, dispatch]);
-
-  // Format date
-  const formatDate = (dateString) => {
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString(undefined, options);
+  // Trading stats using real portfolio data
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0
+    }).format(amount);
   };
 
-  // Format time
-  const formatTime = (dateString) => {
-    const options = { hour: '2-digit', minute: '2-digit' };
-    return new Date(dateString).toLocaleTimeString(undefined, options);
-  };
-
-  // Handle edit form changes
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    dispatch(setEditedUser({ ...editedUser, [name]: value }));
-  };
-
-  // Handle profile image change
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Validate file type and size
-      const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-      const maxSize = 2 * 1024 * 1024; // 2MB
-
-      if (!validTypes.includes(file.type)) {
-        dispatch(showErrorToast('Please select a valid image file (JPEG, PNG, GIF, or WebP)'));
-        return;
-      }
-
-      if (file.size > maxSize) {
-        dispatch(showErrorToast('Image size should be less than 2MB'));
-        return;
-      }
-
-      // Store the file object directly for form submission
-      dispatch(setEditedUser({ ...editedUser, profileImage: file }));
-
-      // Also create a preview URL for display
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        // This is just for preview, we'll use the file object for upload
-        dispatch(setEditedUser({ ...editedUser, profileImagePreview: reader.result }));
-      };
-      reader.readAsDataURL(file);
-
-      // Show success message
-      dispatch(showSuccessToast('Image selected successfully. Click Save Changes to update your profile.'));
+  const tradingStats = [
+    {
+      title: 'Portfolio Value',
+      value: formatCurrency(portfolioData?.totalValue || 0),
+      change: portfolioData?.totalGainLossPercentage
+        ? `${portfolioData.totalGainLossPercentage >= 0 ? '+' : ''}${portfolioData.totalGainLossPercentage.toFixed(2)}%`
+        : '0.00%',
+      icon: FiDollarSign,
+      color: (portfolioData?.totalGainLoss || 0) >= 0 ? '#10B981' : '#EF4444'
+    },
+    {
+      title: 'Available Cash',
+      value: formatCurrency(portfolioData?.availableCash || 0),
+      change: 'Available',
+      icon: FiDollarSign,
+      color: '#3B82F6'
+    },
+    {
+      title: 'Total Invested',
+      value: formatCurrency(portfolioData?.totalInvested || 0),
+      change: `${portfolioData?.holdings?.length || 0} holdings`,
+      icon: FiTrendingUp,
+      color: '#F59E0B'
+    },
+    {
+      title: 'Total Transactions',
+      value: portfolioData?.transactions?.length || 0,
+      change: 'Completed',
+      icon: FiActivity,
+      color: '#8B5CF6'
     }
-  };
+  ];
 
-  // Handle form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    dispatch(setLoading(true));
+  // Achievements
+  const achievements = [
+    { title: 'First Trade', description: 'Completed your first trade', earned: true },
+    { title: 'Profit Maker', description: 'Made profit for 7 consecutive days', earned: true },
+    { title: 'Risk Manager', description: 'Maintained stop-loss on 50 trades', earned: true },
+    { title: 'Market Expert', description: 'Achieved 80% success rate', earned: false },
+    { title: 'Portfolio Builder', description: 'Diversified across 10+ sectors', earned: false },
+    { title: 'Long Term Investor', description: 'Held positions for 6+ months', earned: false }
+  ];
+
+  const handleSave = async () => {
+    setSaving(true);
 
     try {
-      // Validate form data
-      if (!editedUser.fullName.trim()) {
-        dispatch(showErrorToast('Full name is required'));
-        dispatch(setLoading(false));
-        return;
+      // Prepare updated user data
+      const updatedUserData = {
+        ...user,
+        fullName: `${profileData.firstName} ${profileData.lastName}`.trim(),
+        firstName: profileData.firstName,
+        lastName: profileData.lastName,
+        email: profileData.email,
+        phoneNumber: profileData.phone,
+        phone: profileData.phone,
+        location: profileData.location,
+        bio: profileData.bio
+      };
+
+      // Call the update profile function if provided
+      if (onUpdateProfile) {
+        await onUpdateProfile(updatedUserData);
       }
 
-      // Prepare form data for API
-      const formData = new FormData();
-      formData.append('fullName', editedUser.fullName.trim());
-      formData.append('phoneNumber', editedUser.phoneNumber.trim());
-      formData.append('tradingExperience', editedUser.tradingExperience);
-      formData.append('bio', editedUser.bio.trim());
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // Add preferredMarkets if it exists
-      if (editedUser.preferredMarkets && Array.isArray(editedUser.preferredMarkets)) {
-        formData.append('preferredMarkets', JSON.stringify(editedUser.preferredMarkets));
-      }
-
-      // Check if profile image is a File object (new upload) or a string (existing URL)
-      if (editedUser.profileImage instanceof File) {
-        formData.append('profileImage', editedUser.profileImage);
-        console.log('Uploading new profile image:', editedUser.profileImage.name);
-      }
-
-<<<<<<< HEAD
-      // Send data to API with timeout and retry logic
-      const maxRetries = 2;
-      let retries = 0;
-      let success = false;
-      let response;
-=======
-      // Send data to API
-      const response = await axios.put(`${import.meta.env.VITE_API_BASE_URL}/api/settings`, formData, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-          'Content-Type': 'multipart/form-data'
-        }
-      });
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
-
-      while (retries <= maxRetries && !success) {
-        try {
-          response = await axios.put(API_ENDPOINTS.SETTINGS.BASE, formData, {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-              'Content-Type': 'multipart/form-data'
-            },
-            timeout: 15000 // 15 seconds timeout
-          });
-          success = true;
-        } catch (error) {
-          retries++;
-          console.log(`Attempt ${retries} failed. ${retries <= maxRetries ? 'Retrying...' : 'Giving up.'}`);
-          if (retries > maxRetries) throw error;
-          // Wait before retrying
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-      }
-
-      if (response && response.data.success) {
-        // Update user state with new data
-        const updatedUserData = {
-          ...editedUser,
-          profileImage: response.data.userSettings.profileImage
-<<<<<<< HEAD
-            ? API_ENDPOINTS.UPLOADS(response.data.userSettings.profileImage)
-            : editedUser.profileImage
-        };
-
-        // Remove the preview URL as we now have the actual URL
-        delete updatedUserData.profileImagePreview;
-
-        dispatch(fetchProfileSuccess({
-          userData: updatedUserData,
-          stats,
-          recentActivity
-        }));
-=======
-            ? `${import.meta.env.VITE_API_BASE_URL}/uploads/${response.data.userSettings.profileImage}`
-            : editedUser.profileImage
-        };
-
-        // Update the user data in Redux
-        dispatch(updateProfileSuccess(updatedUserData));
-
-        // Exit editing mode
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
-        dispatch(setIsEditing(false));
-
-        // Show success message
-        dispatch(showSuccessToast('Profile updated successfully!'));
-
-        // Also update the auth state if needed
-        if (dispatch.updateUserData) {
-          dispatch(updateUserData(updatedUserData));
-        }
-      } else {
-        dispatch(showErrorToast('Failed to update profile. Please try again.'));
-      }
-    } catch (err) {
-      console.error('Error updating profile:', err);
-      dispatch(showErrorToast(err.response?.data?.message || 'Failed to update profile. Please try again.'));
-
-      // For development, still update the UI
-<<<<<<< HEAD
-      if (process.env.NODE_ENV === 'development') {
-        const updatedUserData = { ...editedUser };
-
-        // If there's a preview URL, use it as the profile image in development
-        if (editedUser.profileImagePreview) {
-          updatedUserData.profileImage = editedUser.profileImagePreview;
-        }
-
-        // Remove the preview URL property
-        delete updatedUserData.profileImagePreview;
-
-        dispatch(fetchProfileSuccess({
-          userData: updatedUserData,
-          stats,
-          recentActivity
-        }));
-        dispatch(setIsEditing(false));
-        dispatch(showSuccessToast('Profile updated in development mode'));
-      }
-=======
-      // This allows testing the UI without a working backend
-      dispatch(updateProfileSuccess(editedUser));
-      dispatch(setIsEditing(false));
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
-    } finally {
-      dispatch(setLoading(false));
+      setIsEditing(false);
+      setSaving(false);
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      setSaving(false);
     }
+  };
+
+  const handleCancel = () => {
+    setProfileData({
+      firstName: user?.firstName || 'John',
+      lastName: user?.lastName || 'Doe',
+      email: user?.email || 'john.doe@example.com',
+      phone: user?.phone || '+91 98765 43210',
+      location: user?.location || 'Mumbai, India',
+      bio: user?.bio || 'Passionate trader and investor with 5+ years of experience in Indian markets.',
+      joinDate: user?.joinDate || '2023-01-15',
+      avatar: user?.avatar || null
+    });
+    setIsEditing(false);
+  };
+
+  const handleInputChange = (field, value) => {
+    setProfileData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const formatJoinDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-IN', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
   };
 
   return (
-    <PageLayout>
-      <div className="profile-container">
-        <div className="profile-header">
-          <h1>My Profile</h1>
-          {!isEditing && !loading && (
-            <button className="edit-profile-btn" onClick={() => dispatch(setIsEditing(true))}>
-              <FiEdit2 /> Edit Profile
-            </button>
-          )}
-        </div>
+    <div className="profile-page">
+      {/* Page Header */}
+      <PageHeader
+        icon={FiUser}
+        title="Profile"
+        subtitle="Manage your account information and trading preferences"
+        borderColor="purple"
+        actions={
+          !isEditing ? [
+            {
+              label: "Edit Profile",
+              icon: FiEdit,
+              onClick: () => setIsEditing(true),
+              variant: "primary"
+            }
+          ] : [
+            {
+              label: "Cancel",
+              icon: FiUser,
+              onClick: handleCancel,
+              variant: "secondary"
+            },
+            {
+              label: saving ? "Saving..." : "Save Changes",
+              icon: FiSave,
+              onClick: handleSave,
+              variant: "primary",
+              disabled: saving
+            }
+          ]
+        }
+      />
 
-        {loading ? (
-          <div className="loading-container">
-            <Loading size="large" text="Loading profile data..." />
-          </div>
-        ) : error ? (
-          <div className="error-container">
-            <FiAlertCircle className="error-icon" />
-            <p>{error}</p>
-          </div>
-        ) : (
-          <div className="profile-grid">
+      <div className="profile-container">
+
+        {/* Profile Content */}
+        <div className="profile-layout">
           {/* Profile Info Card */}
           <motion.div
-            className="profile-card info-card"
+            className="profile-card"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
           >
-            {isEditing ? (
-              <form onSubmit={handleSubmit} className="edit-form">
-                <div className="profile-image-container edit-mode">
-                  <motion.img
-                    src={editedUser.profileImagePreview || editedUser.profileImage}
-                    alt={editedUser.fullName}
-                    className="profile-image"
-                    initial={{ scale: 1 }}
-                    whileHover={{ scale: 1.05 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 15 }}
-                  />
-                  <motion.label
-                    className="image-upload-label"
-                    whileHover={{ scale: 1.1, backgroundColor: "rgba(85, 130, 139, 0.9)" }}
-                    whileTap={{ scale: 0.95 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                  >
-                    <FiCamera />
-                    <span className="upload-text">Change Photo</span>
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/gif,image/webp"
-                      onChange={handleImageChange}
-                      className="image-upload-input"
-                    />
-                  </motion.label>
-                  <div className="image-upload-help">
-                    Click to upload a new profile photo (max 2MB)
+            <div className="card-header">
+              <h3 className="card-title">Personal Information</h3>
+            </div>
+            <div className="card-content">
+              <div className="profile-avatar-section">
+                <div className="avatar-container">
+                  <div className="avatar">
+                    {profileData.avatar ? (
+                      <img
+                        src={profileData.avatar}
+                        alt={`${profileData.firstName} ${profileData.lastName}`}
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    <div
+                      className="avatar-placeholder"
+                      style={{ display: profileData.avatar ? 'none' : 'flex' }}
+                    >
+                      {profileData.firstName ? (
+                        <span className="avatar-initial">
+                          {profileData.firstName.charAt(0).toUpperCase()}
+                          {profileData.lastName ? profileData.lastName.charAt(0).toUpperCase() : ''}
+                        </span>
+                      ) : (
+                        <FiUser size={48} />
+                      )}
+                    </div>
                   </div>
+                  {isEditing && (
+                    <button className="avatar-edit-btn">
+                      <FiCamera size={16} />
+                    </button>
+                  )}
                 </div>
-
-                <div className="form-group">
-                  <label>Full Name</label>
-                  <input
-                    type="text"
-                    name="fullName"
-                    value={editedUser.fullName}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Email</label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={editedUser.email}
-                    onChange={handleChange}
-                    required
-                    disabled
-                  />
-                  <small>Email cannot be changed</small>
-                </div>
-
-                <div className="form-group">
-                  <label>Phone</label>
-                  <input
-                    type="tel"
-                    name="phoneNumber"
-                    value={editedUser.phoneNumber}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Trading Experience</label>
-                  <select
-                    name="tradingExperience"
-                    value={editedUser.tradingExperience}
-                    onChange={handleChange}
-                  >
-                    <option value="Beginner">Beginner</option>
-                    <option value="Intermediate">Intermediate</option>
-                    <option value="Advanced">Advanced</option>
-                    <option value="Professional">Professional</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label>Bio</label>
-                  <textarea
-                    name="bio"
-                    value={editedUser.bio}
-                    onChange={handleChange}
-                    rows="4"
-                  ></textarea>
-                </div>
-
-                <div className="form-actions">
-                  <button
-                    type="button"
-                    className="cancel-btn"
-                    onClick={() => {
-                      dispatch(setIsEditing(false));
-                      dispatch(setEditedUser({ ...user }));
-                    }}
-                    disabled={loading}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="save-btn"
-                    disabled={loading}
-                  >
-                    {loading ? "Saving..." : "Save Changes"}
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <>
-                <div className="profile-image-container">
-                  <img
-                    src={user.profileImage}
-                    alt={user.fullName}
-                    className="profile-image"
-                  />
-                </div>
-                <h2 className="profile-name">{user.fullName}</h2>
-                <div className="profile-details">
-                  <div className="detail-item">
-                    <FiMail className="detail-icon" />
-                    <span>{user.email}</span>
+                <div className="profile-basic-info">
+                  <h2 className="profile-name">
+                    {profileData.firstName} {profileData.lastName}
+                  </h2>
+                  <p className="profile-email">{profileData.email}</p>
+                  <div className="profile-meta">
+                    <span className="join-date">
+                      <FiCalendar size={14} />
+                      Joined {formatJoinDate(profileData.joinDate)}
+                    </span>
                   </div>
-                  <div className="detail-item">
-                    <FiPhone className="detail-icon" />
-                    <span>{user.phoneNumber || "No phone number provided"}</span>
-                  </div>
-                  <div className="detail-item">
-                    <FiUser className="detail-icon" />
-                    <span>{user.tradingExperience} Trader</span>
-                  </div>
-                  <div className="detail-item">
-                    <FiClock className="detail-icon" />
-                    <span>Member since {formatDate(user.joinDate)}</span>
-                  </div>
-                </div>
-                <div className="profile-bio">
-                  <h3>About Me</h3>
-                  <p>{user.bio}</p>
-                </div>
-                <div className="profile-tags">
-                  <h3>Preferred Markets</h3>
-                  <div className="tags-container">
-                    {user.preferredMarkets.map((market, index) => (
-                      <span key={index} className="tag">{market}</span>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
-          </motion.div>
-
-          {/* Stats Card */}
-          <motion.div
-            className="profile-card stats-card"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.1 }}
-          >
-            <h3 className="card-title">Trading Statistics</h3>
-            <div className="stats-grid">
-              <div className="stat-item">
-                <div className="stat-icon">
-                  <FiBarChart2 />
-                </div>
-                <div className="stat-info">
-                  <span className="stat-value">{stats.totalTrades}</span>
-                  <span className="stat-label">Total Trades</span>
                 </div>
               </div>
-              <div className="stat-item">
-                <div className="stat-icon success">
-                  <FiCheckCircle />
-                </div>
-                <div className="stat-info">
-                  <span className="stat-value">{stats.successRate}%</span>
-                  <span className="stat-label">Success Rate</span>
-                </div>
-              </div>
-              <div className="stat-item">
-                <div className="stat-icon profit">
-                  <FiDollarSign />
-                </div>
-                <div className="stat-info">
-                  <span className="stat-value">{stats.avgReturn}%</span>
-                  <span className="stat-label">Avg. Return</span>
-                </div>
-              </div>
-              <div className="stat-item">
-                <div className="stat-icon">
-                  <FiDollarSign />
-                </div>
-                <div className="stat-info">
-                  <span className="stat-value">${stats.portfolioValue.toLocaleString()}</span>
-                  <span className="stat-label">Portfolio Value</span>
+
+              <div className="profile-form">
+                <div className="form-grid">
+                  <div className="form-group">
+                    <label className="form-label">First Name</label>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={profileData.firstName}
+                        onChange={(e) => handleInputChange('firstName', e.target.value)}
+                      />
+                    ) : (
+                      <div className="form-display">{profileData.firstName}</div>
+                    )}
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Last Name</label>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={profileData.lastName}
+                        onChange={(e) => handleInputChange('lastName', e.target.value)}
+                      />
+                    ) : (
+                      <div className="form-display">{profileData.lastName}</div>
+                    )}
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">
+                      <FiMail size={16} />
+                      Email Address
+                    </label>
+                    {isEditing ? (
+                      <input
+                        type="email"
+                        className="form-input"
+                        value={profileData.email}
+                        onChange={(e) => handleInputChange('email', e.target.value)}
+                      />
+                    ) : (
+                      <div className="form-display">{profileData.email}</div>
+                    )}
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">
+                      <FiPhone size={16} />
+                      Phone Number
+                    </label>
+                    {isEditing ? (
+                      <input
+                        type="tel"
+                        className="form-input"
+                        value={profileData.phone}
+                        onChange={(e) => handleInputChange('phone', e.target.value)}
+                      />
+                    ) : (
+                      <div className="form-display">{profileData.phone}</div>
+                    )}
+                  </div>
+                  <div className="form-group full-width">
+                    <label className="form-label">
+                      <FiMapPin size={16} />
+                      Location
+                    </label>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={profileData.location}
+                        onChange={(e) => handleInputChange('location', e.target.value)}
+                      />
+                    ) : (
+                      <div className="form-display">{profileData.location}</div>
+                    )}
+                  </div>
+                  <div className="form-group full-width">
+                    <label className="form-label">Bio</label>
+                    {isEditing ? (
+                      <textarea
+                        className="form-textarea"
+                        rows="3"
+                        value={profileData.bio}
+                        onChange={(e) => handleInputChange('bio', e.target.value)}
+                      />
+                    ) : (
+                      <div className="form-display">{profileData.bio}</div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           </motion.div>
 
-          {/* Recent Activity Card */}
+          {/* Trading Stats */}
           <motion.div
-            className="profile-card activity-card"
+            className="stats-card"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.2 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <h3 className="card-title">Recent Activity</h3>
-            <div className="activity-list">
-              {recentActivity.map((activity) => (
-                <div key={activity.id} className="activity-item">
-                  <div className={`activity-icon ${activity.type}`}>
-                    {activity.type === "trade" && <FiBarChart2 />}
-                    {activity.type === "watchlist" && <FiClock />}
-                    {activity.type === "alert" && <FiCheckCircle />}
-                  </div>
-                  <div className="activity-details">
-                    <div className="activity-header">
-                      <span className="activity-action">{activity.action} {activity.symbol}</span>
-                      <span className="activity-date">{formatDate(activity.date)}</span>
+            <div className="card-header">
+              <h3 className="card-title">
+                <FiTrendingUp className="card-icon" />
+                Trading Performance
+              </h3>
+            </div>
+            <div className="card-content">
+              <div className="stats-grid">
+                {tradingStats.map((stat, index) => {
+                  const Icon = stat.icon;
+                  return (
+                    <div key={stat.title} className="stat-item">
+                      <div className="stat-icon" style={{ color: stat.color }}>
+                        <Icon size={24} />
+                      </div>
+                      <div className="stat-content">
+                        <div className="stat-value">{stat.value}</div>
+                        <div className="stat-title">{stat.title}</div>
+                        <div className="stat-change" style={{ color: stat.color }}>
+                          {stat.change}
+                        </div>
+                      </div>
                     </div>
-                    <div className="activity-info">
-                      {activity.type === "trade" && (
-                        <span>
-                          {activity.quantity} shares at ${activity.price}
-                        </span>
-                      )}
-                      {activity.type === "alert" && (
-                        <span>{activity.condition}</span>
-                      )}
-                      <span className="activity-time">{formatTime(activity.date)}</span>
+                  );
+                })}
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Achievements */}
+          <motion.div
+            className="achievements-card"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+          >
+            <div className="card-header">
+              <h3 className="card-title">
+                <FiAward className="card-icon" />
+                Achievements
+              </h3>
+            </div>
+            <div className="card-content">
+              <div className="achievements-grid">
+                {achievements.map((achievement, index) => (
+                  <div 
+                    key={achievement.title} 
+                    className={`achievement-item ${achievement.earned ? 'earned' : 'locked'}`}
+                  >
+                    <div className="achievement-icon">
+                      <FiAward size={20} />
                     </div>
+                    <div className="achievement-content">
+                      <h4 className="achievement-title">{achievement.title}</h4>
+                      <p className="achievement-description">{achievement.description}</p>
+                    </div>
+                    {achievement.earned && (
+                      <div className="achievement-badge">
+                        <FiShield size={16} />
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Quick Actions */}
+          <motion.div
+            className="actions-card"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+          >
+            <div className="card-header">
+              <h3 className="card-title">Quick Actions</h3>
+            </div>
+            <div className="card-content">
+              <div className="action-buttons">
+                <button className="action-btn">
+                  <FiSettings size={20} />
+                  <span>Settings</span>
+                </button>
+                <button className="action-btn">
+                  <FiShield size={20} />
+                  <span>Security</span>
+                </button>
+                <button className="action-btn logout" onClick={onLogout}>
+                  <FiLogOut size={20} />
+                  <span>Logout</span>
+                </button>
+              </div>
             </div>
           </motion.div>
         </div>
-        )}
       </div>
-    </PageLayout>
+    </div>
   );
 };
 

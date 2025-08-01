@@ -1,321 +1,648 @@
 const express = require('express');
-const router = express.Router();
+const bcrypt = require('bcryptjs');
 const passport = require('passport');
+const { OAuth2Client } = require('google-auth-library');
+
+// Import models
 const User = require('../models/User');
-const bcrypt = require('bcrypt');
-const nodemailer = require('nodemailer');
-const jwt = require('jsonwebtoken');
-require('dotenv').config();
 
-const JWT_SECRET = process.env.JWT_SECRET;
+// Import utilities and middleware
+const { generateToken, verifyToken, generateOAuthToken } = require('../utils/tokenUtils');
+const { createOrUpdateUserData, createUserResponse } = require('../utils/userDataUtils');
+const { validateSignup, validateLogin, validateProfileUpdate } = require('../middleware/validation');
+const { createRateLimit } = require('../middleware/rateLimiter');
+const asyncHandler = require('../utils/asyncHandler');
 
+// Import constants
+const {
+  USER_DEFAULTS,
+  SECURITY_CONFIG,
+  ERROR_MESSAGES,
+  SUCCESS_MESSAGES
+} = require('../config/constants');
 
-const verifyToken = (req, res, next) => {
-  const token = req.header('Authorization')?.split(' ')[1];
+const router = express.Router();
+
+// Initialize Google OAuth2 client
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+// Rate limiting for auth routes
+const authRateLimit = createRateLimit({
+  windowMs: SECURITY_CONFIG.RATE_LIMIT_WINDOW_MS,
+  max: SECURITY_CONFIG.RATE_LIMIT_MAX_REQUESTS,
+  message: {
+    success: false,
+    message: 'Too many authentication attempts. Please try again later.',
+    retryAfter: Math.ceil(SECURITY_CONFIG.RATE_LIMIT_WINDOW_MS / 1000 / 60) + ' minutes'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true
+});
+
+// Enhanced JWT verification middleware
+const verifyTokenMiddleware = asyncHandler(async (req, res, next) => {
+  const token = req.header('Authorization')?.replace('Bearer ', '');
+
   if (!token) {
-    return res.status(401).send({ message: "Access Denied. No token provided" });
+    return res.status(401).json({
+      success: false,
+      message: ERROR_MESSAGES.ACCESS_DENIED
+    });
   }
+
   try {
-    const verified = jwt.verify(token, JWT_SECRET);
-    req.user = verified;
+    const decoded = verifyToken(token);
+    req.user = decoded;
     next();
   } catch (error) {
-    return res.status(403).send({ message: "Invalid token", error });
+    console.error('Token verification failed:', {
+      message: error.message,
+      token: token.substring(0, 20) + '...' // Log partial token for debugging
+    });
+
+    return res.status(401).json({
+      success: false,
+      message: ERROR_MESSAGES.INVALID_TOKEN
+    });
+  }
+});
+
+// POST /api/auth/signup - Register new user
+router.post('/signup', authRateLimit, validateSignup, asyncHandler(async (req, res) => {
+  const { username, email, password, fullName } = req.body;
+
+  // Debug logging
+  console.log('📝 Signup request received:', {
+    username,
+    email,
+    fullName,
+    passwordLength: password ? password.length : 0,
+    hasPassword: !!password
+  });
+
+  // Check if user already exists
+  const existingUser = await User.findOne({
+    $or: [{ email }, { username }]
+  });
+
+  if (existingUser) {
+    const message = existingUser.email === email
+      ? ERROR_MESSAGES.EMAIL_ALREADY_EXISTS
+      : ERROR_MESSAGES.USERNAME_ALREADY_EXISTS;
+
+    console.log('🚫 Signup attempt with existing credentials:', {
+      email,
+      username,
+      existingEmail: existingUser.email,
+      existingUsername: existingUser.username
+    });
+
+    return res.status(400).json({
+      success: false,
+      message,
+      errors: {
+        [existingUser.email === email ? 'email' : 'username']: message
+      }
+    });
+  }
+
+  // Hash password with secure salt rounds
+  const hashedPassword = await bcrypt.hash(password, SECURITY_CONFIG.BCRYPT_SALT_ROUNDS);
+
+  // Create new user with default values from constants
+  const newUser = new User({
+    username,
+    email,
+    password: hashedPassword,
+    fullName: fullName || username,
+    tradingExperience: USER_DEFAULTS.TRADING_EXPERIENCE,
+    preferredMarkets: USER_DEFAULTS.PREFERRED_MARKETS,
+    bio: USER_DEFAULTS.BIO,
+    profileImage: USER_DEFAULTS.PROFILE_IMAGE
+  });
+
+  await newUser.save();
+  console.log('✅ User created successfully:', newUser.email);
+
+  // Create user data with error handling
+  const userData = await createOrUpdateUserData(newUser._id, newUser.email);
+  if (!userData) {
+    console.warn('Failed to create user data for user:', newUser._id);
+  }
+
+  // Create default virtual money account
+  try {
+    const VirtualMoney = require('../models/VirtualMoney');
+    const existingVirtualMoney = await VirtualMoney.findOne({ userId: newUser._id });
+
+    if (!existingVirtualMoney) {
+      const virtualMoney = new VirtualMoney({
+        userId: newUser._id,
+        userEmail: newUser.email,
+        balance: 10000,
+        totalValue: 10000,
+        availableCash: 10000,
+        totalInvested: 0,
+        totalGainLoss: 0,
+        totalGainLossPercentage: 0,
+        holdings: [],
+        transactions: [{
+          type: 'DEPOSIT',
+          amount: 10000,
+          description: `Welcome ${fullName || username}! Initial deposit of ₹10,000`,
+          timestamp: new Date()
+        }]
+      });
+
+      await virtualMoney.save();
+      console.log('✅ Virtual money account created for user:', newUser.email);
+    }
+  } catch (error) {
+    console.error('❌ Failed to create virtual money account:', error);
+  }
+
+  // Generate token
+  const token = generateToken(newUser);
+
+  // Return sanitized user data
+  const userResponse = createUserResponse(newUser);
+
+  res.status(201).json({
+    success: true,
+    message: SUCCESS_MESSAGES.REGISTRATION_SUCCESS,
+    token,
+    user: userResponse
+  });
+}));
+
+// POST /api/auth/login - Login user
+router.post('/login', authRateLimit, validateLogin, asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
+
+  // Find user by email
+  const user = await User.findOne({ email });
+  if (!user) {
+    return res.status(401).json({
+      success: false,
+      message: ERROR_MESSAGES.INVALID_CREDENTIALS
+    });
+  }
+
+  // Check password
+  const isPasswordValid = await bcrypt.compare(password, user.password);
+  if (!isPasswordValid) {
+    return res.status(401).json({
+      success: false,
+      message: ERROR_MESSAGES.INVALID_CREDENTIALS
+    });
+  }
+
+  // Update user data with error handling
+  const userData = await createOrUpdateUserData(user._id, user.email);
+  if (!userData) {
+    console.warn('Failed to update user data for user:', user._id);
+  }
+
+  // Generate token
+  const token = generateToken(user);
+
+  // Return sanitized user data
+  const userResponse = createUserResponse(user);
+
+  res.json({
+    success: true,
+    message: SUCCESS_MESSAGES.LOGIN_SUCCESS,
+    token,
+    user: userResponse
+  });
+}));
+
+// GET /api/auth/verify - Verify JWT token
+router.get('/verify', verifyTokenMiddleware, asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user.id).select('-password');
+
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: ERROR_MESSAGES.USER_NOT_FOUND
+    });
+  }
+
+  // Return sanitized user data
+  const userResponse = createUserResponse(user);
+
+  res.json({
+    success: true,
+    message: SUCCESS_MESSAGES.TOKEN_VALID,
+    user: userResponse
+  });
+}));
+
+// PUT /api/auth/profile - Update user profile
+router.put('/profile', verifyTokenMiddleware, validateProfileUpdate, asyncHandler(async (req, res) => {
+  const { fullName, phoneNumber, tradingExperience, preferredMarkets, bio } = req.body;
+
+  const user = await User.findById(req.user.id);
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: ERROR_MESSAGES.USER_NOT_FOUND
+    });
+  }
+
+  // Update user fields (validation already handled by middleware)
+  if (fullName !== undefined) user.fullName = fullName;
+  if (phoneNumber !== undefined) user.phoneNumber = phoneNumber;
+  if (tradingExperience !== undefined) user.tradingExperience = tradingExperience;
+  if (preferredMarkets !== undefined) user.preferredMarkets = preferredMarkets;
+  if (bio !== undefined) user.bio = bio;
+
+  await user.save();
+
+  // Return sanitized user data
+  const userResponse = createUserResponse(user);
+
+  res.json({
+    success: true,
+    message: SUCCESS_MESSAGES.PROFILE_UPDATE_SUCCESS,
+    user: userResponse
+  });
+}));
+
+// Google OAuth endpoint for frontend credential verification
+router.post('/google/verify', authRateLimit, asyncHandler(async (req, res) => {
+  try {
+    const { credential } = req.body;
+
+    // Validate input
+    if (!credential) {
+      return res.status(400).json({
+        success: false,
+        message: 'Google credential is required'
+      });
+    }
+
+    // Verify the Google ID token
+    let ticket;
+    try {
+      ticket = await googleClient.verifyIdToken({
+        idToken: credential,
+        audience: process.env.GOOGLE_CLIENT_ID
+      });
+    } catch (verifyError) {
+      console.error('Google token verification failed:', verifyError.message);
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid Google credential'
+      });
+    }
+
+    // Extract user information from the verified token
+    const payload = ticket.getPayload();
+    const {
+      sub: googleId,
+      email,
+      name,
+      given_name: firstName,
+      family_name: lastName,
+      picture: profileImage,
+      email_verified: emailVerified
+    } = payload;
+
+    // Validate required fields
+    if (!email || !emailVerified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email verification required'
+      });
+    }
+
+    // Check if user already exists
+    let user = await User.findOne({ email });
+    let isNewUser = false;
+
+    if (user) {
+      // Update existing user with Google info if needed
+      let updateFields = {};
+
+      if (!user.googleId) updateFields.googleId = googleId;
+      if (!user.profileImage && profileImage) updateFields.profileImage = profileImage;
+      if (!user.fullName && name) updateFields.fullName = name;
+
+      if (Object.keys(updateFields).length > 0) {
+        user = await User.findByIdAndUpdate(
+          user._id,
+          { $set: updateFields },
+          { new: true, runValidators: true }
+        );
+      }
+    } else {
+      // Create new user
+      isNewUser = true;
+
+      // Generate unique username from email
+      let username = email.split('@')[0];
+      let usernameExists = await User.findOne({ username });
+      let counter = 1;
+
+      while (usernameExists) {
+        username = `${email.split('@')[0]}${counter}`;
+        usernameExists = await User.findOne({ username });
+        counter++;
+      }
+
+      user = new User({
+        username,
+        email,
+        fullName: name || `${firstName || ''} ${lastName || ''}`.trim() || username,
+        profileImage: profileImage || null,
+        googleId,
+        authProvider: 'google',
+        emailVerified: true,
+        ...USER_DEFAULTS
+      });
+
+      await user.save();
+    }
+
+    // Generate JWT token
+    const token = generateToken(user);
+
+    // Create or update user data
+    const userData = await createOrUpdateUserData(user._id, user.email);
+    if (!userData) {
+      console.warn('Failed to create/update user data for Google OAuth user:', user._id);
+    }
+
+    // Prepare user response
+    const userResponse = createUserResponse(user);
+
+    // Log successful authentication
+    console.log(`Google OAuth ${isNewUser ? 'signup' : 'login'} successful:`, {
+      userId: user._id,
+      email: user.email,
+      isNewUser
+    });
+
+    // Return success response
+    res.status(200).json({
+      success: true,
+      message: isNewUser ? SUCCESS_MESSAGES.SIGNUP_SUCCESS : SUCCESS_MESSAGES.LOGIN_SUCCESS,
+      token,
+      user: userResponse,
+      isNewUser
+    });
+
+  } catch (error) {
+    console.error('Google OAuth error:', {
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error during Google authentication'
+    });
+  }
+}));
+
+// Google OAuth routes (existing Passport.js implementation)
+router.get('/google', passport.authenticate('google', {
+  scope: ['profile', 'email'],
+  accessType: 'offline',
+  prompt: 'consent'
+}));
+
+// OAuth failure handler
+router.get('/google/failure', (req, res) => {
+  console.log('Google OAuth failure route reached');
+  console.log('Session messages:', req.session?.messages);
+
+  const clientUrl = process.env.NODE_ENV === 'production'
+    ? process.env.CLIENT_URL
+    : 'http://localhost:5173';
+
+  const redirectUrl = `${clientUrl}/auth/oauth-callback?success=false&error=oauth_failed`;
+  res.redirect(redirectUrl);
+});
+
+// Secure OAuth callback - uses HTTP-only cookies instead of URL tokens
+router.get('/google/callback',
+  passport.authenticate('google', {
+    failureRedirect: '/api/auth/google/failure',
+    failureMessage: true
+  }),
+  asyncHandler(async (req, res) => {
+    console.log('Google OAuth callback reached');
+    console.log('User from passport:', req.user);
+
+    if (!req.user) {
+      console.error('No user found in OAuth callback');
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication failed - no user data'
+      });
+    }
+
+    const user = req.user;
+    const isNewUser = user.isNewUser;
+
+    // Generate a secure, short-lived token for OAuth callback
+    const oauthToken = generateOAuthToken(user, isNewUser);
+
+    // Set secure HTTP-only cookie
+    res.cookie('oauth_token', oauthToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      maxAge: 10 * 60 * 1000, // 10 minutes
+      path: '/'
+    });
+
+    // Redirect without token in URL
+    const clientUrl = process.env.NODE_ENV === 'production'
+      ? process.env.CLIENT_URL
+      : 'http://localhost:5173';
+
+    const redirectUrl = `${clientUrl}/auth/oauth-callback?success=true&google=true${isNewUser ? '&new=true' : ''}`;
+    res.redirect(redirectUrl);
+  })
+);
+
+// OAuth token exchange endpoint - exchanges cookie for JWT
+router.post('/oauth/exchange', asyncHandler(async (req, res) => {
+  const oauthToken = req.cookies.oauth_token;
+
+  if (!oauthToken) {
+    return res.status(401).json({
+      success: false,
+      message: 'OAuth token not found'
+    });
+  }
+
+  try {
+    const decoded = verifyToken(oauthToken);
+
+    // Verify this is an OAuth callback token
+    if (decoded.type !== 'oauth_callback') {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token type'
+      });
+    }
+
+    // Find user to get latest data
+    const user = await User.findById(decoded.id).select('-password');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: ERROR_MESSAGES.USER_NOT_FOUND
+      });
+    }
+
+    // Generate regular JWT token
+    const token = generateToken(user);
+
+    // Clear the OAuth cookie
+    res.clearCookie('oauth_token');
+
+    // Update user data
+    const userData = await createOrUpdateUserData(user._id, user.email);
+    if (!userData) {
+      console.warn('Failed to update user data for OAuth user:', user._id);
+    }
+
+    // Return user data and token
+    const userResponse = createUserResponse(user);
+
+    res.json({
+      success: true,
+      message: SUCCESS_MESSAGES.LOGIN_SUCCESS,
+      token,
+      user: userResponse,
+      isNewUser: decoded.isNewUser
+    });
+
+  } catch (error) {
+    console.error('OAuth token exchange error:', {
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+
+    res.clearCookie('oauth_token');
+    return res.status(401).json({
+      success: false,
+      message: 'Invalid or expired OAuth token'
+    });
+  }
+}));
+
+// ========================================
+// 🔐 TOKEN VERIFICATION ENDPOINT
+// ========================================
+
+// ========================================
+// 🔐 GOOGLE OAUTH ENDPOINTS
+// ========================================
+
+/**
+ * Handle development Google OAuth (for testing)
+ */
+const handleDevelopmentGoogleAuth = async (req, res) => {
+  try {
+    const { credential } = req.body;
+
+    // Extract user data from development token (stored in localStorage)
+    const userData = JSON.parse(req.body.userData || '{}');
+
+    if (!userData.email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Development user data is invalid'
+      });
+    }
+
+    // Check if user exists
+    let user = await User.findOne({ email: userData.email });
+    let isNewUser = false;
+
+    if (!user) {
+      // Create new development user
+      isNewUser = true;
+      user = new User({
+        username: userData.email.split('@')[0] + '_dev',
+        email: userData.email,
+        fullName: userData.fullName || 'Development User',
+        password: 'dev_password_' + Date.now(), // Placeholder
+        isEmailVerified: true,
+        authProvider: 'google',
+        googleId: userData.id,
+        profilePicture: userData.profilePicture || null,
+        lastLogin: new Date()
+      });
+
+      await user.save();
+
+      // Create default virtual money portfolio
+      const VirtualMoney = require('../models/VirtualMoney');
+      const virtualMoney = new VirtualMoney({
+        userId: user._id,
+        userEmail: user.email,
+        totalValue: 10000,
+        availableCash: 10000,
+        balance: 10000
+      });
+      await virtualMoney.save();
+
+    } else {
+      // Update existing user
+      user.lastLogin = new Date();
+      await user.save();
+    }
+
+    // Generate JWT token
+    const token = generateToken(user);
+
+    // Create user response
+    const userResponse = createUserResponse(user);
+
+    res.json({
+      success: true,
+      message: isNewUser ? 'Development account created successfully' : 'Development login successful',
+      user: userResponse,
+      token,
+      isNewUser
+    });
+
+  } catch (error) {
+    console.error('Development Google OAuth error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Development authentication failed'
+    });
   }
 };
 
-// Register Route
-router.post('/signup', async (req, res) => {
-  const { username, email, password } = req.body;
-  try {
-    const exists = await User.findOne({ username });
-    if (exists) {
-      return res.status(400).json({ message: 'Username already exists' });
-    }
-
-    const existsEmail = await User.findOne({ email });
-    if (existsEmail) {
-      return res.status(400).json({ message: 'Email already exists' });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = new User({
-      username,
-      email,
-      password: hashedPassword,
-      fullName: username // Default fullName to username
-    });
-    const savedUser = await user.save();
-
-    // Include more user data in the token
-    const token = jwt.sign({
-      id: savedUser._id,
-      email: savedUser.email,
-      username: savedUser.username,
-      fullName: savedUser.fullName || savedUser.username
-    }, JWT_SECRET, { expiresIn: '30d' });
-
-    res.cookie('authToken', token, {
-      httpOnly: true,
-      secure: false,
-      sameSite: 'strict',
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-    });
-
-    // Create a user object with only the necessary data for the client
-    const userData = {
-      id: savedUser._id,
-      email: savedUser.email,
-      username: savedUser.username,
-      fullName: savedUser.fullName || savedUser.username,
-      profileImage: savedUser.profileImage
-    };
-
-    res.status(201).json({
-      success: true,
-      message: 'User registered successfully',
-      token,
-      user: userData
-    });
-  } catch (error) {
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
-
-// Login Route
-router.post('/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Please fill all fields' });
-    }
-
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).json({ message: 'Invalid credentials' });
-    }
-
-    if (!user.password) {
-      return res.status(400).json({ message: 'Password not set for this user' });
-    }
-
-    const isPasswordCorrect = await bcrypt.compare(password, user.password);
-    if (!isPasswordCorrect) {
-      return res.status(400).json({ message: 'Invalid credentials' });
-    }
-
-    const token = jwt.sign({
-      id: user._id,
-      email: user.email,
-      username: user.username,
-      fullName: user.fullName || user.username
-    }, JWT_SECRET, { expiresIn: '30d' });
-
-    res.cookie('authToken', token, {
-      httpOnly: true,
-      secure: false,
-      sameSite: 'strict',
-      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
-    });
-
-    // Create a user object with only the necessary data for the client
-    const userData = {
-      id: user._id,
-      email: user.email,
-      username: user.username,
-      fullName: user.fullName || user.username,
-      profileImage: user.profileImage,
-      phoneNumber: user.phoneNumber,
-      language: user.language,
-      notifications: user.notifications,
-      tradingExperience: user.tradingExperience || 'Beginner',
-      bio: user.bio || 'No bio provided yet.',
-      preferredMarkets: user.preferredMarkets || ['Stocks'],
-      createdAt: user.createdAt
-    };
-
-    res.status(200).json({
-      success: true,
-      message: 'Login successful',
-      token,
-      user: userData
-    });
-  } catch (error) {
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
-
-// Forgot Password Route
-router.post('/forgotpassword', async (req, res) => {
-  try {
-    const { email } = req.body;
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).send({ msg: "User not found, try another email" });
-    }
-
-    const code = Math.floor(100000 + Math.random() * 900000);
-    const hashedCode = await bcrypt.hash(code.toString(), 10);
-
-    user.code = hashedCode;
-    user.codeExpires = Date.now() + 10 * 60 * 1000;
-    await user.save();
-
-
-
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 587,
-      auth: {
-        user: process.env.email_nodemailer || process.env.EMAIL_USER,
-        pass: process.env.password_nodemailer || process.env.EMAIL_PASSWORD
-      }
-    });
-
-    try {
-      await transporter.sendMail({
-        from: "tradebro2025@gmail.com",
-        to: user.email,
-        subject: "Your Password Reset Code",
-        text: `Your code is: ${code}`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
-            <h2 style="color: #22b8b0;">TradeBro Password Reset</h2>
-            <p>Hello ${user.fullName || user.username},</p>
-            <p>You requested a password reset. Please use the following code to reset your password:</p>
-            <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; text-align: center; font-size: 24px; letter-spacing: 5px; font-weight: bold;">
-              ${code}
-            </div>
-            <p>This code will expire in 10 minutes.</p>
-            <p>If you did not request a password reset, please ignore this email.</p>
-            <p>Best regards,<br>The TradeBro Team</p>
-          </div>
-        `
-      });
-
-      return res.status(200).send({ msg: "Verification code sent successfully, check spam mails" });
-    } catch (emailError) {
-
-      // Check if it's an authentication error
-      if (emailError.code === 'EAUTH') {
-        return res.status(500).send({
-          msg: "Email authentication failed. Please check email credentials.",
-          error: emailError.message
-        });
-      }
-
-      return res.status(500).send({
-        msg: "Failed to send verification email",
-        error: emailError.message
-      });
-    }
-  } catch (error) {
-    res.status(500).send({ msg: "Something went wrong", error: error.message });
-  }
-});
-
-// Reset Password Route
-router.put('/resetpassword', async (req, res) => {
-  const { otp, newPassword } = req.body;
-
-  if (!otp || !newPassword) {
-    return res.status(400).json({ message: 'OTP and new password are required' });
-  }
-
-  try {
-    const user = await User.findOne({ codeExpires: { $gt: Date.now() } }); // Ensure OTP is not expired
-    if (!user) {
-      return res.status(400).json({ message: 'Invalid or expired OTP' });
-    }
-
-    const isOtpValid = await bcrypt.compare(otp, user.code);
-    if (!isOtpValid) {
-      return res.status(400).json({ message: 'Invalid OTP' });
-    }
-
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    user.password = hashedPassword;
-    user.code = null;
-    user.codeExpires = null;
-    await user.save();
-
-    res.status(200).json({ message: 'Password reset successfully. Redirecting to login page...' });
-  } catch (error) {
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
-
-// Verify token endpoint
-router.get('/verify-token', verifyToken, async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id).select('-password -code -codeExpires');
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
-    }
-
-    // Create a user object with only the necessary data for the client
-    const userData = {
-      id: user._id,
-      email: user.email,
-      username: user.username,
-      fullName: user.fullName || user.username,
-      profileImage: user.profileImage,
-      phoneNumber: user.phoneNumber,
-      language: user.language,
-      notifications: user.notifications,
-      tradingExperience: user.tradingExperience || 'Beginner',
-      bio: user.bio || 'No bio provided yet.',
-      preferredMarkets: user.preferredMarkets || ['Stocks'],
-      createdAt: user.createdAt
-    };
-
-    res.json({ success: true, user: userData });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Internal server error' });
-  }
-});
-
-// Get user data by token
-router.get('/user', verifyToken, async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id).select('-password -code -codeExpires');
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    // Create a user object with only the necessary data for the client
-    const userData = {
-      id: user._id,
-      email: user.email,
-      username: user.username,
-      fullName: user.fullName || user.username,
-      profileImage: user.profileImage,
-      phoneNumber: user.phoneNumber,
-      language: user.language,
-      notifications: user.notifications,
-      tradingExperience: user.tradingExperience || 'Beginner',
-      bio: user.bio || 'No bio provided yet.',
-      preferredMarkets: user.preferredMarkets || ['Stocks'],
-      createdAt: user.createdAt
-    };
-
-    res.status(200).json({
-      success: true,
-      user: userData
-    });
-  } catch (error) {
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
-
-// Google Login with credential (for frontend Google Login component)
-router.post('/google', async (req, res) => {
+/**
+ * @route   POST /api/auth/google/verify
+ * @desc    Verify Google OAuth credential and login/signup user
+ * @access  Public
+ */
+router.post('/google/verify', authRateLimit, asyncHandler(async (req, res) => {
   try {
     const { credential } = req.body;
 
     if (!credential) {
-      return res.status(400).json({ success: false, message: 'Google credential is required' });
+      return res.status(400).json({
+        success: false,
+        message: 'Google credential is required'
+      });
+    }
+
+    // Handle development tokens
+    if (credential.startsWith('dev_jwt_token_')) {
+      return handleDevelopmentGoogleAuth(req, res);
     }
 
     // Verify the Google credential
@@ -330,153 +657,86 @@ router.post('/google', async (req, res) => {
     const payload = ticket.getPayload();
     const { sub: googleId, email, name, picture } = payload;
 
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email not provided by Google'
+      });
+    }
+
     // Check if user exists
     let user = await User.findOne({ email });
+    let isNewUser = false;
 
     if (!user) {
       // Create new user
+      isNewUser = true;
       user = new User({
+        username: email.split('@')[0] + '_' + Date.now(), // Generate unique username
         email,
-        fullName: name,
-        username: email.split('@')[0],
-        profileImage: picture,
+        fullName: name || 'Google User',
+        password: 'google_oauth_' + googleId, // Placeholder password
+        isEmailVerified: true, // Google emails are pre-verified
+        authProvider: 'google',
         googleId,
-        isVerified: true, // Google accounts are pre-verified
+        profilePicture: picture || null,
+        lastLogin: new Date()
       });
+
       await user.save();
-    } else if (!user.googleId) {
-      // Link Google account to existing user
-      user.googleId = googleId;
-      user.profileImage = user.profileImage || picture;
-      user.isVerified = true;
+
+      // Create default virtual money portfolio
+      const virtualMoney = new VirtualMoney({
+        userId: user._id,
+        userEmail: user.email,
+        totalValue: 10000,
+        availableCash: 10000,
+        balance: 10000 // Legacy field
+      });
+      await virtualMoney.save();
+
+    } else {
+      // Update existing user
+      user.lastLogin = new Date();
+      if (!user.googleId) {
+        user.googleId = googleId;
+        user.authProvider = 'google';
+      }
+      if (picture && !user.profilePicture) {
+        user.profilePicture = picture;
+      }
       await user.save();
     }
 
     // Generate JWT token
-    const token = jwt.sign({
-      id: user._id,
-      email: user.email,
-      username: user.username,
-      fullName: user.fullName
-    }, JWT_SECRET, { expiresIn: '7d' });
+    const token = generateToken(user._id);
 
-    // Create user data for response
-    const userData = {
-      id: user._id,
-      email: user.email,
-      username: user.username,
-      fullName: user.fullName,
-      profileImage: user.profileImage,
-      phoneNumber: user.phoneNumber,
-      language: user.language,
-      notifications: user.notifications,
-      tradingExperience: user.tradingExperience || 'Beginner',
-      bio: user.bio || 'No bio provided yet.',
-      preferredMarkets: user.preferredMarkets || ['Stocks'],
-      createdAt: user.createdAt
-    };
+    // Create user response
+    const userResponse = await createUserResponse(user);
 
-    res.status(200).json({
+    res.json({
       success: true,
-      message: 'Google login successful',
+      message: isNewUser ? 'Account created successfully with Google' : 'Login successful',
+      user: userResponse,
       token,
-      user: userData
+      isNewUser
     });
 
   } catch (error) {
+    console.error('Google OAuth error:', error);
+
+    if (error.message && error.message.includes('Token used too early')) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid Google token timing'
+      });
+    }
+
     res.status(500).json({
       success: false,
-      message: 'Google authentication failed. Please try again.'
+      message: 'Google authentication failed'
     });
   }
-});
-
-
-
-// Google OAuth Login Route (traditional OAuth flow)
-router.get('/google/oauth', (req, res, next) => {
-  // Define the callback URL using environment variables
-  const callbackURL = process.env.NODE_ENV === 'production'
-    ? "https://s89-satya-capstone-tradebro.onrender.com/api/auth/google/callback"
-    : "http://localhost:5000/api/auth/google/callback";
-
-  passport.authenticate('google', {
-    scope: ['profile', 'email'],
-    prompt: 'select_account',
-    callbackURL: callbackURL // Pass the callback URL explicitly
-  })(req, res, next);
-});
-
-// Google OAuth Callback Route
-router.get('/google/callback', (req, res, next) => {
-  // Define the callback URL using environment variables
-  const callbackURL = process.env.NODE_ENV === 'production'
-    ? "https://s89-satya-capstone-tradebro.onrender.com/api/auth/google/callback"
-    : "http://localhost:5000/api/auth/google/callback";
-
-  passport.authenticate('google', {
-    callbackURL: callbackURL, // Pass the callback URL explicitly
-    failureRedirect: '/login',
-    failureMessage: true
-  })(req, res, next);
-},
-  (req, res) => {
-    try {
-      // Make sure we have a valid user object
-      if (!req.user || !req.user._id) {
-        // Determine the correct client URL based on environment
-        const clientUrl = process.env.NODE_ENV === 'production'
-          ? 'https://tradebro.netlify.app'
-          : 'http://localhost:5173';
-
-        return res.redirect(`${clientUrl}/login?error=invalid_user`);
-      }
-
-      // Generate JWT Token for Google OAuth with more user data (30 days expiration)
-      const token = jwt.sign({
-        id: req.user._id,
-        email: req.user.email,
-        username: req.user.username || req.user.email.split('@')[0],
-        fullName: req.user.fullName || req.user.displayName || req.user.username || req.user.email.split('@')[0]
-      }, JWT_SECRET, { expiresIn: '30d' });
-
-      // Set the token in a cookie
-      res.cookie('authToken', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
-      });
-
-      // Determine the correct client URL based on environment
-      const clientUrl = process.env.NODE_ENV === 'production'
-        ? 'https://tradebro.netlify.app'
-        : 'http://localhost:5173';
-
-      // Redirect directly to dashboard with token
-      res.redirect(`${clientUrl}/dashboard?token=${token}&google=true`);
-    } catch (error) {
-      // Determine the correct client URL based on environment
-      const clientUrl = process.env.NODE_ENV === 'production'
-        ? 'https://tradebro.netlify.app'
-        : 'http://localhost:5173';
-
-      res.redirect(`${clientUrl}/login?error=authentication_failed`);
-    }
-  }
-);
-
-// Logout Route
-router.get('/logout', (req, res) => {
-  req.logout((err) => {
-    if (err) {
-      return res.status(500).json({ message: "Logout failed" });
-    }
-    req.session.destroy(); // Destroy the session
-    res.clearCookie("connect.sid"); // Clear the session cookie
-    res.status(200).json({ message: "Logout successful" });
-  });
-});
-
+}));
 
 module.exports = router;

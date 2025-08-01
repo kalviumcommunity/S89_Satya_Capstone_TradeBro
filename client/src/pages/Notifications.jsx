@@ -1,345 +1,314 @@
-import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { FiBell, FiCheck, FiTrash2, FiAlertCircle, FiInfo, FiCheckCircle, FiExternalLink } from "react-icons/fi";
-import axios from "axios";
-import { API_ENDPOINTS } from "../config/apiConfig";
-import { useAuth } from "../context/AuthContext";
-import { usePusher } from "../context/PusherContext.jsx";
-import { useToast } from "../hooks/useToast";
-import PageLayout from "../components/PageLayout";
-import "../styles/pages/Notifications.css";
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  FiBell,
+  FiFilter,
+  FiCheck,
+  FiTrash2,
+  FiRefreshCw,
+  FiSettings,
+  FiSearch,
+  FiChevronDown
+} from 'react-icons/fi';
+import PageHeader from '../components/layout/PageHeader';
+import { useNotifications } from '../contexts/NotificationContext';
+import NotificationItem from '../components/notifications/NotificationItem';
+import './Notifications.css';
 
-const Notifications = () => {
-  const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all");
-  const { isAuthenticated } = useAuth();
-  const toast = useToast();
-  usePusher(); // Initialize Pusher connection
+/**
+ * Notifications Page
+ * Displays all user notifications with filtering, sorting, and bulk actions
+ */
+const Notifications = ({ user, theme }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedNotifications, setSelectedNotifications] = useState(new Set());
+  const [showFilters, setShowFilters] = useState(false);
+  const [isSelectMode, setIsSelectMode] = useState(false);
 
-  // Fetch notifications from API
+  const {
+    notifications,
+    unreadCount,
+    loading,
+    error,
+    filters,
+    pagination,
+    connectionStatus,
+    fetchNotifications,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+    setFilters,
+    loadMore
+  } = useNotifications();
+
+  // Load notifications on mount
   useEffect(() => {
-    const fetchNotifications = async () => {
-      if (!isAuthenticated) return;
-
-      setLoading(true);
-      try {
-        const response = await axios.get(API_ENDPOINTS.NOTIFICATIONS.ALL);
-        if (response.data.success) {
-          setNotifications(response.data.data);
-        } else {
-          toast.error("Failed to fetch notifications");
-          setNotifications([]);
-        }
-      } catch (error) {
-        console.error("Error fetching notifications:", error);
-        toast.error("Failed to load notifications");
-        setNotifications([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchNotifications();
-  }, [isAuthenticated, toast]);
+  }, [fetchNotifications]);
 
-  // Listen for real-time notification events
-  useEffect(() => {
-    if (!isAuthenticated) return;
-
-    // Handle new notification
-    const handleNewNotification = (event) => {
-      const newNotification = event.detail;
-
-      // Add new notification to the list
-      setNotifications(prevNotifications =>
-        [newNotification, ...prevNotifications]
-      );
-
-      // Show toast for new notification
-      toast.info(`New notification: ${newNotification.title}`);
-    };
-
-    // Handle notification update (mark as read)
-    const handleNotificationUpdate = (event) => {
-      const { id, read } = event.detail;
-
-      // Update notification in the list
-      setNotifications(prevNotifications =>
-        prevNotifications.map(notification =>
-          notification._id === id ? { ...notification, read } : notification
-        )
-      );
-    };
-
-    // Handle notification deletion
-    const handleNotificationDelete = (event) => {
-      const { id } = event.detail;
-
-      // Remove notification from the list
-      setNotifications(prevNotifications =>
-        prevNotifications.filter(notification => notification._id !== id)
-      );
-    };
-
-    // Handle marking all notifications as read
-    const handleMarkAllRead = () => {
-      // Update all notifications in the list
-      setNotifications(prevNotifications =>
-        prevNotifications.map(notification => ({ ...notification, read: true }))
-      );
-    };
-
-    // Add event listeners
-    window.addEventListener('new-notification', handleNewNotification);
-    window.addEventListener('notification-update', handleNotificationUpdate);
-    window.addEventListener('notification-delete', handleNotificationDelete);
-    window.addEventListener('notifications-read-all', handleMarkAllRead);
-
-    // Clean up event listeners
-    return () => {
-      window.removeEventListener('new-notification', handleNewNotification);
-      window.removeEventListener('notification-update', handleNotificationUpdate);
-      window.removeEventListener('notification-delete', handleNotificationDelete);
-      window.removeEventListener('notifications-read-all', handleMarkAllRead);
-    };
-  }, [isAuthenticated, toast]);
-
-  // Filter notifications
+  // Filter notifications based on search and filters
   const filteredNotifications = notifications.filter(notification => {
-    if (filter === "all") return true;
-    if (filter === "unread") return !notification.read;
-    return notification.type === filter;
+    // Search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      if (!notification.title.toLowerCase().includes(query) && 
+          !notification.message.toLowerCase().includes(query)) {
+        return false;
+      }
+    }
+
+    // Type filter
+    if (filters.type !== 'all' && notification.type !== filters.type) {
+      return false;
+    }
+
+    // Read status filter
+    if (filters.read === 'read' && !notification.read) {
+      return false;
+    }
+    if (filters.read === 'unread' && notification.read) {
+      return false;
+    }
+
+    return true;
   });
 
-  // Mark notification as read
-  const markAsRead = async (id) => {
-    if (!isAuthenticated) return;
-
-    try {
-      const response = await axios.put(API_ENDPOINTS.NOTIFICATIONS.MARK_READ(id));
-
-      if (response.data.success) {
-        // Update will happen via Pusher event
-        console.log("Notification marked as read:", id);
-      } else {
-        toast.error("Failed to mark notification as read");
-      }
-    } catch (error) {
-      console.error("Error marking notification as read:", error);
-      toast.error("Failed to update notification");
-
-      // Fallback to local update
-      setNotifications(prevNotifications =>
-        prevNotifications.map(notification =>
-          notification._id === id ? { ...notification, read: true } : notification
-        )
-      );
-    }
-  };
-
-  // Delete notification
-  const deleteNotification = async (id) => {
-    if (!isAuthenticated) return;
-
-    try {
-      const response = await axios.delete(API_ENDPOINTS.NOTIFICATIONS.DELETE(id));
-
-      if (response.data.success) {
-        // Update will happen via Pusher event
-        console.log("Notification deleted:", id);
-        toast.info("Notification deleted");
-      } else {
-        toast.error("Failed to delete notification");
-      }
-    } catch (error) {
-      console.error("Error deleting notification:", error);
-      toast.error("Failed to delete notification");
-
-      // Fallback to local update
-      setNotifications(prevNotifications =>
-        prevNotifications.filter(notification => notification._id !== id)
-      );
-    }
-  };
-
-  // Mark all as read
-  const markAllAsRead = async () => {
-    if (!isAuthenticated) return;
-
-    try {
-      const response = await axios.put(API_ENDPOINTS.NOTIFICATIONS.MARK_ALL_READ);
-
-      if (response.data.success) {
-        // Update will happen via Pusher event
-        console.log("All notifications marked as read");
-        toast.success(`${response.data.count} notifications marked as read`);
-      } else {
-        toast.error("Failed to update notifications");
-      }
-    } catch (error) {
-      console.error("Error marking all notifications as read:", error);
-      toast.error("Failed to update notifications");
-
-      // Fallback to local update
-      setNotifications(prevNotifications =>
-        prevNotifications.map(notification => ({ ...notification, read: true }))
-      );
-    }
-  };
-
-  // Format timestamp
-  const formatTimestamp = (timestamp) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffInSeconds = Math.floor((now - date) / 1000);
-
-    if (diffInSeconds < 60) {
-      return "Just now";
-    } else if (diffInSeconds < 3600) {
-      const minutes = Math.floor(diffInSeconds / 60);
-      return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
-    } else if (diffInSeconds < 86400) {
-      const hours = Math.floor(diffInSeconds / 3600);
-      return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+  // Handle notification selection
+  const handleNotificationSelect = (notificationId) => {
+    const newSelected = new Set(selectedNotifications);
+    if (newSelected.has(notificationId)) {
+      newSelected.delete(notificationId);
     } else {
-      const days = Math.floor(diffInSeconds / 86400);
-      return `${days} day${days > 1 ? 's' : ''} ago`;
+      newSelected.add(notificationId);
+    }
+    setSelectedNotifications(newSelected);
+  };
+
+  // Handle select all
+  const handleSelectAll = () => {
+    if (selectedNotifications.size === filteredNotifications.length) {
+      setSelectedNotifications(new Set());
+    } else {
+      setSelectedNotifications(new Set(filteredNotifications.map(n => n.id)));
     }
   };
 
-  // Get icon based on notification type
-  const getNotificationIcon = (type) => {
-    switch (type) {
-      case "alert":
-        return <FiAlertCircle className="notification-icon alert" />;
-      case "info":
-        return <FiInfo className="notification-icon info" />;
-      case "success":
-        return <FiCheckCircle className="notification-icon success" />;
-      default:
-        return <FiBell className="notification-icon" />;
-    }
+  // Handle bulk actions
+  const handleBulkMarkAsRead = async () => {
+    const promises = Array.from(selectedNotifications).map(id => markAsRead(id));
+    await Promise.all(promises);
+    setSelectedNotifications(new Set());
+  };
+
+  const handleBulkDelete = async () => {
+    const promises = Array.from(selectedNotifications).map(id => deleteNotification(id));
+    await Promise.all(promises);
+    setSelectedNotifications(new Set());
+  };
+
+  // Handle filter change
+  const handleFilterChange = (filterType, value) => {
+    setFilters({ [filterType]: value });
+  };
+
+  // Handle refresh
+  const handleRefresh = () => {
+    fetchNotifications();
   };
 
   return (
-    <PageLayout>
-      <div className="notifications-container">
-        <div className="notifications-header">
-          <h1>Notifications</h1>
-          <div className="notifications-actions">
-            <button className="mark-all-read" onClick={markAllAsRead}>
-              <FiCheck /> Mark all as read
-            </button>
-          </div>
+    <div className="notifications-page">
+      {/* Page Header */}
+      <PageHeader
+        icon={FiBell}
+        title="Notifications"
+        subtitle="OFFLINE"
+        borderColor="primary"
+        showNotifications={false}
+        actions={[
+          {
+            label: "Refresh",
+            icon: FiRefreshCw,
+            onClick: handleRefresh,
+            variant: "secondary",
+            disabled: loading
+          },
+          {
+            label: "Settings",
+            icon: FiSettings,
+            onClick: () => {},
+            variant: "outline"
+          }
+        ]}
+      />
+
+      <div className="notifications-content">
+        {/* Quick Actions */}
+        <div className="notifications-actions">
+          {unreadCount > 0 && (
+            <motion.button
+              className="action-btn mark-all"
+              onClick={markAllAsRead}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <FiCheck />
+              Mark all read
+            </motion.button>
+          )}
         </div>
 
-        <div className="notifications-filters">
-          <button
-            className={`filter-btn ${filter === "all" ? "active" : ""}`}
-            onClick={() => setFilter("all")}
-          >
-            All
-          </button>
-          <button
-            className={`filter-btn ${filter === "unread" ? "active" : ""}`}
-            onClick={() => setFilter("unread")}
-          >
-            Unread
-          </button>
-          <button
-            className={`filter-btn ${filter === "alert" ? "active" : ""}`}
-            onClick={() => setFilter("alert")}
-          >
-            Alerts
-          </button>
-          <button
-            className={`filter-btn ${filter === "info" ? "active" : ""}`}
-            onClick={() => setFilter("info")}
-          >
-            Info
-          </button>
-          <button
-            className={`filter-btn ${filter === "success" ? "active" : ""}`}
-            onClick={() => setFilter("success")}
-          >
-            Success
-          </button>
+        {/* Search and Filters */}
+        <div className="notifications-controls">
+          {/* Search */}
+          <div className="search-container">
+            <FiSearch className="search-icon" />
+            <input
+              type="text"
+              placeholder="Search notifications..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="search-input"
+            />
+          </div>
+
+          {/* Filters */}
+          <AnimatePresence>
+            {showFilters && (
+              <motion.div
+                className="filters-container"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+              >
+                <div className="filter-group">
+                  <label>Type:</label>
+                  <select
+                    value={filters.type}
+                    onChange={(e) => handleFilterChange('type', e.target.value)}
+                  >
+                    <option value="all">All Types</option>
+                    <option value="info">Info</option>
+                    <option value="success">Success</option>
+                    <option value="warning">Warning</option>
+                    <option value="error">Error</option>
+                    <option value="alert">Alert</option>
+                  </select>
+                </div>
+
+                <div className="filter-group">
+                  <label>Status:</label>
+                  <select
+                    value={filters.read}
+                    onChange={(e) => handleFilterChange('read', e.target.value)}
+                  >
+                    <option value="all">All</option>
+                    <option value="unread">Unread</option>
+                    <option value="read">Read</option>
+                  </select>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
-        {loading ? (
-          <div className="loading-container">
-            <div className="loading-spinner"></div>
-            <p>Loading notifications...</p>
-          </div>
-        ) : filteredNotifications.length === 0 ? (
-          <div className="empty-notifications">
-            <FiBell className="empty-icon" />
-            <p>No notifications to display</p>
-          </div>
-        ) : (
-          <div className="notifications-list">
-            <AnimatePresence>
-              {filteredNotifications.map((notification) => (
+        {/* Bulk Actions */}
+        <AnimatePresence>
+          {selectedNotifications.size > 0 && (
+            <motion.div
+              className="bulk-actions"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+            >
+              <div className="bulk-info">
+                <input
+                  type="checkbox"
+                  checked={selectedNotifications.size === filteredNotifications.length}
+                  onChange={handleSelectAll}
+                />
+                <span>{selectedNotifications.size} selected</span>
+              </div>
+
+              <div className="bulk-buttons">
+                <button onClick={handleBulkMarkAsRead}>
+                  <FiCheck /> Mark as read
+                </button>
+                <button onClick={handleBulkDelete} className="danger">
+                  <FiTrash2 /> Delete
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Notifications List */}
+        <div className="notifications-list">
+          {error ? (
+            <div className="error-state">
+              <h3>Failed to load notifications</h3>
+              <p>{error}</p>
+              <button onClick={handleRefresh}>Try again</button>
+            </div>
+          ) : filteredNotifications.length > 0 ? (
+            <>
+              {filteredNotifications.map((notification, index) => (
                 <motion.div
-                  key={notification._id || notification.id || `notification-${Math.random()}`}
-                  className={`notification-item ${notification.read ? "read" : "unread"}`}
+                  key={notification.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-                  transition={{ duration: 0.3 }}
-                  layout
+                  transition={{ delay: index * 0.05 }}
+                  className="notification-wrapper"
                 >
-                  <div className="notification-content" onClick={() => markAsRead(notification._id)}>
-                    {getNotificationIcon(notification.type)}
-                    <div className="notification-details">
-                      <h3 className="notification-title">{notification.title}</h3>
-                      <p className="notification-message">{notification.message}</p>
-                      <span className="notification-time">{formatTimestamp(notification.createdAt)}</span>
-                      {notification.link && (
-                        <a
-                          href={notification.link}
-                          className="notification-link"
-                          onClick={(e) => e.stopPropagation()}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          View Details <FiExternalLink />
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                  <div className="notification-actions">
-                    {!notification.read && (
-                      <button
-                        className="action-btn read-btn"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          markAsRead(notification._id);
-                        }}
-                        title="Mark as read"
-                      >
-                        <FiCheck />
-                      </button>
-                    )}
-                    <button
-                      className="action-btn delete-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteNotification(notification._id);
-                      }}
-                      title="Delete notification"
-                    >
-                      <FiTrash2 />
-                    </button>
-                  </div>
+                  {isSelectMode && (
+                    <input
+                      type="checkbox"
+                      checked={selectedNotifications.has(notification.id)}
+                      onChange={() => handleNotificationSelect(notification.id)}
+                      className="notification-checkbox"
+                    />
+                  )}
+                  
+                  <NotificationItem
+                    notification={notification}
+                    onClick={() => markAsRead(notification.id)}
+                    onDelete={() => deleteNotification(notification.id)}
+                    onMarkAsRead={markAsRead}
+                    compact={false}
+                    showActions={true}
+                  />
                 </motion.div>
               ))}
-            </AnimatePresence>
-          </div>
-        )}
+
+              {/* Load More */}
+              {pagination.hasMore && (
+                <div className="load-more-container">
+                  <motion.button
+                    className="load-more-btn"
+                    onClick={loadMore}
+                    disabled={loading}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    {loading ? 'Loading...' : 'Load More'}
+                  </motion.button>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="empty-state">
+              <FiBell size={48} />
+              <h3>No notifications found</h3>
+              <p>
+                {searchQuery || filters.type !== 'all' || filters.read !== 'all'
+                  ? 'Try adjusting your search or filters'
+                  : 'You\'re all caught up! New notifications will appear here.'}
+              </p>
+            </div>
+          )}
+        </div>
       </div>
-    </PageLayout>
+    </div>
   );
 };
 

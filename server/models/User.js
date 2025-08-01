@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
     username: {
@@ -14,11 +13,7 @@ const userSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-    },
-    googleId: {
-        type: String,
-        unique: true,
-        sparse: true // Allows null values for non-Google users
+        required: false // Not required for Google OAuth users
     },
     fullName: {
         type: String,
@@ -53,15 +48,44 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: 'No bio provided yet.'
     },
-    code: {
-        type: String
+    authProvider: {
+        type: String,
+        enum: ['local', 'google'],
+        default: 'local'
     },
-    codeExpires: {
-        type: Date
+    googleId: {
+        type: String,
+        unique: true,
+        sparse: true // Allows multiple null values
+    },
+    emailVerified: {
+        type: Boolean,
+        default: false
+    },
+    isEmailVerified: {
+        type: Boolean,
+        default: false
+    },
+    profilePicture: {
+        type: String,
+        default: null
+    },
+    lastLogin: {
+        type: Date,
+        default: Date.now
     },
     createdAt: {
         type: Date,
         default: Date.now
+    },
+    referralCode: {
+        type: String,
+        unique: true,
+        sparse: true // Allows multiple null values
+    },
+    referredBy: {
+        type: String,
+        default: null
     }
 });
 

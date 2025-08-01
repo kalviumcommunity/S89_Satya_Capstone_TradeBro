@@ -1,357 +1,821 @@
-import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { FiFilter, FiDownload, FiCalendar, FiTrendingUp, FiTrendingDown, FiAlertCircle } from "react-icons/fi";
-import PageLayout from "../components/PageLayout";
-import { useToast } from "../context/ToastContext";
-import { useAuth } from "../context/AuthContext";
-import axios from "axios";
-<<<<<<< HEAD
-import API_ENDPOINTS from "../config/apiConfig";
-=======
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
-import "../styles/pages/History.css";
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  FiClock,
+  FiTrendingUp,
+  FiTrendingDown,
+  FiFilter,
+  FiDownload,
+  FiCalendar,
+  FiSearch,
+  FiX,
+  FiArrowUp,
+  FiArrowDown,
+  FiRefreshCw,
+  FiBarChart2,
+  FiDollarSign,
+  FiActivity,
+  FiTarget,
+  FiCheckCircle,
+  FiXCircle,
+  FiAlertCircle,
+  FiEye,
+  FiMoreHorizontal
+} from 'react-icons/fi';
+import { toast } from 'react-toastify';
+import StockPrice from '../components/StockPrice';
+import { usePortfolio } from '../contexts/PortfolioContext';
+import { formatCurrency, formatNumber, formatDate } from '../utils/formatters';
+import '../styles/history.css';
 
-const History = () => {
-  const { showToast } = useToast();
-  const { isAuthenticated } = useAuth();
+const History = ({ user, theme }) => {
+  const navigate = useNavigate();
+  const { portfolioData, getTransactionHistory } = usePortfolio();
+
+  // State management
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all");
-  const [dateRange, setDateRange] = useState({
-    from: "",
-    to: ""
-  });
-  const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState('all'); // 'all', 'buy', 'sell'
+  const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'completed', 'pending', 'failed'
+  const [dateRange, setDateRange] = useState('all'); // 'all', 'today', 'week', 'month', 'year'
+  const [sortBy, setSortBy] = useState('date');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Mock data for demonstration
+  // Mock transaction data (replace with real API data)
   const mockTransactions = [
     {
-      id: 1,
-      type: "buy",
-      symbol: "AAPL",
-      name: "Apple Inc.",
+      id: 'txn_001',
+      type: 'buy',
+      symbol: 'RELIANCE',
+      name: 'Reliance Industries Ltd',
       quantity: 10,
-      price: 175.43,
-      total: 1754.30,
-      date: "2023-10-15T14:32:00Z",
-      status: "completed"
+      price: 2847.65,
+      totalAmount: 28476.50,
+      fees: 14.24,
+      netAmount: 28490.74,
+      status: 'completed',
+      timestamp: new Date('2024-01-15T10:30:00'),
+      orderId: 'ORD_001',
+      exchange: 'NSE',
+      sector: 'Energy'
     },
     {
-      id: 2,
-      type: "sell",
-      symbol: "MSFT",
-      name: "Microsoft Corporation",
+      id: 'txn_002',
+      type: 'sell',
+      symbol: 'TCS',
+      name: 'Tata Consultancy Services',
       quantity: 5,
-      price: 340.25,
-      total: 1701.25,
-      date: "2023-10-12T09:45:00Z",
-      status: "completed"
+      price: 3892.40,
+      totalAmount: 19462.00,
+      fees: 9.73,
+      netAmount: 19452.27,
+      status: 'completed',
+      timestamp: new Date('2024-01-14T14:45:00'),
+      orderId: 'ORD_002',
+      exchange: 'NSE',
+      sector: 'IT',
+      gainLoss: 1847.30,
+      gainLossPercent: 10.5
     },
     {
-      id: 3,
-      type: "buy",
-      symbol: "GOOGL",
-      name: "Alphabet Inc.",
-      quantity: 8,
-      price: 132.50,
-      total: 1060.00,
-      date: "2023-10-08T11:20:00Z",
-      status: "completed"
-    },
-    {
-      id: 4,
-      type: "buy",
-      symbol: "AMZN",
-      name: "Amazon.com Inc.",
-      quantity: 12,
-      price: 128.30,
-      total: 1539.60,
-      date: "2023-10-05T15:10:00Z",
-      status: "completed"
-    },
-    {
-      id: 5,
-      type: "sell",
-      symbol: "TSLA",
-      name: "Tesla, Inc.",
-      quantity: 6,
-      price: 240.50,
-      total: 1443.00,
-      date: "2023-10-01T10:05:00Z",
-      status: "completed"
-    },
-    {
-      id: 6,
-      type: "buy",
-      symbol: "NVDA",
-      name: "NVIDIA Corporation",
+      id: 'txn_003',
+      type: 'buy',
+      symbol: 'HDFC',
+      name: 'HDFC Bank Ltd',
       quantity: 15,
-      price: 450.75,
-      total: 6761.25,
-      date: "2023-09-28T13:40:00Z",
-      status: "completed"
+      price: 1734.85,
+      totalAmount: 26022.75,
+      fees: 13.01,
+      netAmount: 26035.76,
+      status: 'pending',
+      timestamp: new Date('2024-01-13T09:15:00'),
+      orderId: 'ORD_003',
+      exchange: 'NSE',
+      sector: 'Banking'
     },
     {
-      id: 7,
-      type: "sell",
-      symbol: "META",
-      name: "Meta Platforms, Inc.",
-      quantity: 10,
-      price: 320.15,
-      total: 3201.50,
-      date: "2023-09-25T09:30:00Z",
-      status: "completed"
+      id: 'txn_004',
+      type: 'buy',
+      symbol: 'INFY',
+      name: 'Infosys Ltd',
+      quantity: 8,
+      price: 1456.20,
+      totalAmount: 11649.60,
+      fees: 5.82,
+      netAmount: 11655.42,
+      status: 'completed',
+      timestamp: new Date('2024-01-12T11:20:00'),
+      orderId: 'ORD_004',
+      exchange: 'NSE',
+      sector: 'IT'
+    },
+    {
+      id: 'txn_005',
+      type: 'sell',
+      symbol: 'WIPRO',
+      name: 'Wipro Ltd',
+      quantity: 20,
+      price: 432.85,
+      totalAmount: 8657.00,
+      fees: 4.33,
+      netAmount: 8652.67,
+      status: 'failed',
+      timestamp: new Date('2024-01-11T16:30:00'),
+      orderId: 'ORD_005',
+      exchange: 'NSE',
+      sector: 'IT',
+      gainLoss: -245.80,
+      gainLossPercent: -2.8,
+      failureReason: 'Insufficient shares'
     }
   ];
 
-  // Load transaction data
+  // Load transaction history
   useEffect(() => {
-    const fetchTransactions = async () => {
-      if (!isAuthenticated) {
-        setLoading(false);
-        return;
-      }
-
+    const loadTransactions = async () => {
       setLoading(true);
-      setError(null);
-
       try {
-<<<<<<< HEAD
-        const response = await axios.get(API_ENDPOINTS.VIRTUAL_MONEY.TRANSACTIONS);
-=======
-        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/virtual-money/transactions`);
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
-
-        if (response.data.success) {
-          // Transform the data to match our frontend format
-          const formattedTransactions = response.data.data.map((transaction, index) => ({
-            id: transaction._id || index,
-            type: transaction.type === 'BUY' ? 'buy' : transaction.type === 'SELL' ? 'sell' : 'other',
-            symbol: transaction.stockSymbol || '-',
-            name: transaction.description ? transaction.description.split(' ').slice(1).join(' ') : '-',
-            quantity: transaction.stockQuantity || 0,
-            price: transaction.stockPrice || 0,
-            total: Math.abs(transaction.amount) || 0,
-            date: transaction.timestamp,
-            status: 'completed'
-          }));
-
-          setTransactions(formattedTransactions);
-        } else {
-          setError("Failed to load transaction history");
-          // Use mock data as fallback
+        // In real app, this would fetch from API
+        // const history = await getTransactionHistory();
+        // setTransactions(history);
+        
+        // For now, use mock data
+        setTimeout(() => {
           setTransactions(mockTransactions);
-        }
-      } catch (err) {
-        console.error("Error fetching transaction history:", err);
-        setError("Failed to load transaction history. Using sample data instead.");
-        // Use mock data as fallback
-        setTransactions(mockTransactions);
-      } finally {
+          setLoading(false);
+        }, 1000);
+      } catch (error) {
+        console.error('Error loading transaction history:', error);
+        toast.error('Failed to load transaction history');
         setLoading(false);
       }
     };
 
-    fetchTransactions();
-  }, [isAuthenticated]);
+    loadTransactions();
+  }, []);
 
-  // Filter transactions based on type and date range
-  const filteredTransactions = transactions.filter((transaction) => {
-    // Filter by type
-    if (filter !== "all" && transaction.type !== filter) {
-      return false;
+  // Filter and sort transactions
+  const filteredAndSortedTransactions = useMemo(() => {
+    let filtered = [...transactions];
+
+    // Apply search filter
+    if (searchQuery) {
+      filtered = filtered.filter(txn => 
+        txn.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        txn.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        txn.orderId.toLowerCase().includes(searchQuery.toLowerCase())
+      );
     }
 
-    // Filter by date range
-    if (dateRange.from && new Date(transaction.date) < new Date(dateRange.from)) {
-      return false;
-    }
-    if (dateRange.to && new Date(transaction.date) > new Date(dateRange.to)) {
-      return false;
+    // Apply type filter
+    if (filterType !== 'all') {
+      filtered = filtered.filter(txn => txn.type === filterType);
     }
 
-    return true;
-  });
+    // Apply status filter
+    if (filterStatus !== 'all') {
+      filtered = filtered.filter(txn => txn.status === filterStatus);
+    }
 
-  // Format date
-  const formatDate = (dateString) => {
-    const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-    return new Date(dateString).toLocaleDateString(undefined, options);
+    // Apply date range filter
+    if (dateRange !== 'all') {
+      const now = new Date();
+      const startDate = new Date();
+      
+      switch (dateRange) {
+        case 'today':
+          startDate.setHours(0, 0, 0, 0);
+          break;
+        case 'week':
+          startDate.setDate(now.getDate() - 7);
+          break;
+        case 'month':
+          startDate.setMonth(now.getMonth() - 1);
+          break;
+        case 'year':
+          startDate.setFullYear(now.getFullYear() - 1);
+          break;
+      }
+      
+      filtered = filtered.filter(txn => txn.timestamp >= startDate);
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      let aValue, bValue;
+      
+      switch (sortBy) {
+        case 'date':
+          aValue = a.timestamp;
+          bValue = b.timestamp;
+          break;
+        case 'symbol':
+          aValue = a.symbol;
+          bValue = b.symbol;
+          break;
+        case 'amount':
+          aValue = a.totalAmount;
+          bValue = b.totalAmount;
+          break;
+        case 'quantity':
+          aValue = a.quantity;
+          bValue = b.quantity;
+          break;
+        case 'status':
+          aValue = a.status;
+          bValue = b.status;
+          break;
+        default:
+          aValue = a.timestamp;
+          bValue = b.timestamp;
+      }
+
+      if (aValue instanceof Date && bValue instanceof Date) {
+        return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
+      } else if (typeof aValue === 'string') {
+        return sortOrder === 'asc' 
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
+      } else {
+        return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
+      }
+    });
+
+    return filtered;
+  }, [transactions, searchQuery, filterType, filterStatus, dateRange, sortBy, sortOrder]);
+
+  // Calculate statistics
+  const stats = useMemo(() => {
+    const totalTransactions = filteredAndSortedTransactions.length;
+    const completedTransactions = filteredAndSortedTransactions.filter(t => t.status === 'completed');
+    const buyTransactions = completedTransactions.filter(t => t.type === 'buy');
+    const sellTransactions = completedTransactions.filter(t => t.type === 'sell');
+    
+    const totalBuyAmount = buyTransactions.reduce((sum, t) => sum + t.totalAmount, 0);
+    const totalSellAmount = sellTransactions.reduce((sum, t) => sum + t.totalAmount, 0);
+    const totalFees = completedTransactions.reduce((sum, t) => sum + (t.fees || 0), 0);
+    
+    const totalGainLoss = sellTransactions.reduce((sum, t) => sum + (t.gainLoss || 0), 0);
+    
+    return {
+      totalTransactions,
+      completedTransactions: completedTransactions.length,
+      buyTransactions: buyTransactions.length,
+      sellTransactions: sellTransactions.length,
+      totalBuyAmount,
+      totalSellAmount,
+      totalFees,
+      totalGainLoss,
+      successRate: totalTransactions > 0 ? (completedTransactions.length / totalTransactions) * 100 : 0
+    };
+  }, [filteredAndSortedTransactions]);
+
+  // Event handlers
+  const handleSort = (field) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('desc');
+    }
   };
 
-  // Export transactions as CSV
-  const exportTransactions = () => {
-    // Create CSV content
-    const headers = ["ID", "Type", "Symbol", "Name", "Quantity", "Price", "Total", "Date", "Status"];
-    const csvContent = [
-      headers.join(","),
-      ...filteredTransactions.map(t => [
-        t.id,
-        t.type,
-        t.symbol,
-        `"${t.name}"`, // Add quotes to handle commas in names
-        t.quantity,
-        t.price,
-        t.total,
-        formatDate(t.date),
-        t.status
-      ].join(","))
-    ].join("\n");
-
-    // Create download link
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `transaction-history-${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    showToast("Transaction history exported successfully", "success");
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    // Simulate refresh
+    setTimeout(() => {
+      setRefreshing(false);
+      toast.success('Transaction history refreshed!');
+    }, 1000);
   };
 
-  return (
-    <PageLayout>
-      <div className="history-container">
-        <motion.h1
-          className="history-header"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          Transaction History
-        </motion.h1>
+  const handleExport = () => {
+    // Export functionality
+    toast.info('Export feature coming soon!');
+  };
 
-        <motion.div
-          className="history-actions"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-        >
-          <div className="filter-container">
-            <FiFilter className="filter-icon" />
-            <select
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              className="filter-select"
-            >
-              <option value="all">All Transactions</option>
-              <option value="buy">Buy Orders</option>
-              <option value="sell">Sell Orders</option>
-            </select>
-          </div>
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'completed':
+        return <FiCheckCircle className="status-icon completed" />;
+      case 'pending':
+        return <FiAlertCircle className="status-icon pending" />;
+      case 'failed':
+        return <FiXCircle className="status-icon failed" />;
+      default:
+        return <FiClock className="status-icon" />;
+    }
+  };
 
-          <div className="date-range-container">
-            <div className="date-input-group">
-              <FiCalendar className="date-icon" />
-              <input
-                type="date"
-                value={dateRange.from}
-                onChange={(e) => setDateRange({...dateRange, from: e.target.value})}
-                className="date-input"
-                placeholder="From"
-              />
-            </div>
-            <span className="date-separator">to</span>
-            <div className="date-input-group">
-              <FiCalendar className="date-icon" />
-              <input
-                type="date"
-                value={dateRange.to}
-                onChange={(e) => setDateRange({...dateRange, to: e.target.value})}
-                className="date-input"
-                placeholder="To"
-              />
-            </div>
-          </div>
+  const getTypeIcon = (type) => {
+    return type === 'buy' 
+      ? <FiTrendingUp className="type-icon buy" />
+      : <FiTrendingDown className="type-icon sell" />;
+  };
 
-          <button
-            className="export-btn"
-            onClick={exportTransactions}
-            disabled={filteredTransactions.length === 0}
-          >
-            <FiDownload />
-            Export CSV
-          </button>
-        </motion.div>
-
-        {loading ? (
+  // Loading state
+  if (loading) {
+    return (
+      <div className="history-page">
+        <div className="history-container">
           <div className="loading-container">
-            <div className="loading-spinner"></div>
+            <div className="loading-spinner" />
             <p>Loading transaction history...</p>
           </div>
-        ) : error ? (
-          <div className="error-container">
-            <FiAlertCircle className="error-icon" />
-            <p>{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="history-page">
+      {/* Header Section */}
+      <div className="history-header">
+        <div className="header-content">
+          <div className="header-left">
+            <div className="header-icon">
+              <FiClock />
+            </div>
+            <div className="header-text">
+              <h1>Transaction History</h1>
+              <p>Track all your trading activities and portfolio changes</p>
+            </div>
           </div>
-        ) : !isAuthenticated ? (
-          <div className="empty-history">
-            <p>Please log in to view your transaction history.</p>
+          <div className="header-actions">
+            <button
+              className={`action-btn ${showFilters ? 'active' : ''}`}
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <FiFilter />
+              Filters
+            </button>
           </div>
-        ) : filteredTransactions.length === 0 ? (
-          <div className="empty-history">
-            <p>No transactions found for the selected filters.</p>
-            <p>Try changing your filter criteria or date range.</p>
+        </div>
+
+        {/* Stats Overview */}
+        <div className="stats-overview">
+          <div className="stat-card">
+            <div className="stat-icon">
+              <FiActivity />
+            </div>
+            <div className="stat-content">
+              <div className="stat-value">{stats.totalTransactions}</div>
+              <div className="stat-label">Total Transactions</div>
+            </div>
           </div>
-        ) : (
-          <motion.div
-            className="history-table-container"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <table className="history-table">
-              <thead>
-                <tr>
-                  <th>Date & Time</th>
-                  <th>Type</th>
-                  <th>Symbol</th>
-                  <th>Name</th>
-                  <th>Quantity</th>
-                  <th>Price</th>
-                  <th>Total</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredTransactions.map((transaction) => (
-                  <motion.tr
+          <div className="stat-card">
+            <div className="stat-icon positive">
+              <FiTrendingUp />
+            </div>
+            <div className="stat-content">
+              <div className="stat-value">{formatCurrency(stats.totalBuyAmount)}</div>
+              <div className="stat-label">Total Invested</div>
+            </div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon negative">
+              <FiTrendingDown />
+            </div>
+            <div className="stat-content">
+              <div className="stat-value">{formatCurrency(stats.totalSellAmount)}</div>
+              <div className="stat-label">Total Sold</div>
+            </div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon">
+              <FiTarget />
+            </div>
+            <div className="stat-content">
+              <div className="stat-value">{stats.successRate.toFixed(1)}%</div>
+              <div className="stat-label">Success Rate</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="history-container">
+        {/* Filters Panel */}
+        <AnimatePresence>
+          {showFilters && (
+            <motion.div
+              className="filters-panel"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="filters-content">
+                <div className="filter-group">
+                  <label>Search</label>
+                  <div className="search-wrapper">
+                    <FiSearch className="search-icon" />
+                    <input
+                      type="text"
+                      placeholder="Search by symbol, name, or order ID..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="search-input"
+                    />
+                    {searchQuery && (
+                      <button
+                        className="clear-search"
+                        onClick={() => setSearchQuery('')}
+                      >
+                        <FiX />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="filter-group">
+                  <label>Transaction Type</label>
+                  <select
+                    value={filterType}
+                    onChange={(e) => setFilterType(e.target.value)}
+                    className="filter-select"
+                  >
+                    <option value="all">All Types</option>
+                    <option value="buy">Buy Orders</option>
+                    <option value="sell">Sell Orders</option>
+                  </select>
+                </div>
+
+                <div className="filter-group">
+                  <label>Status</label>
+                  <select
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value)}
+                    className="filter-select"
+                  >
+                    <option value="all">All Status</option>
+                    <option value="completed">Completed</option>
+                    <option value="pending">Pending</option>
+                    <option value="failed">Failed</option>
+                  </select>
+                </div>
+
+                <div className="filter-group">
+                  <label>Date Range</label>
+                  <select
+                    value={dateRange}
+                    onChange={(e) => setDateRange(e.target.value)}
+                    className="filter-select"
+                  >
+                    <option value="all">All Time</option>
+                    <option value="today">Today</option>
+                    <option value="week">Last 7 Days</option>
+                    <option value="month">Last Month</option>
+                    <option value="year">Last Year</option>
+                  </select>
+                </div>
+
+                <div className="filter-actions">
+                  <button
+                    className="clear-filters-btn"
+                    onClick={() => {
+                      setSearchQuery('');
+                      setFilterType('all');
+                      setFilterStatus('all');
+                      setDateRange('all');
+                    }}
+                  >
+                    Clear All
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Transactions Table */}
+        <div className="transactions-section">
+          {filteredAndSortedTransactions.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-icon">
+                <FiClock />
+              </div>
+              <h3>No transactions found</h3>
+              <p>
+                {searchQuery || filterType !== 'all' || filterStatus !== 'all' || dateRange !== 'all'
+                  ? 'No transactions match your current filters'
+                  : 'Start trading to see your transaction history here'
+                }
+              </p>
+              {(searchQuery || filterType !== 'all' || filterStatus !== 'all' || dateRange !== 'all') && (
+                <button
+                  className="clear-filters-btn"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setFilterType('all');
+                    setFilterStatus('all');
+                    setDateRange('all');
+                  }}
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="transactions-table">
+              <div className="table-header">
+                <div className="table-row header">
+                  <div
+                    className="col-date sortable"
+                    onClick={() => handleSort('date')}
+                  >
+                    Date & Time
+                    {sortBy === 'date' && (
+                      sortOrder === 'asc' ? <FiArrowUp /> : <FiArrowDown />
+                    )}
+                  </div>
+                  <div
+                    className="col-stock sortable"
+                    onClick={() => handleSort('symbol')}
+                  >
+                    Stock
+                    {sortBy === 'symbol' && (
+                      sortOrder === 'asc' ? <FiArrowUp /> : <FiArrowDown />
+                    )}
+                  </div>
+                  <div className="col-type">Type</div>
+                  <div
+                    className="col-quantity sortable"
+                    onClick={() => handleSort('quantity')}
+                  >
+                    Quantity
+                    {sortBy === 'quantity' && (
+                      sortOrder === 'asc' ? <FiArrowUp /> : <FiArrowDown />
+                    )}
+                  </div>
+                  <div className="col-price">Price</div>
+                  <div
+                    className="col-amount sortable"
+                    onClick={() => handleSort('amount')}
+                  >
+                    Total Amount
+                    {sortBy === 'amount' && (
+                      sortOrder === 'asc' ? <FiArrowUp /> : <FiArrowDown />
+                    )}
+                  </div>
+                  <div className="col-gain-loss">Gain/Loss</div>
+                  <div
+                    className="col-status sortable"
+                    onClick={() => handleSort('status')}
+                  >
+                    Status
+                    {sortBy === 'status' && (
+                      sortOrder === 'asc' ? <FiArrowUp /> : <FiArrowDown />
+                    )}
+                  </div>
+                  <div className="col-actions">Actions</div>
+                </div>
+              </div>
+
+              <div className="table-body">
+                {filteredAndSortedTransactions.map((transaction, index) => (
+                  <motion.div
                     key={transaction.id}
+                    className="table-row clickable"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                    whileHover={{ backgroundColor: "rgba(0,0,0,0.02)" }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                    onClick={() => setSelectedTransaction(transaction)}
                   >
-                    <td>{formatDate(transaction.date)}</td>
-                    <td className={`type-cell ${transaction.type}`}>
-                      {transaction.type === "buy" ? (
-                        <FiTrendingUp className="type-icon" />
+                    <div className="col-date">
+                      <div className="date-info">
+                        <span className="date">{formatDate(transaction.timestamp, 'MMM DD, YYYY')}</span>
+                        <span className="time">{formatDate(transaction.timestamp, 'HH:mm')}</span>
+                      </div>
+                    </div>
+                    <div className="col-stock">
+                      <div className="stock-info">
+                        <span className="symbol">{transaction.symbol}</span>
+                        <span className="name">{transaction.name}</span>
+                        <span className="exchange">{transaction.exchange}</span>
+                      </div>
+                    </div>
+                    <div className="col-type">
+                      <div className={`type-badge ${transaction.type}`}>
+                        {getTypeIcon(transaction.type)}
+                        <span>{transaction.type.toUpperCase()}</span>
+                      </div>
+                    </div>
+                    <div className="col-quantity">
+                      <span className="quantity">{formatNumber(transaction.quantity)}</span>
+                    </div>
+                    <div className="col-price">
+                      <span className="price">{formatCurrency(transaction.price)}</span>
+                    </div>
+                    <div className="col-amount">
+                      <div className="amount-info">
+                        <span className="total">{formatCurrency(transaction.totalAmount)}</span>
+                        <span className="fees">Fees: {formatCurrency(transaction.fees || 0)}</span>
+                      </div>
+                    </div>
+                    <div className="col-gain-loss">
+                      {transaction.gainLoss !== undefined ? (
+                        <div className={`gain-loss ${transaction.gainLoss >= 0 ? 'positive' : 'negative'}`}>
+                          <span className="amount">
+                            {transaction.gainLoss >= 0 ? '+' : ''}{formatCurrency(transaction.gainLoss)}
+                          </span>
+                          <span className="percent">
+                            ({transaction.gainLoss >= 0 ? '+' : ''}{transaction.gainLossPercent?.toFixed(2)}%)
+                          </span>
+                        </div>
                       ) : (
-                        <FiTrendingDown className="type-icon" />
+                        <span className="no-data">-</span>
                       )}
-                      {transaction.type === "buy" ? "Buy" : "Sell"}
-                    </td>
-                    <td className="symbol-cell">{transaction.symbol}</td>
-                    <td>{transaction.name}</td>
-                    <td>{transaction.quantity}</td>
-                    <td className="price-cell">${transaction.price.toFixed(2)}</td>
-                    <td className="total-cell">${transaction.total.toFixed(2)}</td>
-                    <td className="status-cell">
-                      <span className={`status-badge ${transaction.status}`}>
-                        {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
-                      </span>
-                    </td>
-                  </motion.tr>
+                    </div>
+                    <div className="col-status">
+                      <div className={`status-badge ${transaction.status}`}>
+                        {getStatusIcon(transaction.status)}
+                        <span>{transaction.status}</span>
+                      </div>
+                    </div>
+                    <div className="col-actions">
+                      <button
+                        className="action-btn-small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedTransaction(transaction);
+                        }}
+                        title="View Details"
+                      >
+                        <FiEye />
+                      </button>
+                    </div>
+                  </motion.div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Transaction Detail Modal */}
+      <AnimatePresence>
+        {selectedTransaction && (
+          <motion.div
+            className="modal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSelectedTransaction(null)}
+          >
+            <motion.div
+              className="modal-content transaction-detail-modal"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="modal-header">
+                <h3>Transaction Details</h3>
+                <button
+                  className="modal-close"
+                  onClick={() => setSelectedTransaction(null)}
+                >
+                  <FiX />
+                </button>
+              </div>
+              <div className="modal-body">
+                <div className="transaction-details">
+                  <div className="detail-section">
+                    <h4>Basic Information</h4>
+                    <div className="detail-grid">
+                      <div className="detail-item">
+                        <label>Transaction ID</label>
+                        <span>{selectedTransaction.id}</span>
+                      </div>
+                      <div className="detail-item">
+                        <label>Order ID</label>
+                        <span>{selectedTransaction.orderId}</span>
+                      </div>
+                      <div className="detail-item">
+                        <label>Date & Time</label>
+                        <span>{formatDate(selectedTransaction.timestamp, 'MMM DD, YYYY HH:mm:ss')}</span>
+                      </div>
+                      <div className="detail-item">
+                        <label>Status</label>
+                        <div className={`status-badge ${selectedTransaction.status}`}>
+                          {getStatusIcon(selectedTransaction.status)}
+                          <span>{selectedTransaction.status}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="detail-section">
+                    <h4>Stock Information</h4>
+                    <div className="detail-grid">
+                      <div className="detail-item">
+                        <label>Symbol</label>
+                        <span>{selectedTransaction.symbol}</span>
+                      </div>
+                      <div className="detail-item">
+                        <label>Company Name</label>
+                        <span>{selectedTransaction.name}</span>
+                      </div>
+                      <div className="detail-item">
+                        <label>Exchange</label>
+                        <span>{selectedTransaction.exchange}</span>
+                      </div>
+                      <div className="detail-item">
+                        <label>Sector</label>
+                        <span>{selectedTransaction.sector}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="detail-section">
+                    <h4>Transaction Details</h4>
+                    <div className="detail-grid">
+                      <div className="detail-item">
+                        <label>Type</label>
+                        <div className={`type-badge ${selectedTransaction.type}`}>
+                          {getTypeIcon(selectedTransaction.type)}
+                          <span>{selectedTransaction.type.toUpperCase()}</span>
+                        </div>
+                      </div>
+                      <div className="detail-item">
+                        <label>Quantity</label>
+                        <span>{formatNumber(selectedTransaction.quantity)} shares</span>
+                      </div>
+                      <div className="detail-item">
+                        <label>Price per Share</label>
+                        <span>{formatCurrency(selectedTransaction.price)}</span>
+                      </div>
+                      <div className="detail-item">
+                        <label>Total Amount</label>
+                        <span>{formatCurrency(selectedTransaction.totalAmount)}</span>
+                      </div>
+                      <div className="detail-item">
+                        <label>Fees & Charges</label>
+                        <span>{formatCurrency(selectedTransaction.fees || 0)}</span>
+                      </div>
+                      <div className="detail-item">
+                        <label>Net Amount</label>
+                        <span className="net-amount">{formatCurrency(selectedTransaction.netAmount)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {selectedTransaction.gainLoss !== undefined && (
+                    <div className="detail-section">
+                      <h4>Performance</h4>
+                      <div className="detail-grid">
+                        <div className="detail-item">
+                          <label>Gain/Loss Amount</label>
+                          <span className={`gain-loss ${selectedTransaction.gainLoss >= 0 ? 'positive' : 'negative'}`}>
+                            {selectedTransaction.gainLoss >= 0 ? '+' : ''}{formatCurrency(selectedTransaction.gainLoss)}
+                          </span>
+                        </div>
+                        <div className="detail-item">
+                          <label>Gain/Loss Percentage</label>
+                          <span className={`gain-loss ${selectedTransaction.gainLoss >= 0 ? 'positive' : 'negative'}`}>
+                            {selectedTransaction.gainLoss >= 0 ? '+' : ''}{selectedTransaction.gainLossPercent?.toFixed(2)}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedTransaction.status === 'failed' && selectedTransaction.failureReason && (
+                    <div className="detail-section">
+                      <h4>Failure Information</h4>
+                      <div className="failure-reason">
+                        <FiXCircle className="failure-icon" />
+                        <span>{selectedTransaction.failureReason}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button
+                  className="btn secondary"
+                  onClick={() => setSelectedTransaction(null)}
+                >
+                  Close
+                </button>
+                <button
+                  className="btn primary"
+                  onClick={() => navigate(`/stock/${selectedTransaction.symbol}`)}
+                >
+                  View Stock
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
-      </div>
-    </PageLayout>
+      </AnimatePresence>
+    </div>
   );
 };
 

@@ -1,0 +1,52 @@
+.gradient-text {
+  display: inline-block;
+  font-weight: inherit;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  position: relative;
+}
+
+/* Fallback for browsers that don't support background-clip: text */
+@supports not (-webkit-background-clip: text) {
+  .gradient-text {
+    -webkit-text-fill-color: initial;
+    background: none;
+    color: var(--text-primary);
+  }
+}
+
+/* Dark mode adjustments */
+[data-theme="dark"] .gradient-text {
+  filter: brightness(1.3) saturate(1.4);
+}
+
+/* Size variants */
+.gradient-text.text-sm {
+  font-size: 0.875rem;
+}
+
+.gradient-text.text-base {
+  font-size: 1rem;
+}
+
+.gradient-text.text-lg {
+  font-size: 1.125rem;
+}
+
+.gradient-text.text-xl {
+  font-size: 1.25rem;
+}
+
+.gradient-text.text-2xl {
+  font-size: 1.5rem;
+}
+
+.gradient-text.text-3xl {
+  font-size: 1.875rem;
+}
+
+/* Enhanced visibility for dark mode */
+[data-theme="dark"] .gradient-text {
+  text-shadow: 0 0 20px rgba(111, 0, 209, 0.4);
+}

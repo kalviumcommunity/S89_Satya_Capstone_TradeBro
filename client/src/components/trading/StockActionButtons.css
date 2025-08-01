@@ -1,0 +1,294 @@
+/* ========================================
+   🛒 STOCK ACTION BUTTONS
+   Universal trading buttons for all contexts
+   ======================================== */
+
+/* Base stock actions container */
+.stock-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Base button styles */
+.stock-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.stock-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.stock-action-btn:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+
+.stock-action-btn:not(:disabled):active {
+  transform: translateY(0);
+}
+
+/* ========================================
+   🎨 BUY BUTTON STYLES
+   ======================================== */
+
+.stock-action-btn.buy {
+  background: linear-gradient(135deg, #10b981 0%, #14f195 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.stock-action-btn.buy:not(:disabled):hover {
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+/* ========================================
+   🎨 SELL BUTTON STYLES
+   ======================================== */
+
+.stock-action-btn.sell {
+  background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+.stock-action-btn.sell:not(:disabled):hover {
+  background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+/* ========================================
+   📐 VARIANT: DEFAULT
+   ======================================== */
+
+.stock-actions.default {
+  gap: 12px;
+}
+
+.stock-action-btn.default {
+  padding: 10px 16px;
+  font-size: 0.875rem;
+  border-radius: 10px;
+  min-width: 90px;
+}
+
+.stock-action-btn.default svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ========================================
+   📐 VARIANT: COMPACT
+   ======================================== */
+
+.stock-actions.compact {
+  gap: 6px;
+}
+
+.stock-action-btn.compact {
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  border-radius: 8px;
+  min-width: 70px;
+}
+
+.stock-action-btn.compact svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* ========================================
+   📐 VARIANT: MINIMAL
+   ======================================== */
+
+.stock-actions.minimal {
+  gap: 4px;
+}
+
+.stock-action-btn.minimal {
+  padding: 6px 10px;
+  font-size: 0.75rem;
+  border-radius: 6px;
+  min-width: 60px;
+}
+
+.stock-action-btn.minimal svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* ========================================
+   📐 VARIANT: ICON-ONLY
+   ======================================== */
+
+.stock-actions.icon-only {
+  gap: 4px;
+}
+
+.stock-action-btn.icon-only {
+  padding: 8px;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  min-width: unset;
+}
+
+.stock-action-btn.icon-only svg {
+  width: 16px;
+  height: 16px;
+}
+
+.stock-action-btn.icon-only span {
+  display: none;
+}
+
+/* ========================================
+   🎯 CONTEXT-SPECIFIC STYLES
+   ======================================== */
+
+/* Watchlist context */
+.stock-actions.watchlist-actions {
+  justify-content: flex-end;
+}
+
+/* Portfolio context */
+.stock-actions.portfolio-actions {
+  justify-content: center;
+}
+
+/* Charts context */
+.stock-actions.chart-actions {
+  justify-content: flex-start;
+  margin-top: 12px;
+}
+
+/* Search results context */
+.stock-actions.search-actions {
+  justify-content: flex-end;
+  margin-left: auto;
+}
+
+/* ========================================
+   🌙 DARK MODE STYLES
+   ======================================== */
+
+[data-theme="dark"] .stock-action-btn.buy {
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+}
+
+[data-theme="dark"] .stock-action-btn.buy:not(:disabled):hover {
+  background: linear-gradient(135deg, #047857 0%, #059669 100%);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.5);
+}
+
+[data-theme="dark"] .stock-action-btn.sell {
+  background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+}
+
+[data-theme="dark"] .stock-action-btn.sell:not(:disabled):hover {
+  background: linear-gradient(135deg, #b91c1c 0%, #dc2626 100%);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.5);
+}
+
+/* ========================================
+   📱 RESPONSIVE DESIGN
+   ======================================== */
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .stock-actions.default {
+    gap: 8px;
+  }
+
+  .stock-action-btn.default {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    min-width: 70px;
+  }
+
+  .stock-action-btn.compact {
+    padding: 6px 8px;
+    font-size: 0.75rem;
+    min-width: 50px;
+  }
+
+  .stock-action-btn.minimal {
+    padding: 4px 6px;
+    font-size: 0.7rem;
+    min-width: 40px;
+  }
+
+  .stock-action-btn.icon-only {
+    width: 28px;
+    height: 28px;
+    padding: 6px;
+  }
+
+  .stock-action-btn.icon-only svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+/* Very small screens */
+@media (max-width: 480px) {
+  .stock-actions.default .stock-action-btn span {
+    display: none;
+  }
+
+  .stock-actions.compact .stock-action-btn span {
+    display: none;
+  }
+
+  .stock-action-btn.default,
+  .stock-action-btn.compact {
+    min-width: 36px;
+    padding: 8px;
+    border-radius: 50%;
+  }
+}
+
+/* ========================================
+   ♿ ACCESSIBILITY
+   ======================================== */
+
+.stock-action-btn:focus {
+  outline: 2px solid var(--accent-primary, #10b981);
+  outline-offset: 2px;
+}
+
+.stock-action-btn:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .stock-action-btn {
+    border: 2px solid currentColor;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .stock-action-btn {
+    transition: none;
+  }
+}

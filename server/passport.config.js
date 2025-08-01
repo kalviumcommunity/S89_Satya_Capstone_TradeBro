@@ -1,126 +1,140 @@
 const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
-const jwt = require("jsonwebtoken"); // Import JWT for token generation
-const User = require("./models/User"); // Adjust path to your User schema
+const jwt = require("jsonwebtoken");
+const User = require("./models/User");
 require('dotenv').config();
 
-// Check if Google credentials are available
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET;
 
-// Define the callback URL using environment variables
-// This allows for flexibility between development and production
-const CALLBACK_URL = process.env.API_BASE_URL + "/api/auth/google/callback";
+if (!JWT_SECRET) {
+  console.error('FATAL ERROR: JWT_SECRET environment variable is not set');
+  process.exit(1);
+}
 
-// Log configuration for debugging
+const isDevelopment = process.env.NODE_ENV !== 'production' || process.env.API_BASE_URL?.includes('localhost');
+const BASE_URL = isDevelopment ? "http://localhost:5001" : (process.env.API_BASE_URL || "https://s89-satya-capstone-tradebro.onrender.com");
+const CALLBACK_URL = BASE_URL + "/api/auth/google/callback";
+
 console.log('Google OAuth Configuration:');
 console.log('- GOOGLE_CLIENT_ID:', GOOGLE_CLIENT_ID ? 'Set' : 'Not set');
 console.log('- GOOGLE_CLIENT_SECRET:', GOOGLE_CLIENT_SECRET ? 'Set' : 'Not set');
+console.log('- JWT_SECRET:', JWT_SECRET ? 'Set' : 'Not set');
 console.log('- CALLBACK_URL:', CALLBACK_URL);
 
-// Only configure Google strategy if credentials are available
 if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
-  // Determine callback URL based on environment
-  const callbackURL = process.env.NODE_ENV === 'production'
-    ? "https://s89-satya-capstone-tradebro.onrender.com/api/auth/google/callback"
-    : "http://localhost:5000/api/auth/google/callback";
-
-  console.log('Using callback URL for Google OAuth:', callbackURL);
-
   passport.use(
     new GoogleStrategy(
       {
         clientID: GOOGLE_CLIENT_ID,
         clientSecret: GOOGLE_CLIENT_SECRET,
-        callbackURL: callbackURL,
-        proxy: true
+        callbackURL: CALLBACK_URL,
+        scope: ['profile', 'email'],
+        accessType: 'offline',
+        prompt: 'consent'
       },
+      async (_accessToken, _refreshToken, profile, done) => {
+        try {
+          console.log("Google Profile:", profile);
 
-    async (accessToken, refreshToken, profile, done) => {
-      try {
-        console.log("Google Profile:", profile); // Debugging - Log the Google profile
-
-        // Check if user already exists
-        let user = await User.findOne({ email: profile.emails[0].value });
-        if (!user) {
-          console.log("Creating new user for Google account:", profile.emails[0].value); // Debugging
-
-          // Create a new user if not found
-          user = new User({
-            username: profile.displayName || profile.emails[0].value.split('@')[0],
-            email: profile.emails[0].value,
-            fullName: profile.displayName || profile.name?.givenName + ' ' + profile.name?.familyName,
-            password: null, // No password for Google-authenticated users
-            profileImage: profile.photos?.[0]?.value || null,
-          });
-          await user.save();
-        } else {
-          console.log("User already exists:", user.email); // Debugging
-
-          // Update user information if needed
-          let needsUpdate = false;
-
-          // Update fullName if not set
-          if (!user.fullName && profile.displayName) {
-            user.fullName = profile.displayName;
-            needsUpdate = true;
+          // Safely access profile.emails with proper validation
+          if (!profile.emails || !Array.isArray(profile.emails) || profile.emails.length === 0) {
+            console.error("Google profile missing email information");
+            return done(new Error("Email not provided by Google"), null);
           }
 
-          // Update profile image if available
-          if (profile.photos?.[0]?.value && (!user.profileImage || user.profileImage !== profile.photos[0].value)) {
-            user.profileImage = profile.photos[0].value;
-            needsUpdate = true;
+          const email = profile.emails[0].value;
+          if (!email) {
+            console.error("Google profile email is empty");
+            return done(new Error("Invalid email from Google"), null);
           }
 
-          // Save if updates were made
-          if (needsUpdate) {
+          let user = await User.findOne({ email });
+          let isNewUser = false;
+
+          if (!user) {
+            isNewUser = true;
+            user = new User({
+              username: profile.displayName || email.split('@')[0],
+              email: email,
+              fullName: profile.displayName ||
+                ((profile.name?.givenName || "") + " " + (profile.name?.familyName || "")).trim() ||
+                email.split('@')[0],
+              authProvider: "google",
+              profileImage: profile.photos?.[0]?.value || null,
+            });
             await user.save();
-            console.log("Updated existing user with Google profile data");
+          } else {
+            let needsUpdate = false;
+            if (!user.fullName && profile.displayName) {
+              user.fullName = profile.displayName;
+              needsUpdate = true;
+            }
+            if (profile.photos?.[0]?.value && (!user.profileImage || user.profileImage !== profile.photos[0].value)) {
+              user.profileImage = profile.photos[0].value;
+              needsUpdate = true;
+            }
+            if (needsUpdate) {
+              await user.save();
+            }
           }
-        }
 
-        // Generate JWT token for the user with more user data
-        const token = jwt.sign(
-          {
+          if (!JWT_SECRET) {
+            console.error("JWT_SECRET is not defined when trying to sign token");
+            return done(new Error("Server configuration error"), null);
+          }
+
+          const token = jwt.sign(
+            {
+              id: user._id,
+              email: user.email,
+              username: user.username,
+              fullName: user.fullName
+            },
+            JWT_SECRET,
+            { expiresIn: "7d" }
+          );
+
+          
+          const userResponse = {
+            _id: user._id,
             id: user._id,
             email: user.email,
-            username: user.username || user.email.split('@')[0],
-            fullName: user.fullName || profile.displayName || user.username
-          },
-          process.env.JWT_SECRET,
-          { expiresIn: "7d" } // Token expires in 7 days
-        );
+            username: user.username,
+            fullName: user.fullName,
+            profileImage: user.profileImage,
+            authProvider: user.authProvider || "google",
+            isNewUser: isNewUser,
+            token: token
+          };
 
-        // Attach the token to the user object
-        user.token = token;
-
-        return done(null, user); // Pass only the user object to serializeUser
-      } catch (err) {
-        console.error("Error during Google authentication:", err); // Debugging
-        return done(err, null);
+          return done(null, userResponse);
+        } catch (err) {
+          console.error("Error during Google authentication:", err);
+          return done(err, null);
+        }
       }
-    }
-  )
+    )
   );
 } else {
   console.warn("Google OAuth credentials not found. Google authentication will not be available.");
 }
 
+// Passport session serialization (required for OAuth flow)
 passport.serializeUser((user, done) => {
-  done(null, user.id || user._id || user.user?.id || user.user?._id);
+  // Store minimal user data in session
+  done(null, {
+    id: user._id || user.id,
+    email: user.email,
+    isNewUser: user.isNewUser,
+    token: user.token
+  });
 });
 
-passport.deserializeUser(async (id, done) => {
-  try {
-    const user = await User.findById(id);
-    if (!user) {
-      return done(new Error("User not found"), null);
-    }
-    done(null, user);
-  } catch (err) {
-    console.error("Error during deserialization:", err); // Debugging
-    done(err, null);
-  }
+passport.deserializeUser((sessionUser, done) => {
+  // Return the user data from session
+  done(null, sessionUser);
 });
 
 module.exports = passport;

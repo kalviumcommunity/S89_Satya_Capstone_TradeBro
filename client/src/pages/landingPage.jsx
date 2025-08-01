@@ -1,442 +1,175 @@
-import React, { useState, memo, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { motion, useScroll, useTransform } from "framer-motion";
-import { FiMenu, FiX, FiBarChart2, FiPieChart, FiTrendingUp, FiArrowRight } from "react-icons/fi";
-import "../styles/pages/landingPage.css";
-
-// Import animation components
+import { useState, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import {
-  ScrollReveal,
-  StaggerContainer,
-  FloatingElement,
-  AnimatedText,
-  ParallaxSection
-} from "../components/animations";
+  FiArrowRight,
+  FiZap
+} from 'react-icons/fi'
 
-// Import TradingAssistant component
-import TradingAssistant from "../components/TradingAssistant";
+import TradeBroHeader from '../components/layout/TradeBroHeader'
+import OrbBackground from '../components/animations/OrbBackground'
+import GridMotion from '../components/animations/GridMotion'
+import InteractiveChart from '../components/hero/InteractiveChart'
+import TypewriterText from '../components/hero/TypewriterText'
 
-// Memoized components for better performance
-const NavBar = memo(({ mobileMenuOpen, toggleMobileMenu, handleGetStarted }) => {
-  const [scrolled, setScrolled] = useState(false);
+import SaytrixChatPreview from '../components/ai/SaytrixChatPreview'
+import AnimatedFeaturesList from '../components/features/AnimatedFeaturesList'
+import TradeBroStepper from '../components/stepper/TradeBroStepper'
+import '../styles/premium-landing.css'
 
-  // Add scroll event listener
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
-    };
+const LandingPage = ({ theme = 'light', onToggleTheme = () => {} }) => {
+  const navigate = useNavigate()
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  const handleLogin = () => {
+    navigate('/login')
+  }
 
-  return (
-    <motion.header
-      className={`navbar ${scrolled ? 'scrolled' : ''}`}
-      initial={{ y: -100, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.5, ease: [0.6, 0.05, 0.01, 0.9] }}
-    >
-      <motion.div
-        className="logo"
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-      >
-        TradeBro
-      </motion.div>
-      <button className="mobile-menu-btn" onClick={toggleMobileMenu} aria-label="Toggle menu">
-        {mobileMenuOpen ? <FiX /> : <FiMenu />}
-      </button>
-      <nav className={`nav-links ${mobileMenuOpen ? 'mobile-active' : ''}`}>
-        <motion.a
-          href="#features"
-          onClick={() => toggleMobileMenu(false)}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          Features
-        </motion.a>
-        <motion.a
-          href="#about"
-          onClick={() => toggleMobileMenu(false)}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          About
-        </motion.a>
-        <motion.a
-          href="#contact"
-          onClick={() => toggleMobileMenu(false)}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          Contact
-        </motion.a>
-        <motion.button
-          className="cta-button"
-          onClick={handleGetStarted}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          transition={{ type: "spring", stiffness: 400, damping: 17 }}
-        >
-          Get Started
-        </motion.button>
-      </nav>
-    </motion.header>
-  );
-});
+  const handleSignup = () => {
+    navigate('/signup')
+  }
 
-const HeroSection = memo(({ handleGetStarted }) => {
-  // Parallax effect for hero section
-  const { scrollYProgress } = useScroll();
-  const y = useTransform(scrollYProgress, [0, 1], [0, 300]);
+
+
+
+
+
+
+
 
   return (
-    <section className="hero-section">
-      <motion.div
-        className="hero-content"
-        initial={{ opacity: 0, y: 50 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, ease: [0.6, 0.05, 0.01, 0.9] }}
-      >
-<<<<<<< HEAD
-        <h1>
-          <AnimatedText
-            text="Master the Markets with Confidence"
-            type="words"
-            animation="fadeUp"
-            className="hero-title"
-            style={{ fontSize: '3rem', lineHeight: '1.2',  maxWidth: '90%' }}
-          />
-        </h1>
-=======
-        <h1 className="hero-title">Master the Markets with Confidence</h1>
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-        >
-          TradeBro is your personal stock market companion — track live data, simulate portfolios, and unlock insights with AI-powered tools.
-        </motion.p>
-        <motion.div
-          className="hero-buttons"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-        >
-          <motion.button
-            className="primary-btn"
-            onClick={handleGetStarted}
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 400, damping: 17 }}
-          >
-            Get Started <FiArrowRight style={{ marginLeft: '8px', verticalAlign: 'middle' }} />
-          </motion.button>
-        </motion.div>
-      </motion.div>
-<<<<<<< HEAD
-      <FloatingElement amplitude={15} duration={4}>
-        <motion.div
-          className="hero-visual"
-          initial={{ opacity: 0, scale: 0.8, x: 100 }}
-          animate={{ opacity: 1, scale: 1, x: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          style={{ y }}
-        >
-          <img
-            src="https://i.pinimg.com/736x/51/bd/0f/51bd0f73220b38ec9066cab7b1df517c.jpg"
-            alt="Stock Market Dashboard"
-            loading="eager"
-          />
-        </motion.div>
-      </FloatingElement>
-=======
-      <motion.div
-        className="hero-visual"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.8, delay: 0.2 }}
-      >
-        <img
-          src="https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80"
-          alt="Stock Market Dashboard"
-          loading="eager"
-        />
-      </motion.div>
->>>>>>> b1a8bb87a9f2e1b3c2ce0c8518a40cf83a513f40
-    </section>
-  );
-});
-
-// Feature component with animations
-const Feature = ({ icon: Icon, title, description }) => (
-  <motion.div
-    className="feature"
-    whileHover={{ y: -5, scale: 1.02 }}
-    whileTap={{ scale: 0.98 }}
-    transition={{ type: "spring", stiffness: 400, damping: 17 }}
-  >
-    <span className="feature-highlight"></span>
-    <FloatingElement amplitude={5} duration={3} className="feature-icon-wrapper">
-      <Icon className="feature-icon" />
-    </FloatingElement>
-    <h3>{title}</h3>
-    <p>{description}</p>
-  </motion.div>
-);
-
-// Gallery item component with animations
-const GalleryItem = ({ src, alt, caption }) => (
-  <motion.div
-    className="gallery-item"
-    whileHover={{ y: -5, scale: 1.02 }}
-    whileTap={{ scale: 0.98 }}
-    transition={{ type: "spring", stiffness: 400, damping: 17 }}
-  >
-    <img src={src} alt={alt} loading="lazy" />
-    <motion.div
-      className="gallery-caption"
-      initial={{ opacity: 0, y: 20 }}
-      whileHover={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-    >
-      <h4>{caption}</h4>
-    </motion.div>
-  </motion.div>
-);
-
-// Testimonial component with animations
-const Testimonial = ({ quote, author }) => (
-  <motion.div
-    className="testimonial"
-    whileHover={{ y: -5, scale: 1.02 }}
-    whileTap={{ scale: 0.98 }}
-    transition={{ type: "spring", stiffness: 400, damping: 17 }}
-  >
-    <p>"{quote}"</p>
-    <h4>- {author}</h4>
-  </motion.div>
-);
-
-const LandingPage = () => {
-  const navigate = useNavigate();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const handleGetStarted = () => navigate("/signup");
-  const toggleMobileMenu = (value) => setMobileMenuOpen(value !== undefined ? value : !mobileMenuOpen);
-
-  // Features data
-  const features = [
-    {
-      icon: FiBarChart2,
-      title: "Live NSE/BSE Data",
-      description: "Stream real-time stock prices, volumes, and technical indicators from Indian and global markets."
-    },
-    {
-      icon: FiPieChart,
-      title: "Interactive Demo Portfolio",
-      description: "Test your investment strategies risk-free. Simulate trades, monitor profits, and learn by doing."
-    },
-    {
-      icon: FiTrendingUp,
-      title: "AI-Powered Chat Assistant",
-      description: "Ask anything about stocks, trends, or financial terms — our AI assistant delivers instant answers and analysis."
-    },
-    {
-      icon: FiBarChart2,
-      title: "Detailed Stock Analysis",
-      description: "Access comprehensive stock data including price history, key metrics, and buy/sell functionality for informed trading decisions."
-    }
-  ];
-
-  // Gallery data
-  const galleryItems = [
-    {
-      src: "https://i.pinimg.com/736x/41/35/46/4135461de8f243948c5f35de57c91456.jpg",
-      alt: "Trading Screen",
-      caption: "Advanced Trading Interface"
-    },
-    {
-      src: "https://i.pinimg.com/736x/a8/39/d3/a839d32b1fd0e47a94bb88fa6994b83d.jpg",
-      alt: "Portfolio Analysis",
-      caption: "Portfolio Performance Analytics"
-    },
-    {
-      src: "https://i.pinimg.com/736x/69/6b/b3/696bb3f36d24d8f75c3fd9aec18c3a16.jpg",
-      alt: "Mobile App",
-      caption: "Mobile Trading Experience"
-    }
-  ];
-
-  // Testimonials data
-  const testimonials = [
-    {
-      quote: "TradeBro helped me understand the stock market without risking real money. The demo feature is incredibly useful.",
-      author: "Ramesh P., Beginner Investor"
-    },
-    {
-      quote: "I love how intuitive the screener and AI bot are. It's like having a financial expert with me 24/7.",
-      author: "Sneha M., Technical Analyst"
-    }
-  ];
-
-  return (
-    <div className="landing-container">
-      <NavBar
-        mobileMenuOpen={mobileMenuOpen}
-        toggleMobileMenu={toggleMobileMenu}
-        handleGetStarted={handleGetStarted}
+    <div className="landing-page">
+      {/* Perfect TradeBro Header */}
+      <TradeBroHeader
+        isAuthenticated={false}
+        theme={theme}
+        onToggleTheme={onToggleTheme}
+        onLogin={handleLogin}
+        onSignup={handleSignup}
       />
 
-      <HeroSection handleGetStarted={handleGetStarted} />
+      {/* Hero Section */}
+      <section className="hero-section">
+        <div className="hero-background">
+          <GridMotion
+            gridSize={40}
+            lineColor="rgba(59, 130, 246, 0.1)"
+            speed={20}
+          />
+          <OrbBackground
+            orbCount={3}
+            colors={['#3B82F6', '#10B981', '#8B5CF6']}
+            size="large"
+          />
+        </div>
 
-      <ScrollReveal>
-        <section className="features-section" id="features">
-          <h2 className="section-title">Key Features</h2>
-          <StaggerContainer className="features-grid" childVariant="fadeUp">
-            {features.map((feature, index) => (
-              <Feature
-                key={index}
-                icon={feature.icon}
-                title={feature.title}
-                description={feature.description}
-              />
-            ))}
-          </StaggerContainer>
-        </section>
-      </ScrollReveal>
-
-      <ParallaxSection speed={0.2} direction="up">
-        <ScrollReveal>
-          <section className="about-section" id="about">
-            <AnimatedText text="About TradeBro" type="words" className="section-title" />
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-            >
-              Built for new investors and seasoned traders alike, TradeBro offers a modern platform for learning, testing, and mastering the stock market.
-            </motion.p>
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-            >
-              From real-time market feeds to intelligent chat assistance and demo trading, we help you trade smarter — with confidence and clarity.
-            </motion.p>
-          </section>
-        </ScrollReveal>
-      </ParallaxSection>
-
-      <ScrollReveal>
-        <section className="gallery-section">
-          <h2 className="section-title">Platform Showcase</h2>
-          <StaggerContainer className="gallery-grid" childVariant="scale">
-            {galleryItems.map((item, index) => (
-              <GalleryItem
-                key={index}
-                src={item.src}
-                alt={item.alt}
-                caption={item.caption}
-              />
-            ))}
-          </StaggerContainer>
-        </section>
-      </ScrollReveal>
-
-      <ScrollReveal>
-        <section className="testimonials-section">
-          <h2 className="section-title">What Our Users Say</h2>
-          <StaggerContainer className="testimonials" childVariant="fadeUp">
-            {testimonials.map((testimonial, index) => (
-              <Testimonial
-                key={index}
-                quote={testimonial.quote}
-                author={testimonial.author}
-              />
-            ))}
-          </StaggerContainer>
-        </section>
-      </ScrollReveal>
-
-      <ScrollReveal>
-        <section className="contact-section" id="contact">
-          <h2 className="section-title">Contact Us</h2>
-          <p>Have a question or suggestion? We'd love to hear from you.</p>
-          <motion.form
-            className="contact-form"
-            onSubmit={(e) => e.preventDefault()}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
+        <div className="hero-container-grid">
+          <motion.div
+            className="hero-content"
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
           >
-            <motion.input
-              type="text"
-              placeholder="Your Name"
-              required
-              aria-label="Your Name"
-              whileFocus={{ scale: 1.02, boxShadow: "0 0 0 3px rgba(27, 142, 153, 0.2)" }}
-            />
-            <motion.input
-              type="email"
-              placeholder="Your Email"
-              required
-              aria-label="Your Email"
-              whileFocus={{ scale: 1.02, boxShadow: "0 0 0 3px rgba(27, 142, 153, 0.2)" }}
-            />
-            <motion.textarea
-              placeholder="Your Message"
-              required
-              aria-label="Your Message"
-              whileFocus={{ scale: 1.02, boxShadow: "0 0 0 3px rgba(27, 142, 153, 0.2)" }}
-            ></motion.textarea>
-            <motion.button
-              type="submit"
-              className="primary-btn"
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-              transition={{ type: "spring", stiffness: 400, damping: 17 }}
+            <motion.h1
+              className="hero-title"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
             >
-              Send Message
-            </motion.button>
-          </motion.form>
-        </section>
-      </ScrollReveal>
+              Master the Markets with
+              <br />
+              <TypewriterText />
+            </motion.h1>
 
-      <footer className="footer">
-        <p>© {new Date().getFullYear()} TradeBro. All rights reserved.</p>
-        <p>
-          Follow us:
-          {[
-            { name: "Twitter", url: "https://twitter.com" },
-            { name: "Facebook", url: "https://facebook.com" },
-            { name: "LinkedIn", url: "https://linkedin.com" }
-          ].map((social, index, arr) => (
-            <React.Fragment key={social.name}>
-              <motion.a
-                href={social.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                whileHover={{ color: "#1B8E99", scale: 1.1 }}
+            <motion.p
+              className="hero-subtitle"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
+            >
+              Experience the future of stock trading with Saytrix AI assistant, real-time market data,
+              professional-grade charts, and risk-free virtual trading. Join 75,000+ traders building wealth intelligently.
+            </motion.p>
+
+            <motion.div
+              className="hero-actions"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.6 }}
+            >
+              <motion.div
+                whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                {social.name}
-              </motion.a>
-              {index < arr.length - 1 && "| "}
-            </React.Fragment>
-          ))}
-        </p>
-      </footer>
+                <Link to="/signup" className="btn-premium btn-primary btn-large">
+                  <FiZap />
+                  Start Trading Free
+                  <FiArrowRight />
+                </Link>
+              </motion.div>
+            </motion.div>
+          </motion.div>
 
-      {/* Add Trading Assistant chatbot */}
-      <TradingAssistant />
+          <motion.div
+            className="hero-visual"
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+          >
+            <div className="interactive-dashboard">
+              <div className="dashboard-header">
+                <div className="header-dots">
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.8, duration: 0.3 }}
+                  />
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.9, duration: 0.3 }}
+                  />
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 1.0, duration: 0.3 }}
+                  />
+                </div>
+                <motion.span
+                  className="dashboard-title"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 1.1, duration: 0.5 }}
+                >
+                  TradeBro Dashboard
+                </motion.span>
+              </div>
+
+              <div className="dashboard-content">
+                <InteractiveChart />
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+
+
+      {/* Animated Features List */}
+      <section id="features">
+        <AnimatedFeaturesList />
+      </section>
+
+      {/* Saytrix AI Demo */}
+      <section id="ai-demo">
+        <SaytrixChatPreview />
+      </section>
+
+      {/* How TradeBro Works - Stepper */}
+      <section id="how-it-works">
+        <TradeBroStepper />
+      </section>
     </div>
-  );
-};
+  )
+}
 
-export default LandingPage;
+export default LandingPage

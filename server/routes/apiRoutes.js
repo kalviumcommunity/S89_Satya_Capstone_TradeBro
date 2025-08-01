@@ -1,32 +1,95 @@
 const express = require("express");
-const axios = require("axios");
+const rateLimit = require('express-rate-limit');
 require("dotenv").config();
 
 const router = express.Router();
-const FMP_API = process.env.FMP_API_KEY;
-const TWELVE_DATA_API_KEY = process.env.TWELVE_DATA_API_KEY;
 
-// Check if API keys are available
-if (!FMP_API) {
-  console.error('WARNING: FMP_API_KEY environment variable is not set');
+// Import utilities
+const {
+  validateAPIKeys,
+  validateStockSymbol,
+  fetchFromFMP,
+  fetchFromTwelveData,
+  createErrorResponse,
+  createSuccessResponse
+} = require('../utils/apiHelpers');
+const {
+  generateMockChartData,
+  validateChartParams,
+  formatChartResponse,
+  getDataCountForRange
+} = require('../utils/chartHelpers');
+const asyncHandler = require('../utils/asyncHandler');
+
+// Validate API keys at startup
+try {
+  validateAPIKeys();
+} catch (error) {
+  console.error('❌ API Keys validation failed:', error.message);
+  // Don't exit process, but log the error
 }
 
-if (!TWELVE_DATA_API_KEY) {
-  console.error('WARNING: TWELVE_DATA_API_KEY environment variable is not set');
-}
-
-// 1. Get stock price and volume
-router.get("/stocks/price/:symbol", async (req, res) => {
-  const { symbol } = req.params;
-  try {
-    const response = await axios.get(
-      `https://financialmodelingprep.com/stable/historical-price-eod/full?symbol=${symbol}&apikey=${FMP_API}`
-    );
-    res.json(response.data);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to fetch stock price",err });
-  }
+// Rate limiting for API routes
+const apiRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: {
+    success: false,
+    message: 'Too many API requests, please try again later.',
+    retryAfter: '15 minutes'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
+
+// Stricter rate limiting for chart and screener routes
+const heavyApiRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30, // Limit each IP to 30 requests per windowMs for heavy endpoints
+  message: {
+    success: false,
+    message: 'Too many requests to data-intensive endpoints, please try again later.',
+    retryAfter: '15 minutes'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Apply rate limiting to all routes
+router.use(apiRateLimit);
+
+// 1. Get stock price and volume (FIXED: Using correct quote-short endpoint)
+router.get("/stocks/price/:symbol", asyncHandler(async (req, res) => {
+  const { symbol } = req.params;
+
+  // Validate stock symbol
+  const validation = validateStockSymbol(symbol);
+  if (!validation.isValid) {
+    return res.status(400).json(createErrorResponse(
+      new Error(validation.error),
+      'stock_price_validation'
+    ));
+  }
+
+  try {
+    // Use correct FMP endpoint for current stock price
+    const result = await fetchFromFMP(`quote-short/${validation.normalizedSymbol}`);
+
+    if (!result.data || result.data.length === 0) {
+      throw new Error('No price data available for this symbol');
+    }
+
+    return res.json(createSuccessResponse(result.data, {
+      source: result.source,
+      duration: result.duration,
+      symbol: validation.normalizedSymbol
+    }));
+
+  } catch (error) {
+    console.error(`Stock price fetch failed for ${symbol}:`, error.message);
+    return res.status(500).json(createErrorResponse(error, 'stock_price_fetch'));
+  }
+}));
 
 // 2. Dividend-adjusted price chart
 router.get("/stocks/history/:symbol", async (req, res) => {
@@ -41,43 +104,65 @@ router.get("/stocks/history/:symbol", async (req, res) => {
   }
 });
 
-// 3. Company name search
-router.get("/search/name/:query", async (req, res) => {
-  const { query } = req.params;
-  try {
-    const response = await axios.get(
-      `https://financialmodelingprep.com/stable/search-name?query=${query}&apikey=${FMP_API}`
-    );
-    res.json(response.data);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to search by name", err });
-  }
-});
 
-// 4. Symbol search
-router.get("/search/symbol/:query", async (req, res) => {
-  const { query } = req.params;
-  try {
-    const response = await axios.get(
-      `https://financialmodelingprep.com/stable/search-symbol?query=${query}&apikey=${FMP_API}`
-    );
-    res.json(response.data);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to search by symbol",err });
-  }
-});
 
 // 5. Screener API
-router.get("/screener", async (req, res) => {
+router.get("/screener", heavyApiRateLimit, asyncHandler(async (req, res) => {
+  const {
+    marketCapMoreThan,
+    marketCapLowerThan,
+    priceMoreThan,
+    priceLowerThan,
+    betaMoreThan,
+    betaLowerThan,
+    volumeMoreThan,
+    volumeLowerThan,
+    sector,
+    industry,
+    country = 'US',
+    exchange,
+    limit = 100
+  } = req.query;
+
   try {
-    const response = await axios.get(
-      `https://financialmodelingprep.com/stable/company-screener?apikey=${FMP_API}`
-    );
-    res.json(response.data);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to fetch screener data",err });
+    // Build screener endpoint with parameters
+    let endpoint = `stock-screener?limit=${limit}&country=${country}`;
+
+    if (marketCapMoreThan) endpoint += `&marketCapMoreThan=${marketCapMoreThan}`;
+    if (marketCapLowerThan) endpoint += `&marketCapLowerThan=${marketCapLowerThan}`;
+    if (priceMoreThan) endpoint += `&priceMoreThan=${priceMoreThan}`;
+    if (priceLowerThan) endpoint += `&priceLowerThan=${priceLowerThan}`;
+    if (betaMoreThan) endpoint += `&betaMoreThan=${betaMoreThan}`;
+    if (betaLowerThan) endpoint += `&betaLowerThan=${betaLowerThan}`;
+    if (volumeMoreThan) endpoint += `&volumeMoreThan=${volumeMoreThan}`;
+    if (volumeLowerThan) endpoint += `&volumeLowerThan=${volumeLowerThan}`;
+    if (sector) endpoint += `&sector=${encodeURIComponent(sector)}`;
+    if (industry) endpoint += `&industry=${encodeURIComponent(industry)}`;
+    if (exchange) endpoint += `&exchange=${exchange}`;
+
+    const result = await fetchFromFMP(endpoint);
+
+    return res.json(createSuccessResponse(result.data, {
+      source: result.source,
+      duration: result.duration,
+      count: result.data?.length || 0,
+      filters: {
+        marketCapMoreThan,
+        marketCapLowerThan,
+        priceMoreThan,
+        priceLowerThan,
+        sector,
+        industry,
+        country,
+        exchange
+      }
+    }));
+
+  } catch (error) {
+    console.error('Screener fetch failed:', error.message);
+    return res.status(500).json(createErrorResponse(error, 'screener_fetch'));
   }
-});
+}));
 
 // 6. Ratings snapshot
 router.get("/ratings/:symbol", async (req, res) => {
@@ -105,17 +190,25 @@ router.get("/ratings-history/:symbol", async (req, res) => {
   }
 });
 
-// 8. News API
-router.get("/news", async (req, res) => {
+// 8. News API (FIXED: Using correct stock_news endpoint)
+router.get("/news", asyncHandler(async (req, res) => {
+  const { limit = 50 } = req.query;
+
   try {
-    const response = await axios.get(
-      `https://financialmodelingprep.com/stable/grades-latest-news?apikey=${FMP_API}`
-    );
-    res.json(response.data);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to fetch news",err });
+    // Use correct FMP endpoint for stock news
+    const result = await fetchFromFMP(`stock_news?limit=${limit}`);
+
+    return res.json(createSuccessResponse(result.data, {
+      source: result.source,
+      duration: result.duration,
+      count: result.data?.length || 0
+    }));
+
+  } catch (error) {
+    console.error('News fetch failed:', error.message);
+    return res.status(500).json(createErrorResponse(error, 'news_fetch'));
   }
-});
+}));
 
 // 9. IPO Calendar
 router.get("/ipos", async (req, res) => {
@@ -142,118 +235,154 @@ router.get("/exchange/:symbol", async (req, res) => {
   }
 });
 
-// 11. 5-minute chart data
-router.get("/chart/5min/:symbol", async (req, res) => {
+// 11. Enhanced 5-minute chart data with range support
+router.get("/chart/5min/:symbol", heavyApiRateLimit, asyncHandler(async (req, res) => {
   const { symbol } = req.params;
+  const { range = '1D' } = req.query; // Default to 1 day
+  const interval = '5min';
+
+  // Validate chart parameters
+  const validation = validateChartParams(symbol, range, interval);
+  if (!validation.isValid) {
+    return res.status(400).json(createErrorResponse(
+      new Error(`Validation failed: ${validation.errors.join(', ')}`),
+      'chart_validation'
+    ));
+  }
+
+  const { normalizedSymbol, dataCount } = validation;
+  console.log(`📊 Fetching ${interval} chart data for ${normalizedSymbol} (range: ${range}, count: ${dataCount})`);
 
   try {
     // Try FMP API first
     try {
-      console.log(`Fetching 5-minute chart data for ${symbol} from FMP API`);
-      const response = await axios.get(
-        `https://financialmodelingprep.com/api/v3/historical-chart/5min/${symbol}?apikey=${FMP_API}`,
-        { timeout: 5000 } // 5 second timeout
-      );
+      const endpoint = `historical-chart/${interval}/${normalizedSymbol}`;
+      const result = await fetchFromFMP(endpoint);
 
-      if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+      if (result.data && Array.isArray(result.data) && result.data.length > 0) {
         // Format the data for chart library
-        const formattedData = response.data.map(candle => ({
-          time: new Date(candle.date).getTime(),
-          open: candle.open,
-          high: candle.high,
-          low: candle.low,
-          close: candle.close,
-          volume: candle.volume
-        }));
+        const formattedData = result.data
+          .slice(0, dataCount) // Limit to requested range
+          .map(candle => ({
+            time: new Date(candle.date).getTime(),
+            open: candle.open,
+            high: candle.high,
+            low: candle.low,
+            close: candle.close,
+            volume: candle.volume
+          }))
+          .sort((a, b) => a.time - b.time); // Ensure chronological order
 
-        return res.json({
-          success: true,
-          source: 'fmp',
-          data: formattedData
-        });
+        return res.json(formatChartResponse(formattedData, result.source, {
+          symbol: normalizedSymbol,
+          interval,
+          range,
+          duration: result.duration
+        }));
       } else {
         throw new Error('Empty or invalid response from FMP API');
       }
     } catch (fmpError) {
-      console.error(`FMP API error for ${symbol}:`, fmpError.message);
+      console.warn(`FMP API failed for ${normalizedSymbol}:`, fmpError.message);
 
-      // Fallback to Twelve Data API
-      console.log(`Falling back to Twelve Data API for ${symbol}`);
-      const twelveDataResponse = await axios.get(
-        `https://api.twelvedata.com/time_series?symbol=${symbol}&interval=5min&outputsize=100&apikey=${TWELVE_DATA_API_KEY}`,
-        { timeout: 5000 } // 5 second timeout
-      );
+      // Try Twelve Data API as fallback
+      try {
+        const endpoint = `time_series?symbol=${normalizedSymbol}&interval=${interval}&outputsize=${dataCount}`;
+        const result = await fetchFromTwelveData(endpoint);
 
-      if (twelveDataResponse.data && twelveDataResponse.data.values && Array.isArray(twelveDataResponse.data.values)) {
-        // Format the data for chart library
-        const formattedData = twelveDataResponse.data.values.map(candle => ({
-          time: new Date(candle.datetime).getTime(),
-          open: parseFloat(candle.open),
-          high: parseFloat(candle.high),
-          low: parseFloat(candle.low),
-          close: parseFloat(candle.close),
-          volume: parseFloat(candle.volume || 0)
-        }));
+        if (result.data && result.data.values && Array.isArray(result.data.values)) {
+          const formattedData = result.data.values.map(candle => ({
+            time: new Date(candle.datetime).getTime(),
+            open: parseFloat(candle.open),
+            high: parseFloat(candle.high),
+            low: parseFloat(candle.low),
+            close: parseFloat(candle.close),
+            volume: parseInt(candle.volume || 0)
+          })).sort((a, b) => a.time - b.time);
 
-        return res.json({
-          success: true,
-          source: 'twelvedata',
-          data: formattedData
-        });
-      } else {
-        throw new Error('Empty or invalid response from Twelve Data API');
+          return res.json(formatChartResponse(formattedData, result.source, {
+            symbol: normalizedSymbol,
+            interval,
+            range,
+            duration: result.duration
+          }));
+        } else {
+          throw new Error('Empty or invalid response from Twelve Data API');
+        }
+      } catch (twelveDataError) {
+        console.warn(`Twelve Data API also failed for ${normalizedSymbol}:`, twelveDataError.message);
+        throw new Error('Both FMP and Twelve Data APIs failed');
       }
     }
-  } catch (err) {
-    console.error(`Failed to fetch 5-minute chart data for ${symbol}:`, err.message);
+  } catch (error) {
+    console.error(`Failed to fetch chart data for ${normalizedSymbol}:`, error.message);
 
     // Generate mock data as a last resort
-    const mockData = generateMockChartData(symbol);
+    const mockData = generateMockChartData(normalizedSymbol, {
+      interval,
+      count: dataCount
+    });
 
-    res.json({
-      success: true,
-      source: 'mock',
-      data: mockData,
+    return res.json(formatChartResponse(mockData, 'mock', {
+      symbol: normalizedSymbol,
+      interval,
+      range,
       message: 'Using mock data due to API errors'
-    });
+    }));
   }
-});
+}));
 
-// Helper function to generate mock 5-minute chart data
-function generateMockChartData(symbol) {
-  const data = [];
-  const now = new Date();
-  now.setHours(16, 0, 0, 0); // Set to 4 PM (market close)
+// BONUS: Symbols route for frontend autocomplete
+router.get("/symbols", asyncHandler(async (req, res) => {
+  const { search, exchange = 'NASDAQ,NYSE', limit = 50 } = req.query;
 
-  // Generate a random starting price between 100 and 1000
-  const basePrice = Math.floor(Math.random() * 900) + 100;
+  try {
+    let endpoint = `search?query=${search || 'A'}&limit=${limit}&exchange=${exchange}`;
 
-  // Generate 100 candles (approximately one trading day of 5-minute candles)
-  for (let i = 0; i < 100; i++) {
-    const time = new Date(now.getTime() - (i * 5 * 60 * 1000)); // 5 minutes per candle, going backward
+    const result = await fetchFromFMP(endpoint);
 
-    // Generate random price movements
-    const volatility = basePrice * 0.002; // 0.2% volatility per candle
-    const change = (Math.random() - 0.5) * volatility * 2;
+    if (!result.data || !Array.isArray(result.data)) {
+      throw new Error('Invalid response from symbols API');
+    }
 
-    const open = basePrice + (Math.random() - 0.5) * volatility * 10;
-    const close = open + change;
-    const high = Math.max(open, close) + Math.random() * volatility;
-    const low = Math.min(open, close) - Math.random() * volatility;
-    const volume = Math.floor(Math.random() * 10000) + 1000;
+    // Format symbols for autocomplete
+    const formattedSymbols = result.data.map(item => ({
+      symbol: item.symbol,
+      name: item.name,
+      exchange: item.exchangeShortName,
+      type: item.type || 'stock',
+      currency: item.currency || 'USD'
+    }));
 
-    data.push({
-      time: time.getTime(),
-      open,
-      high,
-      low,
-      close,
-      volume
-    });
+    return res.json(createSuccessResponse(formattedSymbols, {
+      source: result.source,
+      duration: result.duration,
+      count: formattedSymbols.length,
+      search: search || 'A',
+      exchange
+    }));
+
+  } catch (error) {
+    console.error('Symbols fetch failed:', error.message);
+
+    // Return mock symbols as fallback
+    const mockSymbols = [
+      { symbol: 'AAPL', name: 'Apple Inc.', exchange: 'NASDAQ', type: 'stock', currency: 'USD' },
+      { symbol: 'GOOGL', name: 'Alphabet Inc.', exchange: 'NASDAQ', type: 'stock', currency: 'USD' },
+      { symbol: 'MSFT', name: 'Microsoft Corporation', exchange: 'NASDAQ', type: 'stock', currency: 'USD' },
+      { symbol: 'TSLA', name: 'Tesla, Inc.', exchange: 'NASDAQ', type: 'stock', currency: 'USD' },
+      { symbol: 'AMZN', name: 'Amazon.com, Inc.', exchange: 'NASDAQ', type: 'stock', currency: 'USD' }
+    ].filter(s => !search || s.symbol.includes(search.toUpperCase()) || s.name.toLowerCase().includes(search.toLowerCase()));
+
+    return res.json(createSuccessResponse(mockSymbols, {
+      source: 'mock',
+      duration: 0,
+      count: mockSymbols.length,
+      search: search || 'A',
+      exchange,
+      message: 'Using mock symbols due to API error'
+    }));
   }
-
-  // Sort by time ascending
-  return data.sort((a, b) => a.time - b.time);
-}
+}));
 
 module.exports = router;
