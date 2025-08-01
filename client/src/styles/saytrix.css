@@ -1,10 +1,3 @@
-/* ========================================
-   🤖 SAYTRIX AI ASSISTANT - CLEAN MODERN DESIGN
-   ======================================== */
-
-/* ========================================
-   🎨 ROOT VARIABLES
-   ======================================== */
 :root {
   --saytrix-primary: #7C3AED;
   --saytrix-primary-light: #A855F7;
@@ -69,9 +62,6 @@
   box-shadow: 0 6px 20px rgba(20, 241, 149, 0.4);
 }
 
-/* ========================================
-   🏗️ MAIN LAYOUT
-   ======================================== */
 .saytrix-page {
   min-height: 100vh;
   background: var(--saytrix-bg-gradient);
@@ -108,9 +98,6 @@
   z-index: 1;
 }
 
-/* ========================================
-   🧭 NAVIGATION BAR
-   ======================================== */
 .saytrix-navbar {
   display: flex;
   align-items: center;
@@ -187,9 +174,6 @@
   transform: translateY(-1px);
 }
 
-/* ========================================
-   🏗️ MAIN LAYOUT
-   ======================================== */
 .saytrix-layout {
   display: flex;
   flex: 1;
@@ -197,32 +181,6 @@
   padding: 1.5rem 2rem;
   min-height: 0;
 }
-
-/* ========================================
-   📋 SIDEBAR
-   ======================================== */
-.saytrix-sidebar {
-  width: 320px;
-  background: var(--saytrix-bg-card);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--saytrix-border);
-  border-radius: var(--saytrix-radius);
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  height: fit-content;
-  max-height: calc(100vh - 200px);
-  overflow-y: auto;
-  transition: var(--saytrix-transition);
-  box-shadow: var(--saytrix-shadow);
-}
-
-.saytrix-sidebar.collapsed {
-  width: 80px;
-  padding: 1rem;
-}
-
 
 
 .sector-btn {
@@ -238,58 +196,6 @@
   text-align: left;
 }
 
-.sector-btn:hover {
-  border-color: var(--saytrix-primary);
-  transform: translateY(-2px);
-  box-shadow: var(--saytrix-shadow-hover);
-}
-
-.sector-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.sector-name {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--saytrix-text-primary);
-}
-
-.sector-count {
-  font-size: 0.75rem;
-  color: var(--saytrix-text-secondary);
-}
-
-
-
-.toggle-label {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--saytrix-text-primary);
-  cursor: pointer;
-}
-
-.toggle-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--saytrix-text-secondary);
-  transition: var(--saytrix-transition);
-  font-size: 1.25rem;
-}
-
-.toggle-btn.active {
-  color: var(--saytrix-secondary);
-}
-
-/* ========================================
-   💬 CHAT LAYOUT
-   ======================================== */
 
 .chat-layout {
   display: grid;
@@ -299,9 +205,6 @@
   min-height: 0;
 }
 
-/* ========================================
-   💬 MAIN CHAT AREA
-   ======================================== */
 .saytrix-main {
   flex: 1;
   display: flex;
@@ -550,9 +453,6 @@
   color: #EF4444;
 }
 
-/* ========================================
-   🎴 AI RESPONSE CARDS
-   ======================================== */
 .saytrix-card {
   background: var(--saytrix-bg-card);
   backdrop-filter: blur(20px);
@@ -779,7 +679,6 @@
   content: '';
   position: absolute;
   bottom: -2px;
-  left: 0;
   width: 30px;
   height: 2px;
   background: var(--saytrix-secondary);
@@ -1541,8 +1440,6 @@
     max-height: 80px;
   }
 
- 
-
   .sector-btn {
     flex-shrink: 0;
     min-width: 120px;
@@ -1551,7 +1448,7 @@
   .floating-input {
     width: calc(100vw - 4rem) !important;
     bottom: 1rem !important;
-    left: 50vw !important;
+    left: 50% !important;
     transform: translateX(-50%) !important;
   }
 }
@@ -1728,33 +1625,11 @@
    ======================================== */
 
 @media (max-width: 1024px) {
-  .saytrix-layout {
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .saytrix-sidebar {
-    width: 100%;
-    max-height: 200px;
-    order: -1;
-  }
-
-  .saytrix-sidebar.collapsed {
-    width: 100%;
-    max-height: 80px;
-  }
-
-  
-
-  .sector-btn {
-    flex-shrink: 0;
-    min-width: 120px;
-  }
 
   .floating-input {
     width: calc(100vw - 4rem) !important;
     bottom: 1rem !important;
-    left: 50vw !important;
+    left: 50% !important;
     transform: translateX(-50%) !important;
   }
 }
