@@ -6,7 +6,7 @@ import { toast, ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 
 // Import AppRoutes
-import AppRoutes from './AppRoutes'
+import AppRoutes from './AppRoutes.jsx';
 
 // Components
 import Sidebar from './components/layout/Sidebar'
