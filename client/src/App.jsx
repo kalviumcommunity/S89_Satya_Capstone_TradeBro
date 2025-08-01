@@ -3,7 +3,6 @@ import { useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast, ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
-import AppRoutes from './Approutes';
 import Sidebar from './components/layout/Sidebar'
 import AuthStatus from './components/auth/AuthStatus'
 import GlobalSearchModal from './components/common/GlobalSearchModal'
@@ -15,6 +14,8 @@ import useGlobalSearch from './hooks/useGlobalSearch'
 import { useOrderIntegration } from './hooks/useOrderIntegration'
 import { usePerformanceOptimization } from './hooks/usePerformanceOptimization'
 import balanceSyncManager from './utils/balanceSync'
+import AppRoutes from './AppRoutes.jsx'
+
 const PerformanceMonitor = lazy(() => import('./components/debug/PerformanceMonitor'))
 
 function App() {
