@@ -1,14 +1,9 @@
 import { useState, useEffect, useCallback, useMemo, memo, Suspense, lazy, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
-
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast, ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
-
-// Import AppRoutes
-import AppRoutes from './AppRoutes.jsx';
-
-// Components
+import AppRoutes from './AppRoutes';
 import Sidebar from './components/layout/Sidebar'
 import AuthStatus from './components/auth/AuthStatus'
 import GlobalSearchModal from './components/common/GlobalSearchModal'
@@ -16,20 +11,10 @@ import VoiceCommandModal from './components/voice/VoiceCommandModal'
 import VoiceStatusIndicator from './components/voice/VoiceStatusIndicator'
 import OrderModal from './components/OrderModal'
 import EnhancedOrderConfirmationModal from './components/EnhancedOrderConfirmationModal'
-
-// Contexts
-
-// Hooks
 import useGlobalSearch from './hooks/useGlobalSearch'
 import { useOrderIntegration } from './hooks/useOrderIntegration'
-
-// Context Hooks
-
-// Performance Optimization
 import { usePerformanceOptimization } from './hooks/usePerformanceOptimization'
 import balanceSyncManager from './utils/balanceSync'
-
-// Lazy loaded components for better performance
 const PerformanceMonitor = lazy(() => import('./components/debug/PerformanceMonitor'))
 
 function App() {
@@ -38,10 +23,8 @@ function App() {
   const [theme, setTheme] = useState('light')
   const [loading, setLoading] = useState(true)
 
-  // Performance optimization
   const { debounce, throttle, cache } = usePerformanceOptimization('App')
 
-  // Global search functionality
   const {
     isGlobalSearchOpen,
     handleGlobalSearch,
