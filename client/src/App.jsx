@@ -14,7 +14,7 @@ import useGlobalSearch from './hooks/useGlobalSearch'
 import { useOrderIntegration } from './hooks/useOrderIntegration'
 import { usePerformanceOptimization } from './hooks/usePerformanceOptimization'
 import balanceSyncManager from './utils/balanceSync'
-import AppRoutes from './Approutes'
+import AppRoutes from './Approutes.jsx'
 
 const PerformanceMonitor = lazy(() => import('./components/debug/PerformanceMonitor'))
 
