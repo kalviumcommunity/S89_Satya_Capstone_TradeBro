@@ -1,8 +1,7 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 
-// Pages - Original TradeBro Components (matching live site)
-import LandingPage from './pages/LandingPage'
+import LandingPage from './pages/landingPage'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 import Dashboard from './pages/Dashboard'
