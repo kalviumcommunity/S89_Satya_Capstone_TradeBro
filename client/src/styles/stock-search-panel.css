@@ -1,0 +1,829 @@
+/* ========================================
+   🔍 STOCK SEARCH PANEL - ENHANCED STYLES
+   Professional Stock Search with Proper Spacing
+   ======================================== */
+
+/* ========================================
+   🎯 BASE SEARCH PANEL STYLES
+   ======================================== */
+
+.stock-search-panel {
+  width: 100%;
+  position: relative;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+  margin-bottom: var(--space-4);
+}
+
+.stock-search {
+  width: 100%;
+  position: relative;
+}
+
+/* ========================================
+   📝 MINIMALISTIC SEARCH INPUT STYLING
+   ======================================== */
+
+.stock-search input {
+  width: 100%;
+  padding: 0.875rem 3rem 0.875rem 1rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.9375rem;
+  font-weight: 400;
+  line-height: 1.5;
+  transition: all 0.2s ease;
+  margin-bottom: 1rem;
+  outline: none;
+  box-shadow: none;
+}
+
+.stock-search input:focus {
+  background: var(--elevated-bg);
+  border-color: var(--border-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.stock-search input::placeholder {
+  color: var(--text-tertiary);
+  font-weight: 400;
+}
+
+.search-input-container {
+  position: relative;
+  margin-bottom: 0.5rem;
+}
+
+.search-icon {
+  position: absolute;
+  right: 0.875rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-tertiary);
+  font-size: 1rem;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* Clear button styling */
+.clear-search-btn {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  opacity: 0.6;
+}
+
+.clear-search-btn:hover {
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  opacity: 1;
+}
+
+/* Loading spinner */
+.search-loading {
+  position: absolute;
+  right: 0.875rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.loading-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border-primary);
+  border-top: 2px solid var(--accent-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ========================================
+   📊 SEARCH RESULTS STYLING
+   ======================================== */
+
+.search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  margin-top: 0.5rem;
+  background: var(--elevated-bg);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  max-height: 400px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.results-header {
+  padding: 0.75rem 1.25rem;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-primary);
+  font-size: 0.8125rem;
+  color: var(--text-tertiary);
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.search-result-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid var(--border-primary);
+  background: transparent;
+  position: relative;
+  min-height: 64px;
+}
+
+.search-result-item:last-child {
+  border-bottom: none;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+.search-result-item:first-child {
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+
+.search-result-item:hover {
+  background: var(--bg-secondary);
+}
+
+/* Left side - Stock info */
+.search-result-left {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 1.5rem;
+  flex: 2;
+  min-width: 0;
+  margin-right: 1.5rem;
+  width: 70%;
+}
+
+.search-result-left .symbol {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 1.125rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  margin: 0;
+  line-height: 1.2;
+  min-width: 80px;
+  flex-shrink: 0;
+}
+
+.search-result-left .name {
+  font-size: 0.9375rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  font-weight: 500;
+  margin: 0;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 450px;
+}
+
+/* Right side - Price info */
+.search-result-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.75rem;
+  min-width: 160px;
+  width: 40%;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.search-result-price {
+  font-weight: 800;
+  color: var(--text-primary);
+  font-size: 1.25rem;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.search-result-change {
+  font-size: 0.875rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.875rem;
+  border-radius: 20px;
+  min-width: fit-content;
+  white-space: nowrap;
+}
+
+.search-result-change.positive {
+  color: var(--success-color);
+  background: rgba(20, 241, 149, 0.1);
+  border: 1px solid rgba(20, 241, 149, 0.2);
+}
+
+.search-result-change.negative {
+  color: var(--danger-color);
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.search-result-change.neutral {
+  color: var(--text-tertiary);
+  background: rgba(100, 116, 139, 0.1);
+  border: 1px solid rgba(100, 116, 139, 0.2);
+}
+
+.search-result-item .exchange {
+  position: absolute;
+  top: 1.25rem;
+  right: 2rem;
+  font-size: 0.75rem;
+  color: var(--accent-primary);
+  background: rgba(20, 241, 149, 0.1);
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid rgba(20, 241, 149, 0.2);
+  z-index: 1;
+}
+
+/* Search result actions */
+.search-result-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  opacity: 0;
+  transition: all 0.3s ease;
+  transform: translateX(10px);
+  min-width: 40px;
+}
+
+.search-result-item:hover .search-result-actions {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.search-result-actions .watchlist-btn {
+  min-width: 32px;
+  min-height: 32px;
+  padding: 6px;
+  border-radius: 8px;
+}
+
+.no-results {
+  padding: 3rem 2rem;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.no-results-icon {
+  font-size: 2.5rem;
+  opacity: 0.4;
+  margin-bottom: 0.5rem;
+}
+
+/* ========================================
+   ⭐ POPULAR STOCKS SECTION
+   ======================================== */
+
+.popular-stocks-section {
+  margin-top: var(--space-6);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--border-primary);
+}
+
+.popular-stocks-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.popular-stocks-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-height: 350px;
+  overflow-y: auto;
+}
+
+.popular-stock-item {
+  background: var(--elevated-bg);
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  padding: 20px 24px;
+  min-height: 88px;
+  backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.popular-stock-item:hover {
+  background: var(--bg-secondary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.popular-stock-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.popular-stock-symbol {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.popular-stock-name {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.popular-stock-price {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  min-width: 120px;
+}
+
+.popular-stock-value {
+  font-weight: 800;
+  color: var(--text-primary);
+  font-size: 1.125rem;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.popular-stock-change {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 16px;
+}
+
+.popular-stock-change.positive {
+  color: var(--success-color);
+  background: rgba(20, 241, 149, 0.1);
+}
+
+.popular-stock-change.negative {
+  color: var(--danger-color);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.popular-stock-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* ========================================
+   🌟 WATCHLIST BUTTON STYLING
+   ======================================== */
+
+.watchlist-btn {
+  background: rgba(100, 116, 139, 0.15);
+  border: 1px solid rgba(100, 116, 139, 0.3);
+  color: #64748B;
+  backdrop-filter: blur(8px);
+  min-width: 32px;
+  min-height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.watchlist-btn:hover {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.4);
+  color: #F59E0B;
+  transform: scale(1.05);
+}
+
+.watchlist-btn.active {
+  background: linear-gradient(135deg, #F59E0B 0%, #EAB308 100%);
+  border-color: #F59E0B;
+  color: white;
+}
+
+.watchlist-btn svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2;
+  stroke: currentColor;
+  fill: none;
+}
+
+.watchlist-btn.active svg {
+  fill: currentColor;
+}
+
+/* ========================================
+   🌙 DARK MODE STYLES
+   ======================================== */
+
+[data-theme="dark"] .stock-search-panel {
+  background: var(--dark-bg-secondary);
+  border-color: var(--dark-border);
+}
+
+[data-theme="dark"] .stock-search input {
+  background: var(--dark-bg-tertiary);
+  color: var(--dark-text-primary);
+}
+
+[data-theme="dark"] .stock-search input:focus {
+  background: var(--dark-bg-secondary);
+  border-color: var(--dark-border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .stock-search input::placeholder {
+  color: var(--dark-text-tertiary);
+}
+
+[data-theme="dark"] .search-icon {
+  color: var(--dark-text-tertiary);
+}
+
+[data-theme="dark"] .clear-search-btn {
+  color: var(--dark-text-tertiary);
+}
+
+[data-theme="dark"] .clear-search-btn:hover {
+  color: var(--dark-text-secondary);
+  background: var(--dark-bg-primary);
+}
+
+[data-theme="dark"] .loading-spinner {
+  border-color: var(--dark-border);
+  border-top-color: var(--dark-accent);
+}
+
+[data-theme="dark"] .search-results {
+  background: var(--dark-bg-secondary);
+  border-color: var(--dark-border);
+}
+
+[data-theme="dark"] .results-header {
+  background: var(--dark-bg-tertiary);
+  border-color: var(--dark-border);
+  color: var(--dark-text-tertiary);
+}
+
+[data-theme="dark"] .search-result-item {
+  background: var(--dark-bg-secondary);
+  border-color: var(--dark-border);
+}
+
+[data-theme="dark"] .search-result-item:hover {
+  background: var(--dark-bg-tertiary);
+  border-left-color: var(--dark-accent);
+}
+
+[data-theme="dark"] .search-result-left .symbol {
+  color: var(--dark-text-primary);
+}
+
+[data-theme="dark"] .search-result-left .name {
+  color: var(--dark-text-secondary);
+}
+
+[data-theme="dark"] .search-result-price {
+  color: var(--dark-text-primary);
+}
+
+[data-theme="dark"] .search-result-item .exchange {
+  color: var(--dark-accent);
+  background: rgba(20, 241, 149, 0.1);
+  border-color: rgba(20, 241, 149, 0.2);
+}
+
+[data-theme="dark"] .no-results {
+  color: var(--dark-text-tertiary);
+}
+
+[data-theme="dark"] .popular-stocks-section {
+  border-color: var(--dark-border);
+}
+
+[data-theme="dark"] .popular-stocks-title {
+  color: var(--dark-text-primary);
+}
+
+[data-theme="dark"] .popular-stock-item {
+  background: var(--dark-bg-secondary);
+  border-color: var(--dark-border);
+}
+
+[data-theme="dark"] .popular-stock-item:hover {
+  background: var(--dark-bg-tertiary);
+}
+
+[data-theme="dark"] .popular-stock-symbol {
+  color: var(--dark-text-primary);
+}
+
+[data-theme="dark"] .popular-stock-name {
+  color: var(--dark-text-secondary);
+}
+
+[data-theme="dark"] .popular-stock-value {
+  color: var(--dark-text-primary);
+}
+
+[data-theme="dark"] .watchlist-btn {
+  background: rgba(30, 41, 59, 0.6);
+  border-color: rgba(71, 85, 105, 0.4);
+  color: #94A3B8;
+}
+
+[data-theme="dark"] .watchlist-btn:hover {
+  background: rgba(30, 41, 59, 0.8);
+  border-color: rgba(245, 158, 11, 0.6);
+  color: #F59E0B;
+}
+
+[data-theme="dark"] .watchlist-btn.active {
+  background: linear-gradient(135deg, #14F195 0%, #10B981 100%);
+  border-color: #14F195;
+  color: #0F172A;
+}
+
+[data-theme="dark"] .watchlist-btn svg {
+  stroke: currentColor;
+}
+
+/* ========================================
+   📱 RESPONSIVE DESIGN
+   ======================================== */
+
+@media (max-width: 768px) {
+  .stock-search-panel {
+    padding: var(--space-4);
+    margin-bottom: var(--space-4);
+  }
+
+  .search-result-item {
+    padding: 1.25rem 1rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    min-height: auto;
+  }
+
+  .search-result-left {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-right: 0;
+    width: 100%;
+  }
+
+  .search-result-left .symbol {
+    min-width: auto;
+  }
+
+  .search-result-left .name {
+    max-width: none;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: initial;
+  }
+
+  .search-result-right {
+    align-items: flex-start;
+    min-width: auto;
+    width: 100%;
+    text-align: left;
+  }
+
+  .search-result-item .exchange {
+    position: static;
+    align-self: flex-end;
+    margin-top: -3rem;
+  }
+
+  .popular-stock-item {
+    padding: 16px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    min-height: auto;
+  }
+
+  .popular-stock-price {
+    align-items: flex-start;
+    min-width: auto;
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .stock-search-panel {
+    padding: var(--space-3);
+  }
+
+  .stock-search input {
+    padding: 0.875rem 1rem;
+    font-size: 0.9375rem;
+  }
+
+  .search-result-item {
+    padding: 0.875rem;
+  }
+
+  .popular-stock-item {
+    padding: 12px;
+  }
+}
+
+/* ========================================
+   🎯 CHARTS INTEGRATION SPECIFIC STYLES
+   ======================================== */
+
+.charts-stock-search {
+  margin-bottom: 0;
+  border: none;
+  box-shadow: none;
+  background: transparent;
+  padding: 0;
+  max-width: 100%;
+}
+
+.charts-stock-search .search-title {
+  display: none; /* Hide duplicate title */
+}
+
+.charts-stock-search .popular-stocks-title {
+  display: none; /* Hide duplicate title */
+}
+
+.charts-stock-search .popular-stocks-section {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 0;
+}
+
+.charts-stock-search .search-section {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.charts-stock-search .popular-stocks-list {
+  max-height: 350px; /* Adjust for sidebar */
+  border-radius: 0.5rem;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.charts-stock-search .popular-stock-item {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.charts-stock-search .popular-stock-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border: none;
+  box-shadow: none;
+  transform: none;
+}
+
+.charts-stock-search .search-input-container {
+  position: relative;
+}
+
+.charts-stock-search .search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  margin-top: 0.5rem;
+}
+
+/* Dark mode specific styling for charts */
+[data-theme="dark"] .charts-stock-search .popular-stock-item {
+  background: transparent;
+  border: none;
+}
+
+[data-theme="dark"] .charts-stock-search .popular-stock-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  box-shadow: none;
+}
+
+/* ========================================
+   🔍 NO RESULTS MESSAGE
+   ======================================== */
+
+.no-results {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  color: var(--text-tertiary);
+}
+
+.no-results svg {
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.no-results p {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin: 0 0 0.5rem 0;
+}
+
+.no-results small {
+  font-size: 0.8125rem;
+  color: var(--text-tertiary);
+  opacity: 0.8;
+}
+
+/* Dark mode styling for no results */
+[data-theme="dark"] .no-results {
+  color: var(--dark-text-tertiary);
+}
+
+[data-theme="dark"] .no-results p {
+  color: var(--dark-text-secondary);
+}
+
+[data-theme="dark"] .no-results small {
+  color: var(--dark-text-tertiary);
+}

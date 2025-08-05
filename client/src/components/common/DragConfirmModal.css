@@ -1,0 +1,655 @@
+/* ========================================
+   🎯 DRAG CONFIRM MODAL STYLES
+   ======================================== */
+
+.drag-confirm-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(12px);
+  z-index: 99998;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Debug: Ensure modal is visible */
+.drag-confirm-modal * {
+  box-sizing: border-box;
+}
+
+.drag-confirm-modal {
+  /* Ensure modal is always visible for debugging */
+  min-height: 400px;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.drag-confirm-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: linear-gradient(135deg,
+    rgba(255, 255, 255, 0.98) 0%,
+    rgba(248, 250, 252, 0.95) 100%
+  );
+  border: 2px solid rgba(229, 231, 235, 0.9);
+  border-radius: 1.5rem;
+  padding: 0;
+  max-width: 500px;
+  width: 95%;
+  max-height: 85vh;
+  overflow: hidden;
+  box-shadow:
+    0 25px 50px -12px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  z-index: 99999;
+  animation: modalSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* ========================================
+   📋 MODAL HEADER
+   ======================================== */
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2rem 2rem 1.5rem 2rem;
+  border-bottom: 2px solid rgba(229, 231, 235, 0.4);
+  background: linear-gradient(135deg,
+    rgba(255, 255, 255, 0.9) 0%,
+    rgba(248, 250, 252, 0.8) 100%
+  );
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.action-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  color: white;
+  font-weight: 600;
+}
+
+.action-icon.buy {
+  background: linear-gradient(135deg, #10B981, #14F195);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.action-icon.sell {
+  background: linear-gradient(135deg, #EF4444, #F87171);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.header-text {
+  flex: 1;
+}
+
+.modal-title {
+  font-family: 'Poppins', sans-serif;
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #111827;
+  margin: 0 0 0.5rem 0;
+  letter-spacing: -0.025em;
+}
+
+.modal-subtitle {
+  font-size: 0.9rem;
+  color: #6B7280;
+  margin: 0;
+  font-weight: 600;
+}
+
+.close-button {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 2px solid rgba(107, 114, 128, 0.2);
+  background: rgba(107, 114, 128, 0.1);
+  color: #6B7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.4rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
+}
+
+.close-button:hover {
+  background: rgba(107, 114, 128, 0.2);
+  border-color: rgba(107, 114, 128, 0.4);
+  color: #374151;
+  transform: scale(1.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* ========================================
+   📊 ORDER DETAILS
+   ======================================== */
+
+.order-details {
+  padding: 1.5rem 2rem;
+}
+
+.stock-info {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: rgba(249, 250, 251, 0.8);
+  border-radius: 12px;
+  border: 1px solid rgba(229, 231, 235, 0.5);
+}
+
+.stock-symbol {
+  font-family: 'Poppins', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.25rem;
+}
+
+.stock-name {
+  font-size: 0.875rem;
+  color: #6B7280;
+}
+
+.order-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid rgba(229, 231, 235, 0.3);
+}
+
+.summary-row:last-child {
+  border-bottom: none;
+}
+
+.summary-row.total {
+  padding-top: 1rem;
+  border-top: 2px solid rgba(229, 231, 235, 0.5);
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.summary-row .label {
+  color: #6B7280;
+  font-weight: 500;
+}
+
+.summary-row .value {
+  color: #111827;
+  font-weight: 600;
+}
+
+.summary-row .value.buy {
+  color: #10B981;
+}
+
+.summary-row .value.sell {
+  color: #EF4444;
+}
+
+/* ========================================
+   ⚠️ RISK WARNING
+   ======================================== */
+
+.risk-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.2);
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.warning-icon {
+  color: #F59E0B;
+  font-size: 1.25rem;
+  margin-top: 0.125rem;
+  flex-shrink: 0;
+}
+
+.warning-text {
+  font-size: 0.875rem;
+  color: #92400E;
+  line-height: 1.5;
+}
+
+/* ========================================
+   🎯 DRAG TO CONFIRM
+   ======================================== */
+
+.drag-confirm-container {
+  padding: 1.5rem 2rem 2rem 2rem;
+  background: rgba(249, 250, 251, 0.5);
+  border-top: 1px solid rgba(229, 231, 235, 0.5);
+}
+
+.drag-instruction {
+  text-align: center;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  color: #6B7280;
+  font-weight: 500;
+}
+
+.confirmed-text {
+  color: #10B981 !important;
+  font-weight: 600;
+}
+
+.drag-confirm-modal.confirmed {
+  box-shadow:
+    0 25px 50px -12px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    0 0 0 4px rgba(16, 185, 129, 0.2),
+    0 0 40px rgba(16, 185, 129, 0.3);
+  animation: modalConfirmGlow 0.8s ease-out;
+}
+
+@keyframes modalConfirmGlow {
+  0% {
+    box-shadow:
+      0 25px 50px -12px rgba(0, 0, 0, 0.25),
+      0 0 0 1px rgba(255, 255, 255, 0.1);
+  }
+  50% {
+    box-shadow:
+      0 25px 50px -12px rgba(0, 0, 0, 0.25),
+      0 0 0 1px rgba(255, 255, 255, 0.1),
+      0 0 0 6px rgba(16, 185, 129, 0.3),
+      0 0 60px rgba(16, 185, 129, 0.4);
+  }
+  100% {
+    box-shadow:
+      0 25px 50px -12px rgba(0, 0, 0, 0.25),
+      0 0 0 1px rgba(255, 255, 255, 0.1),
+      0 0 0 4px rgba(16, 185, 129, 0.2),
+      0 0 40px rgba(16, 185, 129, 0.3);
+  }
+}
+
+.drag-track {
+  position: relative;
+  width: 100%;
+  height: 70px;
+  background: linear-gradient(135deg,
+    rgba(229, 231, 235, 0.4) 0%,
+    rgba(209, 213, 219, 0.3) 100%
+  );
+  border-radius: 35px;
+  border: 3px solid rgba(229, 231, 235, 0.6);
+  overflow: hidden;
+  cursor: grab;
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.1),
+    0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.drag-track:hover {
+  border-color: rgba(16, 185, 129, 0.4);
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.1),
+    0 0 0 2px rgba(16, 185, 129, 0.1);
+}
+
+.drag-track:active {
+  cursor: grabbing;
+}
+
+.drag-track-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  border-radius: 28px;
+  background: linear-gradient(90deg,
+    rgba(16, 185, 129, 0.3) 0%,
+    rgba(20, 241, 149, 0.4) 50%,
+    rgba(16, 185, 129, 0.5) 100%
+  );
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0.7;
+  box-shadow: inset 0 1px 2px rgba(16, 185, 129, 0.2);
+}
+
+.drag-track-fill::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 100%
+  );
+  border-radius: 28px;
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.drag-handle {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%);
+  border: 3px solid rgba(229, 231, 235, 0.9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: #6B7280;
+  cursor: grab;
+  box-shadow:
+    0 8px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 2;
+}
+
+.drag-handle::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(20, 241, 149, 0.1));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.drag-handle:hover::before {
+  opacity: 1;
+}
+
+.drag-handle:hover {
+  transform: scale(1.08);
+  border-color: rgba(16, 185, 129, 0.6);
+  color: #10B981;
+  box-shadow:
+    0 12px 20px -4px rgba(0, 0, 0, 0.15),
+    0 6px 8px -2px rgba(0, 0, 0, 0.1),
+    0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+  transform: scale(1.02);
+  box-shadow:
+    0 6px 12px -2px rgba(0, 0, 0, 0.2),
+    0 0 0 2px rgba(16, 185, 129, 0.2);
+}
+
+.drag-handle.dragging {
+  box-shadow:
+    0 12px 20px -3px rgba(0, 0, 0, 0.15),
+    0 6px 8px -2px rgba(0, 0, 0, 0.1),
+    0 0 0 3px rgba(16, 185, 129, 0.3);
+  border-color: #10B981;
+  color: #10B981;
+  animation: dragPulse 0.8s ease-in-out infinite;
+}
+
+@keyframes dragPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+.drag-handle.confirmed {
+  background: linear-gradient(135deg, #10B981, #14F195);
+  border-color: #10B981;
+  color: white;
+  box-shadow:
+    0 8px 20px rgba(16, 185, 129, 0.4),
+    0 0 0 4px rgba(16, 185, 129, 0.2);
+  animation: confirmPulse 0.6s ease-out;
+}
+
+@keyframes confirmPulse {
+  0% {
+    transform: scale(1);
+    box-shadow:
+      0 8px 20px rgba(16, 185, 129, 0.4),
+      0 0 0 0px rgba(16, 185, 129, 0.4);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow:
+      0 12px 25px rgba(16, 185, 129, 0.5),
+      0 0 0 8px rgba(16, 185, 129, 0.2);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow:
+      0 8px 20px rgba(16, 185, 129, 0.4),
+      0 0 0 4px rgba(16, 185, 129, 0.2);
+  }
+}
+
+.check-icon {
+  font-weight: 700;
+  font-size: 1.5rem;
+}
+
+.drag-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-weight: 700;
+  color: #4B5563;
+  font-size: 1rem;
+  pointer-events: none;
+  z-index: 1;
+  transition: all 0.3s ease;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+  letter-spacing: 0.025em;
+}
+
+/* ========================================
+   ⏳ LOADING STATE
+   ======================================== */
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(4px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(16, 185, 129, 0.2);
+  border-top: 3px solid #10B981;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-overlay p {
+  color: #6B7280;
+  font-weight: 500;
+  margin: 0;
+}
+
+/* ========================================
+   🌙 DARK MODE SUPPORT
+   ======================================== */
+
+[data-theme="dark"] .drag-confirm-modal {
+  background: linear-gradient(135deg, 
+    rgba(30, 41, 59, 0.98) 0%, 
+    rgba(51, 65, 85, 0.95) 100%
+  );
+  border-color: rgba(51, 65, 85, 0.8);
+}
+
+[data-theme="dark"] .drag-confirm-modal {
+  background: linear-gradient(135deg,
+    rgba(30, 41, 59, 0.98) 0%,
+    rgba(15, 23, 42, 0.95) 100%
+  );
+  border-color: rgba(71, 85, 105, 0.9);
+}
+
+[data-theme="dark"] .modal-header {
+  background: linear-gradient(135deg,
+    rgba(30, 41, 59, 0.9) 0%,
+    rgba(15, 23, 42, 0.8) 100%
+  );
+  border-bottom-color: rgba(71, 85, 105, 0.4);
+}
+
+[data-theme="dark"] .modal-title {
+  color: #F8FAFC;
+}
+
+[data-theme="dark"] .modal-subtitle {
+  color: #94A3B8;
+}
+
+[data-theme="dark"] .close-button {
+  background: rgba(71, 85, 105, 0.3);
+  color: #94A3B8;
+}
+
+[data-theme="dark"] .close-button:hover {
+  background: rgba(71, 85, 105, 0.5);
+  color: #CBD5E1;
+}
+
+[data-theme="dark"] .stock-info {
+  background: rgba(51, 65, 85, 0.5);
+  border-color: rgba(71, 85, 105, 0.5);
+}
+
+[data-theme="dark"] .stock-symbol {
+  color: #F8FAFC;
+}
+
+[data-theme="dark"] .stock-name {
+  color: #94A3B8;
+}
+
+[data-theme="dark"] .summary-row .label {
+  color: #94A3B8;
+}
+
+[data-theme="dark"] .summary-row .value {
+  color: #F8FAFC;
+}
+
+[data-theme="dark"] .drag-track {
+  background: linear-gradient(135deg,
+    rgba(51, 65, 85, 0.6) 0%,
+    rgba(30, 41, 59, 0.5) 100%
+  );
+  border-color: rgba(71, 85, 105, 0.7);
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.3),
+    0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .drag-track:hover {
+  border-color: rgba(16, 185, 129, 0.5);
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.3),
+    0 0 0 2px rgba(16, 185, 129, 0.2);
+}
+
+[data-theme="dark"] .drag-handle {
+  background: linear-gradient(135deg, #475569 0%, #334155 100%);
+  border-color: rgba(71, 85, 105, 0.9);
+  color: #CBD5E1;
+  box-shadow:
+    0 8px 15px -3px rgba(0, 0, 0, 0.3),
+    0 4px 6px -2px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .drag-handle::before {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(20, 241, 149, 0.2));
+}
+
+[data-theme="dark"] .drag-handle:hover {
+  border-color: rgba(16, 185, 129, 0.7);
+  color: #14F195;
+  box-shadow:
+    0 12px 20px -4px rgba(0, 0, 0, 0.4),
+    0 6px 8px -2px rgba(0, 0, 0, 0.3),
+    0 0 0 3px rgba(16, 185, 129, 0.2);
+}
+
+[data-theme="dark"] .drag-text {
+  color: #CBD5E1;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
