@@ -17,7 +17,6 @@ import balanceSyncManager from './utils/balanceSync'
 import AppRoutes from './Approutes.jsx'
 
 const PerformanceMonitor = lazy(() => import('./components/debug/PerformanceMonitor'))
-
 function App() {
   const [user, setUser] = useState(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
