@@ -95,48 +95,23 @@ function App() {
 
   // Check authentication status on app load
   useEffect(() => {
-    const checkAuth = async () => {
+    const token = localStorage.getItem('token')
+    const userData = localStorage.getItem('user')
+
+    if (token && userData) {
       try {
-        const token = localStorage.getItem('token')
-        const userData = localStorage.getItem('user')
-
-        if (token && userData) {
-          // Verify token with backend
-          const response = await fetch('http://localhost:5001/api/auth/verify', {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          })
-
-          if (response.ok) {
-            const data = await response.json()
-            setUser(data.user)
-            setIsAuthenticated(true)
-
-            // Initialize balance sync manager when authenticated
-            balanceSyncManager.initialize()
-          } else {
-            // Token is invalid, clear storage
-            localStorage.removeItem('token')
-            localStorage.removeItem('user')
-            setIsAuthenticated(false)
-            setUser(null)
-          }
-        }
-        setLoading(false)
+        const parsedUser = JSON.parse(userData)
+        setUser(parsedUser)
+        setIsAuthenticated(true)
+        balanceSyncManager.initialize()
       } catch (error) {
-        console.error('Auth check failed:', error)
+        console.error('Error parsing user data:', error)
         localStorage.removeItem('token')
         localStorage.removeItem('user')
-        setIsAuthenticated(false)
-        setUser(null)
-        setLoading(false)
       }
     }
-
-    checkAuth()
+    
+    setLoading(false)
   }, [])
 
   // Theme management

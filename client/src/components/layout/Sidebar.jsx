@@ -29,6 +29,7 @@ import SaytrixTriggerButton from "../voice/SaytrixTriggerButton";
 import axios from "axios";
 import API_ENDPOINTS from "../../config/apiConfig";
 import "../../styles/components/Sidebar.css";
+import "../../styles/sidebar-override.css";
 
 // Local Sidebar Context - only used within this component
 const LocalSidebarContext = createContext();
@@ -156,41 +157,19 @@ const SidebarContent = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
 
-  // User data state
-  const [user, setUser] = useState({
-    fullName: "User",
-    email: "",
-    profileImage: "https://randomuser.me/api/portraits/lego/1.jpg",
-    role: "Member"
-  });
+  const { user } = useAuth();
 
-  // Get user data from localStorage and handle loading
+  // Handle loading and force sidebar positioning
   useEffect(() => {
     const loadSidebar = async () => {
-      // Simulate loading for smooth animation
       await new Promise(resolve => setTimeout(resolve, 100));
-
-      if (!isAuthenticated) {
-        setIsLoaded(true);
-        return;
-      }
-
-      // Get user data directly from localStorage
-      const userInfo = {
-        fullName: localStorage.getItem('userFullName') || localStorage.getItem('userName') || "User",
-        email: localStorage.getItem('userEmail') || "",
-        profileImage: localStorage.getItem('userProfileImage')
-          ? API_ENDPOINTS.UPLOADS(localStorage.getItem('userProfileImage'))
-          : "https://randomuser.me/api/portraits/lego/1.jpg",
-        role: "Member"
-      };
-
-      setUser(userInfo);
       setIsLoaded(true);
     };
 
     loadSidebar();
-  }, [isAuthenticated]);
+  }, []);
+
+
 
   // No additional resize handling needed - SidebarContext handles this
 
@@ -223,125 +202,7 @@ const SidebarContent = () => {
     updateLayoutProperties();
   }, [isCollapsed, isMobile]);
 
-  // Force sidebar positioning fix - JavaScript override using ref - NUCLEAR OPTION
-  useEffect(() => {
-    const forceSidebarPosition = () => {
-      const sidebarElement = sidebarRef.current;
-      if (sidebarElement) {
-        // NUCLEAR POSITIONING FIX - Force positioning styles via JavaScript using ref
-        sidebarElement.style.position = 'fixed';
-        sidebarElement.style.zIndex = '2147483647';
-        sidebarElement.style.transform = 'none';
-        sidebarElement.style.webkitTransform = 'none';
-        sidebarElement.style.mozTransform = 'none';
-        sidebarElement.style.msTransform = 'none';
-        sidebarElement.style.oTransform = 'none';
-        sidebarElement.style.margin = '0px';
-        sidebarElement.style.contain = 'none';
-        sidebarElement.style.isolation = 'auto';
-        sidebarElement.style.willChange = 'auto';
-        sidebarElement.style.backgroundAttachment = 'fixed';
-        sidebarElement.style.boxSizing = 'border-box';
-        sidebarElement.style.clip = 'auto';
-        sidebarElement.style.clipPath = 'none';
-        sidebarElement.style.mask = 'none';
-        sidebarElement.style.filter = 'none';
-        sidebarElement.style.mixBlendMode = 'normal';
-        sidebarElement.style.opacity = '1';
-        sidebarElement.style.visibility = 'visible';
-        sidebarElement.style.backfaceVisibility = 'visible';
-        sidebarElement.style.webkitBackfaceVisibility = 'visible';
-        sidebarElement.style.perspective = 'none';
-        sidebarElement.style.webkitPerspective = 'none';
 
-        if (isMobile) {
-          // Mobile navbar positioning
-          sidebarElement.style.top = '0px';
-          sidebarElement.style.left = '0px';
-          sidebarElement.style.right = '0px';
-          sidebarElement.style.width = '100%';
-
-          if (isCollapsed) {
-            // Collapsed navbar (just top bar)
-            sidebarElement.style.bottom = 'auto';
-            sidebarElement.style.height = '70px';
-            sidebarElement.style.maxHeight = '70px';
-            sidebarElement.style.minHeight = '70px';
-            sidebarElement.style.padding = '12px 20px';
-            sidebarElement.style.display = 'flex';
-            sidebarElement.style.flexDirection = 'row';
-            sidebarElement.style.alignItems = 'center';
-            sidebarElement.style.justifyContent = 'space-between';
-            sidebarElement.style.overflow = 'hidden';
-          } else {
-            // Expanded navbar (full screen menu)
-            sidebarElement.style.bottom = '0px';
-            sidebarElement.style.height = '100vh';
-            sidebarElement.style.maxHeight = '100vh';
-            sidebarElement.style.minHeight = '100vh';
-            sidebarElement.style.padding = '20px';
-            sidebarElement.style.display = 'flex';
-            sidebarElement.style.flexDirection = 'column';
-            sidebarElement.style.alignItems = 'stretch';
-            sidebarElement.style.justifyContent = 'flex-start';
-            sidebarElement.style.overflowY = 'auto';
-          }
-        } else {
-          // Desktop sidebar positioning
-          sidebarElement.style.top = '0px';
-          sidebarElement.style.left = '0px';
-          sidebarElement.style.bottom = '0px';
-          sidebarElement.style.right = 'auto';
-          sidebarElement.style.width = isCollapsed ? '80px' : '280px';
-          sidebarElement.style.height = '100vh';
-          sidebarElement.style.maxHeight = '100vh';
-          sidebarElement.style.minHeight = '100vh';
-          sidebarElement.style.padding = isCollapsed ? '24px 16px' : '24px 20px';
-          sidebarElement.style.display = 'flex';
-          sidebarElement.style.flexDirection = 'column';
-          sidebarElement.style.overflowY = 'auto';
-        }
-      }
-    };
-
-    // Apply immediately
-    forceSidebarPosition();
-
-    // Apply on scroll to prevent any movement
-    const handleScroll = () => {
-      forceSidebarPosition();
-    };
-
-    // Apply on resize
-    const handleResize = () => {
-      forceSidebarPosition();
-    };
-
-    // Apply on any DOM changes
-    const observer = new MutationObserver(() => {
-      forceSidebarPosition();
-    });
-
-    if (sidebarRef.current) {
-      observer.observe(sidebarRef.current, {
-        attributes: true,
-        attributeFilter: ['style', 'class']
-      });
-    }
-
-    // Add event listeners
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    window.addEventListener('resize', handleResize, { passive: true });
-    document.addEventListener('scroll', handleScroll, { passive: true });
-
-    // Cleanup
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('resize', handleResize);
-      document.removeEventListener('scroll', handleScroll);
-      observer.disconnect();
-    };
-  }, [isCollapsed, isMobile]);
 
   // Clean CSS-only approach - no inline styles needed
 
@@ -351,6 +212,22 @@ const SidebarContent = () => {
       className={`sidebar ${isCollapsed ? "collapsed" : ""} ${isMobile ? "mobile" : ""} ${isLoaded ? "loaded" : "loading"} ${isAnimating ? "animating" : ""}`}
       role="navigation"
       aria-label="Main navigation"
+      style={{
+        position: 'fixed',
+        top: '0px',
+        left: '0px',
+        width: isCollapsed ? '80px' : '280px',
+        height: '100vh',
+        zIndex: 999999,
+        background: 'white',
+        borderRight: '1px solid #e5e7eb',
+        padding: '24px 20px',
+        display: 'flex',
+        flexDirection: 'column',
+        overflowY: 'auto',
+        margin: '0px',
+        transform: 'none'
+      }}
     >
       <div className="top-section">
         <button
@@ -382,14 +259,20 @@ const SidebarContent = () => {
         )}
       </div>
 
-      {!isCollapsed && (
+      {!isCollapsed && user && (
         <div className="user-profile">
           <div className="user-avatar">
-            <div className="avatar-symbol">👤</div>
+            {user.profileImage ? (
+              <img src={user.profileImage} alt={user.fullName} className="avatar-image" />
+            ) : (
+              <div className="avatar-symbol">
+                {user.fullName ? user.fullName.charAt(0).toUpperCase() : '👤'}
+              </div>
+            )}
           </div>
           <div className="user-info">
-            <h3 className="user-name">{user.fullName}</h3>
-            <p className="user-role">{user.role}</p>
+            <h3 className="user-name">{user.fullName || user.firstName || 'User'}</h3>
+            <p className="user-role">Member</p>
           </div>
         </div>
       )}

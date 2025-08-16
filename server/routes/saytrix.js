@@ -37,8 +37,8 @@ router.post('/chat', async (req, res) => {
     // Generate session ID if not provided
     const currentSessionId = sessionId || uuidv4();
 
-    // Process message with Gemini
-    const response = await geminiService.processMessage(message, chatHistory);
+    // Process message with Enhanced Gemini Service
+    const response = await geminiService.processMessage(message, userId);
 
     // Prepare chat data for MongoDB storage
     const userMessage = {
@@ -109,10 +109,10 @@ router.post('/chat', async (req, res) => {
       success: true,
       data: {
         response: response.message,
-        stockData: response.stockData,
+        stockData: response.data,
         additionalData: response.additionalData,
-        timestamp: response.timestamp,
-        suggestions: geminiService.getQuickSuggestions(message),
+        timestamp: new Date().toISOString(),
+        suggestions: response.suggestions || geminiService.getQuickSuggestions(message),
         sessionId: currentSessionId
       }
     });

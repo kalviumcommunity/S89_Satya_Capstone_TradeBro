@@ -122,7 +122,7 @@ const Notifications = ({ user, theme }) => {
       <PageHeader
         icon={FiBell}
         title="Notifications"
-        subtitle="OFFLINE"
+        subtitle={`${unreadCount} unread • ${connectionStatus === 'connected' ? 'LIVE' : 'OFFLINE'}`}
         borderColor="primary"
         showNotifications={false}
         actions={[

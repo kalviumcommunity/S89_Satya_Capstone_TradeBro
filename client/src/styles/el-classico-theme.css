@@ -195,6 +195,10 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+}
+
+/* Apply transforms only to non-sidebar elements */
+*:not(.sidebar):not(.sidebar *) {
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
   -webkit-transform: translateZ(0);
@@ -204,7 +208,9 @@
 
 
 /* Enhanced input field sharpness */
-input, textarea, select {
+input:not(.sidebar input):not(.sidebar textarea):not(.sidebar select), 
+textarea:not(.sidebar input):not(.sidebar textarea):not(.sidebar select), 
+select:not(.sidebar input):not(.sidebar textarea):not(.sidebar select) {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -220,7 +226,9 @@ input, textarea, select {
 
 
 /* Enhanced icon sharpness */
-.icon, svg, i {
+.icon:not(.sidebar .icon):not(.sidebar svg):not(.sidebar i), 
+svg:not(.sidebar .icon):not(.sidebar svg):not(.sidebar i), 
+i:not(.sidebar .icon):not(.sidebar svg):not(.sidebar i) {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   shape-rendering: geometricPrecision;

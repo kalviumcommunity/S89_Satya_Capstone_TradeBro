@@ -251,7 +251,7 @@
    🔍 ENHANCED BUTTON SYSTEM
    ======================================== */
 
-.btn, .button, button:not(.nav-item):not(.toggle-btn) {
+.btn, .button, button:not(.nav-item):not(.toggle-btn):not(.sidebar *) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -283,6 +283,8 @@
   box-shadow: var(--shadow-sm);
   min-height: 44px; /* Touch-friendly minimum */
 }
+
+
 
 .btn:hover, .button:hover, button:not(.nav-item):not(.toggle-btn):hover {
   transform: translateY(-1px) translateZ(0);

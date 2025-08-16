@@ -147,11 +147,37 @@ const useSaytrix = () => {
     // Ensure listening state is properly reset
     setIsListening(false);
 
-    // Use offline mode for now due to backend issues
-    // TODO: Re-enable backend calls when server is fixed
     try {
-      // Simulate processing delay
-      await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000));
+      // Try backend API first
+      const response = await saytrixAPI.sendMessage(messageText, sessionId);
+      
+      if (response.success) {
+        const assistantMessage = {
+          id: Date.now() + 1,
+          type: 'assistant',
+          content: response.data.response,
+          timestamp: new Date(),
+          confidence: 'high',
+          cardType: response.data.stockData ? 'stock-price' : 'text',
+          suggestions: response.data.suggestions || [],
+          stockData: response.data.stockData
+        };
+
+        setMessages(prev => [...prev, assistantMessage]);
+        setSessionId(response.data.sessionId);
+
+        // Text-to-speech for assistant response
+        if (synthRef.current && assistantMessage.content) {
+          speakText(assistantMessage.content);
+        }
+      } else {
+        throw new Error('Backend response failed');
+      }
+    } catch (error) {
+      console.warn('Backend API failed, using fallback:', error);
+      
+      // Fallback to offline mode
+      await new Promise(resolve => setTimeout(resolve, 800));
 
       const fallbackMessage = {
         id: Date.now() + 1,
@@ -169,19 +195,6 @@ const useSaytrix = () => {
       if (synthRef.current && fallbackMessage.content) {
         speakText(fallbackMessage.content);
       }
-    } catch (error) {
-      console.error('Error in offline mode:', error);
-
-      const errorMessage = {
-        id: Date.now() + 1,
-        type: 'assistant',
-        content: 'I apologize, but I\'m having trouble processing your request right now. Please try again.',
-        timestamp: new Date(),
-        confidence: 'low',
-        cardType: 'error'
-      };
-
-      setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsProcessing(false);
     }

@@ -165,7 +165,12 @@ class EnhancedGeminiService {
       }
 
       console.log(`📈 Fetching data for symbol: ${symbol}`);
-      const stockData = await this.dataProvider.getStockData(symbol);
+      let stockData = await this.dataProvider.getStockData(symbol);
+      
+      // Fallback to FMP API if no data
+      if (!stockData) {
+        stockData = await this.fetchStockDataFallback(symbol);
+      }
       
       if (!stockData) {
         return {
@@ -187,6 +192,48 @@ class EnhancedGeminiService {
       console.error('❌ Error in stock query:', error);
       return this.createErrorResponse(this.errorCodes.API_ERROR, language);
     }
+  }
+
+  /**
+   * Fallback stock data fetcher using FMP API
+   */
+  async fetchStockDataFallback(symbol) {
+    const apiKeys = [
+      process.env.FMP_API_KEY,
+      process.env.FMP_API_KEY_2,
+      process.env.FMP_API_KEY_3,
+      process.env.FMP_API_KEY_4
+    ].filter(Boolean);
+
+    for (const apiKey of apiKeys) {
+      try {
+        const axios = require('axios');
+        const response = await axios.get(
+          `https://financialmodelingprep.com/api/v3/quote/${symbol}?apikey=${apiKey}`,
+          { timeout: 5000 }
+        );
+        
+        if (response.data && response.data[0]) {
+          const data = response.data[0];
+          return {
+            symbol: data.symbol,
+            name: data.name,
+            price: data.price,
+            change: data.change,
+            changesPercentage: data.changesPercentage,
+            dayLow: data.dayLow,
+            dayHigh: data.dayHigh,
+            marketCap: data.marketCap,
+            volume: data.volume,
+            timestamp: new Date().toISOString()
+          };
+        }
+      } catch (error) {
+        console.log(`FMP API key failed: ${apiKey.substring(0, 8)}...`);
+        continue;
+      }
+    }
+    return null;
   }
 
   /**
@@ -256,7 +303,12 @@ class EnhancedGeminiService {
       const type = isLosers ? 'losers' : 'gainers';
       
       console.log(`📊 Fetching top ${type}`);
-      const movers = await this.dataProvider.getTopMovers(type);
+      let movers = await this.dataProvider.getTopMovers(type);
+      
+      // Fallback to FMP API if no data
+      if (!movers || movers.length === 0) {
+        movers = await this.fetchTopMoversFallback(type);
+      }
       
       const formattedResponse = this.formatter.formatTopMovers(movers, type, language);
       
@@ -270,6 +322,44 @@ class EnhancedGeminiService {
       console.error('❌ Error in top movers:', error);
       return this.createErrorResponse(this.errorCodes.API_ERROR, language);
     }
+  }
+
+  /**
+   * Fallback top movers fetcher using FMP API
+   */
+  async fetchTopMoversFallback(type) {
+    const apiKeys = [
+      process.env.FMP_API_KEY,
+      process.env.FMP_API_KEY_2,
+      process.env.FMP_API_KEY_3,
+      process.env.FMP_API_KEY_4
+    ].filter(Boolean);
+
+    const endpoint = type === 'gainers' ? 'stock_market/gainers' : 'stock_market/losers';
+
+    for (const apiKey of apiKeys) {
+      try {
+        const axios = require('axios');
+        const response = await axios.get(
+          `https://financialmodelingprep.com/api/v3/${endpoint}?apikey=${apiKey}`,
+          { timeout: 5000 }
+        );
+        
+        if (response.data && Array.isArray(response.data)) {
+          return response.data.slice(0, 10).map(stock => ({
+            symbol: stock.symbol,
+            name: stock.name,
+            price: stock.price,
+            change: stock.change,
+            changesPercentage: stock.changesPercentage
+          }));
+        }
+      } catch (error) {
+        console.log(`FMP API key failed for ${type}: ${apiKey.substring(0, 8)}...`);
+        continue;
+      }
+    }
+    return [];
   }
 
   /**

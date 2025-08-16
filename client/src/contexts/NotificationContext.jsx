@@ -189,6 +189,9 @@ export const NotificationProvider = ({ children }) => {
       // Fetch unread count (works regardless of Pusher)
       await fetchUnreadCount();
 
+      // Start mock live notifications for development
+      notificationService.startMockLiveNotifications();
+
       dispatch({ type: ACTIONS.SET_LOADING, payload: false });
     } catch (error) {
       console.error('Failed to initialize notifications:', error);
@@ -253,6 +256,7 @@ export const NotificationProvider = ({ children }) => {
 
   // Cleanup notifications
   const cleanupNotifications = useCallback(() => {
+    notificationService.stopMockLiveNotifications();
     notificationService.disconnectPusher();
     dispatch({ type: ACTIONS.CLEAR_ALL });
     dispatch({ type: ACTIONS.SET_CONNECTION_STATUS, payload: 'disconnected' });

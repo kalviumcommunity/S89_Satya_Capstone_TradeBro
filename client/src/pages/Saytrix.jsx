@@ -10,7 +10,8 @@ import {
   FiZap,
   FiUser,
   FiAlertTriangle,
-  FiCpu
+  FiCpu,
+  FiX
 } from 'react-icons/fi';
 import useSaytrix from '../hooks/useSaytrix';
 import SaytrixCardRenderer from '../components/ai/SaytrixCardRenderer';
@@ -55,9 +56,22 @@ const Saytrix = ({ user, theme }) => {
     if (isListening) {
       stopListening();
     } else {
-      startListening();
+      // Check for microphone permission
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setError('Voice input is not supported in this browser.');
+        return;
+      }
+      
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(() => {
+          startListening();
+        })
+        .catch((err) => {
+          console.error('Microphone access denied:', err);
+          setError('Microphone access is required for voice input. Please allow microphone access and try again.');
+        });
     }
-  }, [isListening, startListening, stopListening]);
+  }, [isListening, startListening, stopListening, setError]);
 
   const handleSendMessage = useCallback(() => {
     sendMessage();
@@ -67,8 +81,17 @@ const Saytrix = ({ user, theme }) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
+    } else if (e.key === 'Escape') {
+      setInputText('');
+      setError(null);
+    } else if (e.ctrlKey && e.key === 'k') {
+      e.preventDefault();
+      clearChat();
+    } else if (e.ctrlKey && e.key === 'm') {
+      e.preventDefault();
+      handleVoiceToggle();
     }
-  }, [handleSendMessage]);
+  }, [handleSendMessage, setInputText, setError, clearChat, handleVoiceToggle]);
 
   const handleSuggestionClick = useCallback((suggestion) => {
     setInputText(suggestion);
@@ -76,23 +99,97 @@ const Saytrix = ({ user, theme }) => {
 
   const handleRecentQuestionClick = useCallback((question) => {
     setInputText(question);
-    sendMessage(question);
+    setTimeout(() => {
+      sendMessage(question);
+    }, 100);
   }, [setInputText, sendMessage]);
 
+  const handleModeChange = useCallback((mode) => {
+    setAiMode(mode);
+    
+    // Add system message about mode change
+    const modeMessage = {
+      id: Date.now(),
+      type: 'assistant',
+      content: `🤖 **AI Mode Changed**\n\nSwitched to **${mode.charAt(0).toUpperCase() + mode.slice(1)} Mode**\n\n${mode === 'expert' ? '🎯 Expert mode provides detailed technical analysis and advanced trading insights.' : '😊 Casual mode offers friendly, easy-to-understand market information.'}`,
+      timestamp: new Date(),
+      cardType: 'text',
+      suggestions: mode === 'expert' ? ['Technical analysis', 'Market trends', 'Risk assessment'] : ['Stock basics', 'Simple explanations', 'Market overview']
+    };
+    
+    setMessages(prev => [...prev, modeMessage]);
+  }, [setAiMode, setMessages]);
+
   const handleBuyStock = useCallback((stockData) => {
-    // Handle buy stock action
-    console.log('Buy stock:', stockData);
-  }, []);
+    if (!stockData) return;
+    
+    // Create buy order data
+    const orderData = {
+      symbol: stockData.symbol,
+      type: 'buy',
+      quantity: 1,
+      price: stockData.price,
+      orderType: 'market'
+    };
+    
+    // Add user message about the buy action
+    const buyMessage = {
+      id: Date.now(),
+      type: 'user',
+      content: `Buy ${stockData.symbol} at ₹${stockData.price}`,
+      timestamp: new Date(),
+      confidence: 'high'
+    };
+    
+    const confirmMessage = {
+      id: Date.now() + 1,
+      type: 'assistant',
+      content: `💰 **Buy Order Initiated**\n\n**Stock:** ${stockData.symbol}\n**Price:** ₹${stockData.price}\n**Quantity:** 1 share\n\n✅ Order would be placed in a real trading environment.`,
+      timestamp: new Date(),
+      cardType: 'text',
+      suggestions: ['Show portfolio', 'Check order status', 'Buy more stocks']
+    };
+    
+    setMessages(prev => [...prev, buyMessage, confirmMessage]);
+    console.log('Buy order:', orderData);
+  }, [setMessages]);
 
   const handleSellStock = useCallback((stockData) => {
-    // Handle sell stock action
-    console.log('Sell stock:', stockData);
-  }, []);
+    if (!stockData) return;
+    
+    const orderData = {
+      symbol: stockData.symbol,
+      type: 'sell',
+      quantity: 1,
+      price: stockData.price,
+      orderType: 'market'
+    };
+    
+    const sellMessage = {
+      id: Date.now(),
+      type: 'user',
+      content: `Sell ${stockData.symbol} at ₹${stockData.price}`,
+      timestamp: new Date(),
+      confidence: 'high'
+    };
+    
+    const confirmMessage = {
+      id: Date.now() + 1,
+      type: 'assistant',
+      content: `💸 **Sell Order Initiated**\n\n**Stock:** ${stockData.symbol}\n**Price:** ₹${stockData.price}\n**Quantity:** 1 share\n\n✅ Order would be placed in a real trading environment.`,
+      timestamp: new Date(),
+      cardType: 'text',
+      suggestions: ['Show portfolio', 'Check order status', 'Find more stocks']
+    };
+    
+    setMessages(prev => [...prev, sellMessage, confirmMessage]);
+    console.log('Sell order:', orderData);
+  }, [setMessages]);
 
   const handleAlertDismiss = useCallback((alertId) => {
-    // Handle alert dismissal
-    console.log('Dismiss alert:', alertId);
-  }, []);
+    setError(null);
+    console.log('Alert dismissed:', alertId);
+  }, [setError]);
 
 
 
@@ -111,13 +208,13 @@ const Saytrix = ({ user, theme }) => {
           <div className="ai-mode-toggle">
             <button
               className={`mode-btn ${aiMode === 'casual' ? 'active' : ''}`}
-              onClick={() => setAiMode('casual')}
+              onClick={() => handleModeChange('casual')}
             >
               Casual
             </button>
             <button
               className={`mode-btn ${aiMode === 'expert' ? 'active' : ''}`}
-              onClick={() => setAiMode('expert')}
+              onClick={() => handleModeChange('expert')}
             >
               Expert
             </button>
@@ -125,6 +222,15 @@ const Saytrix = ({ user, theme }) => {
         </div>
 
         <div className="navbar-right">
+          <button 
+            className="profile-btn"
+            onClick={clearChat}
+            title="Clear Chat"
+            style={{ marginRight: '1rem' }}
+          >
+            <FiRefreshCw />
+            <span>Clear</span>
+          </button>
           <button className="profile-btn">
             <FiUser />
             <span>{user?.name || 'User'}</span>
@@ -297,10 +403,11 @@ const Saytrix = ({ user, theme }) => {
             <input
               type="text"
               className="message-input"
-              placeholder="Ask Saytrix about stocks, portfolio, or market trends..."
+              placeholder="Ask Saytrix about stocks, portfolio, or market trends... (Ctrl+M for voice, Ctrl+K to clear)"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyDown={handleKeyPress}
+              autoFocus
             />
 
             <button

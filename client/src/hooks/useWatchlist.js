@@ -302,6 +302,12 @@ export const useWatchlist = () => {
     return watchlists.find(w => w.isDefault) || watchlists[0] || null;
   }, [watchlists]);
 
+  // Refresh watchlists
+  const refreshWatchlists = useCallback(async () => {
+    console.log('🔄 Refreshing watchlists...');
+    await fetchWatchlists();
+  }, [fetchWatchlists]);
+
   return {
     watchlists,
     loading,
@@ -313,7 +319,7 @@ export const useWatchlist = () => {
     toggleWatchlist,
     createWatchlist,
     deleteWatchlist,
-    fetchWatchlists,
+    refreshWatchlists,
     getTotalStockCount,
     getDefaultWatchlist
   };

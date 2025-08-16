@@ -78,7 +78,7 @@ const Dashboard = memo(({ user, theme }) => {
       value: portfolioData.holdings?.length || 0,
       changePercent: 0,
       icon: FiShoppingCart,
-      color: 'info'
+      color: 'success'
     }
   ];
 
@@ -195,7 +195,6 @@ const Dashboard = memo(({ user, theme }) => {
       <DailyRewards />
 
       <div className="dashboard-container">
-
         {/* Market Indices Grid - TradeBro Layout */}
         <motion.div
           className="market-indices"
@@ -206,11 +205,17 @@ const Dashboard = memo(({ user, theme }) => {
           {marketIndices.map((index, idx) => {
             const isPositive = index.change >= 0;
             return (
-              <div key={index.name} className="index-card">
+              <motion.div 
+                key={index.name} 
+                className="index-card"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: idx * 0.1 }}
+              >
                 <div className="index-header">
                   <h3 className="index-name">{index.name}</h3>
                   <div className={`index-change ${isPositive ? 'positive' : 'negative'}`}>
-                    {isPositive ? <FiArrowUpRight size={14} /> : <FiArrowDownRight size={14} />}
+                    {isPositive ? <FiArrowUpRight size={12} /> : <FiArrowDownRight size={12} />}
                     {Math.abs(index.changePercent)}%
                   </div>
                 </div>
@@ -225,7 +230,7 @@ const Dashboard = memo(({ user, theme }) => {
                 <div className={`index-change-value ${isPositive ? 'positive' : 'negative'}`}>
                   {isPositive ? '+' : ''}{index.change.toFixed(2)}
                 </div>
-              </div>
+              </motion.div>
             );
           })}
         </motion.div>
@@ -235,7 +240,7 @@ const Dashboard = memo(({ user, theme }) => {
           className="stats-grid"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
         >
           {portfolioStats.map((stat, index) => {
             const Icon = stat.icon;
@@ -247,16 +252,18 @@ const Dashboard = memo(({ user, theme }) => {
                 className={`stat-card stat-${stat.color}`}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: index * 0.1 }}
+                transition={{ duration: 0.4, delay: (index + 4) * 0.1 }}
               >
                 <div className="stat-header">
                   <div className="stat-icon">
                     <Icon />
                   </div>
-                  <div className={`stat-change ${isPositive ? 'positive' : 'negative'}`}>
-                    {isPositive ? <FiArrowUpRight size={14} /> : <FiArrowDownRight size={14} />}
-                    {Math.abs(stat.changePercent)}%
-                  </div>
+                  {stat.changePercent !== 0 && (
+                    <div className={`stat-change ${isPositive ? 'positive' : 'negative'}`}>
+                      {isPositive ? <FiArrowUpRight size={12} /> : <FiArrowDownRight size={12} />}
+                      {Math.abs(stat.changePercent).toFixed(1)}%
+                    </div>
+                  )}
                 </div>
                 <div className="stat-content">
                   <h3 className="stat-value">
@@ -265,7 +272,7 @@ const Dashboard = memo(({ user, theme }) => {
                         end={stat.value}
                         duration={2}
                         separator=","
-                        prefix={stat.title.includes('Value') || stat.title.includes('Gain') ? '₹' : ''}
+                        prefix={stat.title.includes('Value') || stat.title.includes('Cash') || stat.title.includes('Invested') ? '₹' : ''}
                       />
                     ) : (
                       stat.value
@@ -277,8 +284,6 @@ const Dashboard = memo(({ user, theme }) => {
             );
           })}
         </motion.div>
-
-        
       </div>
 
       {/* Slide to Buy Modal */}
