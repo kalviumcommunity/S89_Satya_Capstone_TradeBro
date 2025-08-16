@@ -2,7 +2,7 @@ import React from 'react';
 
 const GoogleSignIn = ({ disabled = false }) => {
   const handleGoogleSignIn = () => {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://s89-satya-capstone-tradebro.onrender.com';
     window.location.href = `${apiUrl}/api/auth/google`;
   };
 

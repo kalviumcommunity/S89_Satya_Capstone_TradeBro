@@ -2,13 +2,13 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
 // Pages
-import LandingPage from "./pages/LandingPage";
+import LandingPage from "./pages/landingPage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import Dashboard from "./pages/Dashboard";
-import Portfolio from "./pages/Portfolio";
+import Portfolio from "./pages/portfolio";
 import Trading from "./pages/Trading";
-import Charts from "./pages/Charts";
+import Charts from "./pages/charts";
 import Watchlist from "./pages/Watchlist";
 import Orders from "./pages/Orders";
 import History from "./pages/History";

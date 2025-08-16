@@ -24,6 +24,14 @@ import './styles/universal-components.css'
 import './styles/premium-components.css'
 import './styles/responsive.css'
 
+// Register service worker in production
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .catch(() => console.error('SW registration failed'));
+  });
+}
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <Provider store={store}>

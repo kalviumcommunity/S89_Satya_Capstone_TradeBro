@@ -16,8 +16,15 @@ import { useOrderIntegration } from './hooks/useOrderIntegration'
 import { usePerformanceOptimization } from './hooks/usePerformanceOptimization'
 import balanceSyncManager from './utils/balanceSync'
 import AppRoutes from './AppRoutes'
+import ErrorBoundary from './components/common/ErrorBoundary'
 
 const PerformanceMonitor = lazy(() => import('./components/debug/PerformanceMonitor'))
+// Suppress console logs in production
+if (import.meta.env.PROD) {
+  console.log = () => {};
+  console.warn = () => {};
+}
+
 function App() {
   const [user, setUser] = useState(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -170,8 +177,9 @@ function App() {
   }
 
   return (
-    <div className="app">
-      <AppContent
+    <ErrorBoundary>
+      <div className="app">
+        <AppContent
         isAuthenticated={isAuthenticated}
         user={user}
         loading={loading}
@@ -215,7 +223,8 @@ function App() {
       <Suspense fallback={null}>
         <PerformanceMonitor enabled={process.env.NODE_ENV === 'development'} />
       </Suspense>
-    </div>
+      </div>
+    </ErrorBoundary>
   )
 }
 
