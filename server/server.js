@@ -63,6 +63,7 @@ const saytrixRoutes = require("./routes/saytrix");
 const searchRoutes = require("./routes/searchRoutes");
 const saytrixRoutesAdvanced = require("./routes/saytrixRoutes");
 const virtualMoneyRoutes = require("./routes/virtualMoneyRoutes");
+const portfolioRoutes = require("./routes/portfolioRoutes"); // Portfolio management
 const proxyRoutes = require("./routes/proxyRoutes");
 const stocksRoutes = require("./routes/stocks"); // New refactored stocks router
 const stockSearchRoutes = require("./routes/stockSearchRoutes"); // Stock search functionality
@@ -70,7 +71,10 @@ const { router: notificationRoutes } = require("./routes/notificationRoutes");
 const watchlistRoutes = require("./routes/watchlistRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const userDataRoutes = require("./routes/userDataRoutes");
+const userActivityRoutes = require("./routes/userActivityRoutes");
+const userPreferencesRoutes = require("./routes/userPreferencesRoutes");
 const newsRoutes = require("./routes/newsRoutes");
+const liveChartRoutes = require("./routes/liveChartRoutes");
 
 // Initialize passport configuration
 require("./passport.config");
@@ -220,9 +224,6 @@ app.get('/api/health', (_, res) => {
   };
   return res.success('Server is running', healthData);
 });
-
-
-
 
 
 // Public reward status endpoint (no authentication required)
@@ -449,6 +450,7 @@ app.use("/api/search", searchRoutes);
 app.use("/api/chatbot", saytrixRoutes);
 
 app.use("/api/virtual-money", virtualMoneyRoutes);
+app.use("/api/portfolio", portfolioRoutes); // Portfolio management API
 app.use("/api/proxy", proxyRoutes);
 app.use("/api/stocks", stocksRoutes); // New refactored stocks API
 app.use("/api/stock-search", stockSearchRoutes); // Stock search functionality
@@ -456,7 +458,10 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/watchlist", watchlistRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/userdata", userDataRoutes);
+app.use("/api/user-activity", userActivityRoutes);
+app.use("/api/user-preferences", userPreferencesRoutes);
 app.use("/api/news", newsRoutes);
+app.use("/api/live-charts", liveChartRoutes);
 
 // Legacy Google OAuth callback redirect (for old URLs)
 app.get('/auth/google/callback', (req, res) => {

@@ -1,0 +1,229 @@
+/* Stock Price Component Styles */
+.stock-price {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Size variants */
+.stock-price.small {
+  font-size: 0.875rem;
+}
+
+.stock-price.medium {
+  font-size: 1rem;
+}
+
+.stock-price.large {
+  font-size: 1.25rem;
+}
+
+.stock-price.xl {
+  font-size: 1.5rem;
+}
+
+/* Stock symbol */
+.stock-symbol {
+  font-size: 0.75em;
+  font-weight: 600;
+  color: var(--text-secondary, #6B7280);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Price container */
+.price-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+/* Price value */
+.price-value {
+  position: relative;
+  font-size: 1em;
+  font-weight: 700;
+  color: var(--text-primary, #111827);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  border-radius: 0.25rem;
+}
+
+.price-value.animating {
+  z-index: 1;
+}
+
+/* Flash overlay for price changes */
+.price-flash {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 0.25rem;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.price-flash.up {
+  background: linear-gradient(90deg, 
+    rgba(34, 197, 94, 0.2) 0%, 
+    rgba(34, 197, 94, 0.1) 50%, 
+    rgba(34, 197, 94, 0.2) 100%
+  );
+}
+
+.price-flash.down {
+  background: linear-gradient(90deg, 
+    rgba(239, 68, 68, 0.2) 0%, 
+    rgba(239, 68, 68, 0.1) 50%, 
+    rgba(239, 68, 68, 0.2) 100%
+  );
+}
+
+/* Price change container */
+.price-change {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.875em;
+  font-weight: 500;
+}
+
+.price-change.up {
+  color: var(--success-color, #22C55E);
+}
+
+.price-change.down {
+  color: var(--error-color, #EF4444);
+}
+
+.price-change.neutral {
+  color: var(--text-secondary, #6B7280);
+}
+
+/* Change icon */
+.change-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25em;
+  height: 1.25em;
+  border-radius: 50%;
+  background: currentColor;
+  color: white;
+  font-size: 0.75em;
+}
+
+.price-change.up .change-icon {
+  background: var(--success-color, #22C55E);
+}
+
+.price-change.down .change-icon {
+  background: var(--error-color, #EF4444);
+}
+
+.price-change.neutral .change-icon {
+  background: var(--text-secondary, #6B7280);
+}
+
+/* Change values */
+.change-values {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.change-amount {
+  font-weight: 600;
+}
+
+.change-percent {
+  font-size: 0.875em;
+  opacity: 0.8;
+}
+
+/* Pulse indicator */
+.pulse-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--primary-color, #3B82F6);
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Dark mode styles */
+@media (prefers-color-scheme: dark) {
+  .stock-symbol {
+    color: var(--text-secondary-dark, #9CA3AF);
+  }
+  
+  .price-value {
+    color: var(--text-primary-dark, #F9FAFB);
+  }
+  
+  .price-change.neutral {
+    color: var(--text-secondary-dark, #9CA3AF);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .stock-price.large {
+    font-size: 1.125rem;
+  }
+  
+  .stock-price.xl {
+    font-size: 1.25rem;
+  }
+  
+  .change-values {
+    flex-direction: row;
+    gap: 0.5rem;
+  }
+}
+
+/* Animation keyframes */
+@keyframes priceFlash {
+  0% { opacity: 0; }
+  50% { opacity: 0.3; }
+  100% { opacity: 0; }
+}
+
+@keyframes pricePulse {
+  0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .price-value,
+  .price-flash,
+  .pulse-indicator {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .price-change.up {
+    color: #008000;
+  }
+  
+  .price-change.down {
+    color: #FF0000;
+  }
+  
+  .change-icon {
+    border: 1px solid currentColor;
+  }
+}

@@ -11,6 +11,33 @@ const virtualMoneySchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  // Portfolio summary fields
+  totalValue: {
+    type: Number,
+    default: 10000,
+    required: true
+  },
+  availableCash: {
+    type: Number,
+    default: 10000,
+    required: true
+  },
+  totalInvested: {
+    type: Number,
+    default: 0,
+    required: true
+  },
+  totalGainLoss: {
+    type: Number,
+    default: 0,
+    required: true
+  },
+  totalGainLossPercentage: {
+    type: Number,
+    default: 0,
+    required: true
+  },
+  // Legacy field for backward compatibility
   balance: {
     type: Number,
     default: 10000,
@@ -53,6 +80,45 @@ const virtualMoneySchema = new mongoose.Schema({
       }
     }
   ],
+  // Holdings array with detailed stock information
+  holdings: [
+    {
+      symbol: {
+        type: String,
+        required: true
+      },
+      quantity: {
+        type: Number,
+        required: true,
+        min: 0
+      },
+      averagePrice: {
+        type: Number,
+        required: true
+      },
+      currentPrice: {
+        type: Number,
+        default: 0
+      },
+      currentValue: {
+        type: Number,
+        default: 0
+      },
+      gainLoss: {
+        type: Number,
+        default: 0
+      },
+      gainLossPercentage: {
+        type: Number,
+        default: 0
+      },
+      lastUpdated: {
+        type: Date,
+        default: Date.now
+      }
+    }
+  ],
+  // Legacy portfolio field for backward compatibility
   portfolio: [
     {
       stockSymbol: {

@@ -72,6 +72,15 @@ const verifyTokenMiddleware = asyncHandler(async (req, res, next) => {
 router.post('/signup', authRateLimit, validateSignup, asyncHandler(async (req, res) => {
   const { username, email, password, fullName } = req.body;
 
+  // Debug logging
+  console.log('📝 Signup request received:', {
+    username,
+    email,
+    fullName,
+    passwordLength: password ? password.length : 0,
+    hasPassword: !!password
+  });
+
   // Check if user already exists
   const existingUser = await User.findOne({
     $or: [{ email }, { username }]
@@ -82,9 +91,19 @@ router.post('/signup', authRateLimit, validateSignup, asyncHandler(async (req, r
       ? ERROR_MESSAGES.EMAIL_ALREADY_EXISTS
       : ERROR_MESSAGES.USERNAME_ALREADY_EXISTS;
 
+    console.log('🚫 Signup attempt with existing credentials:', {
+      email,
+      username,
+      existingEmail: existingUser.email,
+      existingUsername: existingUser.username
+    });
+
     return res.status(400).json({
       success: false,
-      message
+      message,
+      errors: {
+        [existingUser.email === email ? 'email' : 'username']: message
+      }
     });
   }
 
@@ -104,11 +123,43 @@ router.post('/signup', authRateLimit, validateSignup, asyncHandler(async (req, r
   });
 
   await newUser.save();
+  console.log('✅ User created successfully:', newUser.email);
 
   // Create user data with error handling
   const userData = await createOrUpdateUserData(newUser._id, newUser.email);
   if (!userData) {
     console.warn('Failed to create user data for user:', newUser._id);
+  }
+
+  // Create default virtual money account
+  try {
+    const VirtualMoney = require('../models/VirtualMoney');
+    const existingVirtualMoney = await VirtualMoney.findOne({ userId: newUser._id });
+
+    if (!existingVirtualMoney) {
+      const virtualMoney = new VirtualMoney({
+        userId: newUser._id,
+        userEmail: newUser.email,
+        balance: 10000,
+        totalValue: 10000,
+        availableCash: 10000,
+        totalInvested: 0,
+        totalGainLoss: 0,
+        totalGainLossPercentage: 0,
+        holdings: [],
+        transactions: [{
+          type: 'DEPOSIT',
+          amount: 10000,
+          description: `Welcome ${fullName || username}! Initial deposit of ₹10,000`,
+          timestamp: new Date()
+        }]
+      });
+
+      await virtualMoney.save();
+      console.log('✅ Virtual money account created for user:', newUser.email);
+    }
+  } catch (error) {
+    console.error('❌ Failed to create virtual money account:', error);
   }
 
   // Generate token
@@ -483,6 +534,207 @@ router.post('/oauth/exchange', asyncHandler(async (req, res) => {
     return res.status(401).json({
       success: false,
       message: 'Invalid or expired OAuth token'
+    });
+  }
+}));
+
+// ========================================
+// 🔐 TOKEN VERIFICATION ENDPOINT
+// ========================================
+
+// ========================================
+// 🔐 GOOGLE OAUTH ENDPOINTS
+// ========================================
+
+/**
+ * Handle development Google OAuth (for testing)
+ */
+const handleDevelopmentGoogleAuth = async (req, res) => {
+  try {
+    const { credential } = req.body;
+
+    // Extract user data from development token (stored in localStorage)
+    const userData = JSON.parse(req.body.userData || '{}');
+
+    if (!userData.email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Development user data is invalid'
+      });
+    }
+
+    // Check if user exists
+    let user = await User.findOne({ email: userData.email });
+    let isNewUser = false;
+
+    if (!user) {
+      // Create new development user
+      isNewUser = true;
+      user = new User({
+        username: userData.email.split('@')[0] + '_dev',
+        email: userData.email,
+        fullName: userData.fullName || 'Development User',
+        password: 'dev_password_' + Date.now(), // Placeholder
+        isEmailVerified: true,
+        authProvider: 'google',
+        googleId: userData.id,
+        profilePicture: userData.profilePicture || null,
+        lastLogin: new Date()
+      });
+
+      await user.save();
+
+      // Create default virtual money portfolio
+      const VirtualMoney = require('../models/VirtualMoney');
+      const virtualMoney = new VirtualMoney({
+        userId: user._id,
+        userEmail: user.email,
+        totalValue: 10000,
+        availableCash: 10000,
+        balance: 10000
+      });
+      await virtualMoney.save();
+
+    } else {
+      // Update existing user
+      user.lastLogin = new Date();
+      await user.save();
+    }
+
+    // Generate JWT token
+    const token = generateToken(user);
+
+    // Create user response
+    const userResponse = createUserResponse(user);
+
+    res.json({
+      success: true,
+      message: isNewUser ? 'Development account created successfully' : 'Development login successful',
+      user: userResponse,
+      token,
+      isNewUser
+    });
+
+  } catch (error) {
+    console.error('Development Google OAuth error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Development authentication failed'
+    });
+  }
+};
+
+/**
+ * @route   POST /api/auth/google/verify
+ * @desc    Verify Google OAuth credential and login/signup user
+ * @access  Public
+ */
+router.post('/google/verify', authRateLimit, asyncHandler(async (req, res) => {
+  try {
+    const { credential } = req.body;
+
+    if (!credential) {
+      return res.status(400).json({
+        success: false,
+        message: 'Google credential is required'
+      });
+    }
+
+    // Handle development tokens
+    if (credential.startsWith('dev_jwt_token_')) {
+      return handleDevelopmentGoogleAuth(req, res);
+    }
+
+    // Verify the Google credential
+    const { OAuth2Client } = require('google-auth-library');
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const { sub: googleId, email, name, picture } = payload;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email not provided by Google'
+      });
+    }
+
+    // Check if user exists
+    let user = await User.findOne({ email });
+    let isNewUser = false;
+
+    if (!user) {
+      // Create new user
+      isNewUser = true;
+      user = new User({
+        username: email.split('@')[0] + '_' + Date.now(), // Generate unique username
+        email,
+        fullName: name || 'Google User',
+        password: 'google_oauth_' + googleId, // Placeholder password
+        isEmailVerified: true, // Google emails are pre-verified
+        authProvider: 'google',
+        googleId,
+        profilePicture: picture || null,
+        lastLogin: new Date()
+      });
+
+      await user.save();
+
+      // Create default virtual money portfolio
+      const virtualMoney = new VirtualMoney({
+        userId: user._id,
+        userEmail: user.email,
+        totalValue: 10000,
+        availableCash: 10000,
+        balance: 10000 // Legacy field
+      });
+      await virtualMoney.save();
+
+    } else {
+      // Update existing user
+      user.lastLogin = new Date();
+      if (!user.googleId) {
+        user.googleId = googleId;
+        user.authProvider = 'google';
+      }
+      if (picture && !user.profilePicture) {
+        user.profilePicture = picture;
+      }
+      await user.save();
+    }
+
+    // Generate JWT token
+    const token = generateToken(user._id);
+
+    // Create user response
+    const userResponse = await createUserResponse(user);
+
+    res.json({
+      success: true,
+      message: isNewUser ? 'Account created successfully with Google' : 'Login successful',
+      user: userResponse,
+      token,
+      isNewUser
+    });
+
+  } catch (error) {
+    console.error('Google OAuth error:', error);
+
+    if (error.message && error.message.includes('Token used too early')) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid Google token timing'
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Google authentication failed'
     });
   }
 }));
