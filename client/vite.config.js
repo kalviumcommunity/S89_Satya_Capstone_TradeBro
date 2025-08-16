@@ -29,6 +29,7 @@ export default defineConfig({
       }
     },
     cssCodeSplit: false,
-    minify: 'esbuild'
+    minify: 'esbuild',
+    cssMinify: false
   }
 })

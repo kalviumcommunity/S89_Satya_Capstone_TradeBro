@@ -317,7 +317,7 @@ const AppRoutes = ({
           <Route path="/chat" element={<Navigate to="/saytrix" replace />} />
           <Route path="/ai" element={<Navigate to="/saytrix" replace />} />
 
-          {/* 404 */}
+          {/* 404 Not Found */}
           <Route
             path="*"
             element={
