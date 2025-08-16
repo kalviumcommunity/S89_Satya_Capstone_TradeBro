@@ -67,7 +67,7 @@ export const useStockValidation = (symbol, enabled = true) => {
       }
 
       // Additional validation via API if needed
-      const response = await fetch(`http://localhost:5001/api/stocks/validate/${symbol}`, {
+      const response = await fetch(`https://s89-satya-capstone-tradebro.onrender.com/api/stocks/validate/${symbol}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -106,7 +106,7 @@ export const useStockValidation = (symbol, enabled = true) => {
   // Fetch real-time stock data
   const fetchStockData = async (symbol) => {
     try {
-      const response = await fetch(`http://localhost:5001/api/stocks/quote/${symbol}`, {
+      const response = await fetch(`https://s89-satya-capstone-tradebro.onrender.com/api/stocks/quote/${symbol}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,

@@ -142,7 +142,7 @@ export const PortfolioProvider = ({ children, user }) => {
         return;
       }
 
-      const response = await fetch(`http://localhost:5001/api/portfolio/${userId}`, {
+      const response = await fetch(`https://s89-satya-capstone-tradebro.onrender.com/api/portfolio/${userId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -184,7 +184,7 @@ export const PortfolioProvider = ({ children, user }) => {
   const createDefaultPortfolio = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5001/api/portfolio/create', {
+      const response = await fetch('https://s89-satya-capstone-tradebro.onrender.com/api/portfolio/create', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -302,7 +302,7 @@ export const PortfolioProvider = ({ children, user }) => {
         if (stockData.price) requestBody.currentPrice = stockData.price;
       }
 
-      const response = await fetch('http://localhost:5001/api/portfolio/watchlist/add', {
+      const response = await fetch('https://s89-satya-capstone-tradebro.onrender.com/api/portfolio/watchlist/add', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -320,7 +320,7 @@ export const PortfolioProvider = ({ children, user }) => {
         return updatedWatchlist;
       } else {
         // If the API call fails, try the watchlist API directly
-        const watchlistResponse = await fetch('http://localhost:5001/api/watchlist/add', {
+        const watchlistResponse = await fetch('https://s89-satya-capstone-tradebro.onrender.com/api/watchlist/add', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -347,7 +347,7 @@ export const PortfolioProvider = ({ children, user }) => {
   const removeFromWatchlist = async (stockSymbol) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5001/api/portfolio/watchlist/remove', {
+      const response = await fetch('https://s89-satya-capstone-tradebro.onrender.com/api/portfolio/watchlist/remove', {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -368,7 +368,7 @@ export const PortfolioProvider = ({ children, user }) => {
         return updatedWatchlist;
       } else {
         // Try the watchlist API directly as fallback
-        const watchlistResponse = await fetch(`http://localhost:5001/api/watchlist/remove/${stockSymbol}`, {
+        const watchlistResponse = await fetch(`https://s89-satya-capstone-tradebro.onrender.com/api/watchlist/remove/${stockSymbol}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -396,7 +396,7 @@ export const PortfolioProvider = ({ children, user }) => {
     try {
       const token = localStorage.getItem('token');
       const userId = user?.id || user?._id;
-      const response = await fetch(`http://localhost:5001/api/portfolio/update-values/${userId}`, {
+      const response = await fetch(`https://s89-satya-capstone-tradebro.onrender.com/api/portfolio/update-values/${userId}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

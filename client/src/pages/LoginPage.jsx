@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { FiMail, FiLock, FiEye, FiEyeOff, FiArrowRight, FiAlertCircle } from 'react-icons/fi'
+import { FiMail, FiLock, FiArrowRight, FiAlertCircle } from 'react-icons/fi'
 import { toast } from 'react-toastify'
 import GoogleSignIn from '../components/auth/GoogleSignIn'
 import '../styles/auth.css'
+
 
 const LoginPage = ({ onLogin }) => {
   const navigate = useNavigate()
@@ -15,17 +16,36 @@ const LoginPage = ({ onLogin }) => {
     email: '',
     password: ''
   })
-  const [showPassword, setShowPassword] = useState(false)
+
 
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState({})
   const [rememberMe, setRememberMe] = useState(false)
+
+
 
   // Redirect handling
   const from = location.state?.from?.pathname || '/dashboard'
   const redirectUrl = localStorage.getItem('redirectAfterLogin') || from
 
   useEffect(() => {
+    // Handle Google OAuth callback
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    const userParam = urlParams.get('user');
+    
+    if (token && userParam) {
+      try {
+        const user = JSON.parse(decodeURIComponent(userParam));
+        onLogin(user, token);
+        toast.success(`Welcome ${user.fullName}!`);
+        navigate('/dashboard', { replace: true });
+        return;
+      } catch (error) {
+        console.error('Error parsing OAuth callback:', error);
+      }
+    }
+
     // Show message if redirected from protected route
     if (location.state?.from) {
       toast.info('Please log in to access that page', {
@@ -33,7 +53,7 @@ const LoginPage = ({ onLogin }) => {
         autoClose: 3000,
       })
     }
-  }, [location.state])
+  }, [location.search, onLogin, navigate])
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -79,7 +99,8 @@ const LoginPage = ({ onLogin }) => {
     setErrors({})
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/login`, {
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://s89-satya-capstone-tradebro.onrender.com';
+      const response = await fetch(`${apiUrl}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -123,21 +144,7 @@ const LoginPage = ({ onLogin }) => {
     }
   }
 
-  const handleGoogleSuccess = (userData, token) => {
-    onLogin(userData, token)
-    setTimeout(() => {
-      navigate(redirectUrl, { replace: true })
-      localStorage.removeItem('redirectAfterLogin')
-    }, 1000)
-  }
 
-  const handleGoogleError = (error) => {
-    setErrors({ general: error || 'Google login failed. Please try again.' })
-    toast.error('Google login failed. Please try again.', {
-      position: 'top-right',
-      autoClose: 3000,
-    })
-  }
 
   return (
     <div className="auth-page">
@@ -197,28 +204,17 @@ const LoginPage = ({ onLogin }) => {
               <FiLock size={16} />
               Password
             </label>
-            <div className="password-input">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                name="password"
-                value={formData.password}
-                onChange={handleInputChange}
-                className={`form-input ${errors.password ? 'form-input-error' : ''}`}
-                placeholder="Enter your password"
-                disabled={loading}
-                autoComplete="current-password"
-                required
-              />
-              <button
-                type="button"
-                className="password-toggle"
-                onClick={() => setShowPassword(!showPassword)}
-                disabled={loading}
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-              >
-                {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
-              </button>
-            </div>
+            <input
+              type="password"
+              name="password"
+              value={formData.password}
+              onChange={handleInputChange}
+              className={`form-input ${errors.password ? 'form-input-error' : ''}`}
+              placeholder="Enter your password"
+              disabled={loading}
+              autoComplete="current-password"
+              required
+            />
             {errors.password && (
               <div className="form-error">
                 <FiAlertCircle size={14} />
@@ -268,13 +264,7 @@ const LoginPage = ({ onLogin }) => {
         </div>
 
         {/* Google Login */}
-        <GoogleSignIn
-          onSuccess={handleGoogleSuccess}
-          onError={handleGoogleError}
-          buttonText="Sign in with Google"
-          disabled={loading}
-          className="google-button"
-        />
+        <GoogleSignIn disabled={loading} />
 
         {/* Footer */}
         <div className="auth-footer">

@@ -37,7 +37,7 @@ export const VirtualMoneyProvider = ({ children }) => {
 
     try {
       const token = getToken();
-      const response = await fetch('http://localhost:5001/api/virtual-money/account', {
+      const response = await fetch('https://s89-satya-capstone-tradebro.onrender.com/api/virtual-money/account', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -67,7 +67,7 @@ export const VirtualMoneyProvider = ({ children }) => {
 
     try {
       const token = getToken();
-      const response = await fetch('http://localhost:5001/api/virtual-money/buy', {
+      const response = await fetch('https://s89-satya-capstone-tradebro.onrender.com/api/virtual-money/buy', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -101,7 +101,7 @@ export const VirtualMoneyProvider = ({ children }) => {
 
     try {
       const token = getToken();
-      const response = await fetch('http://localhost:5001/api/virtual-money/sell', {
+      const response = await fetch('https://s89-satya-capstone-tradebro.onrender.com/api/virtual-money/sell', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -135,7 +135,7 @@ export const VirtualMoneyProvider = ({ children }) => {
 
     try {
       const token = getToken();
-      const response = await fetch('http://localhost:5001/api/virtual-money/login-reward', {
+      const response = await fetch('https://s89-satya-capstone-tradebro.onrender.com/api/virtual-money/login-reward', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

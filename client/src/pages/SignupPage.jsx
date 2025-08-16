@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { FiUser, FiMail, FiLock, FiEye, FiEyeOff, FiArrowRight, FiAlertCircle, FiCheck } from 'react-icons/fi'
+import { FiUser, FiMail, FiLock, FiArrowRight, FiAlertCircle, FiCheck } from 'react-icons/fi'
 import { toast } from 'react-toastify'
 import GoogleSignIn from '../components/auth/GoogleSignIn'
 import '../styles/auth.css'
+
 
 const SignupPage = ({ onSignup }) => {
   const navigate = useNavigate()
@@ -16,12 +17,13 @@ const SignupPage = ({ onSignup }) => {
     password: '',
     confirmPassword: ''
   })
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+
 
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState({})
   const [acceptTerms, setAcceptTerms] = useState(false)
+
+
   const [passwordStrength, setPasswordStrength] = useState({
     length: false,
     uppercase: false,
@@ -122,7 +124,8 @@ const SignupPage = ({ onSignup }) => {
         passwordLength: formData.password.length
       });
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/signup`, {
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://s89-satya-capstone-tradebro.onrender.com';
+      const response = await fetch(`${apiUrl}/api/auth/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -180,21 +183,7 @@ const SignupPage = ({ onSignup }) => {
     }
   }
 
-  const handleGoogleSuccess = (userData, token) => {
-    onSignup(userData, token)
-    setTimeout(() => {
-      navigate(redirectUrl, { replace: true })
-      localStorage.removeItem('redirectAfterLogin')
-    }, 1000)
-  }
 
-  const handleGoogleError = (error) => {
-    setErrors({ general: error || 'Google signup failed. Please try again.' })
-    toast.error('Google signup failed. Please try again.', {
-      position: 'top-right',
-      autoClose: 3000,
-    })
-  }
 
   const getPasswordStrengthScore = () => {
     return Object.values(passwordStrength).filter(Boolean).length
@@ -296,28 +285,17 @@ const SignupPage = ({ onSignup }) => {
               <FiLock size={16} />
               Password
             </label>
-            <div className="password-input">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                name="password"
-                value={formData.password}
-                onChange={handleInputChange}
-                className={`form-input ${errors.password ? 'form-input-error' : ''}`}
-                placeholder="Create a password"
-                disabled={loading}
-                autoComplete="new-password"
-                required
-              />
-              <button
-                type="button"
-                className="password-toggle"
-                onClick={() => setShowPassword(!showPassword)}
-                disabled={loading}
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-              >
-                {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
-              </button>
-            </div>
+            <input
+              type="password"
+              name="password"
+              value={formData.password}
+              onChange={handleInputChange}
+              className={`form-input ${errors.password ? 'form-input-error' : ''}`}
+              placeholder="Create a password"
+              disabled={loading}
+              autoComplete="new-password"
+              required
+            />
             {errors.password && (
               <div className="form-error">
                 <FiAlertCircle size={14} />
@@ -352,28 +330,17 @@ const SignupPage = ({ onSignup }) => {
               <FiLock size={16} />
               Confirm Password
             </label>
-            <div className="password-input">
-              <input
-                type={showConfirmPassword ? 'text' : 'password'}
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleInputChange}
-                className={`form-input ${errors.confirmPassword ? 'form-input-error' : ''}`}
-                placeholder="Confirm your password"
-                disabled={loading}
-                autoComplete="new-password"
-                required
-              />
-              <button
-                type="button"
-                className="password-toggle"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                disabled={loading}
-                aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
-              >
-                {showConfirmPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
-              </button>
-            </div>
+            <input
+              type="password"
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleInputChange}
+              className={`form-input ${errors.confirmPassword ? 'form-input-error' : ''}`}
+              placeholder="Confirm your password"
+              disabled={loading}
+              autoComplete="new-password"
+              required
+            />
             {errors.confirmPassword && (
               <div className="form-error">
                 <FiAlertCircle size={14} />
@@ -427,13 +394,7 @@ const SignupPage = ({ onSignup }) => {
         </div>
 
         {/* Google Signup */}
-        <GoogleSignIn
-          onSuccess={handleGoogleSuccess}
-          onError={handleGoogleError}
-          buttonText="Sign up with Google"
-          disabled={loading}
-          className="google-button"
-        />
+        <GoogleSignIn disabled={loading} />
 
         {/* Footer */}
         <div className="auth-footer">

@@ -119,7 +119,7 @@ class BalanceSyncManager {
       const token = localStorage.getItem('token');
       if (!token) return;
 
-      const response = await fetch('http://localhost:5001/api/virtual-money/sync-balance', {
+      const response = await fetch('https://s89-satya-capstone-tradebro.onrender.com/api/virtual-money/sync-balance', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -194,7 +194,7 @@ class BalanceSyncManager {
       // Get latest from server
       const token = localStorage.getItem('token');
       if (token) {
-        const response = await fetch('http://localhost:5001/api/virtual-money/account', {
+        const response = await fetch('https://s89-satya-capstone-tradebro.onrender.com/api/virtual-money/account', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'

@@ -50,7 +50,7 @@ const newsRoutes = require("./routes/newsRoutes");
 const liveChartRoutes = require("./routes/liveChartRoutes");
 
 // Passport configuration
-require("./passport.config");
+require('./passport.config');
 
 // -------------------- EXPRESS APP --------------------
 const app = express();
@@ -63,7 +63,9 @@ const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
   "http://localhost:3000",
-  "http://localhost:5001"
+  "http://localhost:5001",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:5174"
 ];
 
 app.use(cors({
@@ -77,6 +79,8 @@ app.use(cors({
   exposedHeaders: ["Set-Cookie"],
   optionsSuccessStatus: 200
 }));
+
+
 
 // -------------------- MIDDLEWARE --------------------
 app.use(express.json({ limit: "10mb" }));
@@ -93,10 +97,14 @@ if (process.env.NODE_ENV === "production") {
 
 // Session middleware for OAuth
 app.use(session({
-  secret: process.env.SESSION_SECRET || "fallback-secret",
+  secret: process.env.SESSION_SECRET || "tradebro-session-secret-2025",
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: process.env.NODE_ENV === "production", httpOnly: true, maxAge: 10 * 60 * 1000 }
+  cookie: { 
+    secure: process.env.NODE_ENV === "production", 
+    httpOnly: true, 
+    maxAge: 24 * 60 * 60 * 1000 
+  }
 }));
 
 app.use(passport.initialize());
@@ -175,25 +183,12 @@ app.use("/api/user-preferences", userPreferencesRoutes);
 app.use("/api/news", newsRoutes);
 app.use("/api/live-charts", liveChartRoutes);
 
-// Google OAuth callback routes
-app.get("/auth/google/callback", (req, res) => {
-  const query = req.url.split("?")[1] || "";
-  res.redirect(`/api/auth/google/callback?${query}`);
-});
 
-app.get("/api/auth/google/callback", (req, res) => {
-  // Handle OAuth callback - redirect to frontend with token
-  const { code, state } = req.query;
-  if (code) {
-    res.redirect(`${process.env.CLIENT_URL || 'https://tradebro.netlify.app'}/login?code=${code}&state=${state}`);
-  } else {
-    res.redirect(`${process.env.CLIENT_URL || 'https://tradebro.netlify.app'}/login?error=oauth_failed`);
-  }
-});
 
 // 404 handler
 app.use((req, res) => {
-  res.status(404).json({ success: false, message: "API endpoint not found", path: req.path });
+  console.log('404 - Route not found:', req.method, req.path);
+  res.status(404).json({ success: false, message: "API endpoint not found", path: req.path, method: req.method });
 });
 
 // Global error handler

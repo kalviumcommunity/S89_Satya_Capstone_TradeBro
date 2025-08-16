@@ -632,7 +632,7 @@ class TradingEngine {
       if (!token) return;
 
       // Update server balance
-      const response = await fetch('http://localhost:5001/api/virtual-money/sync-balance', {
+      const response = await fetch('https://s89-satya-capstone-tradebro.onrender.com/api/virtual-money/sync-balance', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

@@ -153,7 +153,7 @@ export const useRealTimeUpdates = (symbols = [], enabled = true) => {
     try {
       const promises = symbols.map(async (symbol) => {
         try {
-          const response = await fetch(`http://localhost:5001/api/stocks/quote/${symbol}`, {
+          const response = await fetch(`https://s89-satya-capstone-tradebro.onrender.com/api/stocks/quote/${symbol}`, {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('token')}`,
               'Content-Type': 'application/json'

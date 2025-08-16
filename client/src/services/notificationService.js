@@ -8,7 +8,7 @@ import Pusher from 'pusher-js';
 
 class NotificationService {
   constructor() {
-    this.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+    this.baseURL = import.meta.env.VITE_API_URL || 'https://s89-satya-capstone-tradebro.onrender.com/api';
     this.pusher = null;
     this.channel = null;
     this.listeners = new Set();
