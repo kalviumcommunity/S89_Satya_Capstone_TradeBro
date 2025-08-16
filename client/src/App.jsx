@@ -241,14 +241,16 @@ const AppContent = memo(function AppContent({
   handleConfirmOrder
 }) {
   const location = useLocation()
+  const isLandingPage = location.pathname === '/'
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/signup'
 
   return (
     <>
-      {/* Self-contained Sidebar */}
-      <Sidebar />
+      {/* Self-contained Sidebar - Hide on landing page, login, and signup pages */}
+      {!isLandingPage && !isAuthPage && <Sidebar />}
 
       {/* Main Content */}
-      <main className="main-content">
+      <main className={(isLandingPage || isAuthPage) ? "main-content-full" : "main-content"}>
         <AppRoutes
           isAuthenticated={isAuthenticated}
           user={user}
@@ -293,9 +295,13 @@ const AppContent = memo(function AppContent({
         }}
       />
 
-      {/* Global Voice Components */}
-      <VoiceCommandModal />
-      <VoiceStatusIndicator />
+      {/* Global Voice Components - Hide on auth pages */}
+      {!isLandingPage && !isAuthPage && (
+        <>
+          <VoiceCommandModal />
+          <VoiceStatusIndicator />
+        </>
+      )}
 
 
       {/* Order Modal */}

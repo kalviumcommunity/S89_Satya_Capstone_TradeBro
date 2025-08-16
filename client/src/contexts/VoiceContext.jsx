@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import AIVoiceProcessor from '../utils/aiVoiceProcessor';
 
 // Create the voice context
@@ -17,6 +17,7 @@ export const useVoice = () => {
 // Voice provider component
 export const VoiceProvider = ({ children }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const aiProcessor = new AIVoiceProcessor(navigate);
   
   // Voice states
@@ -144,7 +145,6 @@ export const VoiceProvider = ({ children }) => {
         }
       }
       
-      console.log('Heard:', finalTranscript);
       setTranscript(finalTranscript);
       
       // More accurate wake word detection
@@ -154,7 +154,6 @@ export const VoiceProvider = ({ children }) => {
       );
       
       if (isWakeWord) {
-        console.log('Wake word detected:', finalTranscript);
         recognition.stop();
         activateVoiceMode();
       }
@@ -174,7 +173,6 @@ export const VoiceProvider = ({ children }) => {
     };
 
     recognition.onend = () => {
-      console.log('Wake word detection ended');
       setIsListening(false);
       if (!isVoiceModeActive) {
         setTimeout(() => {
@@ -185,7 +183,6 @@ export const VoiceProvider = ({ children }) => {
 
     try {
       recognition.start();
-      console.log('Voice recognition started - say "Saytrix" to activate');
     } catch (e) {
       if (e.name !== 'InvalidStateError') {
         console.log('Recognition start failed:', e);
@@ -196,7 +193,6 @@ export const VoiceProvider = ({ children }) => {
 
   // Activate voice command mode
   const activateVoiceMode = useCallback(() => {
-    console.log('Voice mode activated');
     setIsVoiceModeActive(true);
     speak('Yes?');
     
@@ -213,7 +209,6 @@ export const VoiceProvider = ({ children }) => {
       }
       
       if (finalTranscript) {
-        console.log('Voice command received:', finalTranscript);
         setTranscript(finalTranscript);
         
         // Process with AI - use best alternative
@@ -228,7 +223,6 @@ export const VoiceProvider = ({ children }) => {
         }
         
         aiProcessor.processCommand(bestTranscript).then(result => {
-          console.log('Command executed:', result);
           if (result.success) {
             speak(result.message || 'Done');
           } else {
@@ -248,7 +242,7 @@ export const VoiceProvider = ({ children }) => {
     try {
       recognition.start();
     } catch (e) {
-      console.log('Voice mode recognition failed:', e);
+      // Voice mode recognition failed
     }
   }, [recognition, processVoiceCommand, speak, startWakeWordDetection]);
 
@@ -279,9 +273,11 @@ export const VoiceProvider = ({ children }) => {
     }
   }, [isSupported, isVoiceModeActive, activateVoiceMode, stopListening]);
 
-  // Auto-start wake word detection
+  // Auto-start wake word detection (disabled on auth pages)
   useEffect(() => {
-    if (isSupported && !isListening && !isVoiceModeActive) {
+    const isAuthPage = location.pathname === '/login' || location.pathname === '/signup' || location.pathname === '/';
+    
+    if (isSupported && !isListening && !isVoiceModeActive && !isAuthPage) {
       startWakeWordDetection();
     }
     
@@ -294,7 +290,7 @@ export const VoiceProvider = ({ children }) => {
         }
       }
     };
-  }, [isSupported, startWakeWordDetection]);
+  }, [isSupported, startWakeWordDetection, location.pathname]);
 
   const value = {
     isListening,

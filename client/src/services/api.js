@@ -7,11 +7,12 @@ import axios from 'axios'
 import { fmpStockAPI, fmpChartAPI, fmpMarketAPI } from './fmpAPI'
 
 // API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://s89-satya-capstone-tradebro.onrender.com'
+const API_BASE_URL_WITH_API = `${API_BASE_URL}/api`
 
 // Create axios instance with default config
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: API_BASE_URL_WITH_API,
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',

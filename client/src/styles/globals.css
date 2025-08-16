@@ -454,6 +454,15 @@ a:hover {
   transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Full width main content for landing page */
+.main-content-full {
+  flex: 1;
+  min-height: 100vh;
+  overflow-x: hidden;
+  margin-left: 0;
+  width: 100%;
+}
+
 /* Main content with sidebar - add left margin for fixed sidebar */
 @media (min-width: 769px) {
   .main-content {

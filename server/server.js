@@ -58,12 +58,12 @@ const PORT = process.env.PORT || 5001;
 
 // -------------------- CORS --------------------
 const allowedOrigins = [
-  process.env.CLIENT_URL || "https://tradebro.netlify.app",
+  "https://tradebro.netlify.app",
+  "https://s89-satya-capstone-tradebro.onrender.com",
   "http://localhost:5173",
   "http://localhost:5174",
   "http://localhost:3000",
-  "http://localhost:5001",
-  "https://s89-satya-capstone-tradebro.onrender.com"
+  "http://localhost:5001"
 ];
 
 app.use(cors({
@@ -175,10 +175,20 @@ app.use("/api/user-preferences", userPreferencesRoutes);
 app.use("/api/news", newsRoutes);
 app.use("/api/live-charts", liveChartRoutes);
 
-// Legacy Google OAuth callback redirect
+// Google OAuth callback routes
 app.get("/auth/google/callback", (req, res) => {
   const query = req.url.split("?")[1] || "";
   res.redirect(`/api/auth/google/callback?${query}`);
+});
+
+app.get("/api/auth/google/callback", (req, res) => {
+  // Handle OAuth callback - redirect to frontend with token
+  const { code, state } = req.query;
+  if (code) {
+    res.redirect(`${process.env.CLIENT_URL || 'https://tradebro.netlify.app'}/login?code=${code}&state=${state}`);
+  } else {
+    res.redirect(`${process.env.CLIENT_URL || 'https://tradebro.netlify.app'}/login?error=oauth_failed`);
+  }
 });
 
 // 404 handler
