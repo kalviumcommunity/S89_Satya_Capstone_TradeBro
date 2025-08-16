@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { saytrixAPI } from '../services/api';
 import VoiceCommandProcessor from '../utils/voiceCommandProcessor';
 
-const useSaytrix = () => {
+const useSaytrix = (audioEnabled = false) => {
   const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
@@ -93,8 +93,14 @@ const useSaytrix = () => {
       recognitionRef.current.lang = 'en-US';
 
       recognitionRef.current.onstart = () => {
+        console.log('Speech recognition started');
         setIsListening(true);
         setError(null);
+      };
+
+      recognitionRef.current.onend = () => {
+        console.log('Speech recognition ended');
+        setIsListening(false);
       };
 
       recognitionRef.current.onresult = async (event) => {
@@ -120,9 +126,7 @@ const useSaytrix = () => {
         setError('Voice recognition failed. Please try again.');
       };
 
-      recognitionRef.current.onend = () => {
-        setIsListening(false);
-      };
+
     }
   };
 
@@ -171,7 +175,7 @@ const useSaytrix = () => {
         setSessionId(response.data.sessionId);
 
         // Text-to-speech for assistant response
-        if (synthRef.current && assistantMessage.content) {
+        if (synthRef.current && assistantMessage.content && audioEnabled) {
           speakText(assistantMessage.content);
         }
       } else {
@@ -180,8 +184,13 @@ const useSaytrix = () => {
     } catch (error) {
       console.warn('Backend API failed, using fallback:', error);
       
+      // Show connection status
+      if (error.code === 'ERR_NETWORK' || error.response?.status === 404) {
+        setError('Server connection failed. Using offline mode.');
+      }
+      
       // Fallback to offline mode
-      await new Promise(resolve => setTimeout(resolve, 800));
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       const fallbackMessage = {
         id: Date.now() + 1,
@@ -196,7 +205,7 @@ const useSaytrix = () => {
       setMessages(prev => [...prev, fallbackMessage]);
 
       // Text-to-speech for assistant response
-      if (synthRef.current && fallbackMessage.content) {
+      if (synthRef.current && fallbackMessage.content && audioEnabled) {
         speakText(fallbackMessage.content);
       }
     } finally {
@@ -239,22 +248,28 @@ const useSaytrix = () => {
   const startListening = useCallback(() => {
     if (recognitionRef.current && !isListening) {
       try {
-        recognitionRef.current.start();
-
-        // Auto-stop listening after 10 seconds to prevent infinite animation
+        // Ensure recognition is not already running
+        if (recognitionRef.current.continuous !== undefined) {
+          recognitionRef.current.abort();
+        }
+        
         setTimeout(() => {
-          if (recognitionRef.current) {
+          recognitionRef.current.start();
+        }, 100);
+
+        // Auto-stop listening after 10 seconds
+        setTimeout(() => {
+          if (recognitionRef.current && isListening) {
             try {
               recognitionRef.current.stop();
             } catch (error) {
               console.log('Auto-stop recognition');
             }
-            setIsListening(false);
           }
         }, 10000);
       } catch (error) {
         console.error('Failed to start voice recognition:', error);
-        setError('Voice recognition is not available.');
+        setError('Voice recognition failed. Please try again.');
         setIsListening(false);
       }
     }
@@ -542,6 +557,7 @@ Ready to start your trading journey? Ask me anything about the markets!`;
     
     // Actions
     setInputText,
+    setMessages,
     sendMessage,
     startListening,
     stopListening,

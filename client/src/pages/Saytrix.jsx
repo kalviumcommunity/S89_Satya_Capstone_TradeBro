@@ -13,12 +13,37 @@ import {
   FiCpu,
   FiX
 } from 'react-icons/fi';
+import { useVoice } from '../contexts/VoiceContext';
 import useSaytrix from '../hooks/useSaytrix';
 import SaytrixCardRenderer from '../components/ai/SaytrixCardRenderer';
 import '../styles/saytrix.css';
 
+const VoiceMicToggle = () => {
+  const { isListening, stopListening, startWakeWordDetection } = useVoice();
+  
+  const handleToggle = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      startWakeWordDetection();
+    }
+  };
+  
+  return (
+    <button
+      className={`audio-toggle-btn ${isListening ? 'enabled' : 'disabled'}`}
+      onClick={handleToggle}
+      title={isListening ? 'Turn Off Microphone' : 'Turn On Microphone'}
+      style={{ marginRight: '1rem' }}
+    >
+      {isListening ? <FiMic /> : <FiMicOff />}
+      <span>{isListening ? 'Mic On' : 'Mic Off'}</span>
+    </button>
+  );
+};
+
 const Saytrix = ({ user, theme }) => {
-  const [audioEnabled, setAudioEnabled] = useState(true);
+  const [audioEnabled, setAudioEnabled] = useState(false);
   const [recentQuestions] = useState([
     'Show me NIFTY performance',
     'What are today\'s top gainers?',
@@ -40,6 +65,7 @@ const Saytrix = ({ user, theme }) => {
     aiMode,
     messagesEndRef,
     setInputText,
+    setMessages,
     sendMessage,
     startListening,
     stopListening,
@@ -47,7 +73,7 @@ const Saytrix = ({ user, theme }) => {
     setOnlyIndianStocks,
     setAiMode,
     setError
-  } = useSaytrix();
+  } = useSaytrix(audioEnabled);
 
 
 
@@ -222,6 +248,7 @@ const Saytrix = ({ user, theme }) => {
         </div>
 
         <div className="navbar-right">
+          <VoiceMicToggle />
           <button 
             className="profile-btn"
             onClick={clearChat}

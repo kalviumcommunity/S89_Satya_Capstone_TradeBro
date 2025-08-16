@@ -4,12 +4,10 @@ import {
   FiTrendingUp,
   FiTrendingDown,
   FiDollarSign,
-  FiBarChart3,
-  FiBuilding,
+  FiBarChart2,
   FiInfo,
   FiAlertTriangle,
   FiCheckCircle,
-  FiShoppingCart,
   FiArrowUpRight,
   FiArrowDownRight
 } from 'react-icons/fi';
@@ -37,7 +35,7 @@ const SaytrixCardRenderer = ({
       >
         <div className="card-header">
           <div className="stock-symbol">
-            <FiBarChart3 className="symbol-icon" />
+            <FiBarChart2 className="symbol-icon" />
             <span>{stockData.symbol}</span>
           </div>
           <div className={`stock-change ${isPositive ? 'positive' : 'negative'}`}>

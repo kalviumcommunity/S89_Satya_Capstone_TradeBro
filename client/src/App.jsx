@@ -8,13 +8,14 @@ import AuthStatus from './components/auth/AuthStatus'
 import GlobalSearchModal from './components/common/GlobalSearchModal'
 import VoiceCommandModal from './components/voice/VoiceCommandModal'
 import VoiceStatusIndicator from './components/voice/VoiceStatusIndicator'
+import SaytrixActivationIndicator from './components/voice/SaytrixActivationIndicator'
 import OrderModal from './components/OrderModal'
 import EnhancedOrderConfirmationModal from './components/EnhancedOrderConfirmationModal'
 import useGlobalSearch from './hooks/useGlobalSearch'
 import { useOrderIntegration } from './hooks/useOrderIntegration'
 import { usePerformanceOptimization } from './hooks/usePerformanceOptimization'
 import balanceSyncManager from './utils/balanceSync'
-import AppRoutes from './Approutes.jsx'
+import AppRoutes from './Approutes'
 
 const PerformanceMonitor = lazy(() => import('./components/debug/PerformanceMonitor'))
 function App() {
@@ -292,11 +293,10 @@ const AppContent = memo(function AppContent({
         }}
       />
 
-      {/* Voice Command Modal */}
+      {/* Global Voice Components */}
       <VoiceCommandModal />
-
-      {/* Voice Status Indicator */}
       <VoiceStatusIndicator />
+
 
       {/* Order Modal */}
       <OrderModal
