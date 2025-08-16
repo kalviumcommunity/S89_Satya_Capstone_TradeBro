@@ -247,7 +247,7 @@ const AppContent = memo(function AppContent({
   return (
     <>
       {/* Self-contained Sidebar - Hide on landing page, login, and signup pages */}
-      {!isLandingPage && !isAuthPage && <Sidebar />}
+      {!isLandingPage && !isAuthPage && isAuthenticated && <Sidebar />}
 
       {/* Main Content */}
       <main className={(isLandingPage || isAuthPage) ? "main-content-full" : "main-content"}>
