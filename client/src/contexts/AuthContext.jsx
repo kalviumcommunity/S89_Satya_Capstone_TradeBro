@@ -23,10 +23,37 @@ export const AuthProvider = ({ children }) => {
         console.error('Error parsing user data:', error);
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+        setUser(null);
+        setIsAuthenticated(false);
       }
     }
     
     setLoading(false);
+  }, []);
+  
+  // Listen for storage changes (multiple tabs)
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const token = localStorage.getItem('token');
+      const userData = localStorage.getItem('user');
+      
+      if (!token || !userData) {
+        setUser(null);
+        setIsAuthenticated(false);
+      } else {
+        try {
+          const parsedUser = JSON.parse(userData);
+          setUser(parsedUser);
+          setIsAuthenticated(true);
+        } catch {
+          setUser(null);
+          setIsAuthenticated(false);
+        }
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   // Login function

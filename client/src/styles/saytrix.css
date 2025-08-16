@@ -174,6 +174,36 @@
   transform: translateY(-1px);
 }
 
+.audio-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--saytrix-bg-card);
+  border: 1px solid var(--saytrix-border);
+  border-radius: 2rem;
+  cursor: pointer;
+  transition: var(--saytrix-transition);
+  font-weight: 500;
+  color: var(--saytrix-text-primary);
+}
+
+.audio-toggle-btn.enabled {
+  background: linear-gradient(135deg, var(--saytrix-secondary) 0%, #10B981 100%);
+  color: white;
+  border-color: var(--saytrix-secondary);
+}
+
+.audio-toggle-btn.disabled {
+  background: rgba(239, 68, 68, 0.1);
+  color: #EF4444;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.audio-toggle-btn:hover {
+  transform: translateY(-1px);
+}
+
 .saytrix-layout {
   display: flex;
   flex: 1;

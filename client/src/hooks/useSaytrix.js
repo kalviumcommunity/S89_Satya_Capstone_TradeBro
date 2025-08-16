@@ -1,7 +1,10 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { saytrixAPI } from '../services/api';
+import VoiceCommandProcessor from '../utils/voiceCommandProcessor';
 
-const useSaytrix = () => {
+const useSaytrix = (audioEnabled = false) => {
+  const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -16,6 +19,7 @@ const useSaytrix = () => {
   const messagesEndRef = useRef(null);
   const recognitionRef = useRef(null);
   const synthRef = useRef(null);
+  const voiceProcessorRef = useRef(new VoiceCommandProcessor());
 
   // Initialize session on mount
   useEffect(() => {
@@ -89,23 +93,29 @@ const useSaytrix = () => {
       recognitionRef.current.lang = 'en-US';
 
       recognitionRef.current.onstart = () => {
+        console.log('Speech recognition started');
         setIsListening(true);
         setError(null);
       };
 
-      recognitionRef.current.onresult = (event) => {
+      recognitionRef.current.onend = () => {
+        console.log('Speech recognition ended');
+        setIsListening(false);
+      };
+
+      recognitionRef.current.onresult = async (event) => {
         const transcript = event.results[0][0].transcript;
-        const confidence = event.results[0][0].confidence;
+        const confidenceScore = event.results[0][0].confidence;
         setInputText(transcript);
-        setConfidence(confidence > 0.8 ? 'high' : confidence > 0.6 ? 'medium' : 'low');
+        setConfidence(confidenceScore > 0.8 ? 'high' : confidenceScore > 0.6 ? 'medium' : 'low');
 
         // Immediately stop listening and reset state
         setIsListening(false);
 
-        // Auto-send the message after voice input with a slight delay
-        setTimeout(() => {
+        // Process voice command
+        setTimeout(async () => {
           if (transcript.trim()) {
-            sendMessage(transcript);
+            await processVoiceCommand(transcript);
           }
         }, 300);
       };
@@ -116,9 +126,7 @@ const useSaytrix = () => {
         setError('Voice recognition failed. Please try again.');
       };
 
-      recognitionRef.current.onend = () => {
-        setIsListening(false);
-      };
+
     }
   };
 
@@ -147,11 +155,42 @@ const useSaytrix = () => {
     // Ensure listening state is properly reset
     setIsListening(false);
 
-    // Use offline mode for now due to backend issues
-    // TODO: Re-enable backend calls when server is fixed
     try {
-      // Simulate processing delay
-      await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000));
+      // Try backend API first
+      const response = await saytrixAPI.sendMessage(messageText, sessionId);
+      
+      if (response.success) {
+        const assistantMessage = {
+          id: Date.now() + 1,
+          type: 'assistant',
+          content: response.data.response,
+          timestamp: new Date(),
+          confidence: 'high',
+          cardType: response.data.stockData ? 'stock-price' : 'text',
+          suggestions: response.data.suggestions || [],
+          stockData: response.data.stockData
+        };
+
+        setMessages(prev => [...prev, assistantMessage]);
+        setSessionId(response.data.sessionId);
+
+        // Text-to-speech for assistant response
+        if (synthRef.current && assistantMessage.content && audioEnabled) {
+          speakText(assistantMessage.content);
+        }
+      } else {
+        throw new Error('Backend response failed');
+      }
+    } catch (error) {
+      console.warn('Backend API failed, using fallback:', error);
+      
+      // Show connection status
+      if (error.code === 'ERR_NETWORK' || error.response?.status === 404) {
+        setError('Server connection failed. Using offline mode.');
+      }
+      
+      // Fallback to offline mode
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       const fallbackMessage = {
         id: Date.now() + 1,
@@ -166,22 +205,9 @@ const useSaytrix = () => {
       setMessages(prev => [...prev, fallbackMessage]);
 
       // Text-to-speech for assistant response
-      if (synthRef.current && fallbackMessage.content) {
+      if (synthRef.current && fallbackMessage.content && audioEnabled) {
         speakText(fallbackMessage.content);
       }
-    } catch (error) {
-      console.error('Error in offline mode:', error);
-
-      const errorMessage = {
-        id: Date.now() + 1,
-        type: 'assistant',
-        content: 'I apologize, but I\'m having trouble processing your request right now. Please try again.',
-        timestamp: new Date(),
-        confidence: 'low',
-        cardType: 'error'
-      };
-
-      setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsProcessing(false);
     }
@@ -222,22 +248,28 @@ const useSaytrix = () => {
   const startListening = useCallback(() => {
     if (recognitionRef.current && !isListening) {
       try {
-        recognitionRef.current.start();
-
-        // Auto-stop listening after 10 seconds to prevent infinite animation
+        // Ensure recognition is not already running
+        if (recognitionRef.current.continuous !== undefined) {
+          recognitionRef.current.abort();
+        }
+        
         setTimeout(() => {
-          if (recognitionRef.current) {
+          recognitionRef.current.start();
+        }, 100);
+
+        // Auto-stop listening after 10 seconds
+        setTimeout(() => {
+          if (recognitionRef.current && isListening) {
             try {
               recognitionRef.current.stop();
             } catch (error) {
               console.log('Auto-stop recognition');
             }
-            setIsListening(false);
           }
         }, 10000);
       } catch (error) {
         console.error('Failed to start voice recognition:', error);
-        setError('Voice recognition is not available.');
+        setError('Voice recognition failed. Please try again.');
         setIsListening(false);
       }
     }
@@ -254,6 +286,46 @@ const useSaytrix = () => {
       setIsListening(false);
     }
   }, []);
+
+  const processVoiceCommand = useCallback(async (transcript) => {
+    try {
+      // Process the voice command
+      const command = voiceProcessorRef.current.processCommand(transcript);
+      console.log('Voice command processed:', command);
+      
+      // Create context for command execution
+      const context = {
+        navigate,
+        sendMessage: async (message) => {
+          await sendMessage(message);
+        },
+        setMessages,
+        setError
+      };
+      
+      // Execute the command
+      const result = await voiceProcessorRef.current.executeCommand(command, context);
+      console.log('Command execution result:', result);
+      
+      // Show voice command feedback
+      if (result.success && result.message) {
+        const feedbackMessage = {
+          id: Date.now(),
+          type: 'assistant',
+          content: `🎤 **Voice Command Executed**\n\n${result.message}`,
+          timestamp: new Date(),
+          cardType: 'text',
+          suggestions: ['Continue with voice', 'Type a message', 'Clear chat']
+        };
+        
+        setMessages(prev => [...prev, feedbackMessage]);
+      }
+      
+    } catch (error) {
+      console.error('Voice command processing error:', error);
+      setError('Failed to process voice command. Please try again.');
+    }
+  }, [navigate, sendMessage, setMessages, setError]);
 
   const clearChat = useCallback(() => {
     setMessages([]);
@@ -485,6 +557,7 @@ Ready to start your trading journey? Ask me anything about the markets!`;
     
     // Actions
     setInputText,
+    setMessages,
     sendMessage,
     startListening,
     stopListening,

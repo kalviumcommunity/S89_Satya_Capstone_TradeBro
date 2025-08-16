@@ -33,40 +33,77 @@ const WatchlistButton = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  if (!stockData) return null;
+  if (!stockData) {
+    console.warn('⚠️ WatchlistButton: No stock data provided');
+    return null;
+  }
 
   const stockSymbol = stockData.symbol || stockData.stockSymbol;
+  
+  if (!stockSymbol) {
+    console.warn('⚠️ WatchlistButton: No stock symbol found in data:', stockData);
+    return null;
+  }
+
   const inWatchlist = isInWatchlist(stockSymbol);
+  
+  // Debug logging
+  console.log('🔍 WatchlistButton render:', {
+    symbol: stockSymbol,
+    inWatchlist,
+    watchlistsCount: watchlists.length,
+    isProcessing,
+    loading
+  });
 
   // Handle simple toggle (add to default watchlist or remove)
   const handleToggle = async (e) => {
-    e.stopPropagation();
+    e?.stopPropagation();
     
     if (isProcessing || loading) return;
 
     setIsProcessing(true);
     
     try {
-      const result = await toggleWatchlist(stockData);
+      console.log('🎯 Toggling watchlist for:', stockSymbol, 'Currently in watchlist:', inWatchlist);
+      
+      // Prepare stock data with all necessary fields
+      const stockToToggle = {
+        symbol: stockSymbol,
+        name: stockData.name || stockData.companyName || `${stockSymbol} Corporation`,
+        price: stockData.price || stockData.currentPrice || 0,
+        change: stockData.change || stockData.priceChange || 0,
+        changePercent: stockData.changePercent || stockData.changePercentage || 0,
+        volume: stockData.volume || 0,
+        marketCap: stockData.marketCap || 0,
+        sector: stockData.sector || 'Unknown'
+      };
+      
+      const result = await toggleWatchlist(stockToToggle);
       
       if (result.success) {
+        console.log('✅ Watchlist toggle successful:', result);
+        
         if (onSuccess) {
           onSuccess(result, inWatchlist ? 'removed' : 'added');
         }
+        
         // Add haptic feedback for mobile
         if (navigator.vibrate) {
           navigator.vibrate(50);
         }
+        
         // Show success animation
         setShowSuccess(true);
         setTimeout(() => setShowSuccess(false), 600);
       } else {
+        console.warn('⚠️ Watchlist toggle failed:', result.message);
         if (onError) {
-          onError(result.message);
+          onError(result.message || 'Failed to update watchlist');
         }
       }
     } catch (error) {
-      console.error('Error toggling watchlist:', error);
+      console.error('❌ Error toggling watchlist:', error);
       if (onError) {
         onError('Failed to update watchlist');
       }
@@ -83,15 +120,35 @@ const WatchlistButton = ({
     setShowDropdown(false);
     
     try {
-      const result = await addToWatchlist(stockData, watchlistId);
+      console.log('➕ Adding to watchlist:', watchlistId, 'Stock:', stockSymbol);
       
-      if (result.success && onSuccess) {
-        onSuccess(result, 'added');
-      } else if (!result.success && onError) {
-        onError(result.message);
+      // Prepare complete stock data
+      const stockToAdd = {
+        symbol: stockSymbol,
+        name: stockData.name || stockData.companyName || `${stockSymbol} Corporation`,
+        price: stockData.price || stockData.currentPrice || 0,
+        change: stockData.change || stockData.priceChange || 0,
+        changePercent: stockData.changePercent || stockData.changePercentage || 0,
+        volume: stockData.volume || 0,
+        marketCap: stockData.marketCap || 0,
+        sector: stockData.sector || 'Unknown'
+      };
+      
+      const result = await addToWatchlist(stockToAdd, watchlistId);
+      
+      if (result.success) {
+        console.log('✅ Successfully added to watchlist');
+        if (onSuccess) {
+          onSuccess(result, 'added');
+        }
+      } else {
+        console.warn('⚠️ Failed to add to watchlist:', result.message);
+        if (onError) {
+          onError(result.message || 'Failed to add to watchlist');
+        }
       }
     } catch (error) {
-      console.error('Error adding to watchlist:', error);
+      console.error('❌ Error adding to watchlist:', error);
       if (onError) {
         onError('Failed to add to watchlist');
       }

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import AIVoiceProcessor from '../utils/aiVoiceProcessor';
 
 // Create the voice context
 const VoiceContext = createContext();
@@ -16,6 +17,7 @@ export const useVoice = () => {
 // Voice provider component
 export const VoiceProvider = ({ children }) => {
   const navigate = useNavigate();
+  const aiProcessor = new AIVoiceProcessor(navigate);
   
   // Voice states
   const [isListening, setIsListening] = useState(false);
@@ -33,6 +35,7 @@ export const VoiceProvider = ({ children }) => {
       recognitionInstance.continuous = true;
       recognitionInstance.interimResults = true;
       recognitionInstance.lang = 'en-US';
+      recognitionInstance.maxAlternatives = 1;
       
       setRecognition(recognitionInstance);
       setIsSupported(true);
@@ -51,44 +54,66 @@ export const VoiceProvider = ({ children }) => {
     // Navigation commands
     if (lowerCommand.includes('dashboard') || lowerCommand.includes('home')) {
       navigate('/dashboard');
-      speak('Navigating to dashboard');
-    } else if (lowerCommand.includes('charts') || lowerCommand.includes('chart')) {
+    } else if (lowerCommand.includes('chart') || lowerCommand.includes('charge')) {
       navigate('/charts');
-      speak('Opening charts');
     } else if (lowerCommand.includes('portfolio')) {
       navigate('/portfolio');
-      speak('Opening portfolio');
     } else if (lowerCommand.includes('watchlist') || lowerCommand.includes('watch list')) {
       navigate('/watchlist');
-      speak('Opening watchlist');
     } else if (lowerCommand.includes('orders') || lowerCommand.includes('order')) {
       navigate('/orders');
-      speak('Opening orders');
     } else if (lowerCommand.includes('history')) {
       navigate('/history');
-      speak('Opening history');
     } else if (lowerCommand.includes('news')) {
       navigate('/news');
-      speak('Opening news');
     } else if (lowerCommand.includes('notifications') || lowerCommand.includes('notification')) {
       navigate('/notifications');
-      speak('Opening notifications');
     } else if (lowerCommand.includes('saytrix') || lowerCommand.includes('chat')) {
       navigate('/saytrix');
-      speak('Opening Saytrix AI assistant');
     } else if (lowerCommand.includes('profile')) {
       navigate('/profile');
-      speak('Opening profile');
     } else if (lowerCommand.includes('settings') || lowerCommand.includes('setting')) {
       navigate('/settings');
-      speak('Opening settings');
-    } else if (lowerCommand.includes('stop') || lowerCommand.includes('exit') || lowerCommand.includes('close')) {
-      stopListening();
-      speak('Voice mode deactivated');
-    } else {
-      speak('Command not recognized. Try saying dashboard, charts, portfolio, or other navigation commands.');
+    } else if (lowerCommand.includes('trading') || lowerCommand.includes('trade')) {
+      navigate('/trading');
+    }
+    
+    // Market data commands
+    if (lowerCommand.includes('price of') || lowerCommand.includes('show price')) {
+      const stock = extractStock(lowerCommand);
+      if (stock) {
+        navigate(`/stock/${stock}`);
+      }
+    } else if (lowerCommand.includes('top gainers') || lowerCommand.includes('gainers')) {
+      navigate('/dashboard');
+    } else if (lowerCommand.includes('top losers') || lowerCommand.includes('losers')) {
+      navigate('/dashboard');
+    }
+    
+    // Trading commands
+    if (lowerCommand.includes('buy') && (lowerCommand.includes('stock') || lowerCommand.includes('share'))) {
+      navigate('/trading');
+    } else if (lowerCommand.includes('sell') && (lowerCommand.includes('stock') || lowerCommand.includes('share'))) {
+      navigate('/trading');
     }
   }, [navigate]);
+  
+  // Extract stock symbol from command
+  const extractStock = useCallback((command) => {
+    const stockPatterns = [
+      /price of ([a-zA-Z]+)/i,
+      /show price ([a-zA-Z]+)/i,
+      /([a-zA-Z]+) price/i
+    ];
+    
+    for (const pattern of stockPatterns) {
+      const match = command.match(pattern);
+      if (match) {
+        return match[1].toUpperCase();
+      }
+    }
+    return null;
+  }, []);
 
   // Text-to-speech function
   const speak = useCallback((text) => {
@@ -103,7 +128,7 @@ export const VoiceProvider = ({ children }) => {
 
   // Start listening for wake word
   const startWakeWordDetection = useCallback(() => {
-    if (!recognition || !isSupported) return;
+    if (!recognition || !isSupported || isListening) return;
 
     setIsListening(true);
     
@@ -114,45 +139,66 @@ export const VoiceProvider = ({ children }) => {
         const transcript = event.results[i][0].transcript;
         if (event.results[i].isFinal) {
           finalTranscript += transcript;
+        } else {
+          finalTranscript += transcript;
         }
       }
       
-      if (finalTranscript) {
-        setTranscript(finalTranscript);
-        
-        // Check for wake word "Saytrix"
-        if (finalTranscript.toLowerCase().includes('saytrix')) {
-          console.log('Wake word detected:', finalTranscript);
-          activateVoiceMode();
-        }
+      console.log('Heard:', finalTranscript);
+      setTranscript(finalTranscript);
+      
+      // More accurate wake word detection
+      const wakeWords = ['saytrix', 'citrix', 'citric', 'matrix', 'tricks', 'se tric', 'say tricks'];
+      const isWakeWord = wakeWords.some(word => 
+        finalTranscript.toLowerCase().includes(word)
+      );
+      
+      if (isWakeWord) {
+        console.log('Wake word detected:', finalTranscript);
+        recognition.stop();
+        activateVoiceMode();
       }
     };
 
     recognition.onerror = (event) => {
       console.error('Speech recognition error:', event.error);
       if (event.error === 'not-allowed') {
-        alert('Microphone access denied. Please allow microphone access to use voice commands.');
+        alert('Please allow microphone access to use voice commands.');
+      }
+      setIsListening(false);
+      if (event.error !== 'aborted') {
+        setTimeout(() => {
+          startWakeWordDetection();
+        }, 1000);
       }
     };
 
     recognition.onend = () => {
-      if (isListening && !isVoiceModeActive) {
-        // Restart wake word detection
+      console.log('Wake word detection ended');
+      setIsListening(false);
+      if (!isVoiceModeActive) {
         setTimeout(() => {
-          if (isListening) {
-            recognition.start();
-          }
-        }, 100);
+          startWakeWordDetection();
+        }, 500);
       }
     };
 
-    recognition.start();
+    try {
+      recognition.start();
+      console.log('Voice recognition started - say "Saytrix" to activate');
+    } catch (e) {
+      if (e.name !== 'InvalidStateError') {
+        console.log('Recognition start failed:', e);
+        setIsListening(false);
+      }
+    }
   }, [recognition, isSupported, isListening, isVoiceModeActive]);
 
   // Activate voice command mode
   const activateVoiceMode = useCallback(() => {
+    console.log('Voice mode activated');
     setIsVoiceModeActive(true);
-    speak('Saytrix activated. What would you like to do?');
+    speak('Yes?');
     
     if (!recognition) return;
 
@@ -167,18 +213,43 @@ export const VoiceProvider = ({ children }) => {
       }
       
       if (finalTranscript) {
+        console.log('Voice command received:', finalTranscript);
         setTranscript(finalTranscript);
-        processVoiceCommand(finalTranscript);
         
-        // Auto-deactivate after command
+        // Process with AI - use best alternative
+        let bestTranscript = finalTranscript;
+        if (event.results[0].length > 1) {
+          bestTranscript = event.results[0][0].transcript;
+          for (let i = 1; i < event.results[0].length; i++) {
+            if (event.results[0][i].confidence > event.results[0][0].confidence) {
+              bestTranscript = event.results[0][i].transcript;
+            }
+          }
+        }
+        
+        aiProcessor.processCommand(bestTranscript).then(result => {
+          console.log('Command executed:', result);
+          if (result.success) {
+            speak(result.message || 'Done');
+          } else {
+            speak('Could you repeat that?');
+          }
+        });
+        
+        // Deactivate and restart
+        setIsVoiceModeActive(false);
+        recognition.stop();
         setTimeout(() => {
-          setIsVoiceModeActive(false);
           startWakeWordDetection();
-        }, 2000);
+        }, 500);
       }
     };
 
-    recognition.start();
+    try {
+      recognition.start();
+    } catch (e) {
+      console.log('Voice mode recognition failed:', e);
+    }
   }, [recognition, processVoiceCommand, speak, startWakeWordDetection]);
 
   // Stop listening
@@ -186,7 +257,11 @@ export const VoiceProvider = ({ children }) => {
     setIsListening(false);
     setIsVoiceModeActive(false);
     if (recognition) {
-      recognition.stop();
+      try {
+        recognition.stop();
+      } catch (e) {
+        // Ignore errors
+      }
     }
   }, [recognition]);
 
@@ -212,7 +287,11 @@ export const VoiceProvider = ({ children }) => {
     
     return () => {
       if (recognition) {
-        recognition.stop();
+        try {
+          recognition.stop();
+        } catch (e) {
+          // Ignore errors on cleanup
+        }
       }
     };
   }, [isSupported, startWakeWordDetection]);
@@ -225,7 +304,9 @@ export const VoiceProvider = ({ children }) => {
     triggerVoiceMode,
     stopListening,
     speak,
-    activateVoiceMode
+    activateVoiceMode,
+    startWakeWordDetection,
+    processVoiceCommand
   };
 
   return (

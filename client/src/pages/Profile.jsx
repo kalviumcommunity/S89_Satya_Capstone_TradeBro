@@ -20,12 +20,14 @@ import {
 } from 'react-icons/fi';
 import PageHeader from '../components/layout/PageHeader';
 import { usePortfolio } from '../contexts/PortfolioContext';
+import { useAuth } from '../contexts/AuthContext';
 import '../styles/profile.css';
 
-const Profile = ({ user, onUpdateProfile, theme, toggleTheme, onLogout }) => {
+const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const { portfolioData } = usePortfolio();
+  const { user, updateProfile, logout } = useAuth();
 
   const [profileData, setProfileData] = useState({
     firstName: '',
@@ -128,10 +130,8 @@ const Profile = ({ user, onUpdateProfile, theme, toggleTheme, onLogout }) => {
         bio: profileData.bio
       };
 
-      // Call the update profile function if provided
-      if (onUpdateProfile) {
-        await onUpdateProfile(updatedUserData);
-      }
+      // Update profile using AuthContext
+      updateProfile(updatedUserData);
 
       // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -145,16 +145,23 @@ const Profile = ({ user, onUpdateProfile, theme, toggleTheme, onLogout }) => {
   };
 
   const handleCancel = () => {
-    setProfileData({
-      firstName: user?.firstName || 'John',
-      lastName: user?.lastName || 'Doe',
-      email: user?.email || 'john.doe@example.com',
-      phone: user?.phone || '+91 98765 43210',
-      location: user?.location || 'Mumbai, India',
-      bio: user?.bio || 'Passionate trader and investor with 5+ years of experience in Indian markets.',
-      joinDate: user?.joinDate || '2023-01-15',
-      avatar: user?.avatar || null
-    });
+    if (user) {
+      const fullName = user.fullName || user.name || '';
+      const nameParts = fullName.split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
+      setProfileData({
+        firstName,
+        lastName,
+        email: user.email || '',
+        phone: user.phoneNumber || user.phone || '',
+        location: user.location || '',
+        bio: user.bio || 'Welcome to TradeBro! Start your trading journey today.',
+        joinDate: user.createdAt ? new Date(user.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        avatar: user.profileImage || user.avatar || null
+      });
+    }
     setIsEditing(false);
   };
 
@@ -455,7 +462,7 @@ const Profile = ({ user, onUpdateProfile, theme, toggleTheme, onLogout }) => {
                   <FiShield size={20} />
                   <span>Security</span>
                 </button>
-                <button className="action-btn logout" onClick={onLogout}>
+                <button className="action-btn logout" onClick={logout}>
                   <FiLogOut size={20} />
                   <span>Logout</span>
                 </button>

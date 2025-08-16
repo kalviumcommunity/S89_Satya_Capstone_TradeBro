@@ -25,7 +25,9 @@ import '../styles/stock-search-panel.css';
 const StockSearchPanel = ({
   onStockSelect,
   selectedStock,
-  className = ''
+  className = '',
+  popularStocks: externalPopularStocks,
+  onUpdatePopularStocks
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -38,7 +40,7 @@ const StockSearchPanel = ({
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   // Popular Indian stocks with real-time data
-  const [popularStocks, setPopularStocks] = useState([
+  const [popularStocks, setPopularStocks] = useState(externalPopularStocks || [
     {
       symbol: 'RELIANCE',
       name: 'Reliance Industries Ltd',
@@ -280,21 +282,6 @@ const StockSearchPanel = ({
       <div className="stock-search">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3 className="search-title">Search Stocks</h3>
-          {/* Temporary test button - remove in production */}
-          <button
-            onClick={() => testFMPSearch()}
-            style={{
-              padding: '4px 8px',
-              fontSize: '10px',
-              background: '#10B981',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer'
-            }}
-          >
-            Test API
-          </button>
         </div>
 
         <div className="search-input-container">
@@ -355,19 +342,12 @@ const StockSearchPanel = ({
                       ({stock.changePercent?.toFixed(2)}%)
                     </div>
                   </div>
-                  <div className="search-result-actions">
-                    <WatchlistButton
-                      stockData={stock}
-                      size="small"
-                      variant="icon"
-                      showText={false}
-                      onSuccess={(result, action) => {
-                        console.log(`✅ ${action === 'added' ? 'Added' : 'Removed'} ${stock.symbol} ${action === 'added' ? 'to' : 'from'} watchlist`);
-                      }}
-                      onError={(message) => {
-                        console.error('Watchlist error:', message);
-                      }}
-                    />
+                  <div className="search-result-actions" onClick={(e) => {
+                    e.stopPropagation();
+                    const updatedStock = { ...stock, isWatchlisted: !stock.isWatchlisted };
+                    setSearchResults(prev => prev.map(s => s.symbol === stock.symbol ? updatedStock : s));
+                  }}>
+                    {stock.isWatchlisted ? '⭐' : '☆'}
                   </div>
                   {stock.exchange && (
                     <div className="exchange">{stock.exchange}</div>
@@ -433,24 +413,15 @@ const StockSearchPanel = ({
                   </div>
                 </div>
 
-                <div className="popular-stock-actions">
-                  <WatchlistButton
-                    stockData={stock}
-                    size="small"
-                    variant="icon"
-                    showText={false}
-                    onSuccess={(result, action) => {
-                      if (action === 'added') {
-                        // Show success feedback without toast to avoid spam
-                        console.log(`✅ Added ${stock.symbol} to watchlist`);
-                      } else if (action === 'removed') {
-                        console.log(`❌ Removed ${stock.symbol} from watchlist`);
-                      }
-                    }}
-                    onError={(message) => {
-                      console.error('Watchlist error:', message);
-                    }}
-                  />
+                <div className="popular-stock-actions" onClick={(e) => {
+                  e.stopPropagation();
+                  const updatedStocks = popularStocks.map(s => 
+                    s.symbol === stock.symbol ? { ...s, isWatchlisted: !s.isWatchlisted } : s
+                  );
+                  setPopularStocks(updatedStocks);
+                  onUpdatePopularStocks?.(updatedStocks);
+                }}>
+                  {stock.isWatchlisted ? '⭐' : '☆'}
                 </div>
               </motion.div>
             ))}

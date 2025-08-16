@@ -56,9 +56,15 @@
 
 .charts-content {
   display: grid;
-  grid-template-columns: 420px 1fr;
+  grid-template-columns: 1fr;
   gap: var(--space-6);
   min-height: calc(100vh - 200px);
+}
+
+@media (min-width: 1024px) {
+  .charts-content {
+    grid-template-columns: 420px 1fr;
+  }
 }
 
 /* ========================================
@@ -144,8 +150,18 @@
   flex-direction: column;
   gap: var(--space-4);
   padding: var(--space-4);
-  height: 100%;
+  height: auto;
   box-shadow: var(--shadow-sm);
+  order: 2;
+}
+
+@media (min-width: 1024px) {
+  .charts-sidebar {
+    height: 100%;
+    position: sticky;
+    top: 24px;
+    order: 1;
+  }
 }
 
 /* Custom results styling */
@@ -247,31 +263,53 @@
 
 /* Timeframe Buttons */
 .timeframe-buttons {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(45px, 1fr));
   gap: var(--space-2);
 }
 
+@media (max-width: 480px) {
+  .timeframe-buttons {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (min-width: 768px) {
+  .timeframe-buttons {
+    grid-template-columns: repeat(7, 1fr);
+  }
+}
+
 .timeframe-btn {
-  padding: var(--space-2) var(--space-3);
+  padding: clamp(8px, 2vw, 12px);
   border-radius: var(--radius-md);
   background: var(--light-bg-tertiary);
   color: var(--light-text-tertiary);
-  border: none;
-  font-size: 0.875rem;
-  font-weight: 500;
+  border: 1px solid rgba(229, 231, 235, 0.8);
+  font-size: clamp(11px, 2vw, 13px);
+  font-weight: 600;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .timeframe-btn:hover {
-  background: var(--light-border);
+  background: rgba(255, 255, 255, 1);
   color: var(--light-text-secondary);
+  border-color: #3b82f6;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
 }
 
 .timeframe-btn.active {
-  background: var(--light-accent);
+  background: linear-gradient(135deg, #3b82f6, #10b981);
   color: white;
+  border-color: transparent;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
 }
 
 /* Chart Type Buttons */
@@ -353,6 +391,15 @@
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-sm);
+  min-height: 500px;
+  order: 1;
+}
+
+@media (min-width: 1024px) {
+  .chart-main {
+    order: 2;
+    min-height: 650px;
+  }
 }
 
 /* Chart Footer */

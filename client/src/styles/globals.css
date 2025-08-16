@@ -248,7 +248,8 @@ body {
   font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
   font-variant-ligatures: common-ligatures;
   overflow-x: hidden;
-  /* Removed position: relative and transform to prevent sidebar positioning issues */
+  margin: 0;
+  padding: 0;
 }
 
 /* ========================================
@@ -454,8 +455,10 @@ a:hover {
 }
 
 /* Main content with sidebar - add left margin for fixed sidebar */
-.main-content.with-sidebar {
-  margin-left: 280px;
+@media (min-width: 769px) {
+  .main-content {
+    margin-left: 280px;
+  }
 }
 
 

@@ -1,637 +1,124 @@
 /* ========================================
-   ⭐ WATCHLIST BUTTON - INTERACTIVE & CLEAN
+   ⭐ WATCHLIST BUTTON - PERFECT STYLING
    ======================================== */
 
 .watchlist-btn {
-  display: inline-flex;
+  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid rgba(229, 231, 235, 0.8);
+  color: #6B7280;
+  backdrop-filter: blur(8px);
+  min-width: 40px;
+  min-height: 40px;
+  border-radius: 12px;
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  border: 2px solid transparent;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.8);
-  color: #64748B;
+  gap: 8px;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  font-weight: 600;
+  transition: all 0.3s ease;
   position: relative;
-  overflow: hidden;
-  backdrop-filter: blur(8px);
-  box-shadow:
-    0 2px 8px rgba(0, 0, 0, 0.04),
-    0 1px 3px rgba(0, 0, 0, 0.08);
-}
-
-.watchlist-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, #F59E0B 0%, #EAB308 100%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  z-index: -1;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .watchlist-btn:hover {
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 1);
+  border-color: #F59E0B;
   color: #F59E0B;
   transform: translateY(-2px) scale(1.05);
-  border-color: #FDE68A;
-  box-shadow:
-    0 8px 25px rgba(245, 158, 11, 0.15),
-    0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
 }
 
-.watchlist-btn:active {
-  transform: translateY(-1px) scale(1.02);
-  transition: all 0.1s ease;
-}
-
-.watchlist-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-/* Button Sizes */
-.watchlist-btn-small {
-  padding: 6px 8px;
-  font-size: 12px;
-  min-width: 32px;
-  height: 32px;
-}
-
-.watchlist-btn-medium {
-  padding: 8px 12px;
-  font-size: 14px;
-  min-width: 40px;
-  height: 40px;
-}
-
-.watchlist-btn-large {
-  padding: 12px 16px;
-  font-size: 16px;
-  min-width: 48px;
-  height: 48px;
-}
-
-/* Active State - In Watchlist */
 .watchlist-btn.active {
   background: linear-gradient(135deg, #F59E0B 0%, #EAB308 100%);
+  border-color: transparent;
   color: white;
-  border-color: #F59E0B;
-  box-shadow:
-    0 4px 16px rgba(245, 158, 11, 0.3),
-    0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
 }
 
-.watchlist-btn.active::before {
-  opacity: 1;
-}
-
-.watchlist-btn.active:hover {
-  background: linear-gradient(135deg, #D97706 0%, #F59E0B 100%);
-  transform: translateY(-2px) scale(1.08);
-  box-shadow:
-    0 8px 25px rgba(245, 158, 11, 0.4),
-    0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.watchlist-btn.active .filled {
-  fill: currentColor;
-}
-
-/* Processing State */
-.watchlist-btn.processing {
-  pointer-events: none;
-  opacity: 0.8;
-}
-
-.watchlist-btn.processing svg {
-  animation: pulse 1.5s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.6;
-    transform: scale(0.95);
-  }
-}
-
-/* Button Text */
-.btn-text {
-  white-space: nowrap;
-  font-weight: 500;
-}
-
-/* Star Icon States - Enhanced */
 .watchlist-btn svg {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  transform-origin: center;
-  width: 16px;
-  height: 16px;
-  stroke-width: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.watchlist-btn-small svg {
-  width: 14px;
-  height: 14px;
-  stroke-width: 2.5;
-  stroke: currentColor;
-  fill: none;
-  opacity: 1;
-  visibility: visible;
-}
-
-.watchlist-btn-medium svg {
-  width: 16px;
-  height: 16px;
-  stroke-width: 2;
-}
-
-.watchlist-btn-large svg {
   width: 18px;
   height: 18px;
-  stroke-width: 1.5;
-}
-
-.watchlist-btn:hover svg {
-  transform: scale(1.1) rotate(5deg);
+  stroke-width: 2;
+  stroke: currentColor;
+  fill: none;
+  transition: all 0.3s ease;
 }
 
 .watchlist-btn.active svg {
-  transform: scale(1.05);
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
   fill: currentColor;
-  stroke: currentColor;
+  transform: scale(1.1);
 }
 
-.watchlist-btn.active:hover svg {
-  transform: scale(1.15) rotate(-5deg);
+.watchlist-btn.processing {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
-.watchlist-btn .filled {
-  fill: currentColor !important;
-  stroke: currentColor !important;
-}
-
-/* Perfect icon centering */
-.watchlist-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-}
-
-/* Force star icon visibility - Universal fix */
-.watchlist-btn::after {
-  content: "☆";
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: currentColor;
-  pointer-events: none;
-}
-
-.watchlist-btn.active::after {
-  content: "★";
-}
-
-/* Hide the SVG and use CSS star instead */
-.watchlist-btn svg {
-  display: none !important;
-}
-
-.watchlist-btn > div {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Success Animation */
 .watchlist-btn.success {
   animation: successPulse 0.6s ease-out;
 }
 
 @keyframes successPulse {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.15);
-    box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
-  }
-  100% {
-    transform: scale(1);
-  }
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
 }
 
-/* Animate Spin */
-.animate-spin {
-  animation: spin 1s linear infinite;
+/* Size Variants */
+.watchlist-btn-small {
+  min-width: 32px;
+  min-height: 32px;
+  padding: 6px 8px;
+  font-size: 12px;
 }
 
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+.watchlist-btn-small svg {
+  width: 14px;
+  height: 14px;
 }
 
-/* ========================================
-   🌙 DARK MODE SUPPORT
-   ======================================== */
+.watchlist-btn-medium {
+  min-width: 40px;
+  min-height: 40px;
+  padding: 8px 12px;
+  font-size: 14px;
+}
 
+.watchlist-btn-large {
+  min-width: 48px;
+  min-height: 48px;
+  padding: 12px 16px;
+  font-size: 16px;
+}
+
+.watchlist-btn-large svg {
+  width: 20px;
+  height: 20px;
+}
+
+.btn-text {
+  margin-left: 4px;
+  white-space: nowrap;
+}
+
+/* Dark Theme */
 [data-theme="dark"] .watchlist-btn {
-  background: rgba(30, 41, 59, 0.8);
+  background: rgba(45, 55, 72, 0.9);
+  border-color: rgba(71, 85, 105, 0.8);
   color: #94A3B8;
-  border-color: rgba(71, 85, 105, 0.3);
-  box-shadow:
-    0 2px 8px rgba(0, 0, 0, 0.2),
-    0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 [data-theme="dark"] .watchlist-btn:hover {
-  background: rgba(30, 41, 59, 0.95);
+  background: rgba(30, 41, 59, 1);
+  border-color: #F59E0B;
   color: #F59E0B;
-  border-color: #FDE68A;
-  box-shadow:
-    0 8px 25px rgba(245, 158, 11, 0.2),
-    0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 [data-theme="dark"] .watchlist-btn.active {
   background: linear-gradient(135deg, #F59E0B 0%, #EAB308 100%);
+  border-color: transparent;
   color: white;
-  border-color: #F59E0B;
-  box-shadow:
-    0 4px 16px rgba(245, 158, 11, 0.4),
-    0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-[data-theme="dark"] .watchlist-btn.active:hover {
-  background: linear-gradient(135deg, #D97706 0%, #F59E0B 100%);
-  box-shadow:
-    0 8px 25px rgba(245, 158, 11, 0.5),
-    0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-/* ========================================
-   📱 MOBILE OPTIMIZATIONS
-   ======================================== */
-
-@media (max-width: 768px) {
-  .watchlist-btn {
-    min-width: 36px;
-    height: 36px;
-    padding: 8px;
-  }
-
-  .watchlist-btn:hover {
-    transform: translateY(-1px) scale(1.03);
-  }
-
-  .watchlist-btn:active {
-    transform: translateY(0) scale(1);
-  }
-}
-
-/* ========================================
-   ♿ ACCESSIBILITY ENHANCEMENTS
-   ======================================== */
-
-.watchlist-btn:focus {
-  outline: none;
-  box-shadow:
-    0 0 0 3px rgba(245, 158, 11, 0.3),
-    0 4px 16px rgba(245, 158, 11, 0.2);
-}
-
-.watchlist-btn:focus-visible {
-  outline: 2px solid #F59E0B;
-  outline-offset: 2px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .watchlist-btn,
-  .watchlist-btn svg,
-  .watchlist-btn::before {
-    transition: none;
-    animation: none;
-  }
-
-  .watchlist-btn.success {
-    animation: none;
-  }
-}
-
-/* ========================================
-   📋 WATCHLIST DROPDOWN
-   ======================================== */
-
-.watchlist-dropdown-container {
-  position: relative;
-  display: inline-block;
-}
-
-.watchlist-dropdown {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  min-width: 220px;
-  background: var(--card-bg);
-  border: 1px solid var(--border-primary);
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
-  overflow: hidden;
-}
-
-.watchlist-dropdown-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 999;
-  background: transparent;
-}
-
-/* Dropdown Header */
-.dropdown-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-primary);
-  font-weight: 600;
-  font-size: 14px;
-  color: var(--text-primary);
-}
-
-.close-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border: none;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.close-btn:hover {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-}
-
-/* Dropdown Content */
-.dropdown-content {
-  padding: 8px 0;
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.dropdown-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 12px 16px;
-  border: none;
-  background: transparent;
-  color: var(--text-primary);
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-align: left;
-}
-
-.dropdown-item:hover:not(:disabled) {
-  background: var(--bg-secondary);
-}
-
-.dropdown-item:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.dropdown-item.has-stock {
-  color: var(--success-color);
-  background: rgba(16, 185, 129, 0.05);
-}
-
-.dropdown-item.remove-item {
-  color: var(--danger-color);
-  border-bottom: 1px solid var(--border-primary);
-  margin-bottom: 8px;
-}
-
-.dropdown-item.remove-item:hover {
-  background: rgba(239, 68, 68, 0.05);
-}
-
-/* Default Badge */
-.default-badge {
-  margin-left: auto;
-  padding: 2px 6px;
-  background: var(--accent-primary);
-  color: white;
-  font-size: 10px;
-  font-weight: 600;
-  border-radius: 4px;
-  text-transform: uppercase;
-}
-
-/* Empty State */
-.dropdown-empty {
-  padding: 20px 16px;
-  text-align: center;
-  color: var(--text-secondary);
-  font-size: 14px;
-}
-
-/* ========================================
-   🌙 DARK MODE SUPPORT
-   ======================================== */
-
-[data-theme="dark"] .watchlist-btn {
-  background: var(--bg-secondary);
-  color: var(--text-secondary);
-}
-
-[data-theme="dark"] .watchlist-btn:hover {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-}
-
-[data-theme="dark"] .watchlist-btn.active {
-  background: #14F195;
-  color: #0F172A;
-}
-
-[data-theme="dark"] .watchlist-btn.active:hover {
-  background: #10B981;
-}
-
-[data-theme="dark"] .watchlist-dropdown {
-  background: var(--card-bg);
-  border-color: var(--border-primary);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
-}
-
-[data-theme="dark"] .dropdown-header {
-  background: var(--bg-secondary);
-  border-color: var(--border-primary);
-  color: var(--text-primary);
-}
-
-[data-theme="dark"] .dropdown-item:hover:not(:disabled) {
-  background: var(--bg-secondary);
-}
-
-[data-theme="dark"] .dropdown-item.has-stock {
-  color: #14F195;
-  background: rgba(20, 241, 149, 0.1);
-}
-
-[data-theme="dark"] .dropdown-item.remove-item:hover {
-  background: rgba(239, 68, 68, 0.1);
-}
-
-[data-theme="dark"] .default-badge {
-  background: #14F195;
-  color: #0F172A;
-}
-
-/* ========================================
-   📱 RESPONSIVE DESIGN
-   ======================================== */
-
-@media (max-width: 768px) {
-  .watchlist-dropdown {
-    min-width: 200px;
-    right: -8px;
-  }
-
-  .dropdown-item {
-    padding: 14px 16px;
-    font-size: 16px;
-  }
-
-  .watchlist-btn-small {
-    min-width: 36px;
-    height: 36px;
-    padding: 8px 10px;
-  }
-
-  .watchlist-btn-medium {
-    min-width: 44px;
-    height: 44px;
-    padding: 10px 14px;
-  }
-
-  .watchlist-btn-large {
-    min-width: 52px;
-    height: 52px;
-    padding: 14px 18px;
-  }
-}
-
-/* ========================================
-   ✨ ANIMATIONS & MICRO-INTERACTIONS
-   ======================================== */
-
-.watchlist-btn::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  transition: all 0.3s ease;
-}
-
-.watchlist-btn:active::before {
-  width: 100%;
-  height: 100%;
-}
-
-.watchlist-btn.active::before {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-/* Pulse animation for active state */
-.watchlist-btn.active {
-  animation: pulse 2s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { 
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
-  }
-  50% { 
-    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
-  }
-}
-
-[data-theme="dark"] .watchlist-btn.active {
-  animation: pulseDark 2s ease-in-out infinite;
-}
-
-@keyframes pulseDark {
-  0%, 100% { 
-    box-shadow: 0 0 0 0 rgba(20, 241, 149, 0.4);
-  }
-  50% { 
-    box-shadow: 0 0 0 8px rgba(20, 241, 149, 0);
-  }
-}
-
-/* Hover ripple effect */
-.watchlist-btn:hover::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 120%;
-  height: 120%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  animation: ripple 0.6s ease-out;
-}
-
-@keyframes ripple {
-  0% {
-    width: 0;
-    height: 0;
-    opacity: 1;
-  }
-  100% {
-    width: 120%;
-    height: 120%;
-    opacity: 0;
-  }
 }

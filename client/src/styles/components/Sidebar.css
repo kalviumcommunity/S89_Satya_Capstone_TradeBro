@@ -1,63 +1,53 @@
 /* ========================================
-   🎨 CLEAN SIDEBAR - TRADEBRO STYLE
+   🎨 SIDEBAR FIXED POSITIONING
    ======================================== */
 
-/* ULTIMATE SIDEBAR POSITIONING FIX - ABSOLUTELY FIXED */
-.sidebar {
-  /* Core positioning - NEVER CHANGE */
+/* CRITICAL: Sidebar must stay fixed - override all other CSS */
+.sidebar,
+.sidebar.collapsed,
+.sidebar:hover,
+.sidebar:focus,
+.sidebar:active {
   position: fixed !important;
   top: 0 !important;
   left: 0 !important;
-  bottom: 0 !important;
-  right: auto !important;
-  z-index: 2147483647 !important;
-
-  /* NUCLEAR TRANSFORM RESET - Prevent any transforms or movements */
-  transform: translateZ(0) !important;
-  -webkit-transform: translateZ(0) !important;
-  -moz-transform: translateZ(0) !important;
-  -ms-transform: translateZ(0) !important;
-  -o-transform: translateZ(0) !important;
-
-  /* Prevent margin/padding interference */
-  margin: 0 !important;
-  padding: 24px 20px !important;
-
-  /* Lock dimensions */
   width: 280px !important;
   height: 100vh !important;
-  max-height: 100vh !important;
-  min-height: 100vh !important;
-
-  /* DISABLE ALL LAYOUT CONTAINMENT AND ISOLATION */
-  box-sizing: border-box !important;
+  z-index: 1000 !important;
+  
+  display: flex !important;
+  flex-direction: column !important;
+  
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%) !important;
+  border-right: 1px solid rgba(226, 232, 240, 0.8) !important;
+  backdrop-filter: blur(12px) !important;
+  
+  box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.08), 0 8px 32px rgba(0, 0, 0, 0.08) !important;
+  
+  padding: 24px 20px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  
+  /* CRITICAL: Prevent any transforms or positioning changes */
+  transform: none !important;
+  -webkit-transform: none !important;
+  -moz-transform: none !important;
+  -ms-transform: none !important;
+  -o-transform: none !important;
+  
+  margin: 0 !important;
   contain: none !important;
   isolation: auto !important;
   will-change: auto !important;
-
-  /* CRITICAL: Ensure visibility */
-  visibility: visible !important;
-  opacity: 1 !important;
-  display: flex !important;
-  flex-direction: column !important;
-
-  /* Prevent any coordinate changes */
+  
+  /* Prevent any layout interference */
   translate: none !important;
   scale: none !important;
   rotate: none !important;
-
-  /* Additional positioning locks */
-  clip: auto !important;
-  clip-path: none !important;
-  mask: none !important;
-  filter: none !important;
-  mix-blend-mode: normal !important;
-  opacity: 1 !important;
-  visibility: visible !important;
-  backface-visibility: hidden !important;
-  -webkit-backface-visibility: hidden !important;
-  perspective: none !important;
-  -webkit-perspective: none !important;
+  
+  /* Override any button/universal component transforms */
+  backface-visibility: visible !important;
+  -webkit-backface-visibility: visible !important;
 }
 
 /* Global sidebar protection - ALL SELECTORS - NUCLEAR OPTION */
@@ -100,15 +90,8 @@ article .sidebar,
 
 /* Collapsed state protection */
 .sidebar.collapsed {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  bottom: 0 !important;
   width: 80px !important;
   padding: 24px 16px !important;
-  z-index: 999999 !important;
-  transform: translate3d(0, 0, 0) !important;
-  margin: 0 !important;
 }
 
 /* Mobile navbar protection - NEVER SCROLL - ULTIMATE OVERRIDE */
@@ -678,11 +661,20 @@ article .sidebar,
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 .avatar-symbol {
   font-size: 1.2rem;
   color: white;
+  font-weight: 600;
 }
 
 .user-info {
@@ -741,6 +733,8 @@ article .sidebar,
   font-weight: 500;
   position: relative;
   overflow: hidden;
+  outline: none !important;
+  border: none !important;
 }
 
 .sidebar-link:hover {
@@ -1037,7 +1031,8 @@ article .sidebar,
   z-index: 2147483647 !important;
 
   /* PREVENT HIDING */
-  transform: translateZ(0) !important;
+  transform: none !important;
+  -webkit-transform: none !important;
   pointer-events: auto !important;
   user-select: auto !important;
 
@@ -1050,6 +1045,49 @@ article .sidebar,
     0 0 0 1px rgba(148, 163, 184, 0.08),
     0 8px 32px rgba(0, 0, 0, 0.08),
     0 4px 16px rgba(0, 0, 0, 0.04) !important;
+}
+
+/* FINAL OVERRIDE: Ensure sidebar never moves with scroll */
+.sidebar,
+.sidebar *,
+.sidebar button,
+.sidebar a,
+.sidebar .sidebar-link {
+  transform: none !important;
+  -webkit-transform: none !important;
+  -moz-transform: none !important;
+  -ms-transform: none !important;
+  -o-transform: none !important;
+  will-change: auto !important;
+  contain: none !important;
+  isolation: auto !important;
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Remove focus borders from sidebar elements */
+.sidebar *:focus,
+.sidebar button:focus,
+.sidebar a:focus,
+.sidebar .sidebar-link:focus {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Ensure sidebar position is absolutely fixed */
+.sidebar {
+  position: fixed !important;
+  top: 0px !important;
+  left: 0px !important;
+  bottom: 0px !important;
+  right: auto !important;
+  width: 280px !important;
+  height: 100vh !important;
+  margin: 0px !important;
+  padding: 24px 20px !important;
+  z-index: 9999 !important;
 }
 
 /* DARK MODE VISIBILITY */

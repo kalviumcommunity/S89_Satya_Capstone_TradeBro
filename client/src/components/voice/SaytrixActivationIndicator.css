@@ -1,0 +1,25 @@
+.saytrix-activation-indicator {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #7C3AED;
+  color: white;
+  padding: 0.75rem 1rem;
+  border-radius: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  z-index: 1000;
+  font-size: 0.875rem;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+.mic-icon {
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}

@@ -215,31 +215,33 @@ const Watchlist = ({ user, theme }) => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <div className="header-left">
-            <div className="header-icon">
-              <FiEye />
+          <div className="watchlist-header-top">
+            <div className="header-left">
+              <div className="header-icon">
+                <FiEye />
+              </div>
+              <div className="header-text">
+                <h1>My Watchlists</h1>
+                <p>Track and manage your favorite stocks</p>
+              </div>
             </div>
-            <div className="header-text">
-              <h1>My Watchlists</h1>
-              <p>Track and manage your favorite stocks</p>
+            <div className="header-actions">
+              <button
+                className={`action-btn ${refreshing ? 'loading' : ''}`}
+                onClick={handleRefresh}
+                disabled={refreshing}
+              >
+                <FiRefreshCw className={refreshing ? 'spinning' : ''} />
+                {refreshing ? 'Refreshing...' : 'Refresh'}
+              </button>
+              <button
+                className="action-btn primary"
+                onClick={() => setShowCreateModal(true)}
+              >
+                <FiPlus />
+                New Watchlist
+              </button>
             </div>
-          </div>
-          <div className="header-actions">
-            <button
-              className={`action-btn ${refreshing ? 'loading' : ''}`}
-              onClick={handleRefresh}
-              disabled={refreshing}
-            >
-              <FiRefreshCw className={refreshing ? 'spinning' : ''} />
-              {refreshing ? 'Refreshing...' : 'Refresh'}
-            </button>
-            <button
-              className="action-btn primary"
-              onClick={() => setShowCreateModal(true)}
-            >
-              <FiPlus />
-              New Watchlist
-            </button>
           </div>
 
           {/* Stats Overview */}

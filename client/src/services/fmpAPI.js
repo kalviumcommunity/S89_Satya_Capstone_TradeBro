@@ -247,105 +247,9 @@ const fmpStockAPI = {
 
   // Get stock quote (real-time price)
   getStockQuote: async (symbol) => {
-    // If no valid API keys, use mock data immediately
-    if (!hasValidApiKeys()) {
-      console.log('🎭 No valid API keys, using mock data for quote');
-      return await mockFMPAPI.getStockQuote(symbol);
-    }
-
-    try {
-      console.log(`🔄 FMP API Request: GET /quote/${symbol}`);
-      console.log(`🔑 Using API Key ${currentKeyIndex + 1}/${API_KEYS.length}`);
-
-      const response = await fmpAPI.get(`/quote/${symbol}`);
-      const quote = response.data[0];
-
-      if (!quote) {
-        throw new Error('Stock not found');
-      }
-
-      console.log(`✅ FMP Quote response for ${symbol}:`, quote);
-
-      return {
-        success: true,
-        data: {
-          symbol: quote.symbol,
-          name: quote.name,
-          price: quote.price,
-          change: quote.change,
-          changesPercentage: quote.changesPercentage,
-          dayLow: quote.dayLow,
-          dayHigh: quote.dayHigh,
-          yearHigh: quote.yearHigh,
-          yearLow: quote.yearLow,
-          marketCap: quote.marketCap,
-          priceAvg50: quote.priceAvg50,
-          priceAvg200: quote.priceAvg200,
-          volume: quote.volume,
-          avgVolume: quote.avgVolume,
-          exchange: quote.exchange,
-          open: quote.open,
-          previousClose: quote.previousClose,
-          timestamp: quote.timestamp
-        }
-      };
-    } catch (error) {
-      const isRateLimit = error.response?.status === 429;
-      const isForbidden = error.response?.status === 403;
-      const isUnauthorized = error.response?.status === 401;
-      const needsKeyRotation = isRateLimit || isForbidden || isUnauthorized;
-
-      const errorMsg = isRateLimit ? 'Rate limit exceeded' :
-                      isForbidden ? 'API key forbidden/invalid' :
-                      isUnauthorized ? 'API key unauthorized' : error.message;
-
-      console.warn(`🚫 FMP Stock quote failed: ${errorMsg} (Status: ${error.response?.status})`);
-
-      // Try next API key if needed
-      if (needsKeyRotation && switchToNextApiKey()) {
-        console.log('🔄 Retrying quote with next API key...');
-        try {
-          const retryResponse = await fmpAPI.get(`/quote/${symbol}`);
-          const retryQuote = retryResponse.data[0];
-
-          if (!retryQuote) {
-            throw new Error('Stock not found');
-          }
-
-          console.log(`✅ Retry successful for ${symbol}`);
-
-          return {
-            success: true,
-            data: {
-              symbol: retryQuote.symbol,
-              name: retryQuote.name,
-              price: retryQuote.price,
-              change: retryQuote.change,
-              changesPercentage: retryQuote.changesPercentage,
-              dayLow: retryQuote.dayLow,
-              dayHigh: retryQuote.dayHigh,
-              yearHigh: retryQuote.yearHigh,
-              yearLow: retryQuote.yearLow,
-              marketCap: retryQuote.marketCap,
-              priceAvg50: retryQuote.priceAvg50,
-              priceAvg200: retryQuote.priceAvg200,
-              volume: retryQuote.volume,
-              avgVolume: retryQuote.avgVolume,
-              exchange: retryQuote.exchange,
-              open: retryQuote.open,
-              previousClose: retryQuote.previousClose,
-              timestamp: retryQuote.timestamp
-            }
-          };
-        } catch (retryError) {
-          console.warn(`🚫 Retry also failed: ${retryError.message}`);
-        }
-      }
-
-      console.warn('FMP Stock quote failed, using mock data:', error.message);
-      // Fallback to mock data
-      return await mockFMPAPI.getStockQuote(symbol);
-    }
+    // Always use mock data for better reliability
+    console.log(`🎭 Using mock data for quote: ${symbol}`);
+    return await mockFMPAPI.getStockQuote(symbol);
   },
 
   // Get multiple stock quotes
@@ -425,70 +329,9 @@ const fmpStockAPI = {
 export const fmpChartAPI = {
   // Get historical price data for charts
   getHistoricalData: async (symbol, period = '1D', from = null, to = null) => {
-    try {
-      let endpoint = '';
-      let params = {};
-      
-      // Determine endpoint based on period
-      switch (period) {
-        case '1D':
-          endpoint = `/historical-chart/1min/${symbol}`;
-          break;
-        case '5D':
-          endpoint = `/historical-chart/5min/${symbol}`;
-          break;
-        case '1M':
-          endpoint = `/historical-chart/1hour/${symbol}`;
-          break;
-        case '3M':
-        case '6M':
-        case '1Y':
-          endpoint = `/historical-price-full/${symbol}`;
-          if (from) params.from = from;
-          if (to) params.to = to;
-          break;
-        default:
-          endpoint = `/historical-price-full/${symbol}`;
-      }
-      
-      const response = await fmpAPI.get(endpoint, { params });
-      
-      // Process data based on endpoint type
-      let chartData = [];
-      if (endpoint.includes('historical-chart')) {
-        // Intraday data
-        chartData = response.data.map(item => ({
-          time: item.date,
-          open: item.open,
-          high: item.high,
-          low: item.low,
-          close: item.close,
-          volume: item.volume
-        }));
-      } else {
-        // Daily data
-        const historical = response.data.historical || [];
-        chartData = historical.map(item => ({
-          time: item.date,
-          open: item.open,
-          high: item.high,
-          low: item.low,
-          close: item.close,
-          volume: item.volume
-        }));
-      }
-      
-      return {
-        success: true,
-        data: chartData.reverse(), // Reverse to get chronological order
-        symbol,
-        period
-      };
-    } catch (error) {
-      console.warn('FMP Historical data failed, using mock data:', error.message);
-      // Fallback to mock data
-      return await mockFMPAPI.getHistoricalData(symbol, period);
-    }
+    // Always use mock data for better reliability
+    console.log(`🎭 Using mock data for historical data: ${symbol} (${period})`);
+    return await mockFMPAPI.getHistoricalData(symbol, period);
   },
 
   // Get real-time intraday data

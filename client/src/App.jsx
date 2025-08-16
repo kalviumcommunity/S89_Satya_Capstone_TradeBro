@@ -8,6 +8,7 @@ import AuthStatus from './components/auth/AuthStatus'
 import GlobalSearchModal from './components/common/GlobalSearchModal'
 import VoiceCommandModal from './components/voice/VoiceCommandModal'
 import VoiceStatusIndicator from './components/voice/VoiceStatusIndicator'
+import SaytrixActivationIndicator from './components/voice/SaytrixActivationIndicator'
 import OrderModal from './components/OrderModal'
 import EnhancedOrderConfirmationModal from './components/EnhancedOrderConfirmationModal'
 import useGlobalSearch from './hooks/useGlobalSearch'
@@ -17,7 +18,6 @@ import balanceSyncManager from './utils/balanceSync'
 import AppRoutes from './approutes.jsx'
 
 const PerformanceMonitor = lazy(() => import('./components/debug/PerformanceMonitor'))
-
 function App() {
   const [user, setUser] = useState(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -96,48 +96,23 @@ function App() {
 
   // Check authentication status on app load
   useEffect(() => {
-    const checkAuth = async () => {
+    const token = localStorage.getItem('token')
+    const userData = localStorage.getItem('user')
+
+    if (token && userData) {
       try {
-        const token = localStorage.getItem('token')
-        const userData = localStorage.getItem('user')
-
-        if (token && userData) {
-          // Verify token with backend
-          const response = await fetch('http://localhost:5001/api/auth/verify', {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          })
-
-          if (response.ok) {
-            const data = await response.json()
-            setUser(data.user)
-            setIsAuthenticated(true)
-
-            // Initialize balance sync manager when authenticated
-            balanceSyncManager.initialize()
-          } else {
-            // Token is invalid, clear storage
-            localStorage.removeItem('token')
-            localStorage.removeItem('user')
-            setIsAuthenticated(false)
-            setUser(null)
-          }
-        }
-        setLoading(false)
+        const parsedUser = JSON.parse(userData)
+        setUser(parsedUser)
+        setIsAuthenticated(true)
+        balanceSyncManager.initialize()
       } catch (error) {
-        console.error('Auth check failed:', error)
+        console.error('Error parsing user data:', error)
         localStorage.removeItem('token')
         localStorage.removeItem('user')
-        setIsAuthenticated(false)
-        setUser(null)
-        setLoading(false)
       }
     }
-
-    checkAuth()
+    
+    setLoading(false)
   }, [])
 
   // Theme management
@@ -318,11 +293,10 @@ const AppContent = memo(function AppContent({
         }}
       />
 
-      {/* Voice Command Modal */}
+      {/* Global Voice Components */}
       <VoiceCommandModal />
-
-      {/* Voice Status Indicator */}
       <VoiceStatusIndicator />
+
 
       {/* Order Modal */}
       <OrderModal

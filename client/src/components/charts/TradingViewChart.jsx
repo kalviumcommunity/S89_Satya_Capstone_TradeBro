@@ -262,6 +262,30 @@ const TradingViewChart = ({
     };
   }, [chartType, theme, showVolume, isFullscreen, height]);
 
+  // Handle sidebar state changes with ResizeObserver
+  useEffect(() => {
+    if (!chartContainerRef.current) return;
+    
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        if (chartRef.current) {
+          const { width } = entry.contentRect;
+          chartRef.current.applyOptions({
+            width: width,
+            height: isFullscreen ? window.innerHeight - 100 : height,
+          });
+          chartRef.current.timeScale().fitContent();
+        }
+      }
+    });
+    
+    resizeObserver.observe(chartContainerRef.current);
+    
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [isFullscreen, height]);
+
   // Update chart data
   useEffect(() => {
     if (!data || data.length === 0) return;
@@ -402,9 +426,66 @@ const TradingViewChart = ({
     };
   }, [symbol, timeframe]);
 
+  // Handle keyboard shortcuts and cleanup
+  useEffect(() => {
+    const handleKeyPress = (event) => {
+      if (event.key === 'Escape' && isFullscreen) {
+        toggleFullscreen();
+      }
+      if (event.key === 'f' || event.key === 'F') {
+        if (event.ctrlKey || event.metaKey) {
+          event.preventDefault();
+          toggleFullscreen();
+        }
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyPress);
+    
+    return () => {
+      document.removeEventListener('keydown', handleKeyPress);
+      // Cleanup fullscreen state on unmount
+      if (isFullscreen) {
+        document.body.style.overflow = '';
+        document.body.classList.remove('chart-fullscreen-active');
+      }
+    };
+  }, [isFullscreen]);
+
   // Toggle fullscreen
   const toggleFullscreen = () => {
-    setIsFullscreen(!isFullscreen);
+    const newFullscreenState = !isFullscreen;
+    setIsFullscreen(newFullscreenState);
+    
+    if (newFullscreenState) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.height = '100%';
+      document.body.style.top = '0';
+      document.body.style.left = '0';
+      document.body.classList.add('chart-fullscreen-active');
+      document.documentElement.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.height = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.classList.remove('chart-fullscreen-active');
+      document.documentElement.style.overflow = '';
+    }
+    
+    setTimeout(() => {
+      if (chartRef.current && chartContainerRef.current) {
+        const newWidth = newFullscreenState ? window.innerWidth : chartContainerRef.current.clientWidth;
+        const newHeight = newFullscreenState ? 
+          window.innerHeight - chartContainerRef.current.offsetTop - 60 : height;
+        chartRef.current.applyOptions({ width: newWidth, height: newHeight });
+        chartRef.current.timeScale().fitContent();
+      }
+    }, 150);
   };
 
   // Toggle volume
@@ -463,48 +544,46 @@ const TradingViewChart = ({
         
         <div className="chart-controls">
           <button
-            className="chart-control-btn"
+            className={`chart-control-btn ${showVolume ? 'active' : ''}`}
             onClick={toggleVolume}
-            title="Toggle Volume"
+            title="Toggle Volume Display"
           >
-            Volume: {showVolume ? 'ON' : 'OFF'}
+            📊
           </button>
           
           <button
             className="chart-control-btn"
             onClick={onRefresh}
             disabled={loading}
-            title="Refresh Data"
+            title="Refresh Chart Data"
           >
-            <FiRefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+            🔄
           </button>
 
-          {/* Live Updates Toggle */}
           {timeframe === '1D' && enableLiveUpdates && (
             <button
               onClick={toggleLiveUpdates}
               className={`chart-control-btn ${isLive ? 'live-active' : ''}`}
               title={isLive ? 'Stop Live Updates' : 'Start Live Updates'}
             >
-              {isLive ? <FiPause size={16} /> : <FiPlay size={16} />}
-              <span className="ml-1">{isLive ? 'Live' : 'Start'}</span>
+              {isLive ? '⏸️' : '▶️'}
             </button>
           )}
           
           <button
             className="chart-control-btn"
             onClick={exportChart}
-            title="Export Chart"
+            title="Download Chart as PNG"
           >
-            <FiDownload size={16} />
+            💾
           </button>
           
           <button
-            className="chart-control-btn"
+            className={`chart-control-btn ${isFullscreen ? 'fullscreen-active' : ''}`}
             onClick={toggleFullscreen}
-            title="Toggle Fullscreen"
+            title={isFullscreen ? 'Exit Fullscreen (Esc)' : 'Enter Fullscreen (F)'}
           >
-            <FiMaximize2 size={16} />
+            {isFullscreen ? '🔲' : '⛶'}
           </button>
         </div>
       </div>
@@ -516,7 +595,8 @@ const TradingViewChart = ({
         style={{
           position: 'relative',
           width: '100%',
-          height: isFullscreen ? 'calc(100vh - 100px)' : `${height}px`,
+          height: isFullscreen ? '100%' : `${height}px`,
+          flex: isFullscreen ? '1' : 'none',
         }}
       >
         {loading && (
