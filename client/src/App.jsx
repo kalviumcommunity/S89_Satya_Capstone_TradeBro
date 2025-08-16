@@ -15,7 +15,80 @@ import useGlobalSearch from './hooks/useGlobalSearch'
 import { useOrderIntegration } from './hooks/useOrderIntegration'
 import { usePerformanceOptimization } from './hooks/usePerformanceOptimization'
 import balanceSyncManager from './utils/balanceSync'
-import AppRoutes from './AppRoutes.jsx'
+// Import routes inline to fix deployment
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import LandingPage from "./pages/LandingPage";
+import LoginPage from "./pages/LoginPage";
+import SignupPage from "./pages/SignupPage";
+import Dashboard from "./pages/Dashboard";
+import Portfolio from "./pages/Portfolio";
+import Trading from "./pages/Trading";
+import Charts from "./pages/Charts";
+import Watchlist from "./pages/Watchlist";
+import Orders from "./pages/Orders";
+import History from "./pages/History";
+import News from "./pages/News";
+import Notifications from "./pages/Notifications";
+import Settings from "./pages/Settings";
+import Profile from "./pages/Profile";
+import Saytrix from "./pages/Saytrix";
+import StockDetail from "./pages/StockDetail";
+import TermsOfService from "./pages/TermsOfService";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import NotFound from "./pages/NotFound";
+import { PortfolioProvider } from "./contexts/PortfolioContext";
+
+const ProtectedRoute = ({ children, isAuthenticated, loading, user }) => {
+  const location = useLocation();
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner lg"></div>
+        <p className="loading-text">Verifying authentication...</p>
+      </div>
+    );
+  }
+  if (!isAuthenticated) {
+    localStorage.setItem("redirectAfterLogin", location.pathname);
+    return <Navigate to="/login" replace />;
+  }
+  return <PortfolioProvider user={user}>{children}</PortfolioProvider>;
+};
+
+const PublicRoute = ({ children, isAuthenticated }) => {
+  if (isAuthenticated) {
+    const redirectUrl = localStorage.getItem("redirectAfterLogin");
+    localStorage.removeItem("redirectAfterLogin");
+    return <Navigate to={redirectUrl || "/dashboard"} replace />;
+  }
+  return children;
+};
+
+const AppRoutes = ({ isAuthenticated, user, loading, onLogin, onSignup, onLogout, onUpdateProfile, theme, toggleTheme }) => {
+  return (
+    <Routes>
+      <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" /> : <LandingPage />} />
+      <Route path="/login" element={<PublicRoute isAuthenticated={isAuthenticated}><LoginPage onLogin={onLogin} /></PublicRoute>} />
+      <Route path="/signup" element={<PublicRoute isAuthenticated={isAuthenticated}><SignupPage onSignup={onSignup} /></PublicRoute>} />
+      <Route path="/dashboard" element={<ProtectedRoute isAuthenticated={isAuthenticated} loading={loading} user={user}><Dashboard user={user} theme={theme} /></ProtectedRoute>} />
+      <Route path="/portfolio" element={<ProtectedRoute isAuthenticated={isAuthenticated} loading={loading} user={user}><Portfolio user={user} theme={theme} /></ProtectedRoute>} />
+      <Route path="/trading" element={<ProtectedRoute isAuthenticated={isAuthenticated} loading={loading} user={user}><Trading user={user} theme={theme} /></ProtectedRoute>} />
+      <Route path="/charts" element={<ProtectedRoute isAuthenticated={isAuthenticated} loading={loading} user={user}><Charts user={user} theme={theme} /></ProtectedRoute>} />
+      <Route path="/watchlist" element={<ProtectedRoute isAuthenticated={isAuthenticated} loading={loading} user={user}><Watchlist user={user} theme={theme} /></ProtectedRoute>} />
+      <Route path="/orders" element={<ProtectedRoute isAuthenticated={isAuthenticated} loading={loading} user={user}><Orders user={user} theme={theme} /></ProtectedRoute>} />
+      <Route path="/history" element={<ProtectedRoute isAuthenticated={isAuthenticated} loading={loading} user={user}><History user={user} theme={theme} /></ProtectedRoute>} />
+      <Route path="/news" element={<ProtectedRoute isAuthenticated={isAuthenticated} loading={loading} user={user}><News user={user} theme={theme} /></ProtectedRoute>} />
+      <Route path="/notifications" element={<ProtectedRoute isAuthenticated={isAuthenticated} loading={loading} user={user}><Notifications user={user} theme={theme} /></ProtectedRoute>} />
+      <Route path="/saytrix" element={<ProtectedRoute isAuthenticated={isAuthenticated} loading={loading} user={user}><Saytrix user={user} theme={theme} /></ProtectedRoute>} />
+      <Route path="/settings" element={<ProtectedRoute isAuthenticated={isAuthenticated} loading={loading} user={user}><Settings user={user} theme={theme} toggleTheme={toggleTheme} onLogout={onLogout} /></ProtectedRoute>} />
+      <Route path="/profile" element={<ProtectedRoute isAuthenticated={isAuthenticated} loading={loading} user={user}><Profile /></ProtectedRoute>} />
+      <Route path="/stock/:symbol" element={<ProtectedRoute isAuthenticated={isAuthenticated} loading={loading} user={user}><StockDetail user={user} theme={theme} /></ProtectedRoute>} />
+      <Route path="/terms" element={<ProtectedRoute isAuthenticated={isAuthenticated} loading={loading} user={user}><TermsOfService /></ProtectedRoute>} />
+      <Route path="/privacy" element={<ProtectedRoute isAuthenticated={isAuthenticated} loading={loading} user={user}><PrivacyPolicy /></ProtectedRoute>} />
+      <Route path="*" element={isAuthenticated ? <NotFound /> : <Navigate to="/login" replace />} />
+    </Routes>
+  );
+};
 
 const PerformanceMonitor = lazy(() => import('./components/debug/PerformanceMonitor'))
 function App() {
