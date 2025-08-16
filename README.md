@@ -1,8 +1,15 @@
-# 🎓 Capstone Project: TradeBro – Learn Stock Trading by Doing
+# 🎓 TradeBro – AI-Powered Stock Trading Platform
 
-## 📌 Project Idea
+## 🚀 Enhanced with Saytrix AI
 
-**TradeBro** is a virtual stock market simulator that enables users to gain real-world trading experience without investing real money. It provides a risk-free, educational platform where users can trade using virtual funds, analyze real-time data, track their portfolios, and learn investment strategies in an interactive way.
+**TradeBro** is now a comprehensive stock trading platform featuring **Saytrix AI** - an advanced voice-enabled chatbot that can execute complex trading commands, provide real-time market data, and offer intelligent trading assistance.
+
+### ✨ New AI Features
+- 🤖 **Saytrix AI Chatbot** - Advanced conversational AI
+- 🎤 **Voice Commands** - "Open charts for Zomato", "Buy Reliance stock"
+- 📊 **Real Stock Data** - Live prices via multiple FMP API keys
+- 📈 **Smart Trading** - Voice-activated buy/sell orders
+- 🔄 **Auto Navigation** - Voice commands navigate to specific pages
 
 ---
 
@@ -15,23 +22,52 @@
 - Use screeners to discover investment opportunities
 - Track portfolio performance and improve decision-making skills
 
-The platform includes features such as:
-- Stock search & trading using virtual currency
-- Portfolio tracking with charts and analytics
-- Real-time price updates and historical data
-- Stock screener with key financial metrics
-- Educational modules and gamified challenges
+The platform now includes advanced AI features:
+- 🤖 **Saytrix AI Assistant** - Voice & text commands for any stock
+- 🎤 **Voice Trading** - "Buy TCS", "Show Zomato chart", "Get Reliance price"
+- 📊 **Real-time Data** - Live stock prices with 4 API key fallbacks
+- 📈 **Smart Charts** - Voice-activated chart navigation
+- 💼 **Portfolio Management** - AI-powered portfolio insights
+- 🔔 **Intelligent Alerts** - Market notifications and trading suggestions
+- 📱 **Responsive Design** - Works seamlessly on all devices
 
 ---
 
 ## 🛠 Tech Stack
 
-- **Frontend:** React.js, Tailwind CSS, Recharts
-- **Backend:** Node.js, Express
-- **Database:** MongoDB
-- **Authentication:** Firebase Auth or JWT
-- **APIs:** Financial Modeling Prep / Yahoo Finance API
-- **Hosting:** Netlify (Frontend), Render (Backend), MongoDB Atlas (DB)
+- **Frontend:** React.js, Framer Motion, Custom CSS
+- **Backend:** Node.js, Express.js
+- **Database:** MongoDB Atlas
+- **AI:** Google Gemini Pro API
+- **Voice:** Web Speech API (Browser Native)
+- **Stock Data:** Financial Modeling Prep API (4 keys)
+- **Authentication:** JWT + Google OAuth
+- **Hosting:** Netlify (Frontend), Render (Backend)
+
+## 🚀 Quick Start
+
+1. **Clone & Install:**
+   ```bash
+   git clone <repository-url>
+   cd S89_Satya_Capstone_TradeBro
+   ```
+
+2. **Start Application:**
+   ```bash
+   # Double-click to start both servers
+   start-tradebro.bat
+   ```
+
+3. **Access Saytrix AI:**
+   - Frontend: http://localhost:5173
+   - Saytrix Chat: http://localhost:5173/saytrix
+   - Backend API: http://localhost:5001
+
+4. **Try Voice Commands:**
+   - Click microphone icon
+   - Say: "Open charts for Zomato"
+   - Say: "Show me Reliance price"
+   - Say: "Buy TCS stock"
 
 ---
 

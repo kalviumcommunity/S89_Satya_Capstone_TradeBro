@@ -1,7 +1,10 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { saytrixAPI } from '../services/api';
+import VoiceCommandProcessor from '../utils/voiceCommandProcessor';
 
 const useSaytrix = () => {
+  const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -16,6 +19,7 @@ const useSaytrix = () => {
   const messagesEndRef = useRef(null);
   const recognitionRef = useRef(null);
   const synthRef = useRef(null);
+  const voiceProcessorRef = useRef(new VoiceCommandProcessor());
 
   // Initialize session on mount
   useEffect(() => {
@@ -93,19 +97,19 @@ const useSaytrix = () => {
         setError(null);
       };
 
-      recognitionRef.current.onresult = (event) => {
+      recognitionRef.current.onresult = async (event) => {
         const transcript = event.results[0][0].transcript;
-        const confidence = event.results[0][0].confidence;
+        const confidenceScore = event.results[0][0].confidence;
         setInputText(transcript);
-        setConfidence(confidence > 0.8 ? 'high' : confidence > 0.6 ? 'medium' : 'low');
+        setConfidence(confidenceScore > 0.8 ? 'high' : confidenceScore > 0.6 ? 'medium' : 'low');
 
         // Immediately stop listening and reset state
         setIsListening(false);
 
-        // Auto-send the message after voice input with a slight delay
-        setTimeout(() => {
+        // Process voice command
+        setTimeout(async () => {
           if (transcript.trim()) {
-            sendMessage(transcript);
+            await processVoiceCommand(transcript);
           }
         }, 300);
       };
@@ -267,6 +271,46 @@ const useSaytrix = () => {
       setIsListening(false);
     }
   }, []);
+
+  const processVoiceCommand = useCallback(async (transcript) => {
+    try {
+      // Process the voice command
+      const command = voiceProcessorRef.current.processCommand(transcript);
+      console.log('Voice command processed:', command);
+      
+      // Create context for command execution
+      const context = {
+        navigate,
+        sendMessage: async (message) => {
+          await sendMessage(message);
+        },
+        setMessages,
+        setError
+      };
+      
+      // Execute the command
+      const result = await voiceProcessorRef.current.executeCommand(command, context);
+      console.log('Command execution result:', result);
+      
+      // Show voice command feedback
+      if (result.success && result.message) {
+        const feedbackMessage = {
+          id: Date.now(),
+          type: 'assistant',
+          content: `🎤 **Voice Command Executed**\n\n${result.message}`,
+          timestamp: new Date(),
+          cardType: 'text',
+          suggestions: ['Continue with voice', 'Type a message', 'Clear chat']
+        };
+        
+        setMessages(prev => [...prev, feedbackMessage]);
+      }
+      
+    } catch (error) {
+      console.error('Voice command processing error:', error);
+      setError('Failed to process voice command. Please try again.');
+    }
+  }, [navigate, sendMessage, setMessages, setError]);
 
   const clearChat = useCallback(() => {
     setMessages([]);
