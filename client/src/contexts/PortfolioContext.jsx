@@ -133,82 +133,38 @@ export const PortfolioProvider = ({ children, user }) => {
   const initializePortfolio = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const userId = user?.id || user?._id;
-
-      if (!userId || !token) {
-        console.warn('Missing user ID or token for portfolio initialization');
-        setLoading(false);
-        return;
-      }
-
-      const response = await fetch(`https://s89-satya-capstone-tradebro.onrender.com/api/portfolio/${userId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setPortfolioData(data.data || data);
-      } else if (response.status === 401) {
-        // Authentication error - don't try to create portfolio
-        console.warn('Authentication failed for portfolio access');
-        return;
-      } else if (response.status === 404) {
-        // Portfolio doesn't exist, create one with default values
-        await createDefaultPortfolio();
-      } else {
-        // Other error, use default values
-        console.warn('Portfolio fetch failed with status:', response.status);
-      }
-    } catch (error) {
-      console.error('Error initializing portfolio:', error);
-      // Use default values if API fails
+      // Use only local trading service data
+      const summary = tradingService.getPortfolioSummary();
+      const transactions = tradingService.getTradingHistory(100);
+      
       setPortfolioData({
-        totalValue: 10000,
-        availableCash: 10000,
-        totalInvested: 0,
-        totalGainLoss: 0,
-        totalGainLossPercentage: 0,
-        holdings: [],
-        transactions: [],
+        totalValue: summary.totalValue,
+        availableCash: summary.availableCash,
+        totalInvested: summary.totalInvested,
+        totalGainLoss: summary.totalPnL,
+        totalGainLossPercentage: summary.totalPnLPercentage,
+        holdings: summary.positions.map(pos => ({
+          symbol: pos.symbol,
+          quantity: pos.quantity,
+          avgPrice: pos.avgPrice,
+          currentPrice: pos.currentValue / pos.quantity || pos.avgPrice,
+          totalValue: pos.currentValue || pos.totalInvested,
+          gainLoss: (pos.currentValue || pos.totalInvested) - pos.totalInvested,
+          gainLossPercentage: pos.totalInvested > 0 ? (((pos.currentValue || pos.totalInvested) - pos.totalInvested) / pos.totalInvested) * 100 : 0
+        })),
+        transactions: transactions,
         watchlist: []
       });
+      
+      console.log('✅ Portfolio initialized from local data');
+    } catch (error) {
+      console.error('Error initializing portfolio:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const createDefaultPortfolio = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('https://s89-satya-capstone-tradebro.onrender.com/api/portfolio/create', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          userId: user?.id || user?._id,
-          initialCash: 10000
-        })
-      });
 
-      if (response.ok) {
-        const data = await response.json();
-        setPortfolioData(data.data || data);
-      } else if (response.status === 401) {
-        console.warn('Authentication failed for portfolio creation');
-        return;
-      } else {
-        console.warn('Portfolio creation failed with status:', response.status);
-      }
-    } catch (error) {
-      console.error('Error creating default portfolio:', error);
-    }
-  };
 
   const buyStock = useCallback(async (stockSymbol, quantity, price, stockData = null) => {
     try {

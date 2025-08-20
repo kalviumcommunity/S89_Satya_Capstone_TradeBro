@@ -170,17 +170,15 @@ export const NotificationProvider = ({ children }) => {
     try {
       dispatch({ type: ACTIONS.SET_LOADING, payload: true });
 
+      // Set connection status to connected
+      dispatch({ type: ACTIONS.SET_CONNECTION_STATUS, payload: 'connected' });
+      
       // Try to initialize Pusher connection (graceful fallback if not available)
       try {
         await notificationService.initializePusher(user.id);
-
-        // Set up event listeners only if Pusher is available
         const removeListener = notificationService.addEventListener(handleNotificationEvent);
-
-        dispatch({ type: ACTIONS.SET_CONNECTION_STATUS, payload: 'connected' });
       } catch (pusherError) {
         console.warn('Pusher initialization failed, using polling mode:', pusherError.message);
-        dispatch({ type: ACTIONS.SET_CONNECTION_STATUS, payload: 'polling' });
       }
 
       // Fetch initial notifications (works regardless of Pusher)

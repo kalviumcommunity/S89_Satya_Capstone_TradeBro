@@ -3,6 +3,81 @@
  * Handles all trading operations, portfolio calculations, and position management
  */
 class TradingEngine {
+  
+  /**
+   * Create notification for trade execution
+   */
+  createTradeNotification(symbol, quantity, price, action, totalCost) {
+    try {
+      // Create notification object
+      const notification = {
+        id: `trade_${Date.now()}`,
+        title: 'Trade Executed Successfully',
+        message: `Your ${action.toLowerCase()} order for ${quantity} shares of ${symbol} has been executed at ₹${price.toFixed(2)}`,
+        type: 'success',
+        read: false,
+        createdAt: new Date().toISOString(),
+        data: { symbol, quantity, price, action, totalCost }
+      };
+      
+      // Store notification locally
+      const existingNotifications = JSON.parse(localStorage.getItem('tradebro_notifications') || '[]');
+      existingNotifications.unshift(notification);
+      
+      // Keep only last 50 notifications
+      if (existingNotifications.length > 50) {
+        existingNotifications.splice(50);
+      }
+      
+      localStorage.setItem('tradebro_notifications', JSON.stringify(existingNotifications));
+      
+      // Dispatch custom event for notification components
+      window.dispatchEvent(new CustomEvent('newNotification', {
+        detail: notification
+      }));
+      
+      console.log('📢 Trade notification created:', notification.message);
+    } catch (error) {
+      console.error('Failed to create trade notification:', error);
+    }
+  }
+  
+  /**
+   * Create notification for daily reward
+   */
+  createRewardNotification(amount, streak) {
+    try {
+      const notification = {
+        id: `reward_${Date.now()}`,
+        title: 'Daily Reward Claimed!',
+        message: `You've earned ₹${amount} daily bonus! Login streak: ${streak} days`,
+        type: 'success',
+        read: false,
+        createdAt: new Date().toISOString(),
+        data: { amount, streak, type: 'DAILY_REWARD' }
+      };
+      
+      // Store notification locally
+      const existingNotifications = JSON.parse(localStorage.getItem('tradebro_notifications') || '[]');
+      existingNotifications.unshift(notification);
+      
+      // Keep only last 50 notifications
+      if (existingNotifications.length > 50) {
+        existingNotifications.splice(50);
+      }
+      
+      localStorage.setItem('tradebro_notifications', JSON.stringify(existingNotifications));
+      
+      // Dispatch custom event for notification components
+      window.dispatchEvent(new CustomEvent('newNotification', {
+        detail: notification
+      }));
+      
+      console.log('🎁 Daily reward notification created:', notification.message);
+    } catch (error) {
+      console.error('Failed to create reward notification:', error);
+    }
+  }
   constructor() {
     this.portfolio = new Map(); // symbol -> position data
     this.tradingHistory = [];
@@ -266,6 +341,9 @@ class TradingEngine {
       this.notifyListeners();
 
       console.log(`✅ Trade executed: ${action} ${quantity} ${symbol} @ ₹${price}`);
+      
+      // Create notification for successful trade
+      this.createTradeNotification(symbol, quantity, price, action, metrics.totalCost);
 
       return {
         success: true,
@@ -550,6 +628,9 @@ class TradingEngine {
       // Sync with server and all contexts
       await this.syncPortfolioData();
 
+      // Create notification for daily reward
+      this.createRewardNotification(dailyBonus, this.dailyRewards.loginStreak);
+      
       // Force refresh of all components
       setTimeout(() => {
         this.notifyListeners();

@@ -827,39 +827,51 @@
 
 @media (max-width: 768px) {
   .profile-page {
-    /* margin-left is now handled dynamically via usePageLayout hook */
     padding: 1rem;
   }
   
-  .header-content {
-    flex-direction: column;
-    gap: 1rem;
-    align-items: flex-start;
-  }
-  
-  .header-actions,
-  .edit-actions {
-    width: 100%;
-    justify-content: space-between;
+  .profile-container {
+    gap: 1.5rem;
   }
   
   .profile-avatar-section {
     flex-direction: column;
     text-align: center;
     gap: 1rem;
+    padding: 1.5rem;
   }
   
   .form-grid {
     grid-template-columns: 1fr;
+    gap: 1rem;
   }
   
   .form-group.full-width {
     grid-column: span 1;
   }
   
-  .card-header,
+  .card-header {
+    padding: 1.5rem 1.5rem 0;
+  }
+  
   .card-content {
+    padding: 0 1.5rem 1.5rem;
+  }
+  
+  .stats-grid {
+    gap: 1rem;
+  }
+  
+  .stat-item {
     padding: 1rem;
+  }
+  
+  .achievements-grid {
+    gap: 0.75rem;
+  }
+  
+  .achievement-item {
+    padding: 0.75rem;
   }
 }
 

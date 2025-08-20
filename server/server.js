@@ -26,28 +26,36 @@ optionalEnvVars.forEach(v => {
 });
 
 // -------------------- ROUTES --------------------
-// Make sure each route file exports router directly: module.exports = router
 const responseMiddleware = require("./middleware/responseMiddleware");
 const authRoutes = require("./routes/authRoutes");
+const twoFactorRoutes = require("./routes/twoFactorRoutes");
+const portfolioRoutes = require("./routes/portfolioRoutes");
 const dataRoutes = require("./routes/apiRoutes");
 const settingsRoutes = require("./routes/settings");
 const userSettingsRoutes = require("./routes/userSettingsRoutes");
 const saytrixRoutes = require("./routes/saytrix");
 const saytrixRoutesAdvanced = require("./routes/saytrixRoutes");
+const chatbotRoutes = require("./routes/chatbotRoutes");
+const chatRoutes = require("./routes/chatRoutes");
 const searchRoutes = require("./routes/searchRoutes");
 const virtualMoneyRoutes = require("./routes/virtualMoneyRoutes");
-const portfolioRoutes = require("./routes/portfolioRoutes");
 const proxyRoutes = require("./routes/proxyRoutes");
 const stocksRoutes = require("./routes/stocks");
+const stockRoutes = require("./routes/stockRoutes");
 const stockSearchRoutes = require("./routes/stockSearchRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const watchlistRoutes = require("./routes/watchlistRoutes");
+const enhancedWatchlistRoutes = require("./routes/enhancedWatchlistRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const userDataRoutes = require("./routes/userDataRoutes");
 const userActivityRoutes = require("./routes/userActivityRoutes");
 const userPreferencesRoutes = require("./routes/userPreferencesRoutes");
 const newsRoutes = require("./routes/newsRoutes");
 const liveChartRoutes = require("./routes/liveChartRoutes");
+const analyticsRoutes = require("./routes/analyticsRoutes");
+const contactRoutes = require("./routes/contactRoutes");
+const leaderboardRoutes = require("./routes/leaderboardRoutes");
+const referralRoutes = require("./routes/referralRoutes");
 
 // Passport configuration
 require('./passport.config');
@@ -162,26 +170,34 @@ app.get("/api/stocks/search", async (req, res) => {
 
 // -------------------- API ROUTES --------------------
 app.use("/api/auth", authRoutes);
+app.use("/api/auth/2fa", twoFactorRoutes);
+app.use("/api/portfolio", portfolioRoutes);
 app.use("/api/data", dataRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/user-settings", userSettingsRoutes);
 app.use("/api/saytrix", saytrixRoutes);
 app.use("/api/saytrix/advanced", saytrixRoutesAdvanced);
+app.use("/api/chatbot", chatbotRoutes);
+app.use("/api/chat", chatRoutes);
 app.use("/api/search", searchRoutes);
-app.use("/api/chatbot", saytrixRoutes);
 app.use("/api/virtual-money", virtualMoneyRoutes);
-app.use("/api/portfolio", portfolioRoutes);
 app.use("/api/proxy", proxyRoutes);
 app.use("/api/stocks", stocksRoutes);
+app.use("/api/stock", stockRoutes);
 app.use("/api/stock-search", stockSearchRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/watchlist", watchlistRoutes);
+app.use("/api/watchlist/enhanced", enhancedWatchlistRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/userdata", userDataRoutes);
 app.use("/api/user-activity", userActivityRoutes);
 app.use("/api/user-preferences", userPreferencesRoutes);
 app.use("/api/news", newsRoutes);
 app.use("/api/live-charts", liveChartRoutes);
+app.use("/api/analytics", analyticsRoutes);
+app.use("/api/contact", contactRoutes);
+app.use("/api/leaderboard", leaderboardRoutes);
+app.use("/api/referral", referralRoutes);
 
 
 

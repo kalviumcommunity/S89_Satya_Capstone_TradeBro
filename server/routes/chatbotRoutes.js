@@ -5,10 +5,25 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const mime = require('mime');
 const jwt = require('jsonwebtoken');
 
-dotenv.config();  // Load environment variables from .env file
+// Import enhanced services
+const AdvancedPromptingService = require('../services/enhanced/AdvancedPromptingService');
+const StructuredOutputService = require('../services/enhanced/StructuredOutputService');
+const FunctionCallingService = require('../services/enhanced/FunctionCallingService');
+const EvaluationFramework = require('../evaluation/EvaluationFramework');
+
+dotenv.config();
 
 const router = express.Router();
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);  // Load Gemini API key
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+// Initialize enhanced services
+const promptingService = new AdvancedPromptingService();
+const structuredService = new StructuredOutputService();
+const functionService = new FunctionCallingService();
+const evaluationFramework = new EvaluationFramework();
+
+// Token tracking
+let totalTokensUsed = 0;
 
 // System Instruction for the chatbot
 const systemInstruction = [
@@ -216,94 +231,195 @@ const formatNewsResponse = (news, symbol = null) => {
   return response;
 };
 
-// Main chatbot endpoint
+// Enhanced chatbot endpoint with multiple prompting techniques
 router.post('/chat', async (req, res) => {
   try {
-    const { message, sessionId } = req.body;
+    const { message, sessionId, technique = 'dynamic', context = {} } = req.body;
     
     if (!message) {
       return res.status(400).json({ error: 'Message is required' });
     }
     
-    console.log('Received message:', message);
+    console.log(`🤖 Processing: "${message}" using ${technique} technique`);
     
-    // Detect intent and extract relevant data
-    const intent = detectIntent(message);
-    const stockSymbol = extractStockSymbol(message);
+    let response;
+    let tokens = 0;
     
-    let contextData = '';
-    let stockData = null;
-    
-    // Handle different intents
-    switch (intent) {
-      case 'stock_query':
-        if (stockSymbol) {
-          stockData = await getStockData(stockSymbol);
-          contextData = formatStockResponse(stockData);
-        }
+    // Route to appropriate prompting technique
+    switch (technique) {
+      case 'zero-shot':
+        response = await promptingService.zeroShotPrompt(message, context);
         break;
-        
-      case 'top_gainers':
-        const gainers = await getTopMovers('gainers');
-        contextData = formatTopMoversResponse(gainers, 'gainers');
+      case 'one-shot':
+        response = await promptingService.oneShotPrompt(message, context);
         break;
-        
-      case 'top_losers':
-        const losers = await getTopMovers('losers');
-        contextData = formatTopMoversResponse(losers, 'losers');
+      case 'multi-shot':
+        response = await promptingService.multiShotPrompt(message, context);
         break;
-        
-      case 'news':
-        const news = await getMarketNews(stockSymbol);
-        contextData = formatNewsResponse(news, stockSymbol);
+      case 'dynamic':
+        response = await promptingService.dynamicPrompt(message, context);
         break;
-        
+      case 'chain-of-thought':
+        response = await promptingService.chainOfThoughtPrompt(message, context);
+        break;
+      case 'function-calling':
+        response = await functionService.processWithFunctionCalling(message, context);
+        break;
       default:
-        // For general queries, we'll let Gemini handle it
-        break;
+        response = await promptingService.dynamicPrompt(message, context);
     }
     
-    // Prepare the prompt for Gemini
-    let prompt = message;
-    if (contextData) {
-      prompt = `User Query: ${message}\n\nRelevant Data:\n${contextData}\n\nPlease provide a comprehensive response based on the data above.`;
-    }
-    
-    // Generate response using Gemini
-    const model = genAI.getGenerativeModel({ 
-      model: 'gemini-pro',
-      systemInstruction: systemInstruction
-    });
-    
-    const result = await model.generateContent(prompt);
-    const response = result.response;
-    const text = response.text();
-    
-    console.log('Generated response:', text.substring(0, 100) + '...');
+    // Track tokens
+    tokens = response.tokens || 0;
+    totalTokensUsed += tokens;
+    console.log(`🔢 Tokens used: ${tokens} | Session total: ${totalTokensUsed}`);
     
     res.json({
-      success: true,
-      message: text,
-      stockData: stockData,
-      intent: intent,
+      success: response.success,
+      message: response.response || response.text,
+      technique: response.technique || technique,
+      tokens: tokens,
+      totalTokens: totalTokensUsed,
+      functionCalls: response.functionCalls,
       timestamp: new Date().toISOString()
     });
     
   } catch (error) {
-    console.error('Error in chatbot:', error);
+    console.error('❌ Enhanced chatbot error:', error);
     res.status(500).json({
       success: false,
-      error: 'An error occurred while processing your request. Please try again.',
+      error: 'An error occurred while processing your request.',
       timestamp: new Date().toISOString()
     });
   }
 });
 
-// Health check endpoint
+// Structured output endpoint
+router.post('/structured', async (req, res) => {
+  try {
+    const { type, data = {} } = req.body;
+    
+    let response;
+    
+    switch (type) {
+      case 'stock-analysis':
+        response = await structuredService.generateStockAnalysis(data.symbol, data.marketData);
+        break;
+      case 'market-overview':
+        response = await structuredService.generateMarketOverview(data.marketData);
+        break;
+      case 'educational':
+        response = await structuredService.generateEducationalContent(data.topic, data.difficulty);
+        break;
+      case 'trading-signal':
+        response = await structuredService.generateTradingSignal(data.symbol, data.analysisData);
+        break;
+      default:
+        return res.status(400).json({ error: 'Invalid structured output type' });
+    }
+    
+    totalTokensUsed += response.tokens || 0;
+    console.log(`🔢 Structured output tokens: ${response.tokens}`);
+    
+    res.json({
+      ...response,
+      totalTokens: totalTokensUsed,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ Structured output error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error generating structured output',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Function calling endpoint
+router.post('/functions', async (req, res) => {
+  try {
+    const { query, context = {} } = req.body;
+    
+    const response = await functionService.processWithFunctionCalling(query, context);
+    
+    totalTokensUsed += response.tokens || 0;
+    console.log(`🔢 Function calling tokens: ${response.tokens}`);
+    
+    res.json({
+      ...response,
+      totalTokens: totalTokensUsed,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ Function calling error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error in function calling',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Evaluation endpoint
+router.post('/evaluate', async (req, res) => {
+  try {
+    console.log('🧪 Starting evaluation pipeline...');
+    
+    const results = await evaluationFramework.runEvaluationPipeline();
+    
+    res.json({
+      success: true,
+      results: results,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ Evaluation error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error running evaluation',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Token usage endpoint
+router.get('/tokens', (req, res) => {
+  res.json({
+    totalTokensUsed: totalTokensUsed,
+    promptingServiceTokens: promptingService.getTotalTokens(),
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Reset token counter
+router.post('/tokens/reset', (req, res) => {
+  totalTokensUsed = 0;
+  promptingService.resetTokenCount();
+  
+  res.json({
+    success: true,
+    message: 'Token counters reset',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Enhanced health check endpoint
 router.get('/health', (req, res) => {
   res.json({
     status: 'healthy',
-    service: 'chatbot',
+    service: 'enhanced-chatbot',
+    features: {
+      promptingTechniques: ['zero-shot', 'one-shot', 'multi-shot', 'dynamic', 'chain-of-thought'],
+      structuredOutput: true,
+      functionCalling: true,
+      evaluation: true,
+      tokenTracking: true
+    },
+    totalTokensUsed: totalTokensUsed,
     timestamp: new Date().toISOString()
   });
 });

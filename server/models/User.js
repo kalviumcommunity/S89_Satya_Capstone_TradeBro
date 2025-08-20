@@ -86,6 +86,34 @@ const userSchema = new mongoose.Schema({
     referredBy: {
         type: String,
         default: null
+    },
+    
+    // Two-Factor Authentication
+    twoFactorEnabled: {
+        type: Boolean,
+        default: false
+    },
+    twoFactorSecret: {
+        type: String,
+        default: null
+    },
+    twoFactorTempSecret: {
+        type: String,
+        default: null
+    },
+    loginAlerts: {
+        type: Boolean,
+        default: true
+    },
+    
+    // Password Reset
+    resetPasswordToken: {
+        type: String,
+        default: null
+    },
+    resetPasswordExpires: {
+        type: Date,
+        default: null
     }
 });
 

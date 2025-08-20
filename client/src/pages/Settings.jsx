@@ -44,12 +44,12 @@ const Settings = ({ user, theme }) => {
 
   // Form states
   const [profileData, setProfileData] = useState({
-    firstName: 'John',
-    lastName: 'Doe',
-    email: 'john.doe@example.com',
-    phone: '+91 98765 43210',
-    bio: 'Passionate trader and investor',
-    location: 'Mumbai, India'
+    firstName: user?.firstName || user?.fullName?.split(' ')[0] || '',
+    lastName: user?.lastName || user?.fullName?.split(' ').slice(1).join(' ') || '',
+    email: user?.email || '',
+    phone: user?.phoneNumber || user?.phone || '',
+    bio: user?.bio || 'Welcome to TradeBro! Start your trading journey today.',
+    location: user?.location || user?.address || ''
   });
 
   const [notificationSettings, setNotificationSettings] = useState({
@@ -64,11 +64,16 @@ const Settings = ({ user, theme }) => {
   });
 
   const [securitySettings, setSecuritySettings] = useState({
-    twoFactorAuth: false,
-    loginAlerts: true,
+    twoFactorAuth: user?.twoFactorEnabled || false,
+    loginAlerts: user?.loginAlerts !== false,
     sessionTimeout: '30',
     allowedDevices: 3
   });
+
+  const [showQRCode, setShowQRCode] = useState(false);
+  const [qrCodeUrl, setQrCodeUrl] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
+  const [isEnabling2FA, setIsEnabling2FA] = useState(false);
 
   const [preferences, setPreferences] = useState({
     theme: theme,
@@ -94,8 +99,88 @@ const Settings = ({ user, theme }) => {
     setNotificationSettings(prev => ({ ...prev, [setting]: !prev[setting] }));
   };
 
-  const handleSecurityUpdate = (field, value) => {
-    setSecuritySettings(prev => ({ ...prev, [field]: value }));
+  const handleSecurityUpdate = async (field, value) => {
+    if (field === 'twoFactorAuth') {
+      if (value) {
+        await enable2FA();
+      } else {
+        await disable2FA();
+      }
+    } else {
+      setSecuritySettings(prev => ({ ...prev, [field]: value }));
+    }
+  };
+
+  const enable2FA = async () => {
+    try {
+      setIsEnabling2FA(true);
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://s89-satya-capstone-tradebro.onrender.com';
+      const response = await fetch(`${apiUrl}/api/auth/2fa/enable`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        setQrCodeUrl(data.qrCodeUrl);
+        setShowQRCode(true);
+      }
+    } catch (error) {
+      console.error('Error enabling 2FA:', error);
+    } finally {
+      setIsEnabling2FA(false);
+    }
+  };
+
+  const verify2FA = async () => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://s89-satya-capstone-tradebro.onrender.com';
+      const response = await fetch(`${apiUrl}/api/auth/2fa/verify`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ code: verificationCode })
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        setSecuritySettings(prev => ({ ...prev, twoFactorAuth: true }));
+        setShowQRCode(false);
+        setVerificationCode('');
+        alert('Two-factor authentication enabled successfully!');
+      } else {
+        alert('Invalid verification code. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error verifying 2FA:', error);
+      alert('Error verifying code. Please try again.');
+    }
+  };
+
+  const disable2FA = async () => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://s89-satya-capstone-tradebro.onrender.com';
+      const response = await fetch(`${apiUrl}/api/auth/2fa/disable`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        setSecuritySettings(prev => ({ ...prev, twoFactorAuth: false }));
+        alert('Two-factor authentication disabled successfully!');
+      }
+    } catch (error) {
+      console.error('Error disabling 2FA:', error);
+    }
   };
 
   const handlePreferenceUpdate = (field, value) => {
@@ -291,12 +376,58 @@ const Settings = ({ user, theme }) => {
               </div>
             </div>
             <div 
-              className={`toggle-switch ${securitySettings.twoFactorAuth ? 'on' : 'off'}`}
-              onClick={() => handleSecurityUpdate('twoFactorAuth', !securitySettings.twoFactorAuth)}
+              className={`toggle-switch ${securitySettings.twoFactorAuth ? 'on' : 'off'} ${isEnabling2FA ? 'disabled' : ''}`}
+              onClick={() => !isEnabling2FA && handleSecurityUpdate('twoFactorAuth', !securitySettings.twoFactorAuth)}
             >
               <div className="toggle-thumb"></div>
             </div>
           </div>
+
+          {/* 2FA Setup Modal */}
+          {showQRCode && (
+            <div className="modal-overlay" onClick={() => setShowQRCode(false)}>
+              <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-header">
+                  <h3>Setup Two-Factor Authentication</h3>
+                  <button className="modal-close" onClick={() => setShowQRCode(false)}>
+                    <FiX size={20} />
+                  </button>
+                </div>
+                <div className="modal-body">
+                  <div className="qr-section">
+                    <p>1. Install Google Authenticator or similar app</p>
+                    <p>2. Scan this QR code:</p>
+                    {qrCodeUrl && (
+                      <div className="qr-code">
+                        <img src={qrCodeUrl} alt="QR Code" />
+                      </div>
+                    )}
+                    <p>3. Enter the 6-digit code from your app:</p>
+                    <input
+                      type="text"
+                      className="verification-input"
+                      placeholder="000000"
+                      value={verificationCode}
+                      onChange={(e) => setVerificationCode(e.target.value)}
+                      maxLength="6"
+                    />
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button className="btn-premium btn-secondary" onClick={() => setShowQRCode(false)}>
+                    Cancel
+                  </button>
+                  <button 
+                    className="btn-premium btn-primary" 
+                    onClick={verify2FA}
+                    disabled={verificationCode.length !== 6}
+                  >
+                    Verify & Enable
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="security-item">
             <div className="security-info">
               <FiBell className="security-icon" />

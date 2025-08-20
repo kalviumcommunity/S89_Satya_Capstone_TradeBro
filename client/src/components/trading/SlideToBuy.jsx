@@ -108,7 +108,7 @@ const SlideToBuy = ({
     try {
       const result = await buyStock(stockData.symbol, quantity, stockData.price, stockData);
 
-      if (result.success) {
+      if (result && result.success) {
         toast.success(`Successfully bought ${quantity} shares of ${stockData.symbol}!`);
         setSlideProgress(100);
 
@@ -117,33 +117,20 @@ const SlideToBuy = ({
           onSuccess(result);
         }
 
-        // Close modal and redirect to portfolio after short delay
+        // Close modal after short delay
         setTimeout(() => {
           onClose();
           setSlideProgress(0);
-
-          // Navigate to portfolio page with the purchased stock highlighted
-          navigate('/portfolio', {
-            state: {
-              purchasedStock: {
-                symbol: stockData.symbol,
-                name: stockData.name,
-                quantity: quantity,
-                price: stockData.price,
-                totalCost: quantity * stockData.price
-              },
-              showPurchaseSuccess: true
-            }
-          });
         }, 1500);
 
       } else {
-        toast.error(result.message || 'Failed to buy stock');
+        const errorMessage = result?.error || result?.message || 'Failed to buy stock';
+        toast.error(errorMessage);
         setSlideProgress(0);
       }
     } catch (error) {
       console.error('Error buying stock:', error);
-      toast.error('Failed to buy stock');
+      toast.error(error.message || 'Failed to buy stock');
       setSlideProgress(0);
     } finally {
       setIsProcessing(false);

@@ -854,11 +854,19 @@ article .sidebar,
 }
 
 /* Sidebar Notification Badge Styles */
+.sidebar-link-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
 .sidebar-icon-wrapper {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .notification-badge {
@@ -870,7 +878,7 @@ article .sidebar,
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--accent-color);
+  background: #ef4444;
   color: white;
   border-radius: 8px;
   font-size: 10px;
@@ -1144,4 +1152,105 @@ article .sidebar,
   .main-content {
     margin-left: 0 !important;
   }
+}
+
+/* ========================================
+   🚀 MAXIMUM SPECIFICITY SIDEBAR OVERRIDE
+   ======================================== */
+
+/* AGGRESSIVE SIDEBAR OVERRIDE - MAXIMUM SPECIFICITY */
+html body #root .app .sidebar,
+html body .app .sidebar,
+body .app .sidebar,
+.app .sidebar,
+.sidebar {
+  position: fixed !important;
+  top: 0px !important;
+  left: 0px !important;
+  width: 280px !important;
+  height: 100vh !important;
+  z-index: 2147483647 !important;
+  background: white !important;
+  border-right: 1px solid #e5e7eb !important;
+  padding: 24px 20px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  margin: 0px !important;
+  transform: none !important;
+  -webkit-transform: none !important;
+  -moz-transform: none !important;
+  -ms-transform: none !important;
+  -o-transform: none !important;
+  translate: none !important;
+  scale: none !important;
+  rotate: none !important;
+  will-change: auto !important;
+  contain: none !important;
+  isolation: auto !important;
+  backface-visibility: visible !important;
+  -webkit-backface-visibility: visible !important;
+  perspective: none !important;
+  -webkit-perspective: none !important;
+  clip: auto !important;
+  clip-path: none !important;
+  mask: none !important;
+  filter: none !important;
+  mix-blend-mode: normal !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Collapsed state with same specificity */
+html body #root .app .sidebar.collapsed,
+html body .app .sidebar.collapsed,
+body .app .sidebar.collapsed,
+.app .sidebar.collapsed,
+.sidebar.collapsed {
+  width: 80px !important;
+  padding: 24px 16px !important;
+}
+
+/* Remove all outlines and borders */
+html body #root .app .sidebar *,
+html body .app .sidebar *,
+body .app .sidebar *,
+.app .sidebar *,
+.sidebar * {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Focus states */
+html body #root .app .sidebar *:focus,
+html body .app .sidebar *:focus,
+body .app .sidebar *:focus,
+.app .sidebar *:focus,
+.sidebar *:focus {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* Override any button transforms */
+html body #root .app .sidebar button,
+html body .app .sidebar button,
+body .app .sidebar button,
+.app .sidebar button,
+.sidebar button {
+  transform: none !important;
+  -webkit-transform: none !important;
+  will-change: auto !important;
+}
+
+/* Override any link transforms */
+html body #root .app .sidebar a,
+html body .app .sidebar a,
+body .app .sidebar a,
+.app .sidebar a,
+.sidebar a {
+  transform: none !important;
+  -webkit-transform: none !important;
+  will-change: auto !important;
 }

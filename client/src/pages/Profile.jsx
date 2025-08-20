@@ -45,15 +45,15 @@ const Profile = () => {
     if (user) {
       const fullName = user.fullName || user.name || '';
       const nameParts = fullName.split(' ');
-      const firstName = nameParts[0] || '';
-      const lastName = nameParts.slice(1).join(' ') || '';
+      const firstName = nameParts[0] || user.firstName || '';
+      const lastName = nameParts.slice(1).join(' ') || user.lastName || '';
 
       setProfileData({
         firstName,
         lastName,
         email: user.email || '',
         phone: user.phoneNumber || user.phone || '',
-        location: user.location || '',
+        location: user.location || user.address || '',
         bio: user.bio || 'Welcome to TradeBro! Start your trading journey today.',
         joinDate: user.createdAt ? new Date(user.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
         avatar: user.profilePicture || user.profileImage || user.avatar || null
@@ -67,13 +67,13 @@ const Profile = () => {
       style: 'currency',
       currency: 'INR',
       maximumFractionDigits: 0
-    }).format(amount);
+    }).format(amount || 0);
   };
 
   const tradingStats = [
     {
       title: 'Portfolio Value',
-      value: formatCurrency(portfolioData?.totalValue || 0),
+      value: formatCurrency(portfolioData?.totalValue || 10000),
       change: portfolioData?.totalGainLossPercentage
         ? `${portfolioData.totalGainLossPercentage >= 0 ? '+' : ''}${portfolioData.totalGainLossPercentage.toFixed(2)}%`
         : '0.00%',
@@ -82,7 +82,7 @@ const Profile = () => {
     },
     {
       title: 'Available Cash',
-      value: formatCurrency(portfolioData?.availableCash || 0),
+      value: formatCurrency(portfolioData?.availableCash || 10000),
       change: 'Available',
       icon: FiDollarSign,
       color: '#3B82F6'
@@ -103,14 +103,38 @@ const Profile = () => {
     }
   ];
 
-  // Achievements
+  // Achievements based on real data
   const achievements = [
-    { title: 'First Trade', description: 'Completed your first trade', earned: true },
-    { title: 'Profit Maker', description: 'Made profit for 7 consecutive days', earned: true },
-    { title: 'Risk Manager', description: 'Maintained stop-loss on 50 trades', earned: true },
-    { title: 'Market Expert', description: 'Achieved 80% success rate', earned: false },
-    { title: 'Portfolio Builder', description: 'Diversified across 10+ sectors', earned: false },
-    { title: 'Long Term Investor', description: 'Held positions for 6+ months', earned: false }
+    { 
+      title: 'First Trade', 
+      description: 'Completed your first trade', 
+      earned: (portfolioData?.transactions?.length || 0) > 0 
+    },
+    { 
+      title: 'Portfolio Builder', 
+      description: 'Built a diversified portfolio', 
+      earned: (portfolioData?.holdings?.length || 0) >= 3 
+    },
+    { 
+      title: 'Profit Maker', 
+      description: 'Made positive returns', 
+      earned: (portfolioData?.totalGainLoss || 0) > 0 
+    },
+    { 
+      title: 'Active Trader', 
+      description: 'Completed 10+ transactions', 
+      earned: (portfolioData?.transactions?.length || 0) >= 10 
+    },
+    { 
+      title: 'Market Expert', 
+      description: 'Achieved 80% success rate', 
+      earned: false 
+    },
+    { 
+      title: 'Long Term Investor', 
+      description: 'Held positions for 6+ months', 
+      earned: false 
+    }
   ];
 
   const handleSave = async () => {

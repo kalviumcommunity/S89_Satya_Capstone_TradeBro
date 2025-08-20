@@ -29,21 +29,15 @@ const LoginPage = ({ onLogin }) => {
   const redirectUrl = localStorage.getItem('redirectAfterLogin') || from
 
   useEffect(() => {
-    // Handle Google OAuth callback
+    // Handle OAuth errors
     const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
-    const userParam = urlParams.get('user');
+    const error = urlParams.get('error');
     
-    if (token && userParam) {
-      try {
-        const user = JSON.parse(decodeURIComponent(userParam));
-        onLogin(user, token);
-        toast.success(`Welcome ${user.fullName}!`);
-        navigate('/dashboard', { replace: true });
-        return;
-      } catch (error) {
-        console.error('Error parsing OAuth callback:', error);
-      }
+    if (error === 'oauth_failed') {
+      toast.error('Google authentication failed. Please try again.');
+      // Clean URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+      return;
     }
 
     // Show message if redirected from protected route
@@ -53,7 +47,7 @@ const LoginPage = ({ onLogin }) => {
         autoClose: 3000,
       })
     }
-  }, [location.search, onLogin, navigate])
+  }, [location.search, navigate])
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -121,10 +115,8 @@ const LoginPage = ({ onLogin }) => {
           autoClose: 2000,
         })
 
-        setTimeout(() => {
-          navigate(redirectUrl, { replace: true })
-          localStorage.removeItem('redirectAfterLogin')
-        }, 1000)
+        navigate(redirectUrl, { replace: true })
+        localStorage.removeItem('redirectAfterLogin')
       } else {
         setErrors({ general: data.message || 'Login failed. Please try again.' })
         toast.error(data.message || 'Invalid credentials. Please try again.', {

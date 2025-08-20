@@ -92,16 +92,104 @@ router.get('/google', passport.authenticate('google', {
 }));
 
 router.get('/google/callback', 
-  passport.authenticate('google', { failureRedirect: `${process.env.CLIENT_URL || 'http://localhost:5173'}/login?error=oauth_failed` }),
+  passport.authenticate('google', { session: false }),
   asyncHandler(async (req, res) => {
-    const token = generateToken(req.user);
-    const userResponse = createUserResponse(req.user);
-    
-    // Redirect to frontend with token
-    const redirectUrl = process.env.CLIENT_URL || 'http://localhost:5173';
-    res.redirect(`${redirectUrl}/login?token=${token}&user=${encodeURIComponent(JSON.stringify(userResponse))}`);
+    try {
+      if (!req.user) {
+        const redirectUrl = process.env.CLIENT_URL || 'https://tradebro.netlify.app';
+        return res.redirect(`${redirectUrl}/login?error=oauth_failed`);
+      }
+
+      const token = generateToken(req.user);
+      const userResponse = createUserResponse(req.user);
+      
+      // Redirect directly to dashboard with token
+      const redirectUrl = process.env.CLIENT_URL || 'https://tradebro.netlify.app';
+      const callbackUrl = `${redirectUrl}/dashboard?token=${token}&user=${encodeURIComponent(JSON.stringify(userResponse))}`;
+      
+      res.redirect(callbackUrl);
+    } catch (error) {
+      console.error('OAuth callback error:', error);
+      const redirectUrl = process.env.CLIENT_URL || 'https://tradebro.netlify.app';
+      res.redirect(`${redirectUrl}/login?error=oauth_failed`);
+    }
   })
 );
+
+// ============================
+// ✅ FORGOT PASSWORD
+// ============================
+router.post('/forgot-password', authRateLimit, asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ success: false, message: 'Email is required' });
+  }
+
+  const user = await User.findOne({ email: email.toLowerCase() });
+  if (!user) {
+    // Don't reveal if email exists or not for security
+    return res.json({ success: true, message: 'If an account with that email exists, a password reset link has been sent.' });
+  }
+
+  // Generate reset token (in production, you'd send an email)
+  const resetToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  user.resetPasswordToken = resetToken;
+  user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+  await user.save();
+
+  // In production, send email with reset link
+  console.log(`Password reset token for ${email}: ${resetToken}`);
+
+  res.json({ 
+    success: true, 
+    message: 'If an account with that email exists, a password reset link has been sent.',
+    // For demo purposes only - remove in production
+    resetToken: resetToken
+  });
+}));
+
+router.post('/reset-password', authRateLimit, asyncHandler(async (req, res) => {
+  const { token, newPassword } = req.body;
+
+  if (!token || !newPassword) {
+    return res.status(400).json({ success: false, message: 'Token and new password are required' });
+  }
+
+  const user = await User.findOne({
+    resetPasswordToken: token,
+    resetPasswordExpires: { $gt: Date.now() }
+  });
+
+  if (!user) {
+    return res.status(400).json({ success: false, message: 'Invalid or expired reset token' });
+  }
+
+  // Update password
+  const hashedPassword = await bcrypt.hash(newPassword, SECURITY_CONFIG.BCRYPT_SALT_ROUNDS);
+  user.password = hashedPassword;
+  user.resetPasswordToken = undefined;
+  user.resetPasswordExpires = undefined;
+  await user.save();
+
+  res.json({ success: true, message: 'Password has been reset successfully' });
+}));
+
+// ============================
+// ✅ LOGOUT
+// ============================
+router.post('/logout', asyncHandler(async (req, res) => {
+  // Clear any server-side session data if needed
+  if (req.session) {
+    req.session.destroy();
+  }
+  
+  res.json({ 
+    success: true, 
+    message: 'Logged out successfully',
+    redirect: '/login'
+  });
+}));
 
 // ============================
 // ✅ TOKEN VALIDATION

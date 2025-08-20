@@ -8,7 +8,7 @@ import Pusher from 'pusher-js';
 
 class NotificationService {
   constructor() {
-    this.baseURL = import.meta.env.VITE_API_URL || 'https://s89-satya-capstone-tradebro.onrender.com/api';
+    this.baseURL = import.meta.env.VITE_API_URL || 'https://s89-satya-capstone-tradebro.onrender.com';
     this.pusher = null;
     this.channel = null;
     this.listeners = new Set();
@@ -176,14 +176,53 @@ class NotificationService {
    */
   async getNotifications(page = 1, limit = 10, sort = '-createdAt') {
     try {
-      const response = await axios.get(`${this.baseURL}/notifications`, {
+      // First try to get from server
+      const response = await axios.get(`${this.baseURL}/api/notifications`, {
         params: { page, limit, sort },
         headers: this.getAuthHeaders(),
         timeout: 5000
       });
       return response.data;
     } catch (error) {
-      // Silently return mock data for deployment
+      // Fallback to local storage notifications
+      return this.getLocalNotifications(page, limit);
+    }
+  }
+  
+  /**
+   * Get notifications from local storage
+   */
+  getLocalNotifications(page = 1, limit = 10) {
+    try {
+      const localNotifications = JSON.parse(localStorage.getItem('tradebro_notifications') || '[]');
+      const mockNotifications = this.getMockNotifications(1, 50).notifications;
+      
+      // Combine local and mock notifications
+      const allNotifications = [...localNotifications, ...mockNotifications];
+      
+      // Remove duplicates and sort by date
+      const uniqueNotifications = allNotifications
+        .filter((notification, index, self) => 
+          index === self.findIndex(n => n.id === notification.id)
+        )
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+      const paginatedNotifications = uniqueNotifications.slice(startIndex, endIndex);
+      
+      return {
+        success: true,
+        notifications: paginatedNotifications,
+        pagination: {
+          page,
+          limit,
+          total: uniqueNotifications.length,
+          hasMore: endIndex < uniqueNotifications.length
+        }
+      };
+    } catch (error) {
+      console.error('Error getting local notifications:', error);
       return this.getMockNotifications(page, limit);
     }
   }
@@ -193,7 +232,7 @@ class NotificationService {
    */
   async getUnreadCount() {
     try {
-      const response = await axios.get(`${this.baseURL}/notifications/unread-count`, {
+      const response = await axios.get(`${this.baseURL}/api/notifications/unread-count`, {
         headers: this.getAuthHeaders(),
         timeout: 5000
       });
@@ -210,7 +249,7 @@ class NotificationService {
   async markAsRead(notificationId) {
     try {
       const response = await axios.put(
-        `${this.baseURL}/notifications/${notificationId}/read`,
+        `${this.baseURL}/api/notifications/${notificationId}/read`,
         {},
         { headers: this.getAuthHeaders() }
       );
@@ -227,7 +266,7 @@ class NotificationService {
   async markAllAsRead() {
     try {
       const response = await axios.put(
-        `${this.baseURL}/notifications/read-all`,
+        `${this.baseURL}/api/notifications/read-all`,
         {},
         { headers: this.getAuthHeaders() }
       );
@@ -244,7 +283,7 @@ class NotificationService {
   async deleteNotification(notificationId) {
     try {
       const response = await axios.delete(
-        `${this.baseURL}/notifications/${notificationId}`,
+        `${this.baseURL}/api/notifications/${notificationId}`,
         { headers: this.getAuthHeaders() }
       );
       return response.data;

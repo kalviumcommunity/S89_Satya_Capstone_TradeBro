@@ -26,6 +26,7 @@ import {
 import { toast } from 'react-toastify';
 import StockPrice from '../components/StockPrice';
 import { usePortfolio } from '../contexts/PortfolioContext';
+import tradingService from '../services/tradingService';
 import { formatCurrency, formatNumber, formatDate } from '../utils/formatters';
 import '../styles/history.css';
 
@@ -140,15 +141,49 @@ const History = ({ user, theme }) => {
     const loadTransactions = async () => {
       setLoading(true);
       try {
-        // In real app, this would fetch from API
-        // const history = await getTransactionHistory();
-        // setTransactions(history);
+        // Get real transactions from trading service
+        const tradingHistory = tradingService.getTransactionHistory();
+        const portfolioTransactions = portfolioData?.transactions || [];
         
-        // For now, use mock data
-        setTimeout(() => {
-          setTransactions(mockTransactions);
-          setLoading(false);
-        }, 1000);
+        // Combine both sources
+        const allTransactions = [...tradingHistory, ...portfolioTransactions];
+        
+        // Transform transactions to history format
+        const formattedTransactions = allTransactions.map((txn, index) => ({
+          id: txn.id || `txn_${Date.now()}_${index}`,
+          type: txn.type?.toLowerCase() || 'buy',
+          symbol: txn.symbol || 'UNKNOWN',
+          name: txn.companyName || txn.name || `${txn.symbol} Corp`,
+          quantity: txn.quantity || 0,
+          price: txn.price || 0,
+          totalAmount: txn.total || txn.totalAmount || (txn.quantity * txn.price),
+          fees: txn.fees || ((txn.total || txn.totalAmount || (txn.quantity * txn.price)) * 0.0005),
+          netAmount: txn.netAmount || txn.total || txn.totalAmount || (txn.quantity * txn.price),
+          status: txn.status || 'completed',
+          timestamp: new Date(txn.timestamp || txn.createdAt || Date.now()),
+          orderId: txn.orderId || `ORD_${Date.now()}_${index}`,
+          exchange: txn.exchange || 'NSE',
+          sector: txn.sector || 'Unknown',
+          gainLoss: txn.gainLoss,
+          gainLossPercent: txn.gainLossPercent
+        }));
+        
+        // Remove duplicates based on id
+        const uniqueTransactions = formattedTransactions.filter((txn, index, self) => 
+          index === self.findIndex(t => t.id === txn.id)
+        );
+        
+        // Sort by timestamp (newest first)
+        uniqueTransactions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        
+        // If no real transactions, use a few mock ones for demo
+        if (uniqueTransactions.length === 0) {
+          setTransactions(mockTransactions.slice(0, 2)); // Show only 2 mock transactions
+        } else {
+          setTransactions(uniqueTransactions);
+        }
+        
+        setLoading(false);
       } catch (error) {
         console.error('Error loading transaction history:', error);
         toast.error('Failed to load transaction history');
@@ -157,7 +192,7 @@ const History = ({ user, theme }) => {
     };
 
     loadTransactions();
-  }, []);
+  }, [portfolioData?.transactions]);
 
   // Filter and sort transactions
   const filteredAndSortedTransactions = useMemo(() => {

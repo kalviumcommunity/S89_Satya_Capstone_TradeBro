@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo, memo, Suspense, lazy, useRef
 import { useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast, ToastContainer } from 'react-toastify'
+import './App.css'
 import 'react-toastify/dist/ReactToastify.css'
 import Sidebar from './components/layout/Sidebar'
 import AuthStatus from './components/auth/AuthStatus'
@@ -251,13 +252,11 @@ const AppContent = memo(function AppContent({
 }) {
   const location = useLocation()
   const isLandingPage = location.pathname === '/'
-  const isAuthPage = location.pathname === '/login' || location.pathname === '/signup'
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/signup' || location.pathname === '/forgot-password'
 
   return (
     <>
-      {/* Self-contained Sidebar - Hide on landing page, login, and signup pages */}
-      {!isLandingPage && !isAuthPage && isAuthenticated && <Sidebar />}
-
+      <Sidebar/>
       {/* Main Content */}
       <main className={(isLandingPage || isAuthPage) ? "main-content-full" : "main-content"}>
         <AppRoutes
@@ -337,5 +336,6 @@ const AppContent = memo(function AppContent({
     </>
   )
 })
+
 
 export default App

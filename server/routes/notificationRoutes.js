@@ -66,7 +66,13 @@ router.get('/', provideDefaultUser, validatePagination, async (req, res) => {
     res.status(200).json({
       success: true,
       data: notifications,
-      pagination: { currentPage: parseInt(page), totalPages, totalCount, limit: parseInt(limit) }
+      pagination: { 
+        page: parseInt(page), 
+        total: totalCount, 
+        hasMore: page < totalPages,
+        totalPages,
+        limit: parseInt(limit)
+      }
     });
   } catch (err) {
     console.error(err);

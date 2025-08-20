@@ -185,6 +185,7 @@
     "pstree.remy": "^1.1.8",
     "punycode": "^2.3.1",
     "pusher": "^5.2.0",
+    "qrcode": "^1.5.4",
     "qs": "^6.14.0",
     "random-bytes": "^1.0.0",
     "range-parser": "^1.2.1",
@@ -209,6 +210,7 @@
     "signal-exit": "^3.0.7",
     "simple-update-notifier": "^2.0.0",
     "sparse-bitfield": "^3.0.3",
+    "speakeasy": "^2.0.0",
     "statuses": "^2.0.2",
     "streamsearch": "^1.1.0",
     "string_decoder": "^1.1.1",
@@ -243,13 +245,22 @@
     "yallist": "^4.0.0"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node scripts/runTests.js",
     "start": "node --no-deprecation server.js",
     "dev": "nodemon --exec \"node --no-deprecation\" server.js",
-    "prod": "NODE_ENV=production node --no-deprecation server.js"
+    "prod": "NODE_ENV=production node --no-deprecation server.js",
+    "demo": "node scripts/demonstrateFeatures.js",
+    "evaluate": "node evaluation/EvaluationFramework.js",
+    "test-prompting": "node -e \"const TestRunner = require('./scripts/runTests.js'); new TestRunner().testPromptingTechniques().then(console.log);\"",
+    "test-structured": "node -e \"const TestRunner = require('./scripts/runTests.js'); new TestRunner().testStructuredOutput().then(console.log);\"",
+    "test-functions": "node -e \"const TestRunner = require('./scripts/runTests.js'); new TestRunner().testFunctionCalling().then(console.log);\"",
+    "verify-routes": "node scripts/verifyRoutes.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs"
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }

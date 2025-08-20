@@ -28,6 +28,7 @@ import WatchlistButton from '../components/trading/WatchlistButton';
 import { useSlideToBuy } from '../hooks/useSlideToBuy';
 import { formatCurrency, formatPercentage } from '../utils/formatters';
 import '../styles/portfolio.css';
+import '../styles/trading-buttons.css';
 
 const Portfolio = ({ user, theme }) => {
   const navigate = useNavigate();
@@ -37,7 +38,35 @@ const Portfolio = ({ user, theme }) => {
   const { isOpen, currentStock, defaultQuantity, openSlideToBuy, closeSlideToBuy } = useSlideToBuy();
   const [filter, setFilter] = useState('all');
   const [sortBy, setSortBy] = useState('value');
-  const { portfolioData, loading, updatePortfolioValues, refreshPortfolio } = usePortfolio();
+  const { portfolioData, loading, updatePortfolioValues, refreshPortfolio, sellStock } = usePortfolio();
+  
+  const handleSellStock = async (holding) => {
+    const quantity = prompt(`How many shares of ${holding.symbol} do you want to sell? (Available: ${holding.quantity})`);
+    
+    if (!quantity || isNaN(quantity) || quantity <= 0) {
+      return;
+    }
+    
+    const sellQuantity = parseInt(quantity);
+    
+    if (sellQuantity > holding.quantity) {
+      toast.error(`You only have ${holding.quantity} shares available`);
+      return;
+    }
+    
+    try {
+      const result = await sellStock(holding.symbol, sellQuantity, holding.currentPrice || holding.avgPrice);
+      
+      if (result && result.success) {
+        toast.success(`Successfully sold ${sellQuantity} shares of ${holding.symbol}!`);
+      } else {
+        toast.error(result?.error || 'Failed to sell stock');
+      }
+    } catch (error) {
+      console.error('Error selling stock:', error);
+      toast.error(error.message || 'Failed to sell stock');
+    }
+  };
 
   // Portfolio data is automatically loaded by PortfolioContext
   // No need to manually refresh on mount
@@ -369,18 +398,16 @@ const Portfolio = ({ user, theme }) => {
                           >
                             Buy
                           </button>
-                          <PortfolioActionButtons
-                            stockData={{
-                              symbol: holding.symbol,
-                              name: holding.name,
-                              price: holding.currentPrice,
-                              change: holding.dayChange,
-                              changePercent: holding.dayChangePercent,
-                              quantity: holding.quantity,
-                              avgPrice: holding.avgPrice,
-                              totalValue: holding.value
+                          <button
+                            className="sell-btn-small"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSellStock(holding);
                             }}
-                          />
+                            title="Sell Stock"
+                          >
+                            Sell
+                          </button>
                         </div>
                       </div>
                     </motion.div>

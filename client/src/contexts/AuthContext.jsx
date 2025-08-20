@@ -70,6 +70,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('user');
     setUser(null);
     setIsAuthenticated(false);
+    window.location.href = '/login';
   };
 
   // Update user profile

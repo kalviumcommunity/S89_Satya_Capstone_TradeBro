@@ -28,11 +28,33 @@ import tradingService from '../services/tradingService';
 import { toast } from 'react-toastify';
 import '../styles/dashboard.css';
 
-const Dashboard = memo(({ user, theme }) => {
+const Dashboard = memo(({ user, theme, onLogin }) => {
   const navigate = useNavigate();
   const [refreshing, setRefreshing] = useState(false);
   const { portfolioData, loading, updatePortfolioValues, refreshPortfolio } = usePortfolio();
   const { isOpen, currentStock, defaultQuantity, openSlideToBuy, closeSlideToBuy } = useSlideToBuy();
+
+  // Handle Google OAuth callback
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    const userParam = urlParams.get('user');
+    
+    if (token && userParam && onLogin) {
+      try {
+        const userData = JSON.parse(decodeURIComponent(userParam));
+        onLogin(userData, token);
+        toast.success(`Welcome ${userData.fullName}!`);
+        // Clean URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } catch (error) {
+        console.error('Error parsing OAuth callback:', error);
+        toast.error('Authentication failed. Please try again.');
+      }
+    }
+  }, [onLogin]);
+
+
 
   // Debug portfolio data changes and force refresh if needed
   useEffect(() => {

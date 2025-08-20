@@ -22,14 +22,12 @@ import {
   FiCpu,
   FiX,
 } from "react-icons/fi";
-
 import { useAuth } from "../../contexts/AuthContext";
 import { useNotifications } from "../../contexts/NotificationContext";
 import SaytrixTriggerButton from "../voice/SaytrixTriggerButton";
 import axios from "axios";
 import API_ENDPOINTS from "../../config/apiConfig";
 import "../../styles/components/Sidebar.css";
-import "../../styles/sidebar-override.css";
 
 // Local Sidebar Context - only used within this component
 const LocalSidebarContext = createContext();
@@ -161,13 +159,8 @@ const SidebarContent = () => {
 
   // Handle loading and force sidebar positioning
   useEffect(() => {
-    const loadSidebar = async () => {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      setIsLoaded(true);
-    };
-
-    loadSidebar();
-  }, []);
+    setIsLoaded(true);
+  }, [isAuthenticated]);
 
 
 
@@ -214,19 +207,20 @@ const SidebarContent = () => {
       aria-label="Main navigation"
       style={{
         position: 'fixed',
-        top: '0px',
-        left: '0px',
+        top: 0,
+        left: 0,
+        zIndex: 2147483647,
         width: isCollapsed ? '80px' : '280px',
         height: '100vh',
-        zIndex: 999999,
-        background: 'white',
+        background: '#ffffff',
         borderRight: '1px solid #e5e7eb',
-        padding: '24px 20px',
         display: 'flex',
         flexDirection: 'column',
         overflowY: 'auto',
-        margin: '0px',
-        transform: 'none'
+        overflowX: 'hidden',
+        margin: 0,
+        padding: 0,
+        transform: isMobile && isCollapsed ? 'translateX(-100%)' : 'none'
       }}
     >
       <div className="top-section">
@@ -389,7 +383,7 @@ const Sidebar = () => {
   const location = useLocation();
   const { isAuthenticated } = useAuth();
 
-  // Check if current route should show sidebar
+  // Check if current route should show sidebar - force immediate update
   const showSidebar = isAuthenticated && !['/login', '/signup', '/'].includes(location.pathname);
 
   if (!showSidebar) {

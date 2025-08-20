@@ -1,5 +1,7 @@
-import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { useEffect } from "react";
+import { toast } from "react-toastify";
 
 // Pages
 import LandingPage from "./pages/landingPage";
@@ -20,9 +22,50 @@ import Saytrix from "./pages/Saytrix";
 import StockDetail from "./pages/StockDetail";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import NotFound from "./pages/NotFound";
 
 import { PortfolioProvider } from "./contexts/PortfolioContext";
+
+// OAuth Callback Component
+const OAuthCallback = ({ onLogin }) => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    const userParam = urlParams.get('user');
+    const error = urlParams.get('error');
+
+    if (error) {
+      toast.error('Google authentication failed. Please try again.');
+      navigate('/login', { replace: true });
+      return;
+    }
+
+    if (token && userParam && onLogin) {
+      try {
+        const userData = JSON.parse(decodeURIComponent(userParam));
+        onLogin(userData, token);
+        toast.success(`Welcome ${userData.fullName}!`);
+        navigate('/dashboard', { replace: true });
+      } catch (error) {
+        console.error('Error parsing OAuth data:', error);
+        toast.error('Authentication failed. Please try again.');
+        navigate('/login', { replace: true });
+      }
+    } else {
+      navigate('/login', { replace: true });
+    }
+  }, [onLogin, navigate]);
+
+  return (
+    <div className="loading-container">
+      <div className="loading-spinner lg"></div>
+      <p className="loading-text">Completing authentication...</p>
+    </div>
+  );
+};
 
 // ✅ Route Protection
 const ProtectedRoute = ({ children, isAuthenticated, loading, user }) => {
@@ -116,6 +159,15 @@ const AppRoutes = ({
               </PublicRoute>
             }
           />
+          <Route
+            path="/forgot-password"
+            element={
+              <PublicRoute isAuthenticated={isAuthenticated}>
+                <ForgotPasswordPage />
+              </PublicRoute>
+            }
+          />
+
 
           {/* Legal Pages */}
           <Route
@@ -152,7 +204,7 @@ const AppRoutes = ({
                 loading={loading}
                 user={user}
               >
-                <Dashboard user={user} theme={theme} />
+                <Dashboard user={user} theme={theme} onLogin={onLogin} />
               </ProtectedRoute>
             }
           />
