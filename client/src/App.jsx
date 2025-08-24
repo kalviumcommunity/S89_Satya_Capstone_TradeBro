@@ -17,7 +17,7 @@ import useGlobalSearch from './hooks/useGlobalSearch';
 import { useOrderIntegration } from './hooks/useOrderIntegration';
 import { usePerformanceOptimization } from './hooks/usePerformanceOptimization';
 import balanceSyncManager from './utils/balanceSync';
-import AppRoutes from './AppRoutes';
+import AppRoutes from './approutes';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import { useAuth } from './contexts/AuthContext'; // Import useAuth
 import { LandingProvider } from './contexts/LandingContext';
