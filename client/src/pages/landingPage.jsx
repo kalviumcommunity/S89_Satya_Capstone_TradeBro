@@ -5,6 +5,7 @@ import {
   FiArrowRight,
   FiZap
 } from 'react-icons/fi'
+import { useLanding } from '../contexts/LandingContext'
 
 import TradeBroHeader from '../components/layout/TradeBroHeader'
 import OrbBackground from '../components/animations/OrbBackground'
@@ -19,6 +20,11 @@ import '../styles/premium-landing.css'
 
 const LandingPage = ({ theme = 'light', onToggleTheme = () => {} }) => {
   const navigate = useNavigate()
+  const { markLandingVisited } = useLanding()
+
+  useEffect(() => {
+    markLandingVisited()
+  }, [markLandingVisited])
 
   const handleLogin = () => {
     navigate('/login')
