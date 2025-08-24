@@ -2,7 +2,7 @@ import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect } from "react";
 import { toast } from "react-toastify";
-import { useLanding } from "./contexts/LandingContext";
+
 
 // Pages
 import LandingPage from "./pages/landingPage";
@@ -90,16 +90,10 @@ const ProtectedRoute = ({ children, isAuthenticated, loading, user }) => {
 };
 
 const PublicRoute = ({ children, isAuthenticated }) => {
-  const { hasVisitedLanding } = useLanding();
-  
   if (isAuthenticated) {
     const redirectUrl = localStorage.getItem("redirectAfterLogin");
     localStorage.removeItem("redirectAfterLogin");
     return <Navigate to={redirectUrl || "/dashboard"} replace />;
-  }
-  
-  if (!hasVisitedLanding && window.location.pathname !== '/') {
-    return <Navigate to="/" replace />;
   }
   
   return children;
@@ -380,9 +374,7 @@ const AppRoutes = ({
           {/* 404 Not Found */}
           <Route
             path="*"
-            element={
-              isAuthenticated ? <NotFound /> : <Navigate to="/login" replace />
-            }
+            element={<NotFound />}
           />
         </Routes>
       </motion.div>

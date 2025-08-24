@@ -20,7 +20,7 @@ import balanceSyncManager from './utils/balanceSync';
 import AppRoutes from './approutes';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import { useAuth } from './contexts/AuthContext'; // Import useAuth
-import { LandingProvider } from './contexts/LandingContext';
+
 
 const PerformanceMonitor = lazy(() => import('./components/debug/PerformanceMonitor'));
 // Suppress console logs in production
@@ -216,7 +216,6 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <LandingProvider>
         <div className="app">
         <AppContent
           isAuthenticated={isAuthenticated}
@@ -262,7 +261,6 @@ function App() {
           <PerformanceMonitor enabled={process.env.NODE_ENV === 'development'} />
         </Suspense>
         </div>
-      </LandingProvider>
     </ErrorBoundary>
   );
 }
