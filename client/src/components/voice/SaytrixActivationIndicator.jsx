@@ -5,11 +5,11 @@ import { useVoice } from '../../contexts/VoiceContext';
 import './SaytrixActivationIndicator.css';
 
 const SaytrixActivationIndicator = () => {
-  const { isVoiceModeActive } = useVoice();
+  const { isListening } = useVoice();
 
   return (
     <AnimatePresence>
-      {isVoiceModeActive && (
+      {isListening && (
         <motion.div
           className="saytrix-activation-indicator"
           initial={{ x: 100, opacity: 0 }}

@@ -4,7 +4,9 @@ import { motion } from 'framer-motion'
 import { FiMail, FiLock, FiArrowRight, FiAlertCircle } from 'react-icons/fi'
 import { toast } from 'react-toastify'
 import GoogleSignIn from '../components/auth/GoogleSignIn'
+import TwoFactorAuth from '../components/auth/TwoFactorAuth'
 import '../styles/auth.css'
+import '../styles/two-factor.css'
 
 
 const LoginPage = ({ onLogin }) => {
@@ -21,6 +23,8 @@ const LoginPage = ({ onLogin }) => {
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState({})
   const [rememberMe, setRememberMe] = useState(false)
+  const [showTwoFactor, setShowTwoFactor] = useState(false)
+  const [twoFactorEmail, setTwoFactorEmail] = useState('')
 
 
 
@@ -108,15 +112,24 @@ const LoginPage = ({ onLogin }) => {
       const data = await response.json()
 
       if (response.ok && data.success) {
-        onLogin(data.user, data.token)
-        
-        toast.success('Welcome back! Login successful', {
-          position: 'top-right',
-          autoClose: 2000,
-        })
+        if (data.requiresTwoFactor) {
+          setTwoFactorEmail(data.email)
+          setShowTwoFactor(true)
+          toast.info('Please enter the 2FA code sent to your email', {
+            position: 'top-right',
+            autoClose: 3000,
+          })
+        } else {
+          onLogin(data.user, data.token)
+          
+          toast.success('Welcome back! Login successful', {
+            position: 'top-right',
+            autoClose: 2000,
+          })
 
-        navigate(redirectUrl, { replace: true })
-        localStorage.removeItem('redirectAfterLogin')
+          navigate(redirectUrl, { replace: true })
+          localStorage.removeItem('redirectAfterLogin')
+        }
       } else {
         setErrors({ general: data.message || 'Login failed. Please try again.' })
         toast.error(data.message || 'Invalid credentials. Please try again.', {
@@ -137,6 +150,31 @@ const LoginPage = ({ onLogin }) => {
   }
 
 
+
+  const handleTwoFactorVerify = (token, user) => {
+    onLogin(user, token)
+    toast.success('Welcome back! Login successful', {
+      position: 'top-right',
+      autoClose: 2000,
+    })
+    navigate(redirectUrl, { replace: true })
+    localStorage.removeItem('redirectAfterLogin')
+  }
+
+  const handleTwoFactorCancel = () => {
+    setShowTwoFactor(false)
+    setTwoFactorEmail('')
+  }
+
+  if (showTwoFactor) {
+    return (
+      <TwoFactorAuth
+        email={twoFactorEmail}
+        onVerify={handleTwoFactorVerify}
+        onCancel={handleTwoFactorCancel}
+      />
+    )
+  }
 
   return (
     <div className="auth-page">

@@ -204,11 +204,11 @@ const Dashboard = memo(({ user, theme, onLogin }) => {
             disabled: refreshing
           },
           {
-            label: "Claimed Today",
-            icon: FiClock,
-            onClick: () => {},
-            variant: "outline",
-            disabled: true
+            label: "Claim Daily ₹100",
+            icon: FiGift,
+            onClick: claimDailyReward,
+            variant: "success",
+            disabled: false
           }
         ]}
       />

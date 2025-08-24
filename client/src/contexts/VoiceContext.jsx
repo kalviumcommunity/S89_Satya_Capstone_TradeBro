@@ -160,15 +160,18 @@ export const VoiceProvider = ({ children }) => {
     };
 
     recognition.onerror = (event) => {
-      console.error('Speech recognition error:', event.error);
-      if (event.error === 'not-allowed') {
-        alert('Please allow microphone access to use voice commands.');
+      if (event.error === 'network') {
+        console.warn('Speech recognition network issue, retrying...');
+      } else if (event.error === 'not-allowed') {
+        console.warn('Microphone access denied');
+      } else {
+        console.warn('Speech recognition error:', event.error);
       }
       setIsListening(false);
-      if (event.error !== 'aborted') {
+      if (event.error !== 'aborted' && event.error !== 'not-allowed') {
         setTimeout(() => {
           startWakeWordDetection();
-        }, 1000);
+        }, 2000);
       }
     };
 

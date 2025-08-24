@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FiGift, FiX, FiCalendar, FiTrendingUp, FiStar } from 'react-icons/fi';
 import tradingService from '../services/tradingService';
 import { usePortfolio } from '../contexts/PortfolioContext';
+import { useVirtualMoney } from '../contexts/VirtualMoneyContext';
 import './DailyRewards.css';
 
 const DailyRewards = () => {
@@ -10,6 +11,7 @@ const DailyRewards = () => {
   const [rewardData, setRewardData] = useState(null);
   const [rewardsInfo, setRewardsInfo] = useState(null);
   const { refreshPortfolio } = usePortfolio();
+  const { claimLoginReward, fetchVirtualMoney } = useVirtualMoney();
   const hasCheckedReward = useRef(false);
 
   useEffect(() => {
@@ -17,8 +19,8 @@ const DailyRewards = () => {
     if (hasCheckedReward.current) return;
 
     // Check for daily login reward
-    const checkReward = () => {
-      const reward = tradingService.checkDailyLogin();
+    const checkReward = async () => {
+      const reward = await tradingService.checkDailyLogin();
       const info = tradingService.getDailyRewardsInfo();
 
       setRewardsInfo(info);
@@ -27,18 +29,29 @@ const DailyRewards = () => {
         setRewardData(reward);
         setShowReward(true);
 
-        // Sync portfolio data across all components
-        setTimeout(() => {
-          tradingService.syncPortfolioData();
-          refreshPortfolio();
-        }, 500);
+        // Sync with MongoDB backend
+        claimLoginReward().then(() => {
+          // Sync portfolio data across all components
+          setTimeout(() => {
+            tradingService.syncPortfolioData();
+            refreshPortfolio();
+            fetchVirtualMoney();
+          }, 500);
+        }).catch(err => {
+          console.warn('Backend sync failed:', err);
+          // Still sync locally
+          setTimeout(() => {
+            tradingService.syncPortfolioData();
+            refreshPortfolio();
+          }, 500);
+        });
       }
 
       hasCheckedReward.current = true;
     };
 
     // Check immediately
-    checkReward();
+    checkReward().catch(console.error);
   }, []); // Empty dependency array - only run once on mount
 
   const handleCloseReward = () => {
@@ -47,6 +60,7 @@ const DailyRewards = () => {
     // Ensure portfolio is synced and refreshed when modal is closed
     tradingService.syncPortfolioData();
     refreshPortfolio();
+    fetchVirtualMoney();
   };
 
   const formatCurrency = (amount) => {

@@ -10,21 +10,23 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border: none;
   border-radius: 12px;
-  background: transparent;
-  color: var(--text-secondary);
+  background: var(--surface-secondary);
+  color: var(--text-primary);
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   outline: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .notification-bell:hover {
-  background: var(--surface-hover);
-  color: var(--text-primary);
-  transform: translateY(-1px);
+  background: var(--primary-color);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
 }
 
 .notification-bell:active {
@@ -34,7 +36,8 @@
 .notification-bell.active {
   background: var(--primary-color);
   color: white;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
+  transform: translateY(-1px);
 }
 
 .notification-bell.animate .bell-icon {
@@ -56,22 +59,23 @@
 
 .notification-badge {
   position: absolute;
-  top: -2px;
-  right: -2px;
-  min-width: 18px;
-  height: 18px;
+  top: -4px;
+  right: -4px;
+  min-width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--accent-color);
+  background: #ef4444;
   color: white;
-  border-radius: 9px;
-  font-size: 10px;
-  font-weight: 600;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
   line-height: 1;
-  padding: 0 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  z-index: 1;
+  padding: 0 5px;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+  border: 2px solid white;
+  z-index: 2;
 }
 
 .connection-indicator {
@@ -110,29 +114,29 @@
 }
 
 .notification-dropdown-wrapper {
-  position: absolute;
-  z-index: 1000;
+  position: fixed;
+  z-index: 9999;
   min-width: 380px;
   max-width: 420px;
 }
 
 .notification-dropdown-wrapper.bottom-right {
-  top: calc(100% + 8px);
+  top: calc(100% + 12px);
   right: 0;
 }
 
 .notification-dropdown-wrapper.bottom-left {
-  top: calc(100% + 8px);
+  top: calc(100% + 12px);
   left: 0;
 }
 
 .notification-dropdown-wrapper.top-right {
-  bottom: calc(100% + 8px);
+  bottom: calc(100% + 12px);
   right: 0;
 }
 
 .notification-dropdown-wrapper.top-left {
-  bottom: calc(100% + 8px);
+  bottom: calc(100% + 12px);
   left: 0;
 }
 

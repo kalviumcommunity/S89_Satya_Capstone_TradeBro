@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import notificationService from '../services/notificationService';
-import { useAuth } from './AuthContext';
+import { useAuth } from './AuthContext'; // Assumes useAuth provides user object
 
 /**
  * TradeBro Notification Context
@@ -16,9 +16,9 @@ const initialState = {
   error: null,
   connectionStatus: 'disconnected',
   filters: {
-    type: 'all', // all, info, success, warning, error, alert
-    read: 'all', // all, read, unread
-    dateRange: 'all' // all, today, week, month
+    type: 'all',
+    read: 'all',
+    dateRange: 'all'
   },
   pagination: {
     page: 1,
@@ -58,10 +58,7 @@ function notificationReducer(state, action) {
       return {
         ...state,
         notifications: action.payload.notifications || [],
-        pagination: {
-          ...state.pagination,
-          ...action.payload.pagination
-        },
+        pagination: { ...state.pagination, ...action.payload.pagination },
         loading: false,
         error: null
       };
@@ -77,19 +74,19 @@ function notificationReducer(state, action) {
       return {
         ...state,
         notifications: state.notifications.map(notification =>
-          notification.id === action.payload.id
+          (notification._id || notification.id) === (action.payload._id || action.payload.id)
             ? { ...notification, ...action.payload }
             : notification
         )
       };
 
     case ACTIONS.REMOVE_NOTIFICATION:
-      const removedNotification = state.notifications.find(n => n.id === action.payload);
+      const removedNotification = state.notifications.find(n => (n._id || n.id) === action.payload);
       return {
         ...state,
-        notifications: state.notifications.filter(n => n.id !== action.payload),
+        notifications: state.notifications.filter(n => (n._id || n.id) !== action.payload),
         unreadCount: removedNotification && !removedNotification.read 
-          ? state.unreadCount - 1 
+          ? Math.max(0, state.unreadCount - 1) 
           : state.unreadCount
       };
 
@@ -100,7 +97,7 @@ function notificationReducer(state, action) {
       return {
         ...state,
         notifications: state.notifications.map(notification =>
-          notification.id === action.payload
+          (notification._id || notification.id) === action.payload
             ? { ...notification, read: true, readAt: new Date().toISOString() }
             : notification
         ),
@@ -125,7 +122,7 @@ function notificationReducer(state, action) {
       return {
         ...state,
         filters: { ...state.filters, ...action.payload },
-        pagination: { ...state.pagination, page: 1 } // Reset to first page when filtering
+        pagination: { ...state.pagination, page: 1 }
       };
 
     case ACTIONS.SET_PAGINATION:
@@ -135,11 +132,7 @@ function notificationReducer(state, action) {
       };
 
     case ACTIONS.CLEAR_ALL:
-      return {
-        ...state,
-        notifications: [],
-        unreadCount: 0
-      };
+      return { ...initialState };
 
     default:
       return state;
@@ -154,76 +147,26 @@ export const NotificationProvider = ({ children }) => {
   const [state, dispatch] = useReducer(notificationReducer, initialState);
   const { user, isAuthenticated } = useAuth();
 
-  // Initialize notification service when user is authenticated
-  useEffect(() => {
-    if (isAuthenticated && user?.id) {
-      initializeNotifications();
-    } else {
-      cleanupNotifications();
-    }
-
-    return () => cleanupNotifications();
-  }, [isAuthenticated, user?.id]);
-
-  // Initialize notifications and real-time connection
-  const initializeNotifications = useCallback(async () => {
-    try {
-      dispatch({ type: ACTIONS.SET_LOADING, payload: true });
-
-      // Set connection status to connected
-      dispatch({ type: ACTIONS.SET_CONNECTION_STATUS, payload: 'connected' });
-      
-      // Try to initialize Pusher connection (graceful fallback if not available)
-      try {
-        await notificationService.initializePusher(user.id);
-        const removeListener = notificationService.addEventListener(handleNotificationEvent);
-      } catch (pusherError) {
-        console.warn('Pusher initialization failed, using polling mode:', pusherError.message);
-      }
-
-      // Fetch initial notifications (works regardless of Pusher)
-      await fetchNotifications();
-
-      // Fetch unread count (works regardless of Pusher)
-      await fetchUnreadCount();
-
-      // Start mock live notifications for development
-      notificationService.startMockLiveNotifications();
-
-      dispatch({ type: ACTIONS.SET_LOADING, payload: false });
-    } catch (error) {
-      console.error('Failed to initialize notifications:', error);
-      dispatch({ type: ACTIONS.SET_ERROR, payload: error.message });
-      dispatch({ type: ACTIONS.SET_LOADING, payload: false });
-    }
-  }, [user?.id]);
-
-  // Handle notification events from service
   const handleNotificationEvent = useCallback((event, data) => {
     switch (event) {
       case 'notification':
         dispatch({ type: ACTIONS.ADD_NOTIFICATION, payload: data });
         showToastNotification(data);
         break;
-
       case 'notification-update':
         dispatch({ type: ACTIONS.UPDATE_NOTIFICATION, payload: data });
         break;
-
       case 'notifications-read-all':
         dispatch({ type: ACTIONS.MARK_ALL_AS_READ });
         break;
-
       case 'connection':
         dispatch({ type: ACTIONS.SET_CONNECTION_STATUS, payload: data.status });
         break;
-
       default:
         console.log('Unknown notification event:', event, data);
     }
   }, []);
 
-  // Show toast notification for new notifications
   const showToastNotification = useCallback((notification) => {
     const toastOptions = {
       position: "top-right",
@@ -233,7 +176,6 @@ export const NotificationProvider = ({ children }) => {
       pauseOnHover: true,
       draggable: true,
     };
-
     switch (notification.type) {
       case 'success':
         toast.success(notification.message, toastOptions);
@@ -252,30 +194,15 @@ export const NotificationProvider = ({ children }) => {
     }
   }, []);
 
-  // Cleanup notifications
-  const cleanupNotifications = useCallback(() => {
-    notificationService.stopMockLiveNotifications();
-    notificationService.disconnectPusher();
-    dispatch({ type: ACTIONS.CLEAR_ALL });
-    dispatch({ type: ACTIONS.SET_CONNECTION_STATUS, payload: 'disconnected' });
-  }, []);
-
-  // Fetch notifications with current filters and pagination
   const fetchNotifications = useCallback(async (page = 1) => {
     try {
       dispatch({ type: ACTIONS.SET_LOADING, payload: true });
-      
-      const response = await notificationService.getNotifications(
-        page,
-        state.pagination.limit,
-        '-createdAt'
-      );
-
+      const response = await notificationService.getNotifications(page, state.pagination.limit, '-createdAt');
       if (response.success) {
         dispatch({
           type: ACTIONS.SET_NOTIFICATIONS,
           payload: {
-            notifications: page === 1 ? response.data : [...state.notifications, ...response.data],
+            notifications: page === 1 ? response.notifications : [...state.notifications, ...response.notifications],
             pagination: {
               page: response.pagination.page,
               total: response.pagination.total,
@@ -286,10 +213,11 @@ export const NotificationProvider = ({ children }) => {
       }
     } catch (error) {
       dispatch({ type: ACTIONS.SET_ERROR, payload: error.message });
+    } finally {
+      dispatch({ type: ACTIONS.SET_LOADING, payload: false });
     }
   }, [state.pagination.limit, state.notifications]);
 
-  // Fetch unread count
   const fetchUnreadCount = useCallback(async () => {
     try {
       const response = await notificationService.getUnreadCount();
@@ -301,66 +229,73 @@ export const NotificationProvider = ({ children }) => {
     }
   }, []);
 
-  // Mark notification as read
   const markAsRead = useCallback(async (notificationId) => {
     try {
       await notificationService.markAsRead(notificationId);
       dispatch({ type: ACTIONS.MARK_AS_READ, payload: notificationId });
     } catch (error) {
       console.error('Failed to mark notification as read:', error);
-      dispatch({ type: ACTIONS.SET_ERROR, payload: error.message });
     }
   }, []);
 
-  // Mark all notifications as read
   const markAllAsRead = useCallback(async () => {
     try {
       await notificationService.markAllAsRead();
       dispatch({ type: ACTIONS.MARK_ALL_AS_READ });
     } catch (error) {
       console.error('Failed to mark all notifications as read:', error);
-      dispatch({ type: ACTIONS.SET_ERROR, payload: error.message });
     }
   }, []);
 
-  // Delete notification
   const deleteNotification = useCallback(async (notificationId) => {
     try {
       await notificationService.deleteNotification(notificationId);
       dispatch({ type: ACTIONS.REMOVE_NOTIFICATION, payload: notificationId });
     } catch (error) {
       console.error('Failed to delete notification:', error);
-      dispatch({ type: ACTIONS.SET_ERROR, payload: error.message });
     }
   }, []);
 
-  // Set filters
   const setFilters = useCallback((filters) => {
     dispatch({ type: ACTIONS.SET_FILTERS, payload: filters });
   }, []);
 
-  // Load more notifications
   const loadMore = useCallback(() => {
     if (state.pagination.hasMore && !state.loading) {
       fetchNotifications(state.pagination.page + 1);
     }
   }, [state.pagination.hasMore, state.loading, state.pagination.page, fetchNotifications]);
+  
+  // Initialize and cleanup Pusher connection
+  useEffect(() => {
+    let removeListener;
+    if (isAuthenticated && user?.id) {
+      dispatch({ type: ACTIONS.SET_LOADING, payload: true });
+      fetchUnreadCount();
+      fetchNotifications();
+      notificationService.startMockLiveNotifications();
+
+      removeListener = notificationService.addEventListener(handleNotificationEvent);
+      notificationService.initializePusher(user.id);
+    }
+    return () => {
+      notificationService.stopMockLiveNotifications();
+      notificationService.disconnectPusher();
+      if (removeListener) {
+        removeListener(); // Crucial cleanup to prevent memory leaks
+      }
+    };
+  }, [isAuthenticated, user?.id, fetchNotifications, fetchUnreadCount, handleNotificationEvent]);
 
   // Context value
   const value = {
-    // State
     ...state,
-    
-    // Actions
     fetchNotifications,
     markAsRead,
     markAllAsRead,
     deleteNotification,
     setFilters,
     loadMore,
-    
-    // Utilities
-    connectionStatus: notificationService.getConnectionStatus()
   };
 
   return (

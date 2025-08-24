@@ -1,421 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700;800;900&family=DM+Sans:wght@300;400;500;600;700;800;900&display=swap');
-
-:root {
-  --primary-bg: #F9FAFB;           
-  --secondary-bg: #F9FAFB;         
-  --tertiary-bg: #F9FAFB;          
-  --elevated-bg: #FFFFFF;          
-  --glass-bg: rgba(255, 255, 255, 0.85);
-  --overlay-bg: rgba(249, 250, 251, 0.95);
-
-  /* Text Colors - Perfect Light Mode Schema */
-  --text-primary: #111827;         /* Primary text color */
-  --text-secondary: #4B5563;       /* Secondary text color */
-  --text-tertiary: #6B7280;        /* Tertiary text */
-  --text-quaternary: #9CA3AF;      /* Quaternary text */
-  --text-inverse: #FFFFFF;         /* White for dark backgrounds */
-  --text-muted: #9CA3AF;           /* Muted text */
-
-  /* Accent Colors - Perfect Light Mode Schema */
-  --accent-primary: #047857;       /* Deep emerald green - matches TradeBro brand */
-  --accent-secondary: #D1FAE5;     /* Light emerald background */
-  --accent-light: #D1FAE5;         /* Light emerald accent */
-  --accent-hover: #065F46;         /* Darker emerald hover */
-  --accent-pressed: #064E3B;       /* Darkest emerald pressed */
-  
-  /* Success & Profit Colors */
-  --success-color: #10B981;        /* Vibrant Green */
-  --success-light: #ECFDF5;        /* Pale Green */
-  --success-dark: #047857;         /* Deep Success */
-  --profit-color: #059669;         /* Profit Green */
-  --profit-bg: #F0FDF4;            /* Profit Background */
-  
-  /* Danger & Loss Colors */
-  --danger-color: #DC2626;         /* Rich Red */
-  --danger-light: #FEF2F2;         /* Pale Red */
-  --danger-dark: #991B1B;          /* Deep Red */
-  --loss-color: #EF4444;           /* Loss Red */
-  --loss-bg: #FEF2F2;              /* Loss Background */
-  
-  /* Warning & Highlight Colors */
-  --warning-color: #D97706;        /* Rich Amber */
-  --warning-light: #FEF3C7;        /* Pale Amber */
-  --warning-dark: #92400E;         /* Deep Amber */
-  --highlight-color: #F59E0B;      /* Golden Amber */
-  --highlight-bg: #FFFBEB;         /* Highlight Background */
-  
-  /* Information Colors */
-  --info-color: #2563EB;           /* Royal Blue */
-  --info-light: #EFF6FF;           /* Pale Blue */
-  --info-dark: #1D4ED8;            /* Deep Blue */
-  
-  /* Border Colors - Perfect Light Mode Schema */
-  --border-primary: #E5E7EB;       /* Primary border color */
-  --border-secondary: #D1D5DB;     /* Secondary border */
-  --border-tertiary: #9CA3AF;      /* Tertiary border */
-  --border-focus: #047857;         /* Deep emerald focus */
-  --border-hover: #6B7280;         /* Hover border */
-  
-  /* Enhanced Shadow System - Light Mode */
-  --shadow-xs: 0 1px 2px 0 rgba(17, 24, 39, 0.05);
-  --shadow-sm: 0 1px 3px 0 rgba(17, 24, 39, 0.1), 0 1px 2px 0 rgba(17, 24, 39, 0.06);
-  --shadow-md: 0 4px 6px -1px rgba(17, 24, 39, 0.1), 0 2px 4px -1px rgba(17, 24, 39, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(17, 24, 39, 0.1), 0 4px 6px -2px rgba(17, 24, 39, 0.05);
-  --shadow-xl: 0 20px 25px -5px rgba(17, 24, 39, 0.1), 0 10px 10px -5px rgba(17, 24, 39, 0.04);
-  --shadow-2xl: 0 25px 50px -12px rgba(17, 24, 39, 0.25);
-  --shadow-inner: inset 0 2px 4px 0 rgba(17, 24, 39, 0.06);
-  --shadow-glow: 0 0 20px rgba(4, 120, 87, 0.15);
-  --shadow-glow-lg: 0 0 40px rgba(4, 120, 87, 0.2);
-  --shadow-focus: 0 0 0 3px rgba(4, 120, 87, 0.1);
-  --shadow-focus-ring: 0 0 0 2px rgba(4, 120, 87, 0.2);
-
-  /* Enhanced Button Shadows */
-  --shadow-button: 0 1px 2px 0 rgba(17, 24, 39, 0.05);
-  --shadow-button-hover: 0 4px 6px -1px rgba(17, 24, 39, 0.1), 0 2px 4px -1px rgba(17, 24, 39, 0.06);
-  --shadow-button-active: inset 0 2px 4px 0 rgba(17, 24, 39, 0.06);
-
-  /* Enhanced Card Shadows */
-  --shadow-card: 0 1px 3px 0 rgba(17, 24, 39, 0.1), 0 1px 2px 0 rgba(17, 24, 39, 0.06);
-  --shadow-card-hover: 0 4px 6px -1px rgba(17, 24, 39, 0.1), 0 2px 4px -1px rgba(17, 24, 39, 0.06);
-  --shadow-card-elevated: 0 10px 15px -3px rgba(17, 24, 39, 0.1), 0 4px 6px -2px rgba(17, 24, 39, 0.05);
-  
-  /* Chart Colors */
-  --chart-green: #10B981;
-  --chart-red: #EF4444;
-  --chart-blue: #3B82F6;
-  --chart-purple: #8B5CF6;
-  --chart-orange: #F97316;
-  --chart-yellow: #EAB308;
-  --chart-grid: #F3F4F6;
-  --chart-axis: #9CA3AF;
-}
-
-/* ========================================
-   🌙 DARK MODE - EL-CLASSICO
-   Sleek, Futuristic, Premium Aesthetic
-   ======================================== */
-
-[data-theme="dark"] {
-  /* Primary Background Colors - Perfect Dark Mode Schema */
-  --primary-bg: #6F00D1;           /* Primary dark background */
-  --secondary-bg: #0F0020;         /* Secondary dark background */
-  --tertiary-bg: #0F0020;          /* Tertiary dark background */
-  --elevated-bg: #0F0020;          /* Elevated dark background */
-  --glass-bg: rgba(111, 0, 209, 0.85);
-  --overlay-bg: rgba(15, 0, 32, 0.95);
-
-  /* Text Colors - Perfect Dark Mode Schema */
-  --text-primary: #B6B1BB;         /* Primary text color */
-  --text-secondary: #B6B1BB;       /* Secondary text color */
-  --text-tertiary: #B6B1BB;        /* Tertiary text */
-  --text-quaternary: #B6B1BB;      /* Quaternary text */
-  --text-inverse: #0F0020;         /* Dark for light backgrounds */
-  --text-muted: #B6B1BB;           /* Muted text */
-
-  /* Accent Colors - Perfect Dark Mode Schema */
-  --accent-primary: #14F195;       /* Bright emerald green - matches TradeBro brand */
-  --accent-secondary: #3B82F6;     /* Secondary blue accent */
-  --accent-light: rgba(20, 241, 149, 0.15);
-  --accent-hover: #10D97F;         /* Slightly darker emerald hover */
-  --accent-pressed: #0EA770;       /* Darker emerald pressed */
-  
-  /* Success & Profit Colors */
-  --success-color: #22C55E;        /* Bright Green */
-  --success-light: rgba(34, 197, 94, 0.15);
-  --success-dark: #16A34A;         /* Deep Success */
-  --profit-color: #10B981;         /* Profit Emerald */
-  --profit-bg: rgba(16, 185, 129, 0.1);
-  
-  /* Danger & Loss Colors */
-  --danger-color: #F87171;         /* Soft Red */
-  --danger-light: rgba(248, 113, 113, 0.15);
-  --danger-dark: #DC2626;          /* Deep Red */
-  --loss-color: #EF4444;           /* Loss Red */
-  --loss-bg: rgba(239, 68, 68, 0.1);
-  
-  /* Warning & Highlight Colors */
-  --warning-color: #FBBF24;        /* Golden Yellow */
-  --warning-light: rgba(251, 191, 36, 0.15);
-  --warning-dark: #D97706;         /* Deep Gold */
-  --highlight-color: #F59E0B;      /* Rich Gold */
-  --highlight-bg: rgba(245, 158, 11, 0.1);
-  
-  /* Information Colors */
-  --info-color: #60A5FA;           /* Soft Blue */
-  --info-light: rgba(96, 165, 250, 0.15);
-  --info-dark: #3B82F6;            /* Deep Blue */
-  
-  /* Border Colors - Perfect Dark Mode Schema */
-  --border-primary: rgba(182, 177, 187, 0.2);  /* Subtle border */
-  --border-secondary: rgba(182, 177, 187, 0.3); /* Medium border */
-  --border-tertiary: rgba(182, 177, 187, 0.4);  /* Strong border */
-  --border-focus: #14F195;         /* Bright emerald focus */
-  --border-hover: rgba(182, 177, 187, 0.5);     /* Hover border */
-  
-  /* Enhanced Shadow System - Dark Mode */
-  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
-  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.5), 0 1px 2px 0 rgba(111, 0, 209, 0.1);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.6), 0 2px 4px -1px rgba(111, 0, 209, 0.15);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.7), 0 4px 6px -2px rgba(111, 0, 209, 0.2);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.8), 0 10px 10px -5px rgba(111, 0, 209, 0.25);
-  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.9);
-  --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.4);
-  --shadow-glow: 0 0 20px rgba(20, 241, 149, 0.3);
-  --shadow-glow-lg: 0 0 40px rgba(20, 241, 149, 0.4);
-  --shadow-focus: 0 0 0 3px rgba(20, 241, 149, 0.2);
-  --shadow-focus-ring: 0 0 0 2px rgba(20, 241, 149, 0.3);
-
-  /* Enhanced Button Shadows - Dark Mode */
-  --shadow-button: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
-  --shadow-button-hover: 0 4px 6px -1px rgba(0, 0, 0, 0.6), 0 2px 4px -1px rgba(59, 130, 246, 0.1);
-  --shadow-button-active: inset 0 2px 4px 0 rgba(0, 0, 0, 0.4);
-
-  /* Enhanced Card Shadows - Dark Mode */
-  --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.5), 0 1px 2px 0 rgba(111, 0, 209, 0.1);
-  --shadow-card-hover: 0 4px 6px -1px rgba(0, 0, 0, 0.6), 0 2px 4px -1px rgba(111, 0, 209, 0.15);
-  --shadow-card-elevated: 0 10px 15px -3px rgba(0, 0, 0, 0.7), 0 4px 6px -2px rgba(111, 0, 209, 0.2);
-  
-  /* Chart Colors - Perfect Dark Mode Schema */
-  --chart-green: #14F195;
-  --chart-red: #F87171;
-  --chart-blue: #3B82F6;
-  --chart-purple: #A78BFA;
-  --chart-orange: #FB923C;
-  --chart-yellow: #FDE047;
-  --chart-grid: rgba(182, 177, 187, 0.1);
-  --chart-axis: #B6B1BB;
-}
-
-/* ========================================
-   🔍 GLOBAL SHARPNESS & VISUAL ENHANCEMENTS
-   ======================================== */
-
-/* Enhanced rendering for all elements */
-* {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-}
-
-/* Apply transforms only to non-sidebar elements */
-*:not(.sidebar):not(.sidebar *) {
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
-}
-
-
-
-/* Enhanced input field sharpness */
-input:not(.sidebar input):not(.sidebar textarea):not(.sidebar select), 
-textarea:not(.sidebar input):not(.sidebar textarea):not(.sidebar select), 
-select:not(.sidebar input):not(.sidebar textarea):not(.sidebar select) {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  border: 1px solid var(--border-primary);
-  outline: none;
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
-}
-
-
-
-/* Enhanced icon sharpness */
-.icon:not(.sidebar .icon):not(.sidebar svg):not(.sidebar i), 
-svg:not(.sidebar .icon):not(.sidebar svg):not(.sidebar i), 
-i:not(.sidebar .icon):not(.sidebar svg):not(.sidebar i) {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  shape-rendering: geometricPrecision;
-  text-rendering: geometricPrecision;
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
-}
-
-/* Sharp image rendering */
-img {
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
-  -ms-interpolation-mode: nearest-neighbor;
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
-}
-
-/* Enhanced table sharpness */
-table, th, td {
-  border-collapse: collapse;
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* ========================================
-   🎯 TYPOGRAPHY SYSTEM - ENHANCED
-   ======================================== */
-
-:root {
-  /* Font Families - Premium Fintech Stack */
-  --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-secondary: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
-  --font-display: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-heading: 'Playfair Display', 'Georgia', serif;
-
-  /* Font Weights */
-  --font-weight-light: 300;
-  --font-weight-normal: 400;
-  --font-weight-medium: 500;
-  --font-weight-semibold: 600;
-  --font-weight-bold: 700;
-  --font-weight-extrabold: 800;
-  --font-weight-black: 900;
-
-  /* Font Sizes - Enhanced Scale */
-  --font-size-xs: 0.75rem;      /* 12px */
-  --font-size-sm: 0.875rem;     /* 14px */
-  --font-size-base: 1rem;       /* 16px */
-  --font-size-lg: 1.125rem;     /* 18px */
-  --font-size-xl: 1.25rem;      /* 20px */
-  --font-size-2xl: 1.5rem;      /* 24px */
-  --font-size-3xl: 1.875rem;    /* 30px */
-  --font-size-4xl: 2.25rem;     /* 36px */
-  --font-size-5xl: 3rem;        /* 48px */
-  --font-size-6xl: 3.75rem;     /* 60px */
-  --font-size-7xl: 4.5rem;      /* 72px */
-
-  /* Line Heights */
-  --line-height-tight: 1.25;
-  --line-height-snug: 1.375;
-  --line-height-normal: 1.5;
-  --line-height-relaxed: 1.625;
-  --line-height-loose: 2;
-
-  /* Letter Spacing */
-  --letter-spacing-tighter: -0.05em;
-  --letter-spacing-tight: -0.025em;
-  --letter-spacing-normal: 0;
-  --letter-spacing-wide: 0.025em;
-  --letter-spacing-wider: 0.05em;
-  --letter-spacing-widest: 0.1em;
-  --font-size-3xl: 1.875rem;    /* 30px */
-  --font-size-4xl: 2.25rem;     /* 36px */
-  --font-size-5xl: 3rem;        /* 48px */
-  --font-size-6xl: 3.75rem;     /* 60px */
-  
-  /* Line Heights */
-  --line-height-tight: 1.25;
-  --line-height-snug: 1.375;
-  --line-height-normal: 1.5;
-  --line-height-relaxed: 1.625;
-  --line-height-loose: 2;
-}
-
-/* ========================================
-   📐 SPACING & LAYOUT SYSTEM
-   ======================================== */
-
-:root {
-  /* Spacing Scale */
-  --space-px: 1px;
-  --space-0: 0;
-  --space-1: 0.25rem;    /* 4px */
-  --space-2: 0.5rem;     /* 8px */
-  --space-3: 0.75rem;    /* 12px */
-  --space-4: 1rem;       /* 16px */
-  --space-5: 1.25rem;    /* 20px */
-  --space-6: 1.5rem;     /* 24px */
-  --space-8: 2rem;       /* 32px */
-  --space-10: 2.5rem;    /* 40px */
-  --space-12: 3rem;      /* 48px */
-  --space-16: 4rem;      /* 64px */
-  --space-20: 5rem;      /* 80px */
-  --space-24: 6rem;      /* 96px */
-  --space-32: 8rem;      /* 128px */
-  
-  /* Border Radius */
-  --radius-none: 0;
-  --radius-sm: 0.125rem;   /* 2px */
-  --radius-base: 0.25rem;  /* 4px */
-  --radius-md: 0.375rem;   /* 6px */
-  --radius-lg: 0.5rem;     /* 8px */
-  --radius-xl: 0.75rem;    /* 12px */
-  --radius-2xl: 1rem;      /* 16px */
-  --radius-3xl: 1.5rem;    /* 24px */
-  --radius-full: 9999px;
-  
-  /* Z-Index Scale */
-  --z-hide: -1;
-  --z-auto: auto;
-  --z-base: 0;
-  --z-docked: 10;
-  --z-dropdown: 1000;
-  --z-sticky: 1020;
-  --z-banner: 1030;
-  --z-overlay: 1040;
-  --z-modal: 1050;
-  --z-popover: 1060;
-  --z-skiplink: 1070;
-  --z-toast: 1080;
-  --z-tooltip: 1090;
-}
-
-/* ========================================
-   ⚡ ANIMATION & TRANSITION SYSTEM
-   ======================================== */
-
-:root {
-  /* Timing Functions */
-  --ease-linear: linear;
-  --ease-in: cubic-bezier(0.4, 0, 1, 1);
-  --ease-out: cubic-bezier(0, 0, 0.2, 1);
-  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
-  --ease-elastic: cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  
-  /* Duration Scale */
-  --duration-75: 75ms;
-  --duration-100: 100ms;
-  --duration-150: 150ms;
-  --duration-200: 200ms;
-  --duration-300: 300ms;
-  --duration-500: 500ms;
-  --duration-700: 700ms;
-  --duration-1000: 1000ms;
-  
-  /* Common Transitions */
-  --transition-fast: all var(--duration-150) var(--ease-out);
-  --transition-base: all var(--duration-200) var(--ease-in-out);
-  --transition-slow: all var(--duration-300) var(--ease-in-out);
-  --transition-colors: color var(--duration-150) var(--ease-in-out), 
-                       background-color var(--duration-150) var(--ease-in-out), 
-                       border-color var(--duration-150) var(--ease-in-out);
-  --transition-transform: transform var(--duration-200) var(--ease-out);
-  --transition-opacity: opacity var(--duration-200) var(--ease-in-out);
-}
-
-/* ========================================
-   🎨 COMPONENT-SPECIFIC COLORS
-   ======================================== */
-
-:root {
-
-  /* Card Colors */
-  --card-bg: var(--elevated-bg);
-  --card-border: var(--border-primary);
-  --card-shadow: var(--shadow-md);
-  --card-hover-shadow: var(--shadow-lg);
-  
   /* Button Colors */
   --btn-primary-bg: var(--accent-primary);
   --btn-primary-hover: var(--accent-hover);
@@ -511,46 +93,46 @@ table, th, td {
 }
 
 /* ========================================
-   📏 SPACING & LAYOUT SYSTEM
+   📐 SPACING & LAYOUT SYSTEM
    ======================================== */
 
 :root {
   /* Spacing Scale */
-  --space-0: 0;
   --space-px: 1px;
-  --space-0-5: 0.125rem;    /* 2px */
-  --space-1: 0.25rem;       /* 4px */
-  --space-1-5: 0.375rem;    /* 6px */
-  --space-2: 0.5rem;        /* 8px */
-  --space-2-5: 0.625rem;    /* 10px */
-  --space-3: 0.75rem;       /* 12px */
-  --space-3-5: 0.875rem;    /* 14px */
-  --space-4: 1rem;          /* 16px */
-  --space-5: 1.25rem;       /* 20px */
-  --space-6: 1.5rem;        /* 24px */
-  --space-7: 1.75rem;       /* 28px */
-  --space-8: 2rem;          /* 32px */
-  --space-9: 2.25rem;       /* 36px */
-  --space-10: 2.5rem;       /* 40px */
-  --space-11: 2.75rem;      /* 44px */
-  --space-12: 3rem;         /* 48px */
-  --space-14: 3.5rem;       /* 56px */
-  --space-16: 4rem;         /* 64px */
-  --space-20: 5rem;         /* 80px */
-  --space-24: 6rem;         /* 96px */
-  --space-28: 7rem;         /* 112px */
-  --space-32: 8rem;         /* 128px */
-  --space-36: 9rem;         /* 144px */
-  --space-40: 10rem;        /* 160px */
-  --space-44: 11rem;        /* 176px */
-  --space-48: 12rem;        /* 192px */
-  --space-52: 13rem;        /* 208px */
-  --space-56: 14rem;        /* 224px */
-  --space-60: 15rem;        /* 240px */
-  --space-64: 16rem;        /* 256px */
-  --space-72: 18rem;        /* 288px */
-  --space-80: 20rem;        /* 320px */
-  --space-96: 24rem;        /* 384px */
+  --space-0: 0;
+  --space-0-5: 0.125rem;     /* 2px */
+  --space-1: 0.25rem;        /* 4px */
+  --space-1-5: 0.375rem;     /* 6px */
+  --space-2: 0.5rem;         /* 8px */
+  --space-2-5: 0.625rem;     /* 10px */
+  --space-3: 0.75rem;        /* 12px */
+  --space-3-5: 0.875rem;     /* 14px */
+  --space-4: 1rem;           /* 16px */
+  --space-5: 1.25rem;        /* 20px */
+  --space-6: 1.5rem;         /* 24px */
+  --space-7: 1.75rem;        /* 28px */
+  --space-8: 2rem;           /* 32px */
+  --space-9: 2.25rem;        /* 36px */
+  --space-10: 2.5rem;        /* 40px */
+  --space-11: 2.75rem;       /* 44px */
+  --space-12: 3rem;          /* 48px */
+  --space-14: 3.5rem;        /* 56px */
+  --space-16: 4rem;          /* 64px */
+  --space-20: 5rem;          /* 80px */
+  --space-24: 6rem;          /* 96px */
+  --space-28: 7rem;          /* 112px */
+  --space-32: 8rem;          /* 128px */
+  --space-36: 9rem;          /* 144px */
+  --space-40: 10rem;         /* 160px */
+  --space-44: 11rem;         /* 176px */
+  --space-48: 12rem;         /* 192px */
+  --space-52: 13rem;         /* 208px */
+  --space-56: 14rem;         /* 224px */
+  --space-60: 15rem;         /* 240px */
+  --space-64: 16rem;         /* 256px */
+  --space-72: 18rem;         /* 288px */
+  --space-80: 20rem;         /* 320px */
+  --space-96: 24rem;         /* 384px */
 
   /* Border Radius */
   --radius-none: 0;
@@ -562,16 +144,21 @@ table, th, td {
   --radius-2xl: 1rem;        /* 16px */
   --radius-3xl: 1.5rem;      /* 24px */
   --radius-full: 9999px;
-
+  
   /* Z-Index Scale */
-  --z-index-dropdown: 1000;
-  --z-index-sticky: 1020;
-  --z-index-fixed: 1030;
-  --z-index-modal-backdrop: 1040;
-  --z-index-modal: 1050;
-  --z-index-popover: 1060;
-  --z-index-tooltip: 1070;
-  --z-index-toast: 1080;
+  --z-hide: -1;
+  --z-auto: auto;
+  --z-base: 0;
+  --z-docked: 10;
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-banner: 1030;
+  --z-overlay: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-skiplink: 1070;
+  --z-toast: 1080;
+  --z-tooltip: 1090;
 }
 
 /* ========================================
@@ -638,6 +225,68 @@ a:hover {
 }
 
 /* ========================================
+   🔍 GLOBAL SHARPNESS & VISUAL ENHANCEMENTS
+   ======================================== */
+
+/* Enhanced rendering for all elements */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* IMPORTANT: Removed transform: translateZ(0) from generic elements to prevent stacking context issues on ancestors of fixed elements */
+/* Apply transforms only to non-sidebar elements */
+/* This rule is now effectively empty after removing transform properties */
+*:not(.sidebar):not(.sidebar *) {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* Enhanced input field sharpness */
+input:not(.sidebar input):not(.sidebar textarea):not(.sidebar select), 
+textarea:not(.sidebar input):not(.sidebar textarea):not(.sidebar select), 
+select:not(.sidebar input):not(.sidebar textarea):not(.sidebar select) {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  border: 1px solid var(--border-primary);
+  outline: none;
+}
+
+/* Enhanced icon sharpness */
+.icon:not(.sidebar .icon):not(.sidebar svg):not(.sidebar i), 
+svg:not(.sidebar .icon):not(.sidebar svg):not(.sidebar i), 
+i:not(.sidebar .icon):not(.sidebar svg):not(.sidebar i) {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  shape-rendering: geometricPrecision;
+  text-rendering: geometricPrecision;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+/* Sharp image rendering */
+img {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  -ms-interpolation-mode: nearest-neighbor;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* Enhanced table sharpness */
+table, th, td {
+  border-collapse: collapse;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ========================================
    🔘 BUTTON SYSTEM
    ======================================== */
 
@@ -665,7 +314,7 @@ a:hover {
 .btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-  transform: none !important;
+  transform: none; /* Ensure disabled buttons don't have transforms */
 }
 
 /* Button Variants */
@@ -750,6 +399,9 @@ a:hover {
   width: 100%;
 }
 
+/* ========================================
+   📝 FORM SYSTEM
+   ======================================== */
 
 .form-group {
   margin-bottom: var(--space-6);

@@ -1,115 +1,69 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+// src/contexts/AuthContext.jsx
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+// import { useNavigate } from 'react-router-dom'; // Only needed if you want to redirect *from* context on logout
 
-// Create the context
 const AuthContext = createContext();
 
-// Create a provider component
+export const useAuth = () => useContext(AuthContext);
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // No loading animation needed
 
-  // Check for existing token on app load
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
-    
-    if (token && userData) {
-      try {
-        const parsedUser = JSON.parse(userData);
-        setUser(parsedUser);
-        setIsAuthenticated(true);
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        setUser(null);
-        setIsAuthenticated(false);
-      }
-    }
-    
-    setLoading(false);
-  }, []);
-  
-  // Listen for storage changes (multiple tabs)
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const token = localStorage.getItem('token');
-      const userData = localStorage.getItem('user');
-      
-      if (!token || !userData) {
-        setUser(null);
-        setIsAuthenticated(false);
-      } else {
-        try {
-          const parsedUser = JSON.parse(userData);
-          setUser(parsedUser);
-          setIsAuthenticated(true);
-        } catch {
-          setUser(null);
-          setIsAuthenticated(false);
-        }
-      }
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+  // const navigate = useNavigate(); // Uncomment if you need to redirect directly from context
 
-  // Login function
-  const login = (userData, token) => {
+  // Function to set user and authentication status
+  const login = useCallback((userData, token) => {
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
     setIsAuthenticated(true);
-  };
+    console.log("AuthContext: User logged in:", userData.email);
+  }, []);
 
-  // Logout function
-  const logout = () => {
+  // Function to get stored token
+  const getToken = useCallback(() => {
+    return localStorage.getItem('token');
+  }, []);
+
+  // Function to clear user and authentication status
+  const logout = useCallback(() => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);
     setIsAuthenticated(false);
-    window.location.href = '/login';
-  };
+    console.log("AuthContext: User logged out.");
+    // Optionally redirect to login page after logout if navigate is uncommented
+    // navigate('/login'); 
+  }, []); // Add navigate to dependencies if used
 
-  // Update user profile
-  const updateProfile = (updatedUserData) => {
-    const updatedUser = { ...user, ...updatedUserData };
-    localStorage.setItem('user', JSON.stringify(updatedUser));
-    setUser(updatedUser);
-  };
+  // Initial check for stored token/user on app load
+  useEffect(() => {
+    const storedToken = localStorage.getItem('token');
+    const storedUser = localStorage.getItem('user');
 
-  // Get auth token
-  const getToken = () => {
-    return localStorage.getItem('token');
-  };
+    if (storedToken && storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+        setIsAuthenticated(true);
+        console.log("AuthContext: Found stored user, auto-logging in:", parsedUser.email);
+      } catch (error) {
+        console.error("AuthContext: Failed to parse stored user data:", error);
+        logout(); // Clear invalid data
+      }
+    }
+    // setLoading(false); // Not needed
+  }, [logout]); // logout is a dependency
 
-  // Check if user has specific role
-  const hasRole = (role) => {
-    return user?.role === role;
-  };
-
-  // Check if user is admin
-  const isAdmin = () => {
-    return user?.role === 'admin';
-  };
-
-  // Value to be provided to consumers
   const value = {
     user,
     isAuthenticated,
     loading,
     login,
     logout,
-    updateProfile,
     getToken,
-    hasRole,
-    isAdmin,
-    // Additional user info
-    userName: user?.name || 'Guest',
-    userEmail: user?.email || '',
-    userAvatar: user?.avatar || '/default-avatar.png'
   };
 
   return (
@@ -118,14 +72,3 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
-
-// Custom hook to use the auth context
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
-
-export default AuthContext;

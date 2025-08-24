@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import './InteractiveChart.css';
 
@@ -12,9 +12,10 @@ const InteractiveChart = () => {
     { value: 11800, label: '2 Months', color: '#F59E0B' },
     { value: 15200, label: '3 Months', color: '#10B981' },
     { value: 18750, label: '6 Months', color: '#10B981' },
-    { value: 22300, label: '1 Year', color: '#10B981' }
+    { value: 22300, label: '1 Year', color: '#10B981' },
   ];
 
+  // Auto-advance logic
   useEffect(() => {
     const interval = setInterval(() => {
       if (!isHovered) {
@@ -24,6 +25,56 @@ const InteractiveChart = () => {
 
     return () => clearInterval(interval);
   }, [isHovered, chartData.length]);
+
+  // Use useMemo to prevent re-calculating on every render
+  const chartProps = useMemo(() => {
+    const margin = 20;
+    const svgWidth = 400;
+    const svgHeight = 200;
+    const innerWidth = svgWidth - 2 * margin;
+    const innerHeight = svgHeight - 2 * margin;
+    
+    // Find min/max values for scaling
+    const values = chartData.map(d => d.value);
+    const minValue = Math.min(...values);
+    const maxValue = Math.max(...values);
+    const valueRange = maxValue - minValue;
+
+    // A function to scale values to fit the SVG's Y-axis
+    const scaleY = (value) => {
+      if (valueRange === 0) return innerHeight / 2;
+      return innerHeight - ((value - minValue) / valueRange) * innerHeight;
+    };
+
+    // A function to generate the SVG path data
+    const generatePath = () => {
+      let path = `M ${margin} ${scaleY(chartData[0].value) + margin}`;
+      
+      for (let i = 1; i < chartData.length; i++) {
+        const x = (i / (chartData.length - 1)) * innerWidth;
+        const y = scaleY(chartData[i].value);
+        path += ` L ${x + margin} ${y + margin}`;
+      }
+      return path;
+    };
+
+    // An array of point coordinates
+    const points = chartData.map((point, index) => ({
+      x: (index / (chartData.length - 1)) * innerWidth + margin,
+      y: scaleY(point.value) + margin,
+      color: point.color,
+      label: point.label,
+      value: point.value
+    }));
+
+    return {
+      svgWidth,
+      svgHeight,
+      generatePath,
+      points,
+      margin,
+    };
+  }, [chartData]);
 
   return (
     <div
@@ -51,9 +102,9 @@ const InteractiveChart = () => {
           <span className="chart-period">{chartData[activePoint].label}</span>
         </div>
       </div>
-
+      ---
       <div className="chart-container">
-        <svg viewBox="0 0 400 200" className="chart-svg">
+        <svg viewBox={`0 0 ${chartProps.svgWidth} ${chartProps.svgHeight}`} className="chart-svg">
           {/* Grid lines */}
           <defs>
             <pattern id="grid" width="40" height="20" patternUnits="userSpaceOnUse">
@@ -64,7 +115,8 @@ const InteractiveChart = () => {
 
           {/* Chart line */}
           <motion.path
-            d="M 20 150 Q 80 120 120 130 T 200 100 T 280 80 T 360 60"
+            key="chart-line" // Use a key to re-trigger animation on data change
+            d={chartProps.generatePath()}
             fill="none"
             stroke="url(#chartGradient)"
             strokeWidth="3"
@@ -83,11 +135,11 @@ const InteractiveChart = () => {
           </defs>
 
           {/* Chart points */}
-          {chartData.map((point, index) => (
+          {chartProps.points.map((point, index) => (
             <motion.circle
               key={index}
-              cx={20 + (index * 68)}
-              cy={150 - (index * 15)}
+              cx={point.x}
+              cy={point.y}
               r={activePoint === index ? 8 : 5}
               fill={point.color}
               className="chart-point"
@@ -101,11 +153,12 @@ const InteractiveChart = () => {
 
           {/* Active point indicator */}
           <motion.circle
-            cx={20 + (activePoint * 68)}
-            cy={150 - (activePoint * 15)}
+            key={`active-circle-${activePoint}`} // Key to trigger animation on state change
+            cx={chartProps.points[activePoint].x}
+            cy={chartProps.points[activePoint].y}
             r="12"
             fill="none"
-            stroke={chartData[activePoint].color}
+            stroke={chartProps.points[activePoint].color}
             strokeWidth="2"
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
@@ -113,7 +166,7 @@ const InteractiveChart = () => {
           />
         </svg>
       </div>
-
+      ---
       <div className="chart-legend">
         {chartData.map((point, index) => (
           <motion.button

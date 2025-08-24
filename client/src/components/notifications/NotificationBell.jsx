@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiBell, FiCheck, FiX, FiMoreVertical } from 'react-icons/fi';
+import { FiBell, FiSettings } from 'react-icons/fi';
 import { useNotifications } from '../../contexts/NotificationContext';
 import NotificationDropdown from './NotificationDropdown';
 import './NotificationBell.css';
@@ -11,25 +11,24 @@ import './NotificationBell.css';
  */
 const NotificationBell = ({ className = '', position = 'bottom-right' }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isAnimating, setIsAnimating] = useState(false);
   const bellRef = useRef(null);
   const dropdownRef = useRef(null);
-  
-  const { 
-    unreadCount, 
-    notifications, 
-    loading, 
+
+  const {
+    unreadCount,
+    notifications,
+    loading,
     markAllAsRead,
-    connectionStatus 
+    connectionStatus
   } = useNotifications();
 
-  // Close dropdown when clicking outside
+  // Close dropdown when clicking outside of the bell or dropdown itself
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
-        bellRef.current && 
+        bellRef.current &&
         !bellRef.current.contains(event.target) &&
-        dropdownRef.current && 
+        dropdownRef.current &&
         !dropdownRef.current.contains(event.target)
       ) {
         setIsOpen(false);
@@ -40,39 +39,37 @@ const NotificationBell = ({ className = '', position = 'bottom-right' }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Animate bell when new notification arrives
+  // --- Bell Animation Logic ---
+  const [isAnimating, setIsAnimating] = useState(false);
   useEffect(() => {
     if (unreadCount > 0 && !isAnimating) {
       setIsAnimating(true);
-      setTimeout(() => setIsAnimating(false), 1000);
+      const timer = setTimeout(() => setIsAnimating(false), 1200); // Animation duration is 0.6s
+      return () => clearTimeout(timer);
     }
   }, [unreadCount, isAnimating]);
 
   // Handle bell click
-  const handleBellClick = () => {
-    setIsOpen(!isOpen);
-  };
+  const handleBellClick = useCallback(() => {
+    setIsOpen(prev => !prev);
+  }, []);
 
-  // Handle mark all as read
-  const handleMarkAllAsRead = async () => {
+  // Handle mark all as read from the dropdown
+  const handleMarkAllAsRead = useCallback(async () => {
     try {
       await markAllAsRead();
     } catch (error) {
       console.error('Failed to mark all as read:', error);
     }
-  };
+  }, [markAllAsRead]);
 
   // Get connection status indicator
   const getConnectionIndicator = () => {
     switch (connectionStatus) {
-      case 'connected':
-        return 'connected';
-      case 'connecting':
-        return 'connecting';
-      case 'disconnected':
-        return 'disconnected';
-      default:
-        return 'unknown';
+      case 'connected': return 'connected';
+      case 'connecting': return 'connecting';
+      case 'disconnected': return 'disconnected';
+      default: return 'unknown';
     }
   };
 
@@ -91,7 +88,7 @@ const NotificationBell = ({ className = '', position = 'bottom-right' }) => {
           className="bell-icon"
           animate={isAnimating ? {
             rotate: [0, -10, 10, -10, 10, 0],
-            transition: { duration: 0.6, ease: "easeInOut" }
+            transition: { duration: 0.6, ease: "easeInOut", repeat: 1, repeatDelay: 0.6 }
           } : {}}
         >
           <FiBell size={20} />

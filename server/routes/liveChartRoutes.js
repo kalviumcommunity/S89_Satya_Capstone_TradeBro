@@ -1,501 +1,391 @@
 const express = require('express');
 const axios = require('axios');
 const router = express.Router();
+const { generateMockChartData, getDataCountForRange } = require('../utils/chartHelpers'); // Import generateMockChartData and getDataCountForRange
 
 // In-memory cache for API responses
 const cache = new Map();
-const CACHE_DURATION = 60000; // 60 seconds cache
-const API_THROTTLE_DURATION = 60000; // 60 seconds between API calls per symbol
+const CACHE_DURATION = 60 * 1000; // 60 seconds cache for API responses
+const API_THROTTLE_DURATION = 15 * 1000; // 15 seconds between API calls per symbol to avoid hitting rate limits too quickly
 const lastApiCalls = new Map(); // Track last API call time per symbol
 
 // Clean up old cache entries every 5 minutes
 setInterval(() => {
-  const now = Date.now();
-  for (const [key, value] of cache.entries()) {
-    if (now - value.timestamp > CACHE_DURATION * 2) { // Keep cache for 2x duration
-      cache.delete(key);
-      console.log(`🧹 Cleaned up cache entry: ${key}`);
+    const now = Date.now();
+    for (const [key, value] of cache.entries()) {
+        if (now - value.timestamp > CACHE_DURATION * 5) { // Keep cache for 5x duration
+            cache.delete(key);
+            console.log(`🧹 Cleaned up cache entry: ${key}`);
+        }
     }
-  }
 
-  // Clean up old API call tracking
-  for (const [symbol, timestamp] of lastApiCalls.entries()) {
-    if (now - timestamp > API_THROTTLE_DURATION * 2) {
-      lastApiCalls.delete(symbol);
+    // Clean up old API call tracking
+    for (const [symbol, timestamp] of lastApiCalls.entries()) {
+        if (now - timestamp > API_THROTTLE_DURATION * 5) {
+            lastApiCalls.delete(symbol);
+        }
     }
-  }
-}, 300000); // 5 minutes
+}, 5 * 60 * 1000); // 5 minutes
 
 // FMP API Configuration - Keys from environment variables only
 const FMP_API_KEYS = [
-  process.env.FMP_API_KEY,
-  process.env.FMP_API_KEY_2,
-  process.env.FMP_API_KEY_3,
-  process.env.FMP_API_KEY_4
+    process.env.FMP_API_KEY,
+    process.env.FMP_API_KEY_2,
+    process.env.FMP_API_KEY_3,
+    process.env.FMP_API_KEY_4
 ].filter(key => key && key !== 'demo'); // Remove null/undefined/demo keys
 
 let currentKeyIndex = 0;
 
 // Validate that we have at least one API key
 if (FMP_API_KEYS.length === 0) {
-  console.error('❌ No valid FMP API keys found in environment variables');
-  console.error('Please set FMP_API_KEY, FMP_API_KEY_2, or FMP_API_KEY_3 in your .env file');
+    console.error('❌ CRITICAL: No valid FMP API keys found in environment variables. Live data will rely on mock data.');
+    console.error('Please set FMP_API_KEY, FMP_API_KEY_2, etc., in your .env file.');
 }
 
-// Market hours checker for different exchanges
+// Market hours checker for different exchanges (More robust timezone handling)
 const isMarketOpen = (exchange = 'NSE') => {
-  const now = new Date();
-  const istTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Kolkata"}));
-  const day = istTime.getDay(); // 0 = Sunday, 6 = Saturday
-  const hours = istTime.getHours();
-  const minutes = istTime.getMinutes();
-  const currentTime = hours * 60 + minutes;
+    const now = new Date();
+    let targetTimeZone = 'America/New_York'; // Default for US markets
+    let marketOpenTime = { hour: 9, minute: 30 };
+    let marketCloseTime = { hour: 16, minute: 0 }; // 4 PM
 
-  // Market closed on weekends
-  if (day === 0 || day === 6) {
-    return false;
-  }
+    if (exchange.toUpperCase() === 'NSE' || exchange.toUpperCase() === 'BSE') {
+        targetTimeZone = 'Asia/Kolkata';
+        marketOpenTime = { hour: 9, minute: 15 };
+        marketCloseTime = { hour: 15, minute: 30 }; // 3:30 PM
+    }
 
-  switch (exchange.toUpperCase()) {
-    case 'NSE':
-    case 'BSE':
-      // Indian markets: 9:15 AM to 3:30 PM IST
-      return currentTime >= (9 * 60 + 15) && currentTime <= (15 * 60 + 30);
-    case 'NASDAQ':
-    case 'NYSE':
-      // US markets: 9:30 AM to 4:00 PM EST (converted to IST: 8:00 PM to 2:30 AM next day)
-      const usTime = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
-      const usHours = usTime.getHours();
-      const usMinutes = usTime.getMinutes();
-      const usCurrentTime = usHours * 60 + usMinutes;
-      const usDay = usTime.getDay();
-      
-      if (usDay === 0 || usDay === 6) return false;
-      return usCurrentTime >= (9 * 60 + 30) && usCurrentTime <= (16 * 60);
-    default:
-      return true; // Default to open for unknown exchanges
-  }
+    const options = { timeZone: targetTimeZone, hour: 'numeric', minute: 'numeric', weekday: 'numeric' };
+    const formatter = new Intl.DateTimeFormat('en-US', options);
+    const parts = formatter.formatToParts(now);
+
+    let currentHour = 0, currentMinute = 0, currentDay = 0;
+
+    for (const part of parts) {
+        if (part.type === 'hour') currentHour = parseInt(part.value, 10);
+        if (part.type === 'minute') currentMinute = parseInt(part.value, 10);
+        if (part.type === 'weekday') currentDay = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'].indexOf(part.value.toLowerCase());
+    }
+
+    // Adjust for 12-hour format if necessary (Intl.DateTimeFormat can return 12-hour)
+    const isPM = formatter.format(now).includes('PM');
+    if (isPM && currentHour !== 12) currentHour += 12;
+    if (!isPM && currentHour === 12) currentHour = 0; // Midnight case
+
+    // Market closed on weekends
+    if (currentDay === 0 || currentDay === 6) {
+        return false;
+    }
+
+    const currentTotalMinutes = currentHour * 60 + currentMinute;
+    const marketOpenTotalMinutes = marketOpenTime.hour * 60 + marketOpenTime.minute;
+    const marketCloseTotalMinutes = marketCloseTime.hour * 60 + marketCloseTime.minute;
+
+    return currentTotalMinutes >= marketOpenTotalMinutes && currentTotalMinutes <= marketCloseTotalMinutes;
 };
+
 
 // Get next available API key
 const getNextApiKey = () => {
-  const key = FMP_API_KEYS[currentKeyIndex];
-  currentKeyIndex = (currentKeyIndex + 1) % FMP_API_KEYS.length;
-  return key;
+    if (FMP_API_KEYS.length === 0) {
+        console.warn("No FMP API keys available, API calls will fail.");
+        return null;
+    }
+    const key = FMP_API_KEYS[currentKeyIndex];
+    currentKeyIndex = (currentKeyIndex + 1) % FMP_API_KEYS.length;
+    return key;
 };
 
-// Generate mock intraday data for fallback
-const generateMockIntradayData = (symbol) => {
-  const now = new Date();
-  const data = [];
-
-  // Set base price based on symbol
-  let basePrice = 2500; // Default for Indian stocks
-
-  // Adjust base price for different symbols
-  if (symbol.includes('RELIANCE')) basePrice = 2800;
-  if (symbol.includes('INFY')) basePrice = 1500;
-  if (symbol.includes('TCS')) basePrice = 3500;
-  if (symbol.includes('HDFC')) basePrice = 1700;
-  if (symbol.includes('ICICI')) basePrice = 950;
-  if (symbol.includes('AAPL')) basePrice = 180;
-  if (symbol.includes('MSFT')) basePrice = 350;
-  if (symbol.includes('GOOGL')) basePrice = 140;
-  if (symbol.includes('AMZN')) basePrice = 170;
-
-  // Generate last 100 minutes of data
-  for (let i = 100; i >= 0; i--) {
-    const time = new Date(now.getTime() - (i * 60 * 1000));
-    const variation = (Math.random() - 0.5) * (basePrice * 0.02); // ±1% variation
-    const open = basePrice + variation;
-    const close = open + (Math.random() - 0.5) * (basePrice * 0.01);
-    const high = Math.max(open, close) + Math.random() * (basePrice * 0.005);
-    const low = Math.min(open, close) - Math.random() * (basePrice * 0.005);
-
-    data.push({
-      date: time.toISOString(),
-      open: open.toFixed(2),
-      high: high.toFixed(2),
-      low: low.toFixed(2),
-      close: close.toFixed(2),
-      volume: Math.floor(Math.random() * 100000) + 10000
-    });
-  }
-
-  return data;
-};
-
-// Check if we should use cache or make a new API call
-const shouldUseCache = (symbol) => {
-  const cacheKey = `intraday_${symbol}`;
-  const cachedData = cache.get(cacheKey);
-  const lastCallTime = lastApiCalls.get(symbol) || 0;
-  const now = Date.now();
-
-  // If we have cached data and it's still fresh
-  if (cachedData && now - cachedData.timestamp < CACHE_DURATION) {
-    console.log(`🔄 Using cached data for ${symbol} (${Math.round((now - cachedData.timestamp) / 1000)}s old)`);
-    return true;
-  }
-
-  // If we've called the API recently for this symbol, use cache or mock
-  if (now - lastCallTime < API_THROTTLE_DURATION) {
-    const timeToWait = Math.round((API_THROTTLE_DURATION - (now - lastCallTime)) / 1000);
-    console.log(`⏳ API throttled for ${symbol}, ${timeToWait}s remaining until next call`);
-    return true;
-  }
-
-  return false;
+// Helper to convert frontend period (e.g., '1D') to a suitable interval for mock data generation
+const periodToInterval = (period) => {
+    switch (period) {
+        case '1D': return '5min';
+        case '5D': return '30min';
+        case '1M': return '1h';
+        case '3M': return '4h';
+        case '6M': return '1D';
+        case '1Y': return '1D';
+        case '5Y': return '1W';
+        default: return '1h';
+    }
 };
 
 // Fetch 1-minute intraday data from FMP API with caching and throttling
 const fetchIntradayData = async (symbol, retryCount = 0) => {
-  const cacheKey = `intraday_${symbol}`;
+    const cacheKey = `intraday_${symbol}`;
+    const now = Date.now();
 
-  // Check if we should use cache
-  if (shouldUseCache(symbol)) {
+    // Check if we have fresh cached data
     const cachedData = cache.get(cacheKey);
-
-    // If we have cached data, use it
-    if (cachedData) {
-      return cachedData.data;
+    if (cachedData && now - cachedData.timestamp < CACHE_DURATION) {
+        console.log(`🔄 Using cached data for ${symbol} (${Math.round((now - cachedData.timestamp) / 1000)}s old)`);
+        return cachedData.data;
     }
 
-    // Otherwise, use mock data
-    console.log(`🎭 No cached data available, using mock data for ${symbol}`);
-    return generateMockIntradayData(symbol);
-  }
-
-  // If no API keys available, return mock data immediately
-  if (FMP_API_KEYS.length === 0) {
-    console.log(`🎭 No API keys available, using mock data for ${symbol}`);
-    return generateMockIntradayData(symbol);
-  }
-
-  const maxRetries = FMP_API_KEYS.length;
-
-  if (retryCount >= maxRetries) {
-    console.log(`🎭 All API keys exhausted, using mock data for ${symbol}`);
-    return generateMockIntradayData(symbol);
-  }
-
-  const apiKey = getNextApiKey();
-
-  try {
-    console.log(`📊 Fetching 1-minute data for ${symbol} (Attempt ${retryCount + 1})`);
-
-    // Update last API call time
-    lastApiCalls.set(symbol, Date.now());
-
-    const response = await axios.get(`https://financialmodelingprep.com/api/v3/historical-chart/1min/${symbol}`, {
-      params: {
-        apikey: apiKey
-      },
-      timeout: 10000
-    });
-
-    if (response.data && Array.isArray(response.data) && response.data.length > 0) {
-      console.log(`✅ Received ${response.data.length} data points for ${symbol}`);
-
-      // Cache the response
-      cache.set(cacheKey, {
-        data: response.data,
-        timestamp: Date.now()
-      });
-
-      return response.data;
-    } else {
-      console.log(`⚠️ No data received from API, using mock data for ${symbol}`);
-      const mockData = generateMockIntradayData(symbol);
-
-      // Cache the mock data too
-      cache.set(cacheKey, {
-        data: mockData,
-        timestamp: Date.now(),
-        isMock: true
-      });
-
-      return mockData;
-    }
-  } catch (error) {
-    if (error.response?.status === 429) {
-      console.warn(`⚠️ Rate limit hit for key ${currentKeyIndex}, trying next key...`);
-      return fetchIntradayData(symbol, retryCount + 1);
+    // Check throttling
+    const lastCallTime = lastApiCalls.get(symbol) || 0;
+    if (now - lastCallTime < API_THROTTLE_DURATION) {
+        const timeToWait = Math.round((API_THROTTLE_DURATION - (now - lastCallTime)) / 1000);
+        console.log(`⏳ API throttled for ${symbol}, ${timeToWait}s remaining. Returning mock/stale cache.`);
+        return cachedData?.data || generateMockChartData(symbol, { interval: '1min', count: 60 }); // Fallback to mock
     }
 
-    console.warn(`⚠️ API error for ${symbol}:`, error.message);
-    console.log(`🎭 Falling back to mock data for ${symbol}`);
+    // If no API keys available, return mock data immediately
+    if (FMP_API_KEYS.length === 0) {
+        console.log(`🎭 No API keys available, using mock data for ${symbol}`);
+        return generateMockChartData(symbol, { interval: '1min', count: 60 });
+    }
 
-    const mockData = generateMockIntradayData(symbol);
+    const maxRetries = FMP_API_KEYS.length;
+    if (retryCount >= maxRetries) {
+        console.log(`🎭 All API keys exhausted, using mock data for ${symbol}`);
+        return generateMockChartData(symbol, { interval: '1min', count: 60 });
+    }
 
-    // Cache the mock data too
-    cache.set(cacheKey, {
-      data: mockData,
-      timestamp: Date.now(),
-      isMock: true
-    });
+    const apiKey = getNextApiKey();
+    if (!apiKey) { // Should not happen if FMP_API_KEYS.length check is accurate
+        console.log(`🎭 No API key retrieved, using mock data for ${symbol}`);
+        return generateMockChartData(symbol, { interval: '1min', count: 60 });
+    }
 
-    return mockData;
-  }
+    try {
+        console.log(`📊 Fetching 1-minute data for ${symbol} (Attempt ${retryCount + 1}) with key ending in ${apiKey.slice(-5)}`);
+
+        // Update last API call time
+        lastApiCalls.set(symbol, Date.now());
+
+        const response = await axios.get(`https://financialmodelingprep.com/api/v3/historical-chart/1min/${symbol}`, {
+            params: {
+                apikey: apiKey
+            },
+            timeout: 10000 // 10 seconds timeout
+        });
+
+        if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+            console.log(`✅ Received ${response.data.length} data points for ${symbol}`);
+            // Cache the response
+            cache.set(cacheKey, {
+                data: response.data,
+                timestamp: Date.now(),
+                isMock: false
+            });
+            return response.data;
+        } else {
+            console.log(`⚠️ No data received from API for ${symbol}, using mock data.`);
+            const mockData = generateMockChartData(symbol, { interval: '1min', count: 60 });
+            cache.set(cacheKey, {
+                data: mockData,
+                timestamp: Date.now(),
+                isMock: true
+            });
+            return mockData;
+        }
+    } catch (error) {
+        if (error.response?.status === 429 && FMP_API_KEYS.length > 1) {
+            console.warn(`⚠️ Rate limit hit for key (index ${currentKeyIndex -1}), trying next key...`);
+            return fetchIntradayData(symbol, retryCount + 1); // Retry with next key
+        }
+
+        console.warn(`⚠️ API error for ${symbol}:`, error.message);
+        console.log(`🎭 Falling back to mock data for ${symbol}`);
+
+        const mockData = generateMockChartData(symbol, { interval: '1min', count: 60 });
+        cache.set(cacheKey, {
+            data: mockData,
+            timestamp: Date.now(),
+            isMock: true
+        });
+        return mockData;
+    }
 };
 
-// Convert FMP data to Lightweight Charts format
-const formatDataForLightweightCharts = (data) => {
-  return data
-    .map(item => {
-      const timestamp = new Date(item.date).getTime() / 1000; // Convert to UNIX timestamp
-      
-      return {
-        time: timestamp,
-        open: parseFloat(item.open),
-        high: parseFloat(item.high),
-        low: parseFloat(item.low),
-        close: parseFloat(item.close),
-        volume: parseInt(item.volume) || 0
-      };
-    })
-    .filter(item => !isNaN(item.time) && !isNaN(item.open))
-    .sort((a, b) => a.time - b.time); // Sort by timestamp
+// Fetch historical data for various periods
+const fetchHistoricalData = async (symbol, period, retryCount = 0) => {
+    const cacheKey = `historical_${symbol}_${period}`;
+    const now = Date.now();
+
+    // Check if we have fresh cached data
+    const cachedData = cache.get(cacheKey);
+    if (cachedData && now - cachedData.timestamp < CACHE_DURATION) {
+        console.log(`🔄 Using cached historical cached data for ${symbol} (${period})`);
+        return cachedData.data;
+    }
+
+    // Check throttling - apply a longer throttle for historical data
+    const lastCallTime = lastApiCalls.get(`${symbol}_${period}`) || 0;
+    if (now - lastCallTime < API_THROTTLE_DURATION * 2) { // Longer throttle for historical
+        const timeToWait = Math.round((API_THROTTLE_DURATION * 2 - (now - lastCallTime)) / 1000);
+        console.log(`⏳ Historical API throttled for ${symbol} (${period}), ${timeToWait}s remaining.`);
+        return cachedData?.data || generateMockChartData(symbol, { interval: periodToInterval(period), count: getDataCountForRange(period, periodToInterval(period)) });
+    }
+
+    if (FMP_API_KEYS.length === 0) {
+        console.log(`🎭 No API keys available, using mock historical data for ${symbol} (${period})`);
+        return generateMockChartData(symbol, { interval: periodToInterval(period), count: getDataCountForRange(period, periodToInterval(period)) });
+    }
+
+    const maxRetries = FMP_API_KEYS.length;
+    if (retryCount >= maxRetries) {
+        console.log(`🎭 All API keys exhausted, using mock historical data for ${symbol} (${period})`);
+        return generateMockChartData(symbol, { interval: periodToInterval(period), count: getDataCountForRange(period, periodToInterval(period)) });
+    }
+
+    const apiKey = getNextApiKey();
+    if (!apiKey) {
+        console.log(`🎭 No API key retrieved, using mock historical data for ${symbol} (${period})`);
+        return generateMockChartData(symbol, { interval: periodToInterval(period), count: getDataCountForRange(period, periodToInterval(period)) });
+    }
+
+    let fmpPeriod = period;
+    let fmpInterval = '1day'; // Default interval for historical
+    let count = 0;
+
+    // FMP historical data endpoint requires specific `serietype` for 1-minute
+    // For 1D, FMP's 1min endpoint is used. For others, daily/weekly/monthly
+    if (period === '1D') {
+        return fetchIntradayData(symbol); // Use 1-minute intraday for 1D
+    } else if (period === '5D') {
+        fmpPeriod = '5min'; // FMP often expects interval for short historical
+        fmpInterval = '5min';
+        count = getDataCountForRange(period, '5min');
+    } else if (period === '1M') {
+        fmpPeriod = '1hour';
+        fmpInterval = '1hour';
+        count = getDataCountForRange(period, '1h');
+    } else if (period === '3M' || period === '6M' || period === '1Y') {
+        fmpPeriod = '1day';
+        fmpInterval = '1day';
+        count = getDataCountForRange(period, '1D');
+    } else if (period === '5Y') {
+        fmpPeriod = '1week';
+        fmpInterval = '1week';
+        count = getDataCountForRange(period, '1W');
+    }
+
+    try {
+        console.log(`📊 Fetching historical data for ${symbol} (${period}, interval: ${fmpInterval}) (Attempt ${retryCount + 1})`);
+        lastApiCalls.set(`${symbol}_${period}`, Date.now());
+
+        let url = `https://financialmodelingprep.com/api/v3/historical-price-full/${symbol}`;
+        const params = {
+            apikey: apiKey,
+            serietype: 'line', // Default to line, FMP handles OHLC for historical-chart
+            timeseries: count // Limit number of data points
+        };
+
+        // For specific intervals, FMP uses different endpoints or parameters
+        if (fmpInterval !== '1day') {
+            url = `https://financialmodelingprep.com/api/v3/historical-chart/${fmpInterval}/${symbol}`;
+            delete params.serietype; // Not needed for historical-chart endpoint
+            delete params.timeseries; // Not directly supported here, use limit in URL
+            params.limit = count;
+        }
+
+        const response = await axios.get(url, {
+            params,
+            timeout: 15000
+        });
+
+        let data = [];
+        if (response.data && response.data.historical) {
+            data = response.data.historical;
+        } else if (response.data && Array.isArray(response.data)) {
+            data = response.data; // For historical-chart/interval endpoints
+        }
+
+        if (data.length > 0) {
+            console.log(`✅ Received ${data.length} historical data points for ${symbol} (${period})`);
+            cache.set(cacheKey, {
+                data: data,
+                timestamp: Date.now(),
+                isMock: false
+            });
+            return data;
+        } else {
+            console.log(`⚠️ No historical data received from API for ${symbol} (${period}), using mock data.`);
+            const mockData = generateMockChartData(symbol, { interval: periodToInterval(period), count: getDataCountForRange(period, periodToInterval(period)) });
+            cache.set(cacheKey, {
+                data: mockData,
+                timestamp: Date.now(),
+                isMock: true
+            });
+            return mockData;
+        }
+    } catch (error) {
+        if (error.response?.status === 429 && FMP_API_KEYS.length > 1) {
+            console.warn(`⚠️ Rate limit hit for key (index ${currentKeyIndex - 1}), trying next key...`);
+            return fetchHistoricalData(symbol, period, retryCount + 1);
+        }
+        console.error(`❌ API error fetching historical data for ${symbol} (${period}):`, error.message);
+        console.log(`🎭 Falling back to mock historical data for ${symbol} (${period})`);
+        const mockData = generateMockChartData(symbol, { interval: periodToInterval(period), count: getDataCountForRange(period, periodToInterval(period)) });
+        cache.set(cacheKey, {
+            data: mockData,
+            timestamp: Date.now(),
+            isMock: true
+        });
+        return mockData;
+    }
 };
 
-// Route: Get live 1-minute chart data
-router.get('/live/:symbol', async (req, res) => {
-  try {
-    const { symbol } = req.params;
-    const { from } = req.query; // Optional: timestamp to get data from
-    
-    console.log(`🔄 Live chart request for ${symbol}`);
-    
-    // Determine exchange from symbol
-    let exchange = 'NASDAQ';
-    if (symbol.endsWith('.NS')) exchange = 'NSE';
-    if (symbol.endsWith('.BO')) exchange = 'BSE';
-    
-    // Check if market is open
-    const marketOpen = isMarketOpen(exchange);
-    
-    // Fetch intraday data - this will always return data (real or mock)
-    const rawData = await fetchIntradayData(symbol);
-    
-    // Format data for Lightweight Charts
-    const formattedData = formatDataForLightweightCharts(rawData);
-    
-    // If 'from' timestamp is provided, filter data
-    let filteredData = formattedData;
-    if (from) {
-      const fromTimestamp = parseInt(from);
-      filteredData = formattedData.filter(item => item.time > fromTimestamp);
-    }
-    
-    // Get the latest candle
-    const latestCandle = filteredData[filteredData.length - 1];
-    
-    res.json({
-      success: true,
-      data: filteredData,
-      latest: latestCandle,
-      marketOpen,
-      exchange,
-      symbol,
-      timestamp: Date.now(),
-      count: filteredData.length
-    });
-    
-  } catch (error) {
-    console.error(`❌ Error fetching live data for ${req.params.symbol}:`, error.message);
-    
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch live chart data',
-      error: error.message,
-      marketOpen: false
-    });
-  }
-});
 
-// Route: Get latest candle only (for live updates)
-router.get('/latest/:symbol', async (req, res) => {
-  try {
-    const { symbol } = req.params;
+// Route: Get historical chart data for various periods
+router.get('/historical/:symbol', async (req, res) => {
+    try {
+        const { symbol } = req.params;
+        const { period = '1D' } = req.query; // Default to 1D
 
-    console.log(`📈 Latest candle request for ${symbol}`);
+        console.log(`🔄 Historical chart request for ${symbol} (${period})`);
 
-    // Determine exchange
-    let exchange = 'NASDAQ';
-    if (symbol.endsWith('.NS')) exchange = 'NSE';
-    if (symbol.endsWith('.BO')) exchange = 'BSE';
+        // Determine exchange from symbol
+        let exchange = 'NASDAQ';
+        if (symbol.endsWith('.NS')) exchange = 'NSE';
+        if (symbol.endsWith('.BO')) exchange = 'BSE';
 
-    const marketOpen = isMarketOpen(exchange);
+        const marketOpen = isMarketOpen(exchange);
 
-    // Fetch recent data - this will always return data (real or mock)
-    const rawData = await fetchIntradayData(symbol);
+        // Fetch historical data (real or mock)
+        const rawData = await fetchHistoricalData(symbol, period);
 
-    // Format data for Lightweight Charts
-    const formattedData = formatDataForLightweightCharts(rawData);
+        // FMP historical data for '1day' intervals is usually in reverse chronological order
+        // Ensure it's sorted oldest to newest for Lightweight Charts
+        const formattedData = rawData
+            .map(item => ({
+                time: Math.floor(new Date(item.date).getTime() / 1000),
+                open: parseFloat(item.open),
+                high: parseFloat(item.high),
+                low: parseFloat(item.low),
+                close: parseFloat(item.close),
+                volume: parseInt(item.volume || 0)
+            }))
+            .sort((a, b) => a.time - b.time);
 
-    if (formattedData.length === 0) {
-      // Generate a single mock candle if formatting failed
-      const now = Math.floor(Date.now() / 1000);
-      const mockCandle = {
-        time: now,
-        open: 2500,
-        high: 2520,
-        low: 2480,
-        close: 2510,
-        volume: 50000
-      };
+        const latestCandle = formattedData[formattedData.length - 1];
 
-      return res.json({
-        success: true,
-        latest: mockCandle,
-        marketOpen,
-        exchange,
-        symbol,
-        timestamp: Date.now(),
-        source: 'mock'
-      });
-    }
-
-    // Get the latest candle
-    const latestCandle = formattedData[formattedData.length - 1];
-
-    res.json({
-      success: true,
-      latest: latestCandle,
-      marketOpen,
-      exchange,
-      symbol,
-      timestamp: Date.now(),
-      source: FMP_API_KEYS.length > 0 ? 'api' : 'mock'
-    });
-
-  } catch (error) {
-    console.error(`❌ Error fetching latest candle for ${req.params.symbol}:`, error.message);
-
-    // Return mock data even on error
-    const now = Math.floor(Date.now() / 1000);
-    const mockCandle = {
-      time: now,
-      open: 2500,
-      high: 2520,
-      low: 2480,
-      close: 2510,
-      volume: 50000
-    };
-
-    res.json({
-      success: true,
-      latest: mockCandle,
-      marketOpen: false,
-      exchange: 'NSE',
-      symbol: req.params.symbol,
-      timestamp: Date.now(),
-      source: 'mock',
-      error: error.message
-    });
-  }
-});
-
-// Route: Check market status
-router.get('/market-status/:exchange?', (req, res) => {
-  const { exchange = 'NSE' } = req.params;
-  const marketOpen = isMarketOpen(exchange);
-
-  res.json({
-    success: true,
-    marketOpen,
-    exchange: exchange.toUpperCase(),
-    timestamp: Date.now(),
-    localTime: new Date().toLocaleString("en-US", {
-      timeZone: exchange.toUpperCase() === 'NSE' || exchange.toUpperCase() === 'BSE'
-        ? "Asia/Kolkata"
-        : "America/New_York"
-    })
-  });
-});
-
-// Route: Batch fetch latest candles for multiple symbols
-router.post('/batch', async (req, res) => {
-  try {
-    const { symbols } = req.body;
-
-    if (!symbols || !Array.isArray(symbols) || symbols.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid or missing symbols array'
-      });
-    }
-
-    console.log(`📊 Batch request for ${symbols.length} symbols`);
-
-    // Limit to max 10 symbols per request
-    const limitedSymbols = symbols.slice(0, 10);
-
-    // Process all symbols in parallel
-    const results = await Promise.all(
-      limitedSymbols.map(async (symbol) => {
-        try {
-          // Determine exchange
-          let exchange = 'NASDAQ';
-          if (symbol.endsWith('.NS')) exchange = 'NSE';
-          if (symbol.endsWith('.BO')) exchange = 'BSE';
-
-          const marketOpen = isMarketOpen(exchange);
-
-          // Fetch data - this will use cache/throttling
-          const rawData = await fetchIntradayData(symbol);
-          const formattedData = formatDataForLightweightCharts(rawData);
-
-          if (formattedData.length === 0) {
-            return {
-              symbol,
-              success: false,
-              message: 'No data available',
-              marketOpen,
-              exchange
-            };
-          }
-
-          // Get latest candle only
-          const latestCandle = formattedData[formattedData.length - 1];
-
-          return {
-            symbol,
+        res.json({
             success: true,
-            latest: latestCandle,
+            data: formattedData,
+            latest: latestCandle, // Provide latest candle from historical data
             marketOpen,
             exchange,
-            timestamp: Date.now(),
-            source: cache.get(`intraday_${symbol}`)?.isMock ? 'mock' : 'api'
-          };
-        } catch (error) {
-          console.error(`❌ Error in batch processing for ${symbol}:`, error.message);
-          return {
             symbol,
+            period,
+            timestamp: Date.now(),
+            count: formattedData.length
+        });
+
+    } catch (error) {
+        console.error(`❌ Error fetching historical data for ${req.params.symbol}:`, error.message);
+
+        res.status(500).json({
             success: false,
+            message: 'Failed to fetch historical chart data',
             error: error.message,
             marketOpen: false
-          };
-        }
-      })
-    );
-
-    res.json({
-      success: true,
-      results,
-      timestamp: Date.now(),
-      count: results.length
-    });
-
-  } catch (error) {
-    console.error('❌ Error processing batch request:', error.message);
-
-    res.status(500).json({
-      success: false,
-      message: 'Failed to process batch request',
-      error: error.message
-    });
-  }
+        });
+    }
 });
+
 
 module.exports = router;

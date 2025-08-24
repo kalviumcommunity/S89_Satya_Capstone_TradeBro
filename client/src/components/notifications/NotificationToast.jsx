@@ -6,7 +6,7 @@ import {
   FiCheckCircle, 
   FiAlertTriangle, 
   FiXCircle, 
-  FiAlertCircle,
+  FiAlertCircle, // Used for 'alert' type
   FiX,
   FiExternalLink
 } from 'react-icons/fi';
@@ -18,9 +18,8 @@ import './NotificationToast.css';
  */
 const NotificationToast = ({ 
   notification, 
-  onClose, 
-  onAction,
-  theme = 'light' 
+  onClose,
+  theme = 'light' // theme prop is passed to the component's root div
 }) => {
   // Get icon based on notification type
   const getIcon = (type) => {
@@ -33,10 +32,10 @@ const NotificationToast = ({
         return <FiXCircle {...iconProps} className="toast-icon error" />;
       case 'warning':
         return <FiAlertTriangle {...iconProps} className="toast-icon warning" />;
-      case 'alert':
+      case 'alert': // Using FiAlertCircle for 'alert' type
         return <FiAlertCircle {...iconProps} className="toast-icon alert" />;
       case 'info':
-      default:
+      default: // Default to FiInfo for unknown types
         return <FiInfo {...iconProps} className="toast-icon info" />;
     }
   };
@@ -46,9 +45,7 @@ const NotificationToast = ({
     if (notification.link) {
       window.open(notification.link, '_blank');
     }
-    if (onAction) {
-      onAction(notification);
-    }
+    // We assume the caller handles the onClose logic as well
   };
 
   return (
@@ -96,6 +93,7 @@ const NotificationToast = ({
         onClick={onClose}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
+        aria-label="Dismiss notification" // Added for accessibility
       >
         <FiX size={16} />
       </motion.button>
@@ -115,7 +113,8 @@ export const showNotificationToast = (notification, theme = 'light') => {
     closeOnClick: true,
     pauseOnHover: true,
     draggable: true,
-    closeButton: false, // We use custom close button
+    closeButton: false, // We use a custom close button in NotificationToast component
+    className: `toast-container-wrapper ${theme}` // Pass theme via className
   };
 
   // Custom toast content
@@ -123,7 +122,7 @@ export const showNotificationToast = (notification, theme = 'light') => {
     <NotificationToast
       notification={notification}
       onClose={closeToast}
-      theme={theme}
+      theme={theme} // Pass theme directly to the component
     />
   );
 
@@ -142,7 +141,8 @@ export const showNotificationToast = (notification, theme = 'light') => {
   }
 };
 
-// Order-specific toast notifications
+// --- Helper Functions for Specific Toast Types ---
+
 export const showOrderToast = {
   success: (orderType, symbol, quantity, price, theme = 'light') => {
     const notification = {
@@ -154,7 +154,6 @@ export const showOrderToast = {
     };
     return showNotificationToast(notification, theme);
   },
-
   pending: (orderType, symbol, quantity, theme = 'light') => {
     const notification = {
       id: Date.now(),
@@ -165,7 +164,6 @@ export const showOrderToast = {
     };
     return showNotificationToast(notification, theme);
   },
-
   error: (message, details, theme = 'light') => {
     const notification = {
       id: Date.now(),
@@ -178,7 +176,6 @@ export const showOrderToast = {
   }
 };
 
-// Portfolio toast notifications
 export const showPortfolioToast = {
   update: (message, theme = 'light') => {
     const notification = {
@@ -190,7 +187,6 @@ export const showPortfolioToast = {
     };
     return showNotificationToast(notification, theme);
   },
-
   milestone: (title, message, theme = 'light') => {
     const notification = {
       id: Date.now(),
@@ -203,7 +199,6 @@ export const showPortfolioToast = {
   }
 };
 
-// Market toast notifications
 export const showMarketToast = {
   opened: (theme = 'light') => {
     const notification = {
@@ -215,7 +210,6 @@ export const showMarketToast = {
     };
     return showNotificationToast(notification, theme);
   },
-
   closed: (theme = 'light') => {
     const notification = {
       id: Date.now(),

@@ -1,25 +1,27 @@
-import { useState, useEffect, useCallback, useMemo, memo, Suspense, lazy, useRef } from 'react'
-import { useLocation } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
-import { toast, ToastContainer } from 'react-toastify'
-import './App.css'
-import 'react-toastify/dist/ReactToastify.css'
-import Sidebar from './components/layout/Sidebar'
-import AuthStatus from './components/auth/AuthStatus'
-import GlobalSearchModal from './components/common/GlobalSearchModal'
-import VoiceCommandModal from './components/voice/VoiceCommandModal'
-import VoiceStatusIndicator from './components/voice/VoiceStatusIndicator'
-import SaytrixActivationIndicator from './components/voice/SaytrixActivationIndicator'
-import OrderModal from './components/OrderModal'
-import EnhancedOrderConfirmationModal from './components/EnhancedOrderConfirmationModal'
-import useGlobalSearch from './hooks/useGlobalSearch'
-import { useOrderIntegration } from './hooks/useOrderIntegration'
-import { usePerformanceOptimization } from './hooks/usePerformanceOptimization'
-import balanceSyncManager from './utils/balanceSync'
-import AppRoutes from './AppRoutes'
-import ErrorBoundary from './components/common/ErrorBoundary'
+// src/App.jsx
+import { useState, useEffect, useCallback, memo, Suspense, lazy, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { toast, ToastContainer } from 'react-toastify';
+import './App.css';
+import 'react-toastify/dist/ReactToastify.css';
+import Sidebar from './components/layout/Sidebar';
+import AuthStatus from './components/auth/AuthStatus';
+import GlobalSearchModal from './components/common/GlobalSearchModal';
+import VoiceCommandModal from './components/voice/VoiceCommandModal';
+import VoiceStatusIndicator from './components/voice/VoiceStatusIndicator';
+import SaytrixActivationIndicator from './components/voice/SaytrixActivationIndicator';
+import OrderModal from './components/OrderModal';
+import EnhancedOrderConfirmationModal from './components/EnhancedOrderConfirmationModal';
+import useGlobalSearch from './hooks/useGlobalSearch';
+import { useOrderIntegration } from './hooks/useOrderIntegration';
+import { usePerformanceOptimization } from './hooks/usePerformanceOptimization';
+import balanceSyncManager from './utils/balanceSync';
+import AppRoutes from './AppRoutes';
+import ErrorBoundary from './components/common/ErrorBoundary';
+import { useAuth } from './contexts/AuthContext'; // Import useAuth
 
-const PerformanceMonitor = lazy(() => import('./components/debug/PerformanceMonitor'))
+const PerformanceMonitor = lazy(() => import('./components/debug/PerformanceMonitor'));
 // Suppress console logs in production
 if (import.meta.env.PROD) {
   console.log = () => {};
@@ -27,25 +29,41 @@ if (import.meta.env.PROD) {
 }
 
 function App() {
-  const [user, setUser] = useState(null)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [theme, setTheme] = useState('light')
-  const [loading, setLoading] = useState(true)
+  // Local states that will be synced with AuthContext
+  const [user, setUser] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [theme, setTheme] = useState('light');
+  const [loading, setLoading] = useState(true); // Initial app loading state
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false); // User's new sidebar state
 
-  const { debounce, throttle, cache } = usePerformanceOptimization('App')
+  // Use the useAuth context for managing global auth state
+  const { 
+    user: authContextUser, 
+    isAuthenticated: authContextIsAuthenticated, 
+    loading: authContextLoading, 
+    login: authContextLogin, 
+    logout: authContextLogout 
+  } = useAuth();
+
+  // Sync local states with AuthContext's global state
+  useEffect(() => {
+    setUser(authContextUser);
+    setIsAuthenticated(authContextIsAuthenticated);
+    setLoading(authContextLoading);
+  }, [authContextUser, authContextIsAuthenticated, authContextLoading]);
+
+  const { debounce, throttle, cache } = usePerformanceOptimization('App');
 
   const {
     isGlobalSearchOpen,
     handleGlobalSearch,
     closeGlobalSearch
-  } = useGlobalSearch()
-
-
+  } = useGlobalSearch();
 
   // Order modal functionality
-  const { orderModalState, closeOrderModal } = useOrderIntegration()
+  const { orderModalState, closeOrderModal } = useOrderIntegration();
 
-  // Order confirmation modal state - optimized to prevent frequent re-renders
+  // Order confirmation modal state
   const [confirmationModalState, setConfirmationModalState] = useState({
     isOpen: false,
     orderData: null,
@@ -54,29 +72,27 @@ function App() {
     profitLossEstimate: null,
     onConfirm: null,
     isProcessing: false
-  })
+  });
 
-  // Memoized handlers to prevent unnecessary re-renders
   const handleShowConfirmation = useCallback((confirmationData) => {
     setConfirmationModalState({
       isOpen: true,
       ...confirmationData,
       isProcessing: false
     });
-  }, [])
+  }, []);
 
   const handleCloseConfirmation = useCallback(() => {
     setConfirmationModalState(prevState => {
-      if (!prevState.isOpen) return prevState; // Prevent unnecessary updates
+      if (!prevState.isOpen) return prevState;
       return {
         ...prevState,
         isOpen: false,
         isProcessing: false
       };
     });
-  }, [])
+  }, []);
 
-  // Stable reference for onConfirm to prevent re-renders
   const confirmOrderRef = useRef(null);
 
   const handleConfirmOrder = useCallback(async () => {
@@ -85,88 +101,108 @@ function App() {
       setConfirmationModalState(prev => ({ ...prev, isProcessing: true }));
       try {
         await onConfirm();
-        // Close confirmation modal after successful order
         setTimeout(() => {
           handleCloseConfirmation();
-        }, 2000); // Allow success animation to play
+        }, 2000);
       } catch (error) {
         console.error('Order confirmation failed:', error);
         setConfirmationModalState(prev => ({ ...prev, isProcessing: false }));
       }
     }
-  }, [handleCloseConfirmation])
+  }, [handleCloseConfirmation]);
 
-  // Update ref when onConfirm changes
   useEffect(() => {
     confirmOrderRef.current = confirmationModalState.onConfirm;
-  }, [confirmationModalState.onConfirm])
+  }, [confirmationModalState.onConfirm]);
 
+  // Handle OAuth callback and initial token/user check
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  // Check authentication status on app load
   useEffect(() => {
-    const token = localStorage.getItem('token')
-    const userData = localStorage.getItem('user')
+    // Only run this effect if AuthContext is done loading
+    if (authContextLoading) return;
+
+    const params = new URLSearchParams(location.search);
+    const token = params.get('token');
+    const userData = params.get('user');
+    const oauthError = params.get('error');
+
+    if (oauthError) {
+      toast.error(`Login failed: ${oauthError.replace(/_/g, ' ')}`);
+      // Clean URL
+      navigate(location.pathname, { replace: true });
+      return; // Exit as error handled
+    }
 
     if (token && userData) {
       try {
-        const parsedUser = JSON.parse(userData)
-        setUser(parsedUser)
-        setIsAuthenticated(true)
-        balanceSyncManager.initialize()
+        const parsedUser = JSON.parse(decodeURIComponent(userData));
+        console.log("App.jsx: OAuth success, user data:", parsedUser);
+        
+        // Use the login function from AuthContext to update global state and localStorage
+        authContextLogin(parsedUser, token); 
+        
+        toast.success('Welcome back!');
+        balanceSyncManager.initialize();
+
+        // Clean URL and redirect to dashboard
+        navigate('/dashboard', { replace: true }); 
+
       } catch (error) {
-        console.error('Error parsing user data:', error)
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
+        console.error('App.jsx: Error parsing OAuth user data:', error);
+        authContextLogout(); // Ensure AuthContext is also logged out
+        toast.error('Failed to process login data.');
+        navigate('/login', { replace: true });
       }
+    } else if (!authContextIsAuthenticated && !localStorage.getItem('token')) {
+      // If no OAuth params and not already authenticated, and no token in localStorage,
+      // then we might be on a page that requires auth, or it's a fresh load.
+      // Set loading to false here if it's not handled by AuthContext's initial check
+      // For now, relying on AuthContext's loading state.
     }
-    
-    setLoading(false)
-  }, [])
+    // Ensure loading is false after all checks if not already set by AuthContext
+    if (loading) setLoading(false); 
+
+  }, [location.search, navigate, authContextLogin, authContextLogout, authContextLoading, authContextIsAuthenticated, loading]);
 
   // Theme management
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') || 'light'
-    setTheme(savedTheme)
-    document.documentElement.setAttribute('data-theme', savedTheme)
-  }, [])
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    setTheme(savedTheme);
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  }, []);
 
   const toggleTheme = useCallback(() => {
-    const newTheme = theme === 'light' ? 'dark' : 'light'
-    setTheme(newTheme)
-    localStorage.setItem('theme', newTheme)
-    document.documentElement.setAttribute('data-theme', newTheme)
-  }, [theme])
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+    document.documentElement.setAttribute('data-theme', newTheme);
+  }, [theme]);
 
-
-
+  // These handlers now call the AuthContext functions
   const handleLogin = useCallback((userData, token) => {
-    localStorage.setItem('token', token)
-    localStorage.setItem('user', JSON.stringify(userData))
-    setUser(userData)
-    setIsAuthenticated(true)
-    toast.success('Welcome back!')
-  }, [])
+    authContextLogin(userData, token);
+    toast.success('Welcome back!');
+  }, [authContextLogin]);
 
   const handleLogout = useCallback(() => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    setUser(null)
-    setIsAuthenticated(false)
-    toast.info('Logged out successfully')
-  }, [])
+    authContextLogout();
+    toast.info('Logged out successfully');
+    navigate('/login'); // Redirect to login after logout
+  }, [authContextLogout, navigate]);
 
   const handleSignup = useCallback((userData, token) => {
-    localStorage.setItem('token', token)
-    localStorage.setItem('user', JSON.stringify(userData))
-    setUser(userData)
-    setIsAuthenticated(true)
-    toast.success('Account created successfully!')
-  }, [])
+    authContextLogin(userData, token);
+    toast.success('Account created successfully!');
+  }, [authContextLogin]);
 
   const handleUpdateProfile = (updatedUser) => {
-    setUser(updatedUser)
-    toast.success('Profile updated successfully!')
-  }
+    // When profile is updated, update AuthContext and localStorage
+    const storedToken = localStorage.getItem('token');
+    authContextLogin(updatedUser, storedToken); 
+    toast.success('Profile updated successfully!');
+  };
 
   if (loading) {
     return (
@@ -174,66 +210,64 @@ function App() {
         <div className="loading-spinner lg"></div>
         <p className="loading-text">Loading TradeBro...</p>
       </div>
-    )
+    );
   }
 
   return (
     <ErrorBoundary>
       <div className="app">
         <AppContent
-        isAuthenticated={isAuthenticated}
-        user={user}
-        loading={loading}
-        theme={theme}
-        onLogin={handleLogin}
-        onLogout={handleLogout}
-        onSignup={handleSignup}
-        onUpdateProfile={handleUpdateProfile}
-        toggleTheme={toggleTheme}
-        isGlobalSearchOpen={isGlobalSearchOpen}
-        handleGlobalSearch={handleGlobalSearch}
-        closeGlobalSearch={closeGlobalSearch}
+          isAuthenticated={isAuthenticated}
+          user={user}
+          loading={loading}
+          theme={theme}
+          onLogin={handleLogin}
+          onLogout={handleLogout}
+          onSignup={handleSignup}
+          onUpdateProfile={handleUpdateProfile}
+          toggleTheme={toggleTheme}
+          isGlobalSearchOpen={isGlobalSearchOpen}
+          handleGlobalSearch={handleGlobalSearch}
+          closeGlobalSearch={closeGlobalSearch}
+          sidebarCollapsed={sidebarCollapsed} // Pass sidebar state
+          setSidebarCollapsed={setSidebarCollapsed} // Pass sidebar setter
+          orderModalState={orderModalState}
+          closeOrderModal={closeOrderModal}
+          handleShowConfirmation={handleShowConfirmation}
+          confirmationModalState={confirmationModalState}
+          handleCloseConfirmation={handleCloseConfirmation}
+          handleConfirmOrder={handleConfirmOrder}
+        />
 
-        orderModalState={orderModalState}
-        closeOrderModal={closeOrderModal}
-        handleShowConfirmation={handleShowConfirmation}
-        confirmationModalState={confirmationModalState}
-        handleCloseConfirmation={handleCloseConfirmation}
-        handleConfirmOrder={handleConfirmOrder}
-      />
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme={theme}
+          toastStyle={{
+            background: theme === 'dark' ? 'var(--bg-secondary)' : '#FFFFFF',
+            color: theme === 'dark' ? '#F9FAFB' : '#111827'
+          }}
+        />
 
-      {/* Toast Notifications */}
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme={theme}
-        toastStyle={{
-          background: theme === 'dark' ? '#1F2937' : '#FFFFFF',
-          color: theme === 'dark' ? '#F9FAFB' : '#111827'
-        }}
-      />
-
-      {/* Performance Monitor (Development Only) */}
-      <Suspense fallback={null}>
-        <PerformanceMonitor enabled={process.env.NODE_ENV === 'development'} />
-      </Suspense>
+        <Suspense fallback={null}>
+          <PerformanceMonitor enabled={process.env.NODE_ENV === 'development'} />
+        </Suspense>
       </div>
     </ErrorBoundary>
-  )
+  );
 }
 
-// Separate component to use useLocation hook - memoized to prevent unnecessary re-renders
 const AppContent = memo(function AppContent({
   isAuthenticated,
   user,
-  loading,
+  loading, // Receive loading prop
   theme,
   onLogin,
   onLogout,
@@ -243,6 +277,8 @@ const AppContent = memo(function AppContent({
   isGlobalSearchOpen,
   handleGlobalSearch,
   closeGlobalSearch,
+  sidebarCollapsed, // Receive sidebar state
+  setSidebarCollapsed, // Receive sidebar setter
   orderModalState,
   closeOrderModal,
   handleShowConfirmation,
@@ -250,19 +286,22 @@ const AppContent = memo(function AppContent({
   handleCloseConfirmation,
   handleConfirmOrder
 }) {
-  const location = useLocation()
-  const isLandingPage = location.pathname === '/'
-  const isAuthPage = location.pathname === '/login' || location.pathname === '/signup' || location.pathname === '/forgot-password'
-
+  const location = useLocation();
+  const isLandingPage = location.pathname === '/';
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/signup' || location.pathname === '/forgot-password';
+  
   return (
     <>
-      <Sidebar/>
-      {/* Main Content */}
-      <main className={(isLandingPage || isAuthPage) ? "main-content-full" : "main-content"}>
+      <Sidebar
+        isCollapsed={sidebarCollapsed} // Use passed state
+        setIsCollapsed={setSidebarCollapsed} // Use passed setter
+      />
+      {/* Main Content classes based on sidebar state and page type */}
+      <main className={`${(isLandingPage || isAuthPage) ? "main-content-full" : "main-content"} ${isAuthenticated && !isLandingPage && !isAuthPage ? (sidebarCollapsed ? "sidebar-collapsed" : "with-sidebar") : ""}`}>
         <AppRoutes
           isAuthenticated={isAuthenticated}
           user={user}
-          loading={loading}
+          loading={loading} // Pass loading prop to AppRoutes
           onLogin={onLogin}
           onSignup={onSignup}
           onLogout={onLogout}
@@ -272,17 +311,14 @@ const AppContent = memo(function AppContent({
         />
       </main>
 
-      {/* Authentication Status Indicator */}
       <AuthStatus isAuthenticated={isAuthenticated} user={user} />
 
-      {/* Global Search Modal */}
       <GlobalSearchModal
         isOpen={isGlobalSearchOpen}
         onClose={closeGlobalSearch}
         onSearch={handleGlobalSearch}
       />
 
-      {/* Toast Notifications */}
       <ToastContainer
         position="top-right"
         autoClose={3000}
@@ -303,7 +339,6 @@ const AppContent = memo(function AppContent({
         }}
       />
 
-      {/* Global Voice Components - Hide on auth pages */}
       {!isLandingPage && !isAuthPage && (
         <>
           <VoiceCommandModal />
@@ -311,8 +346,6 @@ const AppContent = memo(function AppContent({
         </>
       )}
 
-
-      {/* Order Modal */}
       <OrderModal
         isOpen={orderModalState.isOpen}
         onClose={closeOrderModal}
@@ -322,7 +355,6 @@ const AppContent = memo(function AppContent({
         onShowConfirmation={handleShowConfirmation}
       />
 
-      {/* Enhanced Order Confirmation Modal - Full-page experience */}
       <EnhancedOrderConfirmationModal
         isOpen={confirmationModalState.isOpen}
         onClose={handleCloseConfirmation}
@@ -334,8 +366,7 @@ const AppContent = memo(function AppContent({
         isProcessing={confirmationModalState.isProcessing}
       />
     </>
-  )
-})
+  );
+});
 
-
-export default App
+export default App;

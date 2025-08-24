@@ -114,6 +114,16 @@ const userSchema = new mongoose.Schema({
     resetPasswordExpires: {
         type: Date,
         default: null
+    },
+    
+    // Two-Factor Authentication Code
+    twoFactorCode: {
+        type: String,
+        default: null
+    },
+    twoFactorExpires: {
+        type: Date,
+        default: null
     }
 });
 

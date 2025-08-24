@@ -17,14 +17,12 @@ import { VirtualMoneyProvider } from './contexts/VirtualMoneyContext'
 import { PortfolioProvider } from './contexts/PortfolioContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 
-// Styles
 import './styles/globals.css'
 import './styles/el-classico-theme.css'
 import './styles/universal-components.css'
 import './styles/premium-components.css'
 import './styles/responsive.css'
 
-// Register service worker in production
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')

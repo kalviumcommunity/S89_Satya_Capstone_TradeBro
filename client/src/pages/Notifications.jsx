@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FiBell,
-  FiFilter,
   FiCheck,
   FiTrash2,
   FiRefreshCw,
   FiSettings,
   FiSearch,
-  FiChevronDown
+  FiEdit3, // Using a different icon for select mode toggle
+  FiX
 } from 'react-icons/fi';
 import PageHeader from '../components/layout/PageHeader';
 import { useNotifications } from '../contexts/NotificationContext';
@@ -46,23 +46,30 @@ const Notifications = ({ user, theme }) => {
     fetchNotifications();
   }, [fetchNotifications]);
 
+  // Handle refresh (fetch fresh data)
+  const handleRefresh = useCallback(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  // Handle filter change
+  const handleFilterChange = useCallback((filterType, value) => {
+    setFilters({ [filterType]: value });
+  }, [setFilters]);
+
   // Filter notifications based on search and filters
   const filteredNotifications = notifications.filter(notification => {
-    // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      if (!notification.title.toLowerCase().includes(query) && 
-          !notification.message.toLowerCase().includes(query)) {
+      if (!notification.title.toLowerCase().includes(query) &&
+        !notification.message.toLowerCase().includes(query)) {
         return false;
       }
     }
 
-    // Type filter
     if (filters.type !== 'all' && notification.type !== filters.type) {
       return false;
     }
 
-    // Read status filter
     if (filters.read === 'read' && !notification.read) {
       return false;
     }
@@ -74,7 +81,7 @@ const Notifications = ({ user, theme }) => {
   });
 
   // Handle notification selection
-  const handleNotificationSelect = (notificationId) => {
+  const handleNotificationSelect = useCallback((notificationId) => {
     const newSelected = new Set(selectedNotifications);
     if (newSelected.has(notificationId)) {
       newSelected.delete(notificationId);
@@ -82,43 +89,44 @@ const Notifications = ({ user, theme }) => {
       newSelected.add(notificationId);
     }
     setSelectedNotifications(newSelected);
-  };
+  }, [selectedNotifications]);
 
   // Handle select all
-  const handleSelectAll = () => {
+  const handleSelectAll = useCallback(() => {
     if (selectedNotifications.size === filteredNotifications.length) {
       setSelectedNotifications(new Set());
     } else {
-      setSelectedNotifications(new Set(filteredNotifications.map(n => n.id)));
+      setSelectedNotifications(new Set(filteredNotifications.map(n => n.id || n._id)));
     }
-  };
+  }, [selectedNotifications, filteredNotifications]);
 
   // Handle bulk actions
-  const handleBulkMarkAsRead = async () => {
+  const handleBulkMarkAsRead = useCallback(async () => {
+    // Note: A single API call for bulk action would be more efficient
     const promises = Array.from(selectedNotifications).map(id => markAsRead(id));
     await Promise.all(promises);
     setSelectedNotifications(new Set());
-  };
+    setIsSelectMode(false);
+  }, [selectedNotifications, markAsRead]);
 
-  const handleBulkDelete = async () => {
+  const handleBulkDelete = useCallback(async () => {
+    // Note: A single API call for bulk action would be more efficient
     const promises = Array.from(selectedNotifications).map(id => deleteNotification(id));
     await Promise.all(promises);
     setSelectedNotifications(new Set());
-  };
+    setIsSelectMode(false);
+  }, [selectedNotifications, deleteNotification]);
 
-  // Handle filter change
-  const handleFilterChange = (filterType, value) => {
-    setFilters({ [filterType]: value });
-  };
-
-  // Handle refresh
-  const handleRefresh = () => {
-    fetchNotifications();
-  };
+  const handleToggleSelectMode = useCallback(() => {
+    setIsSelectMode(prev => !prev);
+    // Clear selection when exiting select mode
+    if (isSelectMode) {
+      setSelectedNotifications(new Set());
+    }
+  }, [isSelectMode]);
 
   return (
     <div className="notifications-page">
-      {/* Page Header */}
       <PageHeader
         icon={FiBell}
         title="Notifications"
@@ -126,6 +134,12 @@ const Notifications = ({ user, theme }) => {
         borderColor="primary"
         showNotifications={false}
         actions={[
+          {
+            label: isSelectMode ? 'Cancel' : 'Select',
+            icon: isSelectMode ? FiX : FiEdit3,
+            onClick: handleToggleSelectMode,
+            variant: isSelectMode ? 'outline-danger' : 'outline'
+          },
           {
             label: "Refresh",
             icon: FiRefreshCw,
@@ -136,31 +150,38 @@ const Notifications = ({ user, theme }) => {
           {
             label: "Settings",
             icon: FiSettings,
-            onClick: () => {},
+            onClick: () => {}, // Navigate to settings page
             variant: "outline"
           }
         ]}
       />
 
       <div className="notifications-content">
-        {/* Quick Actions */}
-        <div className="notifications-actions">
-          {unreadCount > 0 && (
-            <motion.button
-              className="action-btn mark-all"
-              onClick={markAllAsRead}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+        {/* Quick Actions (Mark All Read) */}
+        <AnimatePresence>
+          {unreadCount > 0 && !isSelectMode && (
+            <motion.div
+              className="notifications-actions"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
             >
-              <FiCheck />
-              Mark all read
-            </motion.button>
+              <motion.button
+                className="action-btn mark-all"
+                onClick={markAllAsRead}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <FiCheck />
+                Mark all read
+              </motion.button>
+            </motion.div>
           )}
-        </div>
+        </AnimatePresence>
 
-        {/* Search and Filters */}
+
+        {/* Controls: Search, Filters */}
         <div className="notifications-controls">
-          {/* Search */}
           <div className="search-container">
             <FiSearch className="search-icon" />
             <input
@@ -172,47 +193,52 @@ const Notifications = ({ user, theme }) => {
             />
           </div>
 
-          {/* Filters */}
-          <AnimatePresence>
-            {showFilters && (
-              <motion.div
-                className="filters-container"
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-              >
-                <div className="filter-group">
-                  <label>Type:</label>
-                  <select
-                    value={filters.type}
-                    onChange={(e) => handleFilterChange('type', e.target.value)}
-                  >
-                    <option value="all">All Types</option>
-                    <option value="info">Info</option>
-                    <option value="success">Success</option>
-                    <option value="warning">Warning</option>
-                    <option value="error">Error</option>
-                    <option value="alert">Alert</option>
-                  </select>
-                </div>
-
-                <div className="filter-group">
-                  <label>Status:</label>
-                  <select
-                    value={filters.read}
-                    onChange={(e) => handleFilterChange('read', e.target.value)}
-                  >
-                    <option value="all">All</option>
-                    <option value="unread">Unread</option>
-                    <option value="read">Read</option>
-                  </select>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <button className="filter-toggle" onClick={() => setShowFilters(prev => !prev)}>
+            <FiCheck />
+            <span>Filters</span>
+          </button>
         </div>
+        
+        {/* Filters Dropdown */}
+        <AnimatePresence>
+          {showFilters && (
+            <motion.div
+              className="filters-container"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+            >
+              <div className="filter-group">
+                <label>Type:</label>
+                <select
+                  value={filters.type}
+                  onChange={(e) => handleFilterChange('type', e.target.value)}
+                >
+                  <option value="all">All Types</option>
+                  <option value="info">Info</option>
+                  <option value="success">Success</option>
+                  <option value="warning">Warning</option>
+                  <option value="error">Error</option>
+                  <option value="alert">Alert</option>
+                </select>
+              </div>
 
-        {/* Bulk Actions */}
+              <div className="filter-group">
+                <label>Status:</label>
+                <select
+                  value={filters.read}
+                  onChange={(e) => handleFilterChange('read', e.target.value)}
+                >
+                  <option value="all">All</option>
+                  <option value="unread">Unread</option>
+                  <option value="read">Read</option>
+                </select>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Bulk Actions Bar */}
         <AnimatePresence>
           {selectedNotifications.size > 0 && (
             <motion.div
@@ -246,6 +272,7 @@ const Notifications = ({ user, theme }) => {
         <div className="notifications-list">
           {error ? (
             <div className="error-state">
+              <FiBell size={48} />
               <h3>Failed to load notifications</h3>
               <p>{error}</p>
               <button onClick={handleRefresh}>Try again</button>
@@ -254,33 +281,38 @@ const Notifications = ({ user, theme }) => {
             <>
               {filteredNotifications.map((notification, index) => (
                 <motion.div
-                  key={notification.id}
+                  key={notification.id || notification._id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
                   className="notification-wrapper"
                 >
-                  {isSelectMode && (
-                    <input
-                      type="checkbox"
-                      checked={selectedNotifications.has(notification.id)}
-                      onChange={() => handleNotificationSelect(notification.id)}
-                      className="notification-checkbox"
-                    />
-                  )}
+                  <AnimatePresence mode="wait">
+                    {isSelectMode && (
+                      <motion.input
+                        key="checkbox"
+                        type="checkbox"
+                        checked={selectedNotifications.has(notification.id || notification._id)}
+                        onChange={() => handleNotificationSelect(notification.id || notification._id)}
+                        className="notification-checkbox"
+                        initial={{ opacity: 0, scale: 0 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0 }}
+                      />
+                    )}
+                  </AnimatePresence>
                   
                   <NotificationItem
                     notification={notification}
-                    onClick={() => markAsRead(notification.id)}
-                    onDelete={() => deleteNotification(notification.id)}
-                    onMarkAsRead={markAsRead}
+                    onClick={() => markAsRead(notification.id || notification._id)}
+                    onDelete={() => deleteNotification(notification.id || notification._id)}
+                    onMarkAsRead={() => markAsRead(notification.id || notification._id)}
                     compact={false}
-                    showActions={true}
+                    showActions={!isSelectMode}
                   />
                 </motion.div>
               ))}
 
-              {/* Load More */}
               {pagination.hasMore && (
                 <div className="load-more-container">
                   <motion.button

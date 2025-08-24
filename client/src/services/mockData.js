@@ -2,7 +2,6 @@
  * Mock Data Service for FMP API Fallback
  * Provides realistic stock data when FMP API is unavailable
  */
-
 // Generate realistic stock price data
 const generateStockData = (symbol, basePrice = 100, days = 30) => {
   const data = [];

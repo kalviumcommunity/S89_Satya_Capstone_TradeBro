@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { 
   FiInfo, 
@@ -8,8 +8,7 @@ import {
   FiAlertCircle,
   FiX,
   FiExternalLink,
-  FiClock,
-  FiMoreVertical
+  FiClock
 } from 'react-icons/fi';
 import './NotificationItem.css';
 
@@ -25,8 +24,6 @@ const NotificationItem = ({
   compact = false,
   showActions = true 
 }) => {
-  const [isHovered, setIsHovered] = useState(false);
-
   // Get icon based on notification type
   const getNotificationIcon = (type) => {
     const iconProps = { size: compact ? 16 : 20 };
@@ -47,53 +44,43 @@ const NotificationItem = ({
   };
 
   // Format timestamp
-  const formatTimestamp = (timestamp) => {
+  const formatTimestamp = useCallback((timestamp) => {
     const date = new Date(timestamp);
     const now = new Date();
     const diffInMinutes = Math.floor((now - date) / (1000 * 60));
     
-    if (diffInMinutes < 1) {
-      return 'Just now';
-    } else if (diffInMinutes < 60) {
-      return `${diffInMinutes}m ago`;
-    } else if (diffInMinutes < 1440) {
-      const hours = Math.floor(diffInMinutes / 60);
-      return `${hours}h ago`;
-    } else {
-      const days = Math.floor(diffInMinutes / 1440);
-      return `${days}d ago`;
-    }
-  };
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
+    return `${Math.floor(diffInMinutes / 1440)}d ago`;
+  }, []);
 
-  // Handle click
-  const handleClick = () => {
+  // Use useCallback for event handlers to prevent re-creation
+  const handleClick = useCallback(() => {
     if (onClick) {
       onClick(notification);
     }
-  };
+  }, [onClick, notification]);
 
-  // Handle delete
-  const handleDelete = (e) => {
+  const handleDelete = useCallback((e) => {
     e.stopPropagation();
     if (onDelete) {
       onDelete(e);
     }
-  };
+  }, [onDelete]);
 
-  // Handle mark as read
-  const handleMarkAsRead = (e) => {
+  const handleMarkAsRead = useCallback((e) => {
     e.stopPropagation();
     if (onMarkAsRead) {
       onMarkAsRead(notification.id);
     }
-  };
+  }, [onMarkAsRead, notification.id]);
 
   return (
     <motion.div
       className={`notification-item ${compact ? 'compact' : ''} ${notification.read ? 'read' : 'unread'} ${notification.type}`}
       onClick={handleClick}
-      onHoverStart={() => setIsHovered(true)}
-      onHoverEnd={() => setIsHovered(false)}
+      // Simplified hover logic using Framer Motion's whileHover prop
       whileHover={{ backgroundColor: 'var(--notification-hover-bg)' }}
       layout
     >
@@ -139,7 +126,8 @@ const NotificationItem = ({
 
         {/* Actions */}
         {showActions && (
-          <div className={`notification-actions ${isHovered ? 'visible' : ''}`}>
+          // Use CSS :hover to show/hide actions instead of useState
+          <div className="notification-actions">
             {!notification.read && onMarkAsRead && (
               <motion.button
                 className="action-btn mark-read"
@@ -147,6 +135,7 @@ const NotificationItem = ({
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 title="Mark as read"
+                aria-label="Mark as read"
               >
                 <FiCheckCircle size={14} />
               </motion.button>
@@ -159,6 +148,7 @@ const NotificationItem = ({
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 title="Delete notification"
+                aria-label="Delete notification"
               >
                 <FiX size={14} />
               </motion.button>
