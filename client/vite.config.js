@@ -6,7 +6,11 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   
   return {
+    base: '/',
     plugins: [react()],
+    define: {
+      'process.env.NODE_ENV': JSON.stringify(mode)
+    },
     server: {
       port: 5173,
       host: true,
@@ -20,6 +24,7 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       outDir: 'dist',
+      assetsDir: 'assets',
       sourcemap: false,
       chunkSizeWarningLimit: 1000,
       rollupOptions: {
@@ -27,8 +32,12 @@ export default defineConfig(({ mode }) => {
           manualChunks: {
             vendor: ['react', 'react-dom'],
             router: ['react-router-dom'],
-            ui: ['framer-motion', 'react-icons']
-          }
+            ui: ['framer-motion', 'react-icons'],
+            charts: ['lightweight-charts', 'recharts']
+          },
+          assetFileNames: 'assets/[name]-[hash][extname]',
+          chunkFileNames: 'assets/[name]-[hash].js',
+          entryFileNames: 'assets/[name]-[hash].js'
         }
       },
       cssCodeSplit: true,
@@ -36,8 +45,8 @@ export default defineConfig(({ mode }) => {
       cssMinify: true,
       terserOptions: {
         compress: {
-          drop_console: true,
-          drop_debugger: true
+          drop_console: mode === 'production',
+          drop_debugger: mode === 'production'
         }
       }
     }
