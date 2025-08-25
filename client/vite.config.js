@@ -33,7 +33,8 @@ export default defineConfig(({ mode }) => {
             vendor: ['react', 'react-dom'],
             router: ['react-router-dom'],
             ui: ['framer-motion', 'react-icons'],
-            charts: ['lightweight-charts', 'recharts']
+            charts: ['lightweight-charts', 'recharts'],
+            utils: ['uuid']
           },
           assetFileNames: 'assets/[name]-[hash][extname]',
           chunkFileNames: 'assets/[name]-[hash].js',
