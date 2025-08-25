@@ -1,61 +1,40 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { tradingAPI } from '../../services/api';
+import axios from 'axios';
+import { toast } from 'react-toastify';
 
-// Initial state
+const ORDERS_API_URL = '/api/orders';
+
 const initialState = {
   orders: [],
-  orderHistory: [],
   isLoading: false,
   error: null,
   filters: {
     status: 'all',
     type: 'all',
     symbol: ''
+  },
+  summary: {
+    totalOrders: 0,
+    filledOrders: 0,
+    openOrders: 0,
+    cancelledOrders: 0,
+    rejectedOrders: 0,
   }
 };
-
-// Mock orders data
-const mockOrders = [
-  {
-    id: 'ORD001',
-    symbol: 'RELIANCE',
-    name: 'Reliance Industries Ltd',
-    type: 'BUY',
-    quantity: 50,
-    price: 2520,
-    orderPrice: 2500,
-    status: 'executed',
-    timestamp: new Date('2024-01-15T10:30:00').toISOString(),
-    executedAt: new Date('2024-01-15T10:31:00').toISOString(),
-    totalAmount: 126000
-  },
-  {
-    id: 'ORD002',
-    symbol: 'TCS',
-    name: 'Tata Consultancy Services',
-    type: 'SELL',
-    quantity: 20,
-    price: 3350,
-    orderPrice: 3400,
-    status: 'pending',
-    timestamp: new Date('2024-01-15T11:15:00').toISOString(),
-    executedAt: null,
-    totalAmount: 67000
-  }
-];
 
 // Async thunks
 export const fetchOrders = createAsyncThunk(
   'orders/fetchOrders',
-  async (_, { rejectWithValue }) => {
+  async (filters, { rejectWithValue }) => {
     try {
-      const response = await tradingAPI.getOrders();
-      if (response.success) {
-        return response.data;
+      const response = await axios.get(`${ORDERS_API_URL}/all`, { params: filters });
+      if (response.data.success) {
+        return { data: response.data.data, summary: response.data.summary };
       }
-      return rejectWithValue(response.message);
+      return rejectWithValue(response.data.message);
     } catch (error) {
-      return mockOrders;
+      toast.error('Failed to fetch orders from server.');
+      return rejectWithValue('Failed to fetch orders');
     }
   }
 );
@@ -64,46 +43,32 @@ export const placeOrder = createAsyncThunk(
   'orders/placeOrder',
   async (orderData, { rejectWithValue }) => {
     try {
-      const order = {
-        id: `ORD${Date.now()}`,
-        ...orderData,
-        status: 'pending',
-        timestamp: new Date().toISOString(),
-        executedAt: null
-      };
-      
-      try {
-        const response = await tradingAPI.placeOrder(order);
-        if (response.success) {
-          return response.data;
-        }
-      } catch (error) {
-        console.warn('API failed, creating local order');
+      const response = await axios.post(`${ORDERS_API_URL}/place`, orderData);
+      if (response.data.success) {
+        toast.success(response.data.message);
+        return response.data.data.order;
       }
-      
-      return order;
+      return rejectWithValue(response.data.message);
     } catch (error) {
-      return rejectWithValue(error.message || 'Failed to place order');
+      toast.error(error.response?.data?.message || 'Failed to place order');
+      return rejectWithValue(error.response?.data?.message || 'Failed to place order');
     }
   }
 );
 
 export const cancelOrder = createAsyncThunk(
   'orders/cancelOrder',
-  async (orderId, { rejectWithValue }) => {
+  async ({ orderId, reason }, { rejectWithValue }) => {
     try {
-      try {
-        const response = await tradingAPI.cancelOrder(orderId);
-        if (response.success) {
-          return orderId;
-        }
-      } catch (error) {
-        console.warn('API failed, cancelling local order');
+      const response = await axios.post(`${ORDERS_API_URL}/cancel/${orderId}`, { reason });
+      if (response.data.success) {
+        toast.success(response.data.message);
+        return response.data.data;
       }
-      
-      return orderId;
+      return rejectWithValue(response.data.message);
     } catch (error) {
-      return rejectWithValue(error.message || 'Failed to cancel order');
+      toast.error(error.response?.data?.message || 'Failed to cancel order');
+      return rejectWithValue(error.response?.data?.message || 'Failed to cancel order');
     }
   }
 );
@@ -120,12 +85,14 @@ const ordersSlice = createSlice({
       state.filters = { ...state.filters, ...action.payload };
     },
     updateOrderStatus: (state, action) => {
-      const { orderId, status, executedAt, executedPrice } = action.payload;
-      const order = state.orders.find(o => o.id === orderId);
+      const { _id, status, executedAt, executionPrice, fees, total } = action.payload;
+      const order = state.orders.find(o => o._id === _id);
       if (order) {
         order.status = status;
         if (executedAt) order.executedAt = executedAt;
-        if (executedPrice) order.price = executedPrice;
+        if (executionPrice) order.executionPrice = executionPrice;
+        if (fees) order.fees = fees;
+        if (total) order.total = total;
       }
     }
   },
@@ -137,7 +104,8 @@ const ordersSlice = createSlice({
       })
       .addCase(fetchOrders.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.orders = action.payload;
+        state.orders = action.payload.data;
+        state.summary = action.payload.summary;
       })
       .addCase(fetchOrders.rejected, (state, action) => {
         state.isLoading = false;
@@ -147,10 +115,10 @@ const ordersSlice = createSlice({
         state.orders.unshift(action.payload);
       })
       .addCase(cancelOrder.fulfilled, (state, action) => {
-        const orderId = action.payload;
-        const order = state.orders.find(o => o.id === orderId);
-        if (order) {
-          order.status = 'cancelled';
+        const updatedOrder = action.payload;
+        const index = state.orders.findIndex(o => o._id === updatedOrder._id);
+        if (index > -1) {
+          state.orders[index] = updatedOrder;
         }
       });
   },

@@ -355,9 +355,9 @@ const SidebarContent = () => {
       {!isCollapsed && (
         <div className="user-profile">
           <div className="user-avatar">
-            {user.profileImage || user.picture ? (
+            {(user.profileImage || user.picture || user.avatar) ? (
               <img 
-                src={user.profileImage || user.picture} 
+                src={user.profileImage || user.picture || user.avatar} 
                 alt={user.fullName || user.name}
                 className="avatar-image"
                 onError={(e) => {
@@ -366,7 +366,7 @@ const SidebarContent = () => {
                 }}
               />
             ) : null}
-            <div className="avatar-symbol" style={{display: user.profileImage || user.picture ? 'none' : 'flex'}}>👤</div>
+            <div className="avatar-symbol" style={{display: (user.profileImage || user.picture || user.avatar) ? 'none' : 'flex'}}>👤</div>
           </div>
           <div className="user-info">
             <h3 className="user-name">{user.fullName || user.name || user.email}</h3>

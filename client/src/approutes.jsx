@@ -34,9 +34,13 @@ const OAuthCallback = ({ onLogin }) => {
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
+    const success = urlParams.get('success');
+    const google = urlParams.get('google');
     const token = urlParams.get('token');
     const userParam = urlParams.get('user');
     const error = urlParams.get('error');
+
+    console.log('OAuth Callback params:', { success, google, token, userParam, error });
 
     if (error) {
       toast.error('Google authentication failed. Please try again.');
@@ -44,11 +48,49 @@ const OAuthCallback = ({ onLogin }) => {
       return;
     }
 
+    // Handle the success=true&google=true format
+    if (success === 'true' && google === 'true') {
+      // If we have token and user data, process them
+      if (token && userParam && onLogin) {
+        try {
+          const userData = JSON.parse(decodeURIComponent(userParam));
+          onLogin(userData, token);
+          toast.success(`Welcome ${userData.fullName || userData.name || 'back'}!`);
+          navigate('/dashboard', { replace: true });
+          return;
+        } catch (error) {
+          console.error('Error parsing OAuth data:', error);
+        }
+      }
+      
+      // If no token/user in URL, check if they're in localStorage (set by popup)
+      const storedToken = localStorage.getItem('token');
+      const storedUser = localStorage.getItem('user');
+      
+      if (storedToken && storedUser) {
+        try {
+          const userData = JSON.parse(storedUser);
+          toast.success(`Welcome ${userData.fullName || userData.name || 'back'}!`);
+          navigate('/dashboard', { replace: true });
+          return;
+        } catch (error) {
+          console.error('Error parsing stored user data:', error);
+        }
+      }
+      
+      // If we reach here, authentication was successful but we don't have user data
+      // This might happen if the backend sets the auth state differently
+      toast.success('Authentication successful!');
+      navigate('/dashboard', { replace: true });
+      return;
+    }
+
+    // Handle traditional token/user format
     if (token && userParam && onLogin) {
       try {
         const userData = JSON.parse(decodeURIComponent(userParam));
         onLogin(userData, token);
-        toast.success(`Welcome ${userData.fullName}!`);
+        toast.success(`Welcome ${userData.fullName || userData.name || 'back'}!`);
         navigate('/dashboard', { replace: true });
       } catch (error) {
         console.error('Error parsing OAuth data:', error);
@@ -56,6 +98,8 @@ const OAuthCallback = ({ onLogin }) => {
         navigate('/login', { replace: true });
       }
     } else {
+      // No valid auth data found
+      toast.error('Authentication failed. Please try again.');
       navigate('/login', { replace: true });
     }
   }, [onLogin, navigate]);
@@ -197,7 +241,16 @@ const AppRoutes = ({
             }
           />
 
-          {/* Dashboard & Features */}
+          {/* OAuth Callback Routes */}
+          <Route
+            path="/auth/oauth-callback"
+            element={<OAuthCallback onLogin={onLogin} />}
+          />
+          <Route
+            path="/auth/google/callback"
+            element={<OAuthCallback onLogin={onLogin} />}
+          />
+          
           <Route
             path="/dashboard"
             element={

@@ -56,6 +56,7 @@ const analyticsRoutes = require("./routes/analyticsRoutes");
 const contactRoutes = require("./routes/contactRoutes");
 const leaderboardRoutes = require("./routes/leaderboardRoutes");
 const referralRoutes = require("./routes/referralRoutes");
+const pusherRoutes = require("./routes/pusherRoutes");
 
 // Passport configuration
 require('./passport.config');
@@ -198,6 +199,7 @@ app.use("/api/analytics", analyticsRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/referral", referralRoutes);
+app.use("/pusher", pusherRoutes);
 
 
 

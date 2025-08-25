@@ -12,15 +12,16 @@ import {
   FiTrendingUp,
   FiDollarSign,
   FiAward,
-  FiTarget,
-  FiActivity,
   FiShield,
   FiSettings,
-  FiLogOut
+  FiLogOut,
+  FiActivity
 } from 'react-icons/fi';
+import { toast } from 'react-toastify';
 import PageHeader from '../components/layout/PageHeader';
 import { usePortfolio } from '../contexts/PortfolioContext';
 import { useAuth } from '../contexts/AuthContext';
+import { formatCurrency, formatJoinDate } from '../utils/profileUtils';
 import '../styles/profile.css';
 
 const Profile = () => {
@@ -40,13 +41,12 @@ const Profile = () => {
     avatar: null
   });
 
-  // Update profile data when user changes
   useEffect(() => {
     if (user) {
       const fullName = user.fullName || user.name || '';
       const nameParts = fullName.split(' ');
-      const firstName = nameParts[0] || user.firstName || '';
-      const lastName = nameParts.slice(1).join(' ') || user.lastName || '';
+      const firstName = user.firstName || nameParts[0] || '';
+      const lastName = user.lastName || (nameParts.length > 1 ? nameParts.slice(1).join(' ') : '');
 
       setProfileData({
         firstName,
@@ -55,26 +55,17 @@ const Profile = () => {
         phone: user.phoneNumber || user.phone || '',
         location: user.location || user.address || '',
         bio: user.bio || 'Welcome to TradeBro! Start your trading journey today.',
-        joinDate: user.createdAt ? new Date(user.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-        avatar: user.profilePicture || user.profileImage || user.avatar || null
+        joinDate: user.createdAt || new Date().toISOString(),
+        avatar: user.profileImage || user.picture || user.avatar || user.profilePicture || null
       });
     }
   }, [user]);
 
-  // Trading stats using real portfolio data
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0
-    }).format(amount || 0);
-  };
-
   const tradingStats = [
     {
       title: 'Portfolio Value',
-      value: formatCurrency(portfolioData?.totalValue || 10000),
-      change: portfolioData?.totalGainLossPercentage
+      value: formatCurrency(portfolioData?.totalValue || 0),
+      change: portfolioData?.totalGainLossPercentage !== undefined
         ? `${portfolioData.totalGainLossPercentage >= 0 ? '+' : ''}${portfolioData.totalGainLossPercentage.toFixed(2)}%`
         : '0.00%',
       icon: FiDollarSign,
@@ -82,7 +73,7 @@ const Profile = () => {
     },
     {
       title: 'Available Cash',
-      value: formatCurrency(portfolioData?.availableCash || 10000),
+      value: formatCurrency(portfolioData?.availableCash || 0),
       change: 'Available',
       icon: FiDollarSign,
       color: '#3B82F6'
@@ -103,45 +94,42 @@ const Profile = () => {
     }
   ];
 
-  // Achievements based on real data
   const achievements = [
-    { 
-      title: 'First Trade', 
-      description: 'Completed your first trade', 
-      earned: (portfolioData?.transactions?.length || 0) > 0 
+    {
+      title: 'First Trade',
+      description: 'Completed your first trade',
+      earned: (portfolioData?.transactions?.length || 0) > 0
     },
-    { 
-      title: 'Portfolio Builder', 
-      description: 'Built a diversified portfolio', 
-      earned: (portfolioData?.holdings?.length || 0) >= 3 
+    {
+      title: 'Portfolio Builder',
+      description: 'Built a diversified portfolio',
+      earned: (portfolioData?.holdings?.length || 0) >= 3
     },
-    { 
-      title: 'Profit Maker', 
-      description: 'Made positive returns', 
-      earned: (portfolioData?.totalGainLoss || 0) > 0 
+    {
+      title: 'Profit Maker',
+      description: 'Made positive returns',
+      earned: (portfolioData?.totalGainLoss || 0) > 0
     },
-    { 
-      title: 'Active Trader', 
-      description: 'Completed 10+ transactions', 
-      earned: (portfolioData?.transactions?.length || 0) >= 10 
+    {
+      title: 'Active Trader',
+      description: 'Completed 10+ transactions',
+      earned: (portfolioData?.transactions?.length || 0) >= 10
     },
-    { 
-      title: 'Market Expert', 
-      description: 'Achieved 80% success rate', 
-      earned: false 
+    {
+      title: 'Market Expert',
+      description: 'Achieved 80% success rate',
+      earned: false
     },
-    { 
-      title: 'Long Term Investor', 
-      description: 'Held positions for 6+ months', 
-      earned: false 
+    {
+      title: 'Long Term Investor',
+      description: 'Held positions for 6+ months',
+      earned: false
     }
   ];
 
   const handleSave = async () => {
     setSaving(true);
-
     try {
-      // Prepare updated user data
       const updatedUserData = {
         ...user,
         fullName: `${profileData.firstName} ${profileData.lastName}`.trim(),
@@ -149,21 +137,17 @@ const Profile = () => {
         lastName: profileData.lastName,
         email: profileData.email,
         phoneNumber: profileData.phone,
-        phone: profileData.phone,
         location: profileData.location,
         bio: profileData.bio
       };
 
-      // Update profile using AuthContext
-      updateProfile(updatedUserData);
-
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
+      await updateProfile(updatedUserData);
+      toast.success('Profile updated successfully!');
       setIsEditing(false);
-      setSaving(false);
     } catch (error) {
       console.error('Error saving profile:', error);
+      toast.error('Failed to save profile changes.');
+    } finally {
       setSaving(false);
     }
   };
@@ -174,37 +158,26 @@ const Profile = () => {
       const nameParts = fullName.split(' ');
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
-
-      setProfileData({
+      setProfileData(prev => ({
+        ...prev,
         firstName,
         lastName,
         email: user.email || '',
         phone: user.phoneNumber || user.phone || '',
         location: user.location || '',
-        bio: user.bio || 'Welcome to TradeBro! Start your trading journey today.',
-        joinDate: user.createdAt ? new Date(user.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-        avatar: user.profileImage || user.avatar || null
-      });
+        bio: user.bio || 'Welcome to TradeBro! Start your trading journey today.'
+      }));
     }
     setIsEditing(false);
   };
 
-  const handleInputChange = (field, value) => {
-    setProfileData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const formatJoinDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-IN', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    });
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setProfileData(prev => ({ ...prev, [name]: value }));
   };
 
   return (
     <div className="profile-page">
-      {/* Page Header */}
       <PageHeader
         icon={FiUser}
         title="Profile"
@@ -237,10 +210,7 @@ const Profile = () => {
       />
 
       <div className="profile-container">
-
-        {/* Profile Content */}
         <div className="profile-layout">
-          {/* Profile Info Card */}
           <motion.div
             className="profile-card"
             initial={{ opacity: 0, y: 20 }}
@@ -279,7 +249,7 @@ const Profile = () => {
                     </div>
                   </div>
                   {isEditing && (
-                    <button className="avatar-edit-btn">
+                    <button className="avatar-edit-btn" onClick={() => toast.info('Avatar upload coming soon!')}>
                       <FiCamera size={16} />
                     </button>
                   )}
@@ -303,12 +273,7 @@ const Profile = () => {
                   <div className="form-group">
                     <label className="form-label">First Name</label>
                     {isEditing ? (
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={profileData.firstName}
-                        onChange={(e) => handleInputChange('firstName', e.target.value)}
-                      />
+                      <input type="text" className="form-input" name="firstName" value={profileData.firstName} onChange={handleInputChange} />
                     ) : (
                       <div className="form-display">{profileData.firstName}</div>
                     )}
@@ -316,60 +281,31 @@ const Profile = () => {
                   <div className="form-group">
                     <label className="form-label">Last Name</label>
                     {isEditing ? (
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={profileData.lastName}
-                        onChange={(e) => handleInputChange('lastName', e.target.value)}
-                      />
+                      <input type="text" className="form-input" name="lastName" value={profileData.lastName} onChange={handleInputChange} />
                     ) : (
                       <div className="form-display">{profileData.lastName}</div>
                     )}
                   </div>
                   <div className="form-group">
-                    <label className="form-label">
-                      <FiMail size={16} />
-                      Email Address
-                    </label>
+                    <label className="form-label"><FiMail size={16} /> Email Address</label>
                     {isEditing ? (
-                      <input
-                        type="email"
-                        className="form-input"
-                        value={profileData.email}
-                        onChange={(e) => handleInputChange('email', e.target.value)}
-                      />
+                      <input type="email" className="form-input" name="email" value={profileData.email} onChange={handleInputChange} />
                     ) : (
                       <div className="form-display">{profileData.email}</div>
                     )}
                   </div>
                   <div className="form-group">
-                    <label className="form-label">
-                      <FiPhone size={16} />
-                      Phone Number
-                    </label>
+                    <label className="form-label"><FiPhone size={16} /> Phone Number</label>
                     {isEditing ? (
-                      <input
-                        type="tel"
-                        className="form-input"
-                        value={profileData.phone}
-                        onChange={(e) => handleInputChange('phone', e.target.value)}
-                      />
+                      <input type="tel" className="form-input" name="phone" value={profileData.phone} onChange={handleInputChange} />
                     ) : (
                       <div className="form-display">{profileData.phone}</div>
                     )}
                   </div>
                   <div className="form-group full-width">
-                    <label className="form-label">
-                      <FiMapPin size={16} />
-                      Location
-                    </label>
+                    <label className="form-label"><FiMapPin size={16} /> Location</label>
                     {isEditing ? (
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={profileData.location}
-                        onChange={(e) => handleInputChange('location', e.target.value)}
-                      />
+                      <input type="text" className="form-input" name="location" value={profileData.location} onChange={handleInputChange} />
                     ) : (
                       <div className="form-display">{profileData.location}</div>
                     )}
@@ -377,12 +313,7 @@ const Profile = () => {
                   <div className="form-group full-width">
                     <label className="form-label">Bio</label>
                     {isEditing ? (
-                      <textarea
-                        className="form-textarea"
-                        rows="3"
-                        value={profileData.bio}
-                        onChange={(e) => handleInputChange('bio', e.target.value)}
-                      />
+                      <textarea className="form-textarea" rows="3" name="bio" value={profileData.bio} onChange={handleInputChange} />
                     ) : (
                       <div className="form-display">{profileData.bio}</div>
                     )}
@@ -392,7 +323,6 @@ const Profile = () => {
             </div>
           </motion.div>
 
-          {/* Trading Stats */}
           <motion.div
             className="stats-card"
             initial={{ opacity: 0, y: 20 }}
@@ -400,26 +330,19 @@ const Profile = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
           >
             <div className="card-header">
-              <h3 className="card-title">
-                <FiTrendingUp className="card-icon" />
-                Trading Performance
-              </h3>
+              <h3 className="card-title"><FiTrendingUp className="card-icon" /> Trading Performance</h3>
             </div>
             <div className="card-content">
               <div className="stats-grid">
-                {tradingStats.map((stat, index) => {
+                {tradingStats.map((stat) => {
                   const Icon = stat.icon;
                   return (
                     <div key={stat.title} className="stat-item">
-                      <div className="stat-icon" style={{ color: stat.color }}>
-                        <Icon size={24} />
-                      </div>
+                      <div className="stat-icon" style={{ color: stat.color }}><Icon size={24} /></div>
                       <div className="stat-content">
                         <div className="stat-value">{stat.value}</div>
                         <div className="stat-title">{stat.title}</div>
-                        <div className="stat-change" style={{ color: stat.color }}>
-                          {stat.change}
-                        </div>
+                        <div className="stat-change" style={{ color: stat.color }}>{stat.change}</div>
                       </div>
                     </div>
                   );
@@ -428,7 +351,6 @@ const Profile = () => {
             </div>
           </motion.div>
 
-          {/* Achievements */}
           <motion.div
             className="achievements-card"
             initial={{ opacity: 0, y: 20 }}
@@ -436,16 +358,13 @@ const Profile = () => {
             transition={{ duration: 0.6, delay: 0.3 }}
           >
             <div className="card-header">
-              <h3 className="card-title">
-                <FiAward className="card-icon" />
-                Achievements
-              </h3>
+              <h3 className="card-title"><FiAward className="card-icon" /> Achievements</h3>
             </div>
             <div className="card-content">
               <div className="achievements-grid">
-                {achievements.map((achievement, index) => (
-                  <div 
-                    key={achievement.title} 
+                {achievements.map((achievement) => (
+                  <div
+                    key={achievement.title}
                     className={`achievement-item ${achievement.earned ? 'earned' : 'locked'}`}
                   >
                     <div className="achievement-icon">
@@ -456,9 +375,7 @@ const Profile = () => {
                       <p className="achievement-description">{achievement.description}</p>
                     </div>
                     {achievement.earned && (
-                      <div className="achievement-badge">
-                        <FiShield size={16} />
-                      </div>
+                      <div className="achievement-badge"><FiShield size={16} /></div>
                     )}
                   </div>
                 ))}
@@ -466,7 +383,6 @@ const Profile = () => {
             </div>
           </motion.div>
 
-          {/* Quick Actions */}
           <motion.div
             className="actions-card"
             initial={{ opacity: 0, y: 20 }}
@@ -478,18 +394,9 @@ const Profile = () => {
             </div>
             <div className="card-content">
               <div className="action-buttons">
-                <button className="action-btn">
-                  <FiSettings size={20} />
-                  <span>Settings</span>
-                </button>
-                <button className="action-btn">
-                  <FiShield size={20} />
-                  <span>Security</span>
-                </button>
-                <button className="action-btn logout" onClick={logout}>
-                  <FiLogOut size={20} />
-                  <span>Logout</span>
-                </button>
+                <button className="action-btn"><FiSettings size={20} /><span>Settings</span></button>
+                <button className="action-btn"><FiShield size={20} /><span>Security</span></button>
+                <button className="action-btn logout" onClick={logout}><FiLogOut size={20} /><span>Logout</span></button>
               </div>
             </div>
           </motion.div>

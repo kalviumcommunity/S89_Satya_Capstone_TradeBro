@@ -1,46 +1,30 @@
-/* ========================================
-   ⭐ WATCHLIST BUTTON - PERFECT STYLING
-   ======================================== */
-
+/* Watchlist Button - Simple Star Icon */
 .watchlist-btn {
-  background: rgba(255, 255, 255, 0.9);
-  border: 2px solid rgba(229, 231, 235, 0.8);
-  color: #6B7280;
-  backdrop-filter: blur(8px);
-  min-width: 40px;
-  min-height: 40px;
-  border-radius: 12px;
+  background: transparent;
+  border: none;
+  color: #9CA3AF;
+  min-width: 32px;
+  min-height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
   cursor: pointer;
   transition: all 0.3s ease;
-  position: relative;
-  font-size: 14px;
-  font-weight: 600;
-  padding: 8px 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 4px;
 }
 
 .watchlist-btn:hover {
-  background: rgba(255, 255, 255, 1);
-  border-color: #F59E0B;
   color: #F59E0B;
-  transform: translateY(-2px) scale(1.05);
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+  transform: scale(1.1);
 }
 
 .watchlist-btn.active {
-  background: linear-gradient(135deg, #F59E0B 0%, #EAB308 100%);
-  border-color: transparent;
-  color: white;
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+  color: #F59E0B;
 }
 
 .watchlist-btn svg {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   stroke-width: 2;
   stroke: currentColor;
   fill: none;
@@ -48,77 +32,53 @@
 }
 
 .watchlist-btn.active svg {
-  fill: currentColor;
-  transform: scale(1.1);
-}
-
-.watchlist-btn.processing {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.watchlist-btn.success {
-  animation: successPulse 0.6s ease-out;
-}
-
-@keyframes successPulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); }
+  fill: #F59E0B;
+  stroke: #F59E0B;
 }
 
 /* Size Variants */
 .watchlist-btn-small {
-  min-width: 32px;
-  min-height: 32px;
-  padding: 6px 8px;
-  font-size: 12px;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 2px;
 }
 
 .watchlist-btn-small svg {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
 }
 
 .watchlist-btn-medium {
-  min-width: 40px;
-  min-height: 40px;
-  padding: 8px 12px;
-  font-size: 14px;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 4px;
 }
 
 .watchlist-btn-large {
-  min-width: 48px;
-  min-height: 48px;
-  padding: 12px 16px;
-  font-size: 16px;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 6px;
 }
 
 .watchlist-btn-large svg {
-  width: 20px;
-  height: 20px;
-}
-
-.btn-text {
-  margin-left: 4px;
-  white-space: nowrap;
+  width: 24px;
+  height: 24px;
 }
 
 /* Dark Theme */
 [data-theme="dark"] .watchlist-btn {
-  background: rgba(45, 55, 72, 0.9);
-  border-color: rgba(71, 85, 105, 0.8);
-  color: #94A3B8;
+  color: #6B7280;
 }
 
 [data-theme="dark"] .watchlist-btn:hover {
-  background: rgba(30, 41, 59, 1);
-  border-color: #F59E0B;
   color: #F59E0B;
 }
 
 [data-theme="dark"] .watchlist-btn.active {
-  background: linear-gradient(135deg, #F59E0B 0%, #EAB308 100%);
-  border-color: transparent;
-  color: white;
+  color: #F59E0B;
+}
+
+[data-theme="dark"] .watchlist-btn.active svg {
+  fill: #F59E0B;
+  stroke: #F59E0B;
 }

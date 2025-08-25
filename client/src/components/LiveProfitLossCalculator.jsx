@@ -10,7 +10,7 @@ import {
   FiRefreshCw
 } from 'react-icons/fi';
 import { useRealTimeUpdates, formatPriceChange, getPriceColor } from '../hooks/useRealTimeUpdates';
-import { formatCurrency, formatPercentage } from '../hooks/useOrderValidation';
+import { formatCurrency, formatPercentage } from '../utils/orderUtils';
 
 /**
  * Live Profit/Loss Calculator Component

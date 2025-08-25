@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   FiShoppingCart,
   FiClock,
@@ -9,7 +9,6 @@ import {
   FiFilter,
   FiDownload,
   FiSearch,
-  FiCalendar,
   FiTrendingUp,
   FiTrendingDown,
   FiMoreHorizontal,
@@ -17,125 +16,76 @@ import {
   FiTrash2,
   FiActivity
 } from 'react-icons/fi';
-import StockPrice from '../components/StockPrice';
 import PageHeader from '../components/layout/PageHeader';
-import { usePortfolio } from '../contexts/PortfolioContext';
-import { useOrderSearch } from '../hooks/useSearch';
 import SearchInput from '../components/common/SearchInput';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchOrders, setFilters } from '../store/slices/ordersSlice';
+import { formatCurrency, formatDateTime } from '../utils/orderUtils';
 import '../styles/orders.css';
 
 const Orders = ({ user, theme }) => {
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [typeFilter, setTypeFilter] = useState('all');
+  const dispatch = useDispatch();
+  const { orders, isLoading, error, filters, summary } = useSelector((state) => state.orders);
+
+  const [searchQuery, setSearchQuery] = useState(filters.symbol || '');
   const [refreshing, setRefreshing] = useState(false);
-  const { portfolioData } = usePortfolio();
+  const [showHistory, setShowHistory] = useState(false);
+  const recentSearches = useMemo(() => [], []); // This would be populated from user storage
 
-  // Order search functionality
-  const {
-    query: searchQuery,
-    setQuery: setSearchQuery,
-    results: searchResults,
-    recentSearches,
-    showHistory,
-    handleHistoryClick,
-    loading: searchLoading,
-    clearSearch,
-    hasResults
-  } = useOrderSearch({
-    enableSuggestions: false,
-    enableHistory: true,
-    limit: 50,
-    debounceMs: 300,
-    filters: {
-      status: statusFilter !== 'all' ? statusFilter : null,
-      type: typeFilter !== 'all' ? typeFilter : null
-    }
-  });
+  // Fetch orders on component mount and when filters change
+  useEffect(() => {
+    dispatch(fetchOrders(filters));
+  }, [dispatch, filters]);
 
-  // Use real transaction data
-  const orders = portfolioData.transactions || [];
-
-  // Order status options
-  const statusOptions = [
-    { id: 'all', name: 'All Orders', count: 25 },
-    { id: 'pending', name: 'Pending', count: 3 },
-    { id: 'completed', name: 'Completed', count: 18 },
-    { id: 'cancelled', name: 'Cancelled', count: 4 }
-  ];
-
-  // Order type options
-  const typeOptions = [
-    { id: 'all', name: 'All Types' },
-    { id: 'buy', name: 'Buy Orders' },
-    { id: 'sell', name: 'Sell Orders' }
-  ];
-
-  // Orders data is now coming from portfolioData.transactions
-
+  // Handle refreshing data
   const handleRefresh = async () => {
     setRefreshing(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await dispatch(fetchOrders(filters));
     setRefreshing(false);
   };
 
-  const getStatusIcon = (status) => {
+  // Helper function to get status-based icons
+  const getStatusIcon = useCallback((status) => {
     switch (status) {
-      case 'completed':
+      case 'FILLED':
         return <FiCheckCircle className="status-icon completed" />;
-      case 'pending':
+      case 'PENDING':
+      case 'OPEN':
         return <FiClock className="status-icon pending" />;
-      case 'cancelled':
+      case 'CANCELLED':
+      case 'REJECTED':
         return <FiXCircle className="status-icon cancelled" />;
       default:
         return <FiClock className="status-icon" />;
     }
-  };
+  }, []);
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'completed':
-        return '#10B981';
-      case 'pending':
-        return '#F59E0B';
-      case 'cancelled':
-        return '#EF4444';
-      default:
-        return '#6B7280';
-    }
-  };
+  // Filter orders on the frontend based on search query
+  const filteredOrders = useMemo(() => {
+    const queryLower = searchQuery.toLowerCase();
+    const statusLower = filters.status.toLowerCase();
+    const typeLower = filters.type.toLowerCase();
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount);
-  };
+    return orders.filter(order => {
+      const matchesSearch = (order.stockSymbol || '').toLowerCase().includes(queryLower) ||
+        (order.stockName || '').toLowerCase().includes(queryLower) ||
+        (order._id || '').toLowerCase().includes(queryLower);
+      const matchesStatus = statusLower === 'all' || (order.status || 'PENDING').toLowerCase() === statusLower;
+      const matchesType = typeLower === 'all' || (order.type || '').toLowerCase() === typeLower;
+      return matchesSearch && matchesStatus && matchesType;
+    });
+  }, [orders, searchQuery, filters.status, filters.type]);
 
-  const formatDateTime = (dateString) => {
-    const date = new Date(dateString);
-    return {
-      date: date.toLocaleDateString('en-IN'),
-      time: date.toLocaleTimeString('en-IN', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      })
-    };
-  };
 
-  const filteredOrders = orders.filter(order => {
-    const matchesSearch = order.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         order.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         order.id.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-    const matchesType = typeFilter === 'all' || order.type.toLowerCase() === typeFilter;
-    return matchesSearch && matchesStatus && matchesType;
-  });
+  if (isLoading) {
+    return <div className="loading-container">
+      <div className="loading-spinner"></div>
+      <p>Loading orders...</p>
+    </div>;
+  }
 
   return (
     <div className="orders-page">
-      {/* Page Header */}
       <PageHeader
         icon={FiShoppingCart}
         title="Orders"
@@ -152,7 +102,7 @@ const Orders = ({ user, theme }) => {
           {
             label: "Export",
             icon: FiDownload,
-            onClick: () => {},
+            onClick: () => { /* Implement export logic here */ },
             variant: "outline"
           }
         ]}
@@ -170,42 +120,39 @@ const Orders = ({ user, theme }) => {
           <div className="controls-left">
             <div className="search-container">
               <SearchInput
-                placeholder="Search orders by stock symbol..."
+                placeholder="Search orders by symbol..."
                 value={searchQuery}
                 onChange={setSearchQuery}
-                onClear={clearSearch}
+                onClear={() => setSearchQuery('')}
                 recentSearches={recentSearches}
-                onHistoryClick={handleHistoryClick}
                 showHistory={showHistory}
-                loading={searchLoading}
+                onHistoryClick={(item) => setSearchQuery(item.query)}
                 size="md"
                 showSuggestions={false}
-                enableHistory={true}
+                enableHistory={false}
                 className="orders-search-input"
               />
             </div>
             <div className="filter-group">
               <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                value={filters.status}
+                onChange={(e) => dispatch(setFilters({ status: e.target.value }))}
                 className="filter-select"
               >
-                {statusOptions.map(option => (
-                  <option key={option.id} value={option.id}>
-                    {option.name} ({option.count})
-                  </option>
-                ))}
+                <option value="all">All Statuses ({summary?.totalOrders || 0})</option>
+                <option value="OPEN">Open ({summary?.openOrders || 0})</option>
+                <option value="FILLED">Filled ({summary?.filledOrders || 0})</option>
+                <option value="CANCELLED">Cancelled ({summary?.cancelledOrders || 0})</option>
+                <option value="REJECTED">Rejected ({summary?.rejectedOrders || 0})</option>
               </select>
               <select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
+                value={filters.type}
+                onChange={(e) => dispatch(setFilters({ type: e.target.value }))}
                 className="filter-select"
               >
-                {typeOptions.map(option => (
-                  <option key={option.id} value={option.id}>
-                    {option.name}
-                  </option>
-                ))}
+                <option value="all">All Types</option>
+                <option value="BUY">Buy</option>
+                <option value="SELL">Sell</option>
               </select>
             </div>
           </div>
@@ -243,84 +190,91 @@ const Orders = ({ user, theme }) => {
                 <div className="col-actions">Actions</div>
               </div>
               <div className="table-body">
-                {filteredOrders.map((order, index) => {
-                  const dateTime = formatDateTime(order.timestamp);
-                  return (
-                    <motion.div
-                      key={order.id}
-                      className="table-row"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: index * 0.05 }}
-                    >
-                      <div className="col-order">
-                        <div className="order-info">
-                          <div className="order-id">#{order.id}</div>
-                          <div className="stock-symbol">{order.symbol}</div>
-                          <div className="stock-name">{order.name}</div>
+                {filteredOrders.length === 0 ? (
+                  <div className="empty-state">
+                    <FiActivity size={48} />
+                    <h3>No Orders Found</h3>
+                    <p>There are no orders that match your current filters.</p>
+                  </div>
+                ) : (
+                  filteredOrders.map((order, index) => {
+                    const dateTime = formatDateTime(order.createdAt);
+                    const isPending = order.status === 'PENDING' || order.status === 'OPEN';
+                    const totalPrice = (order.executionPrice || order.price) * order.quantity + (order.fees || 0);
+
+                    return (
+                      <motion.div
+                        key={order._id}
+                        className="table-row"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.05 }}
+                      >
+                        <div className="col-order">
+                          <div className="order-info">
+                            <div className="order-id">#{order._id.slice(-6)}</div>
+                            <div className="stock-symbol">{order.stockSymbol}</div>
+                          </div>
                         </div>
-                      </div>
-                      <div className="col-type">
-                        <div className={`order-type ${order.type.toLowerCase()}`}>
-                          {order.type === 'BUY' ? <FiTrendingUp size={14} /> : <FiTrendingDown size={14} />}
-                          {order.type}
+                        <div className="col-type">
+                          <div className={`order-type ${order.type?.toLowerCase()}`}>
+                            {order.type === 'BUY' ? <FiTrendingUp size={14} /> : <FiTrendingDown size={14} />}
+                            {order.type}
+                          </div>
+                          <div className="order-subtype">{order.orderType}</div>
                         </div>
-                        <div className="order-subtype">{order.orderType}</div>
-                      </div>
-                      <div className="col-quantity">{order.quantity}</div>
-                      <div className="col-price">
-                        <div className="price-info">
-                          <div className="order-price">{formatCurrency(order.price)}</div>
-                          {order.executedPrice && order.executedPrice !== order.price && (
-                            <div className="executed-price">
-                              Exec: {formatCurrency(order.executedPrice)}
-                            </div>
+                        <div className="col-quantity">{order.quantity}</div>
+                        <div className="col-price">
+                          <div className="price-info">
+                            <div className="order-price">{formatCurrency(order.price)}</div>
+                            {order.executionPrice && order.executionPrice !== order.price && (
+                              <div className="executed-price">
+                                Exec: {formatCurrency(order.executionPrice)}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="col-total">
+                          <div className="total-amount">{formatCurrency(totalPrice)}</div>
+                          {order.fees > 0 && (
+                            <div className="fees">Fees: {formatCurrency(order.fees)}</div>
                           )}
                         </div>
-                      </div>
-                      <div className="col-total">
-                        <div className="total-amount">{formatCurrency(order.total)}</div>
-                        {order.fees > 0 && (
-                          <div className="fees">Fees: {formatCurrency(order.fees)}</div>
-                        )}
-                      </div>
-                      <div className="col-status">
-                        <div className="status-container">
-                          {getStatusIcon(order.status)}
-                          <span 
-                            className={`status-text ${order.status}`}
-                            style={{ color: getStatusColor(order.status) }}
-                          >
-                            {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                          </span>
+                        <div className="col-status">
+                          <div className="status-container">
+                            {getStatusIcon(order.status)}
+                            <span className={`status-text ${order.status?.toLowerCase()}`}>
+                              {(order.status || 'PENDING').charAt(0).toUpperCase() + (order.status || 'PENDING').slice(1)}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                      <div className="col-time">
-                        <div className="time-info">
-                          <div className="order-date">{dateTime.date}</div>
-                          <div className="order-time">{dateTime.time}</div>
+                        <div className="col-time">
+                          <div className="time-info">
+                            <div className="order-date">{dateTime.date}</div>
+                            <div className="order-time">{dateTime.time}</div>
+                          </div>
                         </div>
-                      </div>
-                      <div className="col-actions">
-                        <div className="action-buttons">
-                          {order.status === 'pending' && (
-                            <button className="action-btn" title="Edit Order">
-                              <FiEdit size={14} />
+                        <div className="col-actions">
+                          <div className="action-buttons">
+                            {isPending && (
+                              <button className="action-btn" title="Edit Order">
+                                <FiEdit size={14} />
+                              </button>
+                            )}
+                            {isPending && (
+                              <button className="action-btn cancel" title="Cancel Order">
+                                <FiXCircle size={14} />
+                              </button>
+                            )}
+                            <button className="action-btn" title="More Options">
+                              <FiMoreHorizontal size={14} />
                             </button>
-                          )}
-                          {order.status === 'pending' && (
-                            <button className="action-btn cancel" title="Cancel Order">
-                              <FiXCircle size={14} />
-                            </button>
-                          )}
-                          <button className="action-btn" title="More Options">
-                            <FiMoreHorizontal size={14} />
-                          </button>
+                          </div>
                         </div>
-                      </div>
-                    </motion.div>
-                  );
-                })}
+                      </motion.div>
+                    );
+                  })
+                )}
               </div>
             </div>
           </div>

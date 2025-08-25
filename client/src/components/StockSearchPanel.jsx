@@ -13,7 +13,7 @@ import {
   FiRefreshCw
 } from 'react-icons/fi';
 import { useDebounce } from '../hooks/useDebounce';
-import { formatCurrency, formatPercentage } from '../hooks/useOrderValidation';
+import { formatCurrency, formatPercentage } from '../utils/orderUtils';
 import WatchlistButton from './trading/WatchlistButton';
 import { fmpStockAPI } from '../services/fmpAPI';
 import '../styles/stock-search-panel.css';
@@ -342,12 +342,13 @@ const StockSearchPanel = ({
                       ({stock.changePercent?.toFixed(2)}%)
                     </div>
                   </div>
-                  <div className="search-result-actions" onClick={(e) => {
-                    e.stopPropagation();
-                    const updatedStock = { ...stock, isWatchlisted: !stock.isWatchlisted };
-                    setSearchResults(prev => prev.map(s => s.symbol === stock.symbol ? updatedStock : s));
-                  }}>
-                    {stock.isWatchlisted ? '⭐' : '☆'}
+                  <div className="search-result-actions" onClick={(e) => e.stopPropagation()}>
+                    <WatchlistButton
+                      stockData={stock}
+                      size="small"
+                      variant="simple"
+                      showText={false}
+                    />
                   </div>
                   {stock.exchange && (
                     <div className="exchange">{stock.exchange}</div>
@@ -413,15 +414,13 @@ const StockSearchPanel = ({
                   </div>
                 </div>
 
-                <div className="popular-stock-actions" onClick={(e) => {
-                  e.stopPropagation();
-                  const updatedStocks = popularStocks.map(s => 
-                    s.symbol === stock.symbol ? { ...s, isWatchlisted: !s.isWatchlisted } : s
-                  );
-                  setPopularStocks(updatedStocks);
-                  onUpdatePopularStocks?.(updatedStocks);
-                }}>
-                  {stock.isWatchlisted ? '⭐' : '☆'}
+                <div className="popular-stock-actions" onClick={(e) => e.stopPropagation()}>
+                  <WatchlistButton
+                    stockData={stock}
+                    size="small"
+                    variant="simple"
+                    showText={false}
+                  />
                 </div>
               </motion.div>
             ))}

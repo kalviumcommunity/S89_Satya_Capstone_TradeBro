@@ -17,7 +17,8 @@ import { usePortfolio } from '../contexts/PortfolioContext';
 import { useSelector } from 'react-redux';
 import StockPrice from './StockPrice';
 import tradingService from '../services/tradingService';
-import { useOrderValidation, formatCurrency, formatPercentage } from '../hooks/useOrderValidation';
+import { useOrderValidation } from '../hooks/useOrderValidation';
+import { formatCurrency, formatPercentage } from '../utils/orderUtils';
 import { useStockValidation, formatStockPrice } from '../hooks/useStockValidation';
 import { showOrderToast, dismissToast } from './notifications/NotificationToast';
 // OrderConfirmationModal moved to App level for proper overlay positioning

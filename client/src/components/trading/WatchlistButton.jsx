@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FiStar,
@@ -11,190 +11,97 @@ import {
 import { useWatchlist } from '../../hooks/useWatchlist';
 import '../../styles/watchlist-button.css';
 
-const WatchlistButton = ({ 
-  stockData, 
-  size = 'medium', 
-  variant = 'icon', 
+const WatchlistButton = ({
+  stockData,
+  size = 'medium',
+  variant = 'icon',
   showText = false,
   className = '',
   onSuccess,
-  onError 
+  onError
 }) => {
   const {
     isInWatchlist,
-    toggleWatchlist,
     addToWatchlist,
     removeFromWatchlist,
     watchlists,
-    loading
+    loadingState,
+    loading,
+    error,
+    refreshWatchlists
   } = useWatchlist();
 
   const [showDropdown, setShowDropdown] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
 
-  if (!stockData) {
-    console.warn('⚠️ WatchlistButton: No stock data provided');
-    return null;
-  }
+  // Derive state from the useWatchlist hook
+  const inWatchlist = isInWatchlist(stockData?.symbol || stockData?.stockSymbol);
+  const isLoading = loadingState.action === 'toggle' && loading;
+  const isRefreshing = loadingState.action === 'refresh' && loading;
 
-  const stockSymbol = stockData.symbol || stockData.stockSymbol;
-  
-  if (!stockSymbol) {
-    console.warn('⚠️ WatchlistButton: No stock symbol found in data:', stockData);
-    return null;
-  }
-
-  const inWatchlist = isInWatchlist(stockSymbol);
-  
-  // Debug logging
-  console.log('🔍 WatchlistButton render:', {
-    symbol: stockSymbol,
-    inWatchlist,
-    watchlistsCount: watchlists.length,
-    isProcessing,
-    loading
-  });
-
-  // Handle simple toggle (add to default watchlist or remove)
-  const handleToggle = async (e) => {
+  const handleToggle = useCallback(async (e) => {
     e?.stopPropagation();
-    
-    if (isProcessing || loading) return;
 
-    setIsProcessing(true);
-    
+    if (!stockData || !stockData.symbol) {
+      console.warn('⚠️ WatchlistButton: Missing stockData or symbol.');
+      return;
+    }
+
     try {
-      console.log('🎯 Toggling watchlist for:', stockSymbol, 'Currently in watchlist:', inWatchlist);
-      
-      // Prepare stock data with all necessary fields
-      const stockToToggle = {
-        symbol: stockSymbol,
-        name: stockData.name || stockData.companyName || `${stockSymbol} Corporation`,
-        price: stockData.price || stockData.currentPrice || 0,
-        change: stockData.change || stockData.priceChange || 0,
-        changePercent: stockData.changePercent || stockData.changePercentage || 0,
-        volume: stockData.volume || 0,
-        marketCap: stockData.marketCap || 0,
-        sector: stockData.sector || 'Unknown'
-      };
-      
-      const result = await toggleWatchlist(stockToToggle);
-      
-      if (result.success) {
-        console.log('✅ Watchlist toggle successful:', result);
-        
-        if (onSuccess) {
-          onSuccess(result, inWatchlist ? 'removed' : 'added');
-        }
-        
-        // Add haptic feedback for mobile
-        if (navigator.vibrate) {
-          navigator.vibrate(50);
-        }
-        
-        // Show success animation
-        setShowSuccess(true);
-        setTimeout(() => setShowSuccess(false), 600);
+      if (inWatchlist) {
+        await removeFromWatchlist(stockData.symbol);
+        onSuccess?.(null, 'removed');
       } else {
-        console.warn('⚠️ Watchlist toggle failed:', result.message);
-        if (onError) {
-          onError(result.message || 'Failed to update watchlist');
-        }
+        await addToWatchlist(stockData, watchlists.find(w => w.isDefault)?._id);
+        onSuccess?.(null, 'added');
       }
-    } catch (error) {
-      console.error('❌ Error toggling watchlist:', error);
-      if (onError) {
-        onError('Failed to update watchlist');
-      }
-    } finally {
-      setIsProcessing(false);
+    } catch (err) {
+      console.error('❌ Error toggling watchlist:', err);
+      onError?.(err.message || 'Failed to update watchlist');
     }
-  };
+  }, [stockData, inWatchlist, addToWatchlist, removeFromWatchlist, onSuccess, onError, watchlists]);
 
-  // Handle adding to specific watchlist
-  const handleAddToWatchlist = async (watchlistId) => {
-    if (isProcessing || loading) return;
+  const handleAddToWatchlist = useCallback(async (e, watchlistId) => {
+    e.stopPropagation();
+    if (!stockData || !stockData.symbol) return;
 
-    setIsProcessing(true);
     setShowDropdown(false);
-    
-    try {
-      console.log('➕ Adding to watchlist:', watchlistId, 'Stock:', stockSymbol);
-      
-      // Prepare complete stock data
-      const stockToAdd = {
-        symbol: stockSymbol,
-        name: stockData.name || stockData.companyName || `${stockSymbol} Corporation`,
-        price: stockData.price || stockData.currentPrice || 0,
-        change: stockData.change || stockData.priceChange || 0,
-        changePercent: stockData.changePercent || stockData.changePercentage || 0,
-        volume: stockData.volume || 0,
-        marketCap: stockData.marketCap || 0,
-        sector: stockData.sector || 'Unknown'
-      };
-      
-      const result = await addToWatchlist(stockToAdd, watchlistId);
-      
-      if (result.success) {
-        console.log('✅ Successfully added to watchlist');
-        if (onSuccess) {
-          onSuccess(result, 'added');
-        }
-      } else {
-        console.warn('⚠️ Failed to add to watchlist:', result.message);
-        if (onError) {
-          onError(result.message || 'Failed to add to watchlist');
-        }
-      }
-    } catch (error) {
-      console.error('❌ Error adding to watchlist:', error);
-      if (onError) {
-        onError('Failed to add to watchlist');
-      }
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+    await addToWatchlist(stockData, watchlistId);
+    refreshWatchlists();
+  }, [stockData, addToWatchlist, refreshWatchlists]);
 
-  // Handle removing from watchlist
-  const handleRemoveFromWatchlist = async () => {
-    if (isProcessing || loading) return;
+  const handleRemoveFromWatchlist = useCallback(async (e) => {
+    e.stopPropagation();
+    if (!stockData || !stockData.symbol) return;
 
-    setIsProcessing(true);
     setShowDropdown(false);
-    
-    try {
-      const result = await removeFromWatchlist(stockSymbol);
-      
-      if (result.success && onSuccess) {
-        onSuccess(result, 'removed');
-      } else if (!result.success && onError) {
-        onError(result.message);
-      }
-    } catch (error) {
-      console.error('Error removing from watchlist:', error);
-      if (onError) {
-        onError('Failed to remove from watchlist');
-      }
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+    await removeFromWatchlist(stockData.symbol);
+  }, [stockData, removeFromWatchlist]);
 
-  // Simple button variant (just toggle)
+
+  // Effect to close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showDropdown && !event.target.closest('.watchlist-dropdown-container')) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showDropdown]);
+
+  // Handle simple button variant (just toggle)
   if (variant === 'simple') {
     return (
       <button
-        className={`watchlist-btn watchlist-btn-${size} ${inWatchlist ? 'active' : ''} ${isProcessing ? 'processing' : ''} ${showSuccess ? 'success' : ''} ${className}`}
+        className={`watchlist-btn watchlist-btn-${size} ${inWatchlist ? 'active' : ''} ${isLoading ? 'processing' : ''} ${className}`}
         onClick={handleToggle}
-        disabled={isProcessing || loading}
+        disabled={isLoading || loading}
         title={inWatchlist ? 'Remove from watchlist' : 'Add to watchlist'}
       >
-        {isProcessing ? (
+        {isLoading ? (
           <FiLoader className="animate-spin" />
-        ) : inWatchlist ? (
-          <FiCheck />
         ) : (
           <FiStar />
         )}
@@ -217,10 +124,10 @@ const WatchlistButton = ({
             e.stopPropagation();
             setShowDropdown(!showDropdown);
           }}
-          disabled={isProcessing || loading}
+          disabled={isLoading || loading}
           title="Manage watchlist"
         >
-          {isProcessing ? (
+          {isLoading ? (
             <FiLoader className="animate-spin" />
           ) : (
             <FiList />
@@ -248,28 +155,21 @@ const WatchlistButton = ({
               </div>
 
               <div className="dropdown-content">
-                {inWatchlist && (
-                  <button
-                    className="dropdown-item remove-item"
-                    onClick={handleRemoveFromWatchlist}
-                    disabled={isProcessing}
-                  >
-                    <FiX />
-                    <span>Remove from Watchlist</span>
-                  </button>
+                {watchlists.length === 0 && (
+                  <div className="dropdown-empty">
+                    <span>No watchlists found</span>
+                  </div>
                 )}
-
                 {watchlists.map((watchlist) => {
-                  const hasStock = watchlist.stocks.some(stock => 
-                    stock.symbol === stockSymbol || stock.stockSymbol === stockSymbol
+                  const hasStock = watchlist.stocks?.some(stock =>
+                    stock.symbol === stockData.symbol || stock.stockSymbol === stockData.symbol
                   );
-
                   return (
                     <button
                       key={watchlist._id}
                       className={`dropdown-item ${hasStock ? 'has-stock' : ''}`}
-                      onClick={() => handleAddToWatchlist(watchlist._id)}
-                      disabled={isProcessing || hasStock}
+                      onClick={(e) => handleAddToWatchlist(e, watchlist._id)}
+                      disabled={isLoading || hasStock}
                     >
                       {hasStock ? <FiCheck /> : <FiPlus />}
                       <span>{watchlist.name}</span>
@@ -280,23 +180,20 @@ const WatchlistButton = ({
                   );
                 })}
 
-                {watchlists.length === 0 && (
-                  <div className="dropdown-empty">
-                    <span>No watchlists found</span>
-                  </div>
+                {inWatchlist && (
+                  <button
+                    className="dropdown-item remove-item"
+                    onClick={handleRemoveFromWatchlist}
+                    disabled={isLoading}
+                  >
+                    <FiX />
+                    <span>Remove from All Watchlists</span>
+                  </button>
                 )}
               </div>
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* Backdrop */}
-        {showDropdown && (
-          <div
-            className="watchlist-dropdown-backdrop"
-            onClick={() => setShowDropdown(false)}
-          />
-        )}
       </div>
     );
   }
@@ -304,9 +201,9 @@ const WatchlistButton = ({
   // Default icon variant
   return (
     <button
-      className={`watchlist-btn watchlist-btn-${size} ${inWatchlist ? 'active' : ''} ${isProcessing ? 'processing' : ''} ${showSuccess ? 'success' : ''} ${className}`}
+      className={`watchlist-btn watchlist-btn-${size} ${inWatchlist ? 'active' : ''} ${isLoading ? 'processing' : ''} ${className}`}
       onClick={handleToggle}
-      disabled={isProcessing || loading}
+      disabled={isLoading || loading}
       title={inWatchlist ? 'Remove from watchlist' : 'Add to watchlist'}
     >
       <motion.div
@@ -316,7 +213,6 @@ const WatchlistButton = ({
           scale: 1,
           opacity: 1,
           rotate: 0,
-          y: showSuccess ? [-2, 0] : 0
         }}
         transition={{
           duration: 0.4,
@@ -325,7 +221,7 @@ const WatchlistButton = ({
           damping: 20
         }}
       >
-        {isProcessing ? (
+        {isLoading ? (
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
@@ -334,8 +230,9 @@ const WatchlistButton = ({
           </motion.div>
         ) : (
           <motion.div
+            initial={false}
             animate={{
-              scale: showSuccess ? [1, 1.3, 1] : 1,
+              scale: inWatchlist ? [1, 1.3, 1] : 1,
               rotate: inWatchlist ? [0, 15, -15, 0] : 0
             }}
             transition={{ duration: 0.3 }}

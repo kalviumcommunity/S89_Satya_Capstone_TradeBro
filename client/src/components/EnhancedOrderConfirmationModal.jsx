@@ -11,7 +11,7 @@ import {
   FiChevronRight,
   FiCheckCircle
 } from 'react-icons/fi';
-import { formatCurrency, formatPercentage } from '../hooks/useOrderValidation';
+import { formatCurrency, formatPercentage } from '../utils/orderUtils';
 import { usePortfolio } from '../contexts/PortfolioContext';
 
 /**
