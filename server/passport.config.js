@@ -9,7 +9,7 @@ const { USER_DEFAULTS } = require('./config/constants'); // Adjust path if neces
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: "/api/auth/google/callback" // This must match your backend route and Google Cloud Console Redirect URI
+    callbackURL: process.env.GOOGLE_CALLBACK_URL || "https://s89-satya-capstone-tradebro.onrender.com/api/auth/google/callback"
 }, async (accessToken, refreshToken, profile, done) => {
     try {
         const { id: googleId, emails, displayName, name, photos } = profile;
