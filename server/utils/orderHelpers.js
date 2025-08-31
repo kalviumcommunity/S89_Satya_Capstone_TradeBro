@@ -1,48 +1,38 @@
-/**
- * Order Helper Functions
- * Modular functions for order calculations, validation, and execution
- */
-
 const Order = require('../models/Order');
 const VirtualMoney = require('../models/VirtualMoney');
+const { validateSymbol } = require('../utils/watchlistUtils');
 
-// Import notification system safely
-let createSystemNotification;
-try {
-  const notificationRoutes = require('../routes/notificationRoutes');
-  createSystemNotification = notificationRoutes.createSystemNotification;
-} catch (error) {
-  console.warn('Notification system not available:', error.message);
-  createSystemNotification = null;
-}
+// Import notification creation function directly
+const Notification = require('../models/Notification');
+const Pusher = require('pusher');
 
-/**
- * Calculate order total with fees
- * @param {number} quantity - Number of shares
- * @param {number} price - Price per share
- * @param {string} orderType - MARKET or LIMIT
- * @param {number} fees - Trading fees (optional)
- * @returns {object} Calculation result
- */
-const calculateOrderTotal = (quantity, price, orderType = 'MARKET', fees = 0) => {
+// Pusher config
+const pusher = new Pusher({
+  appId: process.env.PUSHER_APP_ID,
+  key: process.env.PUSHER_KEY,
+  secret: process.env.PUSHER_SECRET,
+  cluster: process.env.PUSHER_CLUSTER,
+  useTLS: true
+});
+
+const calculateOrderTotal = (quantity, price, orderType = 'MARKET') => {
   try {
-    // Input validation
     if (!quantity || !price || quantity <= 0 || price <= 0) {
       throw new Error('Invalid quantity or price');
     }
 
     const subtotal = quantity * price;
-    const tradingFees = fees || calculateTradingFees(subtotal, orderType);
+    const tradingFees = calculateTradingFees(subtotal, orderType);
     const total = subtotal + tradingFees;
 
     return {
       success: true,
       data: {
         quantity,
-        price: Math.round(price * 100) / 100,
-        subtotal: Math.round(subtotal * 100) / 100,
-        fees: Math.round(tradingFees * 100) / 100,
-        total: Math.round(total * 100) / 100
+        price: Number(price.toFixed(2)),
+        subtotal: Number(subtotal.toFixed(2)),
+        fees: Number(tradingFees.toFixed(2)),
+        total: Number(total.toFixed(2))
       }
     };
   } catch (error) {
@@ -54,108 +44,57 @@ const calculateOrderTotal = (quantity, price, orderType = 'MARKET', fees = 0) =>
   }
 };
 
-/**
- * Calculate trading fees based on order value
- * @param {number} orderValue - Total order value
- * @param {string} orderType - MARKET or LIMIT
- * @returns {number} Trading fees
- */
 const calculateTradingFees = (orderValue, orderType = 'MARKET') => {
-  // Fee structure (can be made configurable)
   const feeRates = {
     MARKET: 0.001, // 0.1%
     LIMIT: 0.0005  // 0.05%
   };
-
   const rate = feeRates[orderType] || feeRates.MARKET;
   const fees = orderValue * rate;
-  
-  // Minimum fee of ₹1, maximum fee of ₹100
-  return Math.max(1, Math.min(100, Math.round(fees * 100) / 100));
+  return Math.max(1, Math.min(100, fees));
 };
 
-/**
- * Validate order business rules
- * @param {object} orderData - Order data to validate
- * @param {object} user - User object
- * @param {object} virtualMoney - VirtualMoney object
- * @returns {object} Validation result
- */
 const validateOrderBusinessRules = async (orderData, user, virtualMoney) => {
   try {
     const { type, quantity, price, orderType, limitPrice, stockSymbol } = orderData;
+    
+    const symbolValidation = validateSymbol(stockSymbol);
+    if (!symbolValidation.valid) {
+      return { success: false, message: symbolValidation.message, code: 'INVALID_SYMBOL' };
+    }
 
-    // Calculate total cost
     const priceToUse = orderType === 'LIMIT' ? limitPrice : price;
     const calculation = calculateOrderTotal(quantity, priceToUse, orderType);
-    
     if (!calculation.success) {
       return calculation;
     }
 
     const { total } = calculation.data;
 
-    // For BUY orders, check balance
     if (type === 'BUY') {
       if (virtualMoney.balance < total) {
         return {
           success: false,
-          message: `Insufficient balance. Required: ₹${total.toLocaleString('en-IN')}, Available: ₹${virtualMoney.balance.toLocaleString('en-IN')}`,
+          message: 'Insufficient balance',
           code: 'INSUFFICIENT_BALANCE',
-          data: {
-            required: total,
-            available: virtualMoney.balance,
-            shortfall: total - virtualMoney.balance
-          }
+          data: { required: total, available: virtualMoney.balance }
         };
       }
     }
 
-    // For SELL orders, check portfolio
     if (type === 'SELL') {
       const holding = virtualMoney.portfolio.find(p => p.stockSymbol === stockSymbol);
-      
       if (!holding || holding.quantity < quantity) {
         return {
           success: false,
-          message: `Insufficient shares. Required: ${quantity}, Available: ${holding ? holding.quantity : 0}`,
+          message: 'Insufficient shares',
           code: 'INSUFFICIENT_SHARES',
-          data: {
-            required: quantity,
-            available: holding ? holding.quantity : 0,
-            shortfall: quantity - (holding ? holding.quantity : 0)
-          }
+          data: { required: quantity, available: holding?.quantity || 0 }
         };
       }
     }
 
-    // Check for duplicate orders (same stock, type, price within 5 minutes)
-    const recentDuplicate = await Order.findOne({
-      userId: user.id,
-      stockSymbol,
-      type,
-      status: { $in: ['PENDING', 'OPEN'] },
-      createdAt: { $gte: new Date(Date.now() - 5 * 60 * 1000) }, // Last 5 minutes
-      $or: [
-        { orderType: 'MARKET' },
-        { orderType: 'LIMIT', limitPrice: priceToUse }
-      ]
-    });
-
-    if (recentDuplicate) {
-      return {
-        success: false,
-        message: 'Duplicate order detected. Please wait before placing a similar order.',
-        code: 'DUPLICATE_ORDER',
-        data: { duplicateOrderId: recentDuplicate._id }
-      };
-    }
-
-    return {
-      success: true,
-      data: { calculation: calculation.data }
-    };
-
+    return { success: true, data: { calculation: calculation.data } };
   } catch (error) {
     return {
       success: false,
@@ -166,181 +105,95 @@ const validateOrderBusinessRules = async (orderData, user, virtualMoney) => {
   }
 };
 
-/**
- * Execute market order
- * @param {object} orderData - Order data
- * @param {object} user - User object
- * @param {object} virtualMoney - VirtualMoney object
- * @returns {object} Execution result
- */
 const executeMarketOrder = async (orderData, user, virtualMoney) => {
-  try {
-    const { type, stockSymbol, stockName, quantity, price } = orderData;
-    
-    // Calculate fees
-    const fees = calculateTradingFees(quantity * price, 'MARKET');
-    
-    let result;
-    
-    if (type === 'BUY') {
-      result = await virtualMoney.buyStock(stockSymbol, quantity, price);
-    } else {
-      result = await virtualMoney.sellStock(stockSymbol, quantity, price);
-    }
+  const validation = await validateOrderBusinessRules(orderData, user, virtualMoney);
+  if (!validation.success) return validation;
 
-    if (!result.success) {
-      return result;
-    }
-
-    // Create filled order
-    const order = new Order({
-      userId: user.id,
-      userEmail: user.email,
-      type,
-      stockSymbol: stockSymbol.toUpperCase(),
-      stockName,
-      quantity,
-      price,
-      orderType: 'MARKET',
-      status: 'FILLED',
-      filledAt: new Date(),
-      executionPrice: price,
-      fees,
-      total: (quantity * price) + fees,
-      idempotencyKey: orderData.idempotencyKey
-    });
-
-    await order.save();
-
-    // Send notification
-    await sendOrderNotification(user, order, 'FILLED');
-
-    return {
-      success: true,
-      message: `${type} order executed successfully`,
-      data: {
-        order,
-        balance: virtualMoney.balance,
-        portfolio: virtualMoney.portfolio
-      }
-    };
-
-  } catch (error) {
-    return {
-      success: false,
-      message: 'Order execution failed',
-      code: 'EXECUTION_ERROR',
-      error: error.message
-    };
-  }
-};
-
-/**
- * Create limit order
- * @param {object} orderData - Order data
- * @param {object} user - User object
- * @returns {object} Creation result
- */
-const createLimitOrder = async (orderData, user) => {
-  try {
-    const { type, stockSymbol, stockName, quantity, price, limitPrice } = orderData;
-    
-    const fees = calculateTradingFees(quantity * limitPrice, 'LIMIT');
-    
-    const order = new Order({
-      userId: user.id,
-      userEmail: user.email,
-      type,
-      stockSymbol: stockSymbol.toUpperCase(),
-      stockName,
-      quantity,
-      price,
-      orderType: 'LIMIT',
-      limitPrice,
-      status: 'OPEN',
-      fees,
-      total: (quantity * limitPrice) + fees,
-      idempotencyKey: orderData.idempotencyKey
-    });
-
-    await order.save();
-
-    // Send notification
-    await sendOrderNotification(user, order, 'PLACED');
-
-    return {
-      success: true,
-      message: `${type} limit order placed successfully`,
-      data: { order }
-    };
-
-  } catch (error) {
-    return {
-      success: false,
-      message: 'Limit order creation failed',
-      code: 'CREATION_ERROR',
-      error: error.message
-    };
-  }
-};
-
-/**
- * Send order notification
- * @param {object} user - User object
- * @param {object} order - Order object
- * @param {string} event - Event type (PLACED, FILLED, CANCELLED)
- */
-const sendOrderNotification = async (user, order, event) => {
-  try {
-    const eventMessages = {
-      PLACED: {
-        type: 'info',
-        title: 'Order Placed',
-        message: `Your ${order.type} order for ${order.quantity} shares of ${order.stockSymbol} has been placed successfully.`
-      },
-      FILLED: {
-        type: 'success',
-        title: 'Order Executed',
-        message: `Your ${order.type} order for ${order.quantity} shares of ${order.stockSymbol} has been executed at ₹${order.executionPrice}.`
-      },
-      CANCELLED: {
-        type: 'warning',
-        title: 'Order Cancelled',
-        message: `Your ${order.type} order for ${order.quantity} shares of ${order.stockSymbol} has been cancelled.`
-      },
-      REJECTED: {
-        type: 'error',
-        title: 'Order Rejected',
-        message: `Your ${order.type} order for ${order.quantity} shares of ${order.stockSymbol} has been rejected. ${order.rejectionReason || ''}`
-      }
-    };
-
-    const notification = eventMessages[event];
-    if (notification && createSystemNotification) {
-      await createSystemNotification(
-        user.id,
-        user.email,
-        notification.type,
-        notification.title,
-        notification.message,
-        `/orders/${order._id}`
-      );
-    }
-  } catch (error) {
-    console.error('Failed to send order notification:', error);
-  }
-};
-
-/**
- * Generate idempotency key
- * @returns {string} UUID v4 string
- */
-const generateIdempotencyKey = () => {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
+  const { calculation } = validation.data;
+  const order = new Order({
+    userId: user._id,
+    type: orderData.type,
+    stockSymbol: orderData.stockSymbol,
+    stockName: orderData.stockName,
+    quantity: orderData.quantity,
+    price: orderData.price,
+    orderType: 'MARKET',
+    status: 'FILLED',
+    executionPrice: orderData.price,
+    executedAt: new Date(),
+    fees: calculation.fees,
+    total: calculation.total
   });
+
+  await order.save();
+  return { success: true, message: 'Market order executed', data: { order } };
+};
+
+const createLimitOrder = async (orderData, user) => {
+  const order = new Order({
+    userId: user._id,
+    type: orderData.type,
+    stockSymbol: orderData.stockSymbol,
+    stockName: orderData.stockName,
+    quantity: orderData.quantity,
+    price: orderData.limitPrice,
+    orderType: 'LIMIT',
+    status: 'PENDING'
+  });
+
+  await order.save();
+  return { success: true, message: 'Limit order created', data: { order } };
+};
+
+const sendOrderNotification = async (user, order, status) => {
+  try {
+    let title, message, type;
+    
+    if (status === 'FILLED') {
+      type = 'success';
+      title = `${order.type} Order Executed`;
+      message = `Your ${order.type.toLowerCase()} order for ${order.quantity} shares of ${order.stockSymbol} has been executed at ₹${order.executionPrice || order.price}`;
+    } else if (status === 'CANCELLED') {
+      type = 'warning';
+      title = `${order.type} Order Cancelled`;
+      message = `Your ${order.type.toLowerCase()} order for ${order.quantity} shares of ${order.stockSymbol} has been cancelled`;
+    } else {
+      type = 'info';
+      title = `${order.type} Order Placed`;
+      message = `Your ${order.type.toLowerCase()} order for ${order.quantity} shares of ${order.stockSymbol} has been placed`;
+    }
+
+    const notification = new Notification({
+      userId: user._id,
+      userEmail: user.email,
+      type,
+      title,
+      message,
+      link: '/portfolio',
+      data: {
+        type: order.type,
+        symbol: order.stockSymbol,
+        quantity: order.quantity,
+        price: order.executionPrice || order.price,
+        status,
+        orderId: order._id
+      },
+      read: false
+    });
+    
+    await notification.save();
+    
+    // Send via Pusher
+    if (pusher) {
+      await pusher.trigger(`private-user-${user._id}`, 'notification', notification);
+    }
+  } catch (error) {
+    console.warn('Failed to send order notification:', error.message);
+  }
+};
+
+const generateIdempotencyKey = () => {
+  return `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 };
 
 module.exports = {

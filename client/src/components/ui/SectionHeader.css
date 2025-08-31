@@ -1,0 +1,71 @@
+.section-header-modern {
+  margin-bottom: 3rem;
+  padding: 0 1rem;
+}
+
+.section-title-modern {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+  margin-bottom: 1rem;
+  letter-spacing: -0.025em;
+}
+
+.section-subtitle-modern {
+  font-size: 1.125rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  max-width: 600px;
+  margin: 0 auto;
+  font-weight: 400;
+}
+
+/* Text alignment */
+.text-left .section-subtitle-modern {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+.text-right .section-subtitle-modern {
+  margin-left: auto;
+  margin-right: 0;
+}
+
+/* Dark mode improvements */
+[data-theme="dark"] .section-title-modern {
+  color: #B6B1BB;
+  text-shadow: 0 0 30px rgba(111, 0, 209, 0.2);
+}
+
+[data-theme="dark"] .section-subtitle-modern {
+  color: #9A95A0;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .section-header-modern {
+    margin-bottom: 2rem;
+    padding: 0 0.5rem;
+  }
+
+  .section-title-modern {
+    font-size: 2rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .section-subtitle-modern {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .section-title-modern {
+    font-size: 1.75rem;
+  }
+
+  .section-subtitle-modern {
+    font-size: 0.95rem;
+  }
+}

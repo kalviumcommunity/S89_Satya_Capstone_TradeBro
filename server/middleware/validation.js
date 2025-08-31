@@ -121,6 +121,15 @@ const builtInValidation = {
     const { username, email, password, fullName } = req.body;
     const errors = {};
 
+    // Debug logging
+    console.log('🔍 Validating signup data:', {
+      username,
+      email,
+      fullName,
+      passwordLength: password ? password.length : 0,
+      hasPassword: !!password
+    });
+
     // Username validation
     if (!username || typeof username !== 'string') {
       errors.username = 'Username is required';
@@ -156,6 +165,7 @@ const builtInValidation = {
     }
 
     if (Object.keys(errors).length > 0) {
+      console.log('❌ Signup validation failed:', errors);
       return res.status(400).json({
         success: false,
         message: 'Validation failed',

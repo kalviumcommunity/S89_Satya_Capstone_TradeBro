@@ -212,6 +212,66 @@ class GeminiService {
       };
     }
   }
+
+  /**
+   * Get quick suggestions based on input
+   * @param {string} input - User input
+   * @returns {Array} - Array of suggestions
+   */
+  getQuickSuggestions(input = '') {
+    const lowerInput = input.toLowerCase();
+    
+    if (lowerInput.includes('stock') || lowerInput.includes('price')) {
+      return ['Show top gainers', 'Show top losers', 'Market overview'];
+    }
+    if (lowerInput.includes('news')) {
+      return ['Latest market news', 'Stock specific news', 'Economic updates'];
+    }
+    if (lowerInput.includes('compare')) {
+      return ['Compare TCS vs INFY', 'Compare HDFC vs ICICI', 'Sector comparison'];
+    }
+    
+    return [
+      'Show me NIFTY performance',
+      'What are today\'s top gainers?',
+      'Tell me about RELIANCE stock',
+      'Latest market news'
+    ];
+  }
+
+  /**
+   * Test connection to services
+   * @returns {Object} - Connection status
+   */
+  async testConnection() {
+    try {
+      const connectivity = await this.testConnectivity();
+      return {
+        success: connectivity.geminiAI || connectivity.components,
+        gemini: connectivity.geminiAI,
+        stockData: connectivity.stockData,
+        components: connectivity.components
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Get model information
+   * @returns {Object} - Model info
+   */
+  getModelInfo() {
+    return {
+      model: 'gemini-pro',
+      provider: 'Google',
+      version: '1.0',
+      available: !!this.model
+    };
+  }
 }
 
 
@@ -219,11 +279,38 @@ class GeminiService {
 // Export both the class and a singleton instance for backward compatibility
 const geminiServiceInstance = new GeminiService();
 
+// Add backward compatibility methods
+geminiServiceInstance.getQuickSuggestions = geminiServiceInstance.getQuickSuggestions || function(input = '') {
+  const lowerInput = input.toLowerCase();
+  
+  if (lowerInput.includes('stock') || lowerInput.includes('price')) {
+    return ['Show top gainers', 'Show top losers', 'Market overview'];
+  }
+  if (lowerInput.includes('news')) {
+    return ['Latest market news', 'Stock specific news', 'Economic updates'];
+  }
+  if (lowerInput.includes('compare')) {
+    return ['Compare TCS vs INFY', 'Compare HDFC vs ICICI', 'Sector comparison'];
+  }
+  
+  return [
+    'Show me NIFTY performance',
+    'What are today\'s top gainers?',
+    'Tell me about RELIANCE stock',
+    'Latest market news'
+  ];
+};
+
 module.exports = {
   GeminiService,
   geminiService: geminiServiceInstance,
   // For backward compatibility
-  default: geminiServiceInstance
+  default: geminiServiceInstance,
+  // Direct export for require() calls
+  processMessage: geminiServiceInstance.processMessage.bind(geminiServiceInstance),
+  getQuickSuggestions: geminiServiceInstance.getQuickSuggestions.bind(geminiServiceInstance),
+  testConnection: geminiServiceInstance.testConnection.bind(geminiServiceInstance),
+  getModelInfo: geminiServiceInstance.getModelInfo.bind(geminiServiceInstance)
 };
 
 // Also export as default for ES6 imports

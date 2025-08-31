@@ -8,18 +8,30 @@ const verifyToken = (req, res, next) => {
   if (!token) {
     return res.status(401).json({
       success: false,
-      message: 'Access denied. No token provided.'
+      message: 'Access denied. No token provided.',
+      code: 'NO_TOKEN'
     });
   }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    // Check token issuer for additional security
+    if (decoded.iss && decoded.iss !== 'tradebro-api') {
+      throw new Error('Invalid token issuer');
+    }
+    
     req.user = decoded;
     next();
   } catch (error) {
+    const message = error.name === 'TokenExpiredError' 
+      ? 'Token has expired. Please log in again.' 
+      : 'Invalid token.';
+    
     res.status(401).json({
       success: false,
-      message: 'Invalid token.'
+      message,
+      code: error.name === 'TokenExpiredError' ? 'TOKEN_EXPIRED' : 'INVALID_TOKEN'
     });
   }
 };

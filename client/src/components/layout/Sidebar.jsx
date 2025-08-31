@@ -1,0 +1,425 @@
+import React, { useState, useEffect, useRef, createContext, useContext } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import {
+  FiTrendingUp,
+  FiBriefcase,
+  FiSettings,
+  FiMenu,
+  FiUser,
+  FiBarChart2,
+  FiLogOut,
+  FiClock,
+  FiFileText,
+  FiBell,
+  FiMessageSquare,
+  FiPieChart,
+  FiActivity,
+  FiBookmark,
+  FiShoppingCart,
+  FiStar,
+  FiZap,
+  FiMessageCircle,
+  FiCpu,
+  FiX,
+} from "react-icons/fi";
+
+import { useAuth } from "../../contexts/AuthContext";
+import { useNotifications } from "../../contexts/NotificationContext";
+import SaytrixTriggerButton from "../voice/SaytrixTriggerButton";
+import axios from "axios";
+import API_ENDPOINTS from "../../config/apiConfig";
+import "../../styles/components/Sidebar.css";
+
+// Local Sidebar Context - only used within this component
+const LocalSidebarContext = createContext();
+
+const useLocalSidebar = () => {
+  const context = useContext(LocalSidebarContext);
+  if (!context) {
+    throw new Error('useLocalSidebar must be used within LocalSidebarProvider');
+  }
+  return context;
+};
+
+// Local Sidebar Provider
+const LocalSidebarProvider = ({ children }) => {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Check if mobile on mount and window resize
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(mobile);
+      if (mobile) {
+        setIsCollapsed(true); // Auto-collapse on mobile
+      }
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Update main content classes based on sidebar state
+  useEffect(() => {
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+      mainContent.classList.add('with-sidebar');
+
+      if (isCollapsed) {
+        mainContent.classList.add('sidebar-collapsed');
+        mainContent.classList.remove('sidebar-expanded');
+      } else {
+        mainContent.classList.add('sidebar-expanded');
+        mainContent.classList.remove('sidebar-collapsed');
+      }
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (mainContent) {
+        mainContent.classList.remove('with-sidebar', 'sidebar-collapsed', 'sidebar-expanded');
+      }
+    };
+  }, [isCollapsed]);
+
+  const toggleSidebar = () => {
+    setIsCollapsed(!isCollapsed);
+  };
+
+  const value = {
+    isCollapsed,
+    isMobile,
+    toggleSidebar,
+    setIsCollapsed
+  };
+
+  return (
+    <LocalSidebarContext.Provider value={value}>
+      {children}
+    </LocalSidebarContext.Provider>
+  );
+};
+
+// Mobile Menu Button Component
+const MobileMenuButton = () => {
+  const { isCollapsed, isMobile, toggleSidebar } = useLocalSidebar();
+
+  // Only show on mobile when sidebar is collapsed
+  if (!isMobile || !isCollapsed) {
+    return null;
+  }
+
+  return (
+    <button
+      className="mobile-menu-btn"
+      onClick={toggleSidebar}
+      aria-label="Open navigation menu"
+      type="button"
+    >
+      <FiMenu />
+    </button>
+  );
+};
+
+// Sidebar Overlay Component
+const SidebarOverlay = () => {
+  const { isCollapsed, isMobile, toggleSidebar } = useLocalSidebar();
+
+  // Only show on mobile when sidebar is open
+  if (!isMobile || isCollapsed) {
+    return null;
+  }
+
+  return (
+    <div
+      className={`sidebar-overlay ${!isCollapsed ? 'show' : ''}`}
+      onClick={toggleSidebar}
+      aria-hidden="true"
+    />
+  );
+};
+
+const SidebarContent = () => {
+  // Use the local sidebar context
+  const { isCollapsed, isMobile, toggleSidebar } = useLocalSidebar();
+  const { unreadCount } = useNotifications();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { isAuthenticated, logout, user: authUser } = useAuth();
+
+  // Ref for direct sidebar control
+  const sidebarRef = useRef(null);
+
+
+
+  // Get user data from AuthContext
+  const user = authUser || {
+    fullName: "User",
+    email: "",
+    profileImage: "https://randomuser.me/api/portraits/lego/1.jpg",
+    role: "Member"
+  };
+
+
+
+  // No additional resize handling needed - SidebarContext handles this
+
+  // Handle sidebar toggle
+  const handleToggle = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleSidebar();
+  };
+
+  // Handle logout
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  // Update CSS custom properties for responsive layout
+  useEffect(() => {
+    const updateLayoutProperties = () => {
+      const root = document.documentElement;
+      if (isMobile) {
+        root.style.setProperty('--sidebar-current-width', '0px');
+      } else {
+        root.style.setProperty('--sidebar-current-width', isCollapsed ? '80px' : '280px');
+      }
+    };
+
+    updateLayoutProperties();
+  }, [isCollapsed, isMobile]);
+
+
+
+  // Clean CSS-only approach - no inline styles needed
+
+  return (
+    <div
+      ref={sidebarRef}
+      className={`sidebar ${isCollapsed ? "collapsed" : ""} ${isMobile ? "mobile" : ""}`}
+      role="navigation"
+      aria-label="Main navigation"
+    >
+      {/* Mobile navbar content */}
+      {isMobile ? (
+        <>
+          <Link to="/dashboard" className={`mobile-nav-item ${location.pathname === "/dashboard" ? "active" : ""}`}>
+            <FiBarChart2 />
+            <span>Home</span>
+          </Link>
+          
+          <Link to="/portfolio" className={`mobile-nav-item ${location.pathname === "/portfolio" ? "active" : ""}`}>
+            <FiPieChart />
+            <span>Portfolio</span>
+          </Link>
+          
+          <Link to="/charts" className={`mobile-nav-item ${location.pathname === "/charts" ? "active" : ""}`}>
+            <FiTrendingUp />
+            <span>Charts</span>
+          </Link>
+          
+          <Link to="/saytrix" className={`mobile-nav-item ${location.pathname === "/saytrix" ? "active" : ""}`}>
+            <FiMessageCircle />
+            <span>AI</span>
+          </Link>
+          
+          <Link to="/settings" className={`mobile-nav-item ${location.pathname === "/settings" ? "active" : ""}`}>
+            <FiSettings />
+            <span>More</span>
+          </Link>
+        </>
+      ) : (
+        <div className="top-section">
+          <button
+            className="toggle-btn"
+            onClick={handleToggle}
+            type="button"
+            aria-label={isCollapsed ? "Expand sidebar navigation" : "Collapse sidebar navigation"}
+            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-expanded={!isCollapsed}
+          >
+            <FiMenu />
+          </button>
+
+          {!isCollapsed && (
+            <div className="logo-section">
+              <h1 className="logo" role="banner">
+                TradeBro
+              </h1>
+              <SaytrixTriggerButton
+                position="navbar"
+                size="small"
+                showLabel={false}
+                className="sidebar-voice-btn"
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {!isMobile && !isCollapsed && (
+        <div className="user-profile">
+          <div className="user-avatar">
+            {(user.profileImage || user.picture || user.avatar) ? (
+              <img 
+                src={user.profileImage || user.picture || user.avatar} 
+                alt={user.fullName || user.name}
+                className="avatar-image"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+            ) : null}
+            <div className="avatar-symbol" style={{display: (user.profileImage || user.picture || user.avatar) ? 'none' : 'flex'}}>👤</div>
+          </div>
+          <div className="user-info">
+            <h3 className="user-name">{user.fullName || user.name || user.email}</h3>
+            <p className="user-role">{user.role || "Member"}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Desktop sidebar navigation */}
+      {!isMobile && (
+        <>
+          <nav role="navigation" aria-label="Main menu">
+            <ul className="sidebar-links">
+              <li>
+                <Link
+                  to="/dashboard"
+                  className={`sidebar-link ${location.pathname === "/dashboard" ? "active" : ""}`}
+                  aria-current={location.pathname === "/dashboard" ? "page" : undefined}
+                  title="Dashboard"
+                >
+                  <FiBarChart2 aria-hidden="true" />
+                  {!isCollapsed && <span>Dashboard</span>}
+                </Link>
+              </li>
+            <li>
+              <Link to="/charts" className={`sidebar-link ${location.pathname === "/charts" ? "active" : ""}`}>
+                <FiTrendingUp />
+                {!isCollapsed && <span>Charts</span>}
+              </Link>
+            </li>
+            <li>
+              <Link to="/portfolio" className={`sidebar-link ${location.pathname === "/portfolio" ? "active" : ""}`}>
+                <FiPieChart />
+                {!isCollapsed && <span>Portfolio</span>}
+              </Link>
+            </li>
+            <li>
+              <Link to="/watchlist" className={`sidebar-link ${location.pathname === "/watchlist" ? "active" : ""}`}>
+                <FiBookmark />
+                {!isCollapsed && <span>Watchlist</span>}
+              </Link>
+            </li>
+            <li>
+              <Link to="/orders" className={`sidebar-link ${location.pathname === "/orders" ? "active" : ""}`}>
+                <FiShoppingCart />
+                {!isCollapsed && <span>Orders</span>}
+              </Link>
+            </li>
+            <li>
+              <Link to="/history" className={`sidebar-link ${location.pathname === "/history" ? "active" : ""}`}>
+                <FiClock />
+                {!isCollapsed && <span>History</span>}
+              </Link>
+            </li>
+            <li>
+              <Link to="/news" className={`sidebar-link ${location.pathname === "/news" ? "active" : ""}`}>
+                <FiFileText />
+                {!isCollapsed && <span>News</span>}
+              </Link>
+            </li>
+            <li>
+              <Link to="/notifications" className={`sidebar-link ${location.pathname === "/notifications" ? "active" : ""}`}>
+                <div className="sidebar-link-content">
+                  <div className="sidebar-icon-wrapper">
+                    <FiBell />
+                    {unreadCount > 0 && (
+                      <span className="notification-badge">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
+                  </div>
+                  {!isCollapsed && <span>Notifications</span>}
+                </div>
+              </Link>
+            </li>
+            <li>
+              <Link to="/saytrix" className={`sidebar-link ${(location.pathname === "/saytrix" || location.pathname === "/chatbot") ? "active" : ""} highlight`}>
+                <FiMessageCircle />
+                {!isCollapsed && <span>Saytrix AI</span>}
+              </Link>
+            </li>
+          </ul>
+          </nav>
+
+          <div className="sidebar-bottom">
+            <div className="sidebar-actions">
+              <Link to="/profile" className={`sidebar-link ${location.pathname === "/profile" ? "active" : ""}`}>
+                <FiUser />
+                {!isCollapsed && <span>Profile</span>}
+              </Link>
+
+              <Link to="/settings" className={`sidebar-link ${location.pathname === "/settings" ? "active" : ""}`}>
+                <FiSettings />
+                {!isCollapsed && <span>Settings</span>}
+              </Link>
+
+              <button
+                onClick={handleLogout}
+                className="sidebar-link logout-btn"
+                aria-label="Logout from TradeBro"
+                title="Logout from TradeBro"
+              >
+                <FiLogOut />
+                {!isCollapsed && <span>Logout</span>}
+              </button>
+            </div>
+
+            {!isCollapsed && (
+              <div className="sidebar-footer">
+                <p className="copyright">© 2024 TradeBro ⚡</p>
+                <p className="version">v1.0.0 • 🚀</p>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+// Main Sidebar Component with all functionality
+const Sidebar = () => {
+  const location = useLocation();
+  const { isAuthenticated } = useAuth();
+
+  // Check if current route should show sidebar
+  const showSidebar = isAuthenticated && !['/login', '/signup', '/'].includes(location.pathname);
+
+  if (!showSidebar) {
+    return null;
+  }
+
+  return (
+    <LocalSidebarProvider>
+      {/* Mobile Menu Button */}
+      <MobileMenuButton />
+
+      {/* Sidebar Overlay */}
+      <SidebarOverlay />
+
+      {/* Main Sidebar Content */}
+      <SidebarContent />
+    </LocalSidebarProvider>
+  );
+};
+
+export default Sidebar;

@@ -1,723 +1,510 @@
-import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { FiPlus, FiTrash2, FiRefreshCw, FiTrendingUp, FiTrendingDown, FiSearch, FiAlertCircle, FiX, FiMaximize2 } from "react-icons/fi";
-import PageLayout from "../components/PageLayout";
-import StockSearch from "../components/StockSearch";
-import { useToast } from "../context/ToastContext";
-import { useAuth } from "../context/AuthContext";
-import { useOfflineMode } from "../context/OfflineContext";
-import axios from "axios";
-import API_ENDPOINTS from "../config/apiConfig";
-import "../styles/pages/Watchlist.css";
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  FiEye,
+  FiPlus,
+  FiRefreshCw,
+  FiTrendingUp,
+  FiTrendingDown,
+  FiBarChart2,
+  FiStar,
+  FiFilter,
+  FiActivity,
+  FiArrowDown,
+  FiX,
+  FiBookmark,
+  FiTrash2
+} from 'react-icons/fi';
+import { toast } from 'react-toastify';
+import WatchlistButton from '../components/trading/WatchlistButton';
+import StockSearchPanel from '../components/StockSearchPanel';
+import { useWatchlist } from '../hooks/useWatchlist';
+import SearchInput from '../components/common/SearchInput';
+import '../styles/watchlist.css';
+import '../styles/watchlist-button.css';
 
-// Add some additional styles for the clickable rows
-const additionalStyles = `
-  .stock-row {
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
+const Watchlist = ({ user, theme }) => {
+  const navigate = useNavigate();
+  const {
+    watchlists,
+    loading,
+    addToWatchlist,
+    createWatchlist,
+    refreshWatchlists,
+    deleteWatchlist,
+    loadingState,
+    error,
+    refreshingState
+  } = useWatchlist();
 
-  .stock-row:hover {
-    background-color: rgba(34, 184, 176, 0.05) !important;
-  }
+  const [selectedWatchlistId, setSelectedWatchlistId] = useState('all');
+  const [sortBy, setSortBy] = useState('symbol');
+  const [sortOrder, setSortOrder] = useState('asc');
+  const [localSearchQuery, setLocalSearchQuery] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newWatchlistName, setNewWatchlistName] = useState('');
+  const [creating, setCreating] = useState(false);
 
-  .action-buttons {
-    display: flex;
-    gap: 8px;
-    justify-content: flex-end;
-  }
-
-  .view-detail-btn {
-    background-color: rgba(34, 184, 176, 0.1);
-    color: #22b8b0;
-    border: none;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  .view-detail-btn:hover {
-    background-color: rgba(34, 184, 176, 0.2);
-    transform: scale(1.1);
-  }
-`;
-
-const Watchlist = () => {
-  const { success, error: showError, info } = useToast();
-  const { isAuthenticated } = useAuth();
-  const { isOffline } = useOfflineMode();
-  const [watchlist, setWatchlist] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [newStock, setNewStock] = useState("");
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState(null);
-  const [totalStocks, setTotalStocks] = useState(0);
-  const [isFiltered, setIsFiltered] = useState(false);
-  const [selectedStock, setSelectedStock] = useState(null);
-  const [showFullScreenDetail, setShowFullScreenDetail] = useState(false);
-  const [autoRefresh, setAutoRefresh] = useState(true);
-
-  // Handle stock selection for chart view (redirect to charts page)
-  const openChart = (symbol) => {
-    window.location.href = `/charts?symbol=${symbol}`;
-  };
-
-  // Mock data for demonstration
-  const mockWatchlist = [
-    {
-      id: 1,
-      symbol: "AAPL",
-      name: "Apple Inc.",
-      price: 178.72,
-      change: 2.34,
-      changePercent: 1.32,
-      marketCap: "2.87T",
-      volume: "58.9M"
-    },
-    {
-      id: 2,
-      symbol: "MSFT",
-      name: "Microsoft Corporation",
-      price: 337.50,
-      change: -1.25,
-      changePercent: -0.37,
-      marketCap: "2.51T",
-      volume: "23.4M"
-    },
-    {
-      id: 3,
-      symbol: "GOOGL",
-      name: "Alphabet Inc.",
-      price: 131.86,
-      change: 0.76,
-      changePercent: 0.58,
-      marketCap: "1.67T",
-      volume: "19.2M"
-    },
-    {
-      id: 4,
-      symbol: "AMZN",
-      name: "Amazon.com Inc.",
-      price: 127.74,
-      change: 1.45,
-      changePercent: 1.15,
-      marketCap: "1.32T",
-      volume: "42.1M"
-    },
-    {
-      id: 5,
-      symbol: "TSLA",
-      name: "Tesla, Inc.",
-      price: 237.49,
-      change: -3.21,
-      changePercent: -1.33,
-      marketCap: "753.4B",
-      volume: "108.2M"
+  const currentWatchlist = useMemo(() => {
+    if (!watchlists || watchlists.length === 0) {
+      return { name: 'Unknown', stocks: [] };
     }
-  ];
+    if (selectedWatchlistId === 'all') {
+      const allStocks = watchlists.reduce((acc, wl) => [...acc, ...(wl.stocks || [])], []);
+      return { name: 'All Watchlists', stocks: allStocks, _id: 'all' };
+    }
+    return watchlists.find(wl => wl._id === selectedWatchlistId) || { name: 'Unknown', stocks: [] };
+  }, [watchlists, selectedWatchlistId]);
 
-  // Load watchlist data
-  useEffect(() => {
-    const fetchWatchlist = async () => {
-      if (!isAuthenticated) {
-        setLoading(false);
-        return;
+  const filteredAndSortedStocks = useMemo(() => {
+    let filtered = currentWatchlist.stocks || [];
+
+    if (localSearchQuery) {
+      const queryLower = localSearchQuery.toLowerCase();
+      filtered = filtered.filter(stock =>
+        stock.symbol?.toLowerCase().includes(queryLower) ||
+        stock.name?.toLowerCase().includes(queryLower)
+      );
+    }
+
+    return filtered.sort((a, b) => {
+      let aVal = a[sortBy];
+      let bVal = b[sortBy];
+
+      if (typeof aVal === 'string') {
+        aVal = aVal.toLowerCase();
+        bVal = bVal.toLowerCase();
       }
 
-      setLoading(true);
-      setError(null);
+      const comparison = aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+  }, [currentWatchlist.stocks, localSearchQuery, sortBy, sortOrder]);
 
-      try {
-        if (isOffline) {
-          // Use mock data in offline mode
-          const filteredData = searchTerm
-            ? mockWatchlist.filter(stock =>
-                stock.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                stock.name.toLowerCase().includes(searchTerm.toLowerCase())
-              )
-            : mockWatchlist;
-
-          setWatchlist(filteredData);
-          setTotalStocks(mockWatchlist.length);
-          setIsFiltered(searchTerm.trim() !== '');
-          setLoading(false);
-          return;
-        }
-
-        // Add search parameter if there's a search term
-        const url = searchTerm
-          ? `${API_ENDPOINTS.WATCHLIST.STOCKS}?search=${encodeURIComponent(searchTerm)}`
-          : API_ENDPOINTS.WATCHLIST.STOCKS;
-
-        const response = await axios.get(url);
-
-        if (response.data.success) {
-          setWatchlist(response.data.data);
-          setTotalStocks(response.data.total || response.data.data.length);
-          setIsFiltered(response.data.filtered || false);
-        } else {
-          setError("Failed to load watchlist");
-          // Use mock data as fallback
-          const filteredData = searchTerm
-            ? mockWatchlist.filter(stock =>
-                stock.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                stock.name.toLowerCase().includes(searchTerm.toLowerCase())
-              )
-            : mockWatchlist;
-
-          setWatchlist(filteredData);
-          setTotalStocks(mockWatchlist.length);
-          setIsFiltered(searchTerm.trim() !== '');
-        }
-      } catch (err) {
-        console.error("Error fetching watchlist:", err);
-        setError("Failed to load watchlist. Using sample data instead.");
-        // Use mock data as fallback
-        const filteredData = searchTerm
-          ? mockWatchlist.filter(stock =>
-              stock.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              stock.name.toLowerCase().includes(searchTerm.toLowerCase())
-            )
-          : mockWatchlist;
-
-        setWatchlist(filteredData);
-        setTotalStocks(mockWatchlist.length);
-        setIsFiltered(searchTerm.trim() !== '');
-      } finally {
-        setLoading(false);
-      }
+  const stats = useMemo(() => {
+    const allStocks = currentWatchlist.stocks || [];
+    return {
+      gainers: allStocks.filter(stock => (stock.change || 0) > 0).length,
+      losers: allStocks.filter(stock => (stock.change || 0) < 0).length,
+      neutral: allStocks.filter(stock => (stock.change || 0) === 0).length
     };
+  }, [currentWatchlist.stocks]);
 
-    fetchWatchlist();
-  }, [isAuthenticated, isOffline, searchTerm]);
+  const getTotalStockCount = useCallback(() => {
+    return watchlists.reduce((total, wl) => total + (wl.stocks?.length || 0), 0);
+  }, [watchlists]);
 
-  // Auto-refresh watchlist every 30 seconds for real-time updates
+  const handleRefresh = async () => {
+    await refreshWatchlists();
+  };
+
+  const handleCreateWatchlist = async () => {
+    if (!newWatchlistName.trim()) {
+      toast.error('Watchlist name cannot be empty');
+      return;
+    }
+    setCreating(true);
+    await createWatchlist(newWatchlistName.trim());
+    setNewWatchlistName('');
+    setShowCreateModal(false);
+    setCreating(false);
+  };
+
+  const handleAddStock = async (stock) => {
+    if (selectedWatchlistId === 'all' || !selectedWatchlistId) {
+      toast.warning('Please select a specific watchlist to add stocks to.');
+      return;
+    }
+    await addToWatchlist(stock, selectedWatchlistId);
+  };
+
+  const handleDeleteWatchlist = async (watchlistId) => {
+    if (window.confirm('Are you sure you want to delete this watchlist?')) {
+      await deleteWatchlist(watchlistId);
+      setSelectedWatchlistId('all');
+    }
+  };
+
   useEffect(() => {
-    if (!autoRefresh || !isAuthenticated || loading) return;
-
-    const interval = setInterval(() => {
-      refreshWatchlist();
-    }, 15000); // Refresh every 15 seconds for real-time updates
-
-    return () => clearInterval(interval);
-  }, [autoRefresh, isAuthenticated, loading, watchlist]);
-
-  // We're now filtering on the server side or in the fetchWatchlist function
-  const filteredWatchlist = watchlist;
-
-  // Handle stock selection for chart modal (quick view)
-  const handleStockSelectChart = (symbol, name = '') => {
-    openChart(symbol, name);
-  };
-
-  // Handle stock selection for full-screen detail view
-  const handleStockSelect = (symbol) => {
-    setSelectedStock(symbol);
-    setShowFullScreenDetail(true);
-  };
-
-  // Handle closing the full-screen detail view
-  const handleCloseFullScreenDetail = () => {
-    setShowFullScreenDetail(false);
-    setSelectedStock(null);
-  };
-
-  // Add stock to watchlist directly from search
-  const addStockToWatchlist = async (symbol, name) => {
-    if (!isAuthenticated) {
-      showError("Please log in to add stocks to your watchlist");
-      return;
+    if (error) {
+      toast.error(error);
     }
+  }, [error]);
 
-    if (!symbol.trim()) {
-      showError("Please enter a stock symbol");
-      return;
+  useEffect(() => {
+    if (watchlists.length > 0 && selectedWatchlistId === 'all') {
+      setSelectedWatchlistId(watchlists[0]._id);
     }
+  }, [watchlists, selectedWatchlistId]);
 
-    // Check if stock already exists in watchlist
-    if (watchlist.some((stock) => stock.symbol === symbol.toUpperCase())) {
-      info(`${symbol.toUpperCase()} is already in your watchlist`);
-      return;
-    }
-
-    try {
-      if (isOffline) {
-        // Offline mode - use mock data
-        const newStockData = {
-          id: watchlist.length + 1,
-          symbol: symbol.toUpperCase(),
-          name: name || `${symbol.toUpperCase()} Corp`,
-          price: (Math.random() * 200 + 50).toFixed(2),
-          change: (Math.random() * 10 - 5).toFixed(2),
-          changePercent: (Math.random() * 5 - 2.5).toFixed(2),
-          marketCap: `${(Math.random() * 500 + 10).toFixed(1)}B`,
-          volume: `${(Math.random() * 50 + 5).toFixed(1)}M`
-        };
-
-        setWatchlist([...watchlist, newStockData]);
-        success(`${newStockData.symbol} added to watchlist (offline mode)`);
-        return;
-      }
-
-      // Online mode - call API with proper data structure
-      const response = await axios.post(API_ENDPOINTS.WATCHLIST.ADD, {
-        symbol: symbol.toUpperCase(),
-        name: name || `${symbol.toUpperCase()}`
-      });
-
-      // Check if the response is successful
-      if (response.data && (response.data.success || response.data.data)) {
-        // Create a proper stock object from the response or with temporary data
-        const stockData = response.data.data || {
-          id: Date.now(), // Use timestamp as temporary ID
-          symbol: symbol.toUpperCase(),
-          name: name || `${symbol.toUpperCase()}`,
-          price: "Loading...",
-          change: "0.00",
-          changePercent: "0.00",
-          marketCap: "Loading...",
-          volume: "Loading..."
-        };
-
-        // Add to watchlist
-        setWatchlist([...watchlist, stockData]);
-
-        // Store in localStorage as backup
-        try {
-          const storedWatchlist = localStorage.getItem('watchlist') || '[]';
-          const parsedWatchlist = JSON.parse(storedWatchlist);
-          parsedWatchlist.push(stockData);
-          localStorage.setItem('watchlist', JSON.stringify(parsedWatchlist));
-        } catch (storageError) {
-          console.error("Error updating localStorage:", storageError);
-        }
-
-        // Then refresh to get the actual data
-        refreshWatchlist();
-        success(`${symbol.toUpperCase()} added to watchlist`);
-      } else {
-        showError(response.data?.message || "Failed to add stock to watchlist");
-      }
-    } catch (err) {
-      console.error("Error adding stock to watchlist:", err);
-      showError("Failed to add stock to watchlist");
-
-      // Fallback to local implementation
-      const newStockData = {
-        id: watchlist.length + 1,
-        symbol: symbol.toUpperCase(),
-        name: name || `${symbol.toUpperCase()} Corp`,
-        price: (Math.random() * 200 + 50).toFixed(2),
-        change: (Math.random() * 10 - 5).toFixed(2),
-        changePercent: (Math.random() * 5 - 2.5).toFixed(2),
-        marketCap: `${(Math.random() * 500 + 10).toFixed(1)}B`,
-        volume: `${(Math.random() * 50 + 5).toFixed(1)}M`
-      };
-
-      setWatchlist([...watchlist, newStockData]);
-
-      // Store in localStorage as backup
-      try {
-        const storedWatchlist = localStorage.getItem('watchlist') || '[]';
-        const parsedWatchlist = JSON.parse(storedWatchlist);
-        parsedWatchlist.push(newStockData);
-        localStorage.setItem('watchlist', JSON.stringify(parsedWatchlist));
-      } catch (storageError) {
-        console.error("Error updating localStorage:", storageError);
-      }
-
-      info(`${newStockData.symbol} added to watchlist (local only)`);
-    }
-  };
-
-  // Add stock to watchlist from input field
-  const addToWatchlist = async () => {
-    if (!isAuthenticated) {
-      showError("Please log in to add stocks to your watchlist");
-      return;
-    }
-
-    if (!newStock.trim()) {
-      showError("Please enter a stock symbol");
-      return;
-    }
-
-    // Check if stock already exists in watchlist
-    if (watchlist.some((stock) => stock.symbol === newStock.toUpperCase())) {
-      info(`${newStock.toUpperCase()} is already in your watchlist`);
-      return;
-    }
-
-    // Use the addStockToWatchlist function with the newStock value
-    await addStockToWatchlist(newStock, null);
-
-    // Clear the input field
-    setNewStock("");
-  };
-
-  // Remove stock from watchlist
-  const removeFromWatchlist = async (id) => {
-    if (!isAuthenticated) {
-      showError("Please log in to manage your watchlist");
-      return;
-    }
-
-    const stockToRemove = watchlist.find((stock) => stock.id === id);
-    if (!stockToRemove) return;
-
-    try {
-      if (isOffline) {
-        // Offline mode - just update local state
-        setWatchlist(watchlist.filter((stock) => stock.id !== id));
-        info(`${stockToRemove.symbol} removed from watchlist (offline mode)`);
-        return;
-      }
-
-      // Online mode - call API
-      const response = await axios.delete(API_ENDPOINTS.WATCHLIST.REMOVE(stockToRemove.symbol));
-
-      if (response.data.success) {
-        setWatchlist(watchlist.filter((stock) => stock.id !== id));
-        info(`${stockToRemove.symbol} removed from watchlist`);
-      } else {
-        showError(response.data.message || "Failed to remove stock from watchlist");
-      }
-    } catch (err) {
-      console.error("Error removing stock from watchlist:", err);
-      showError("Failed to remove stock from watchlist");
-
-      // Fallback to local implementation
-      setWatchlist(watchlist.filter((stock) => stock.id !== id));
-      info(`${stockToRemove.symbol} removed from watchlist (local only)`);
-    }
-  };
-
-  // Refresh watchlist data
-  const refreshWatchlist = async () => {
-    if (!isAuthenticated) {
-      showError("Please log in to refresh your watchlist");
-      return;
-    }
-
-    setRefreshing(true);
-    setError(null);
-
-    try {
-      if (isOffline) {
-        // Offline mode - simulate refresh with random price changes
-        const updatedWatchlist = watchlist.map((stock) => {
-          // Handle "Loading..." values
-          if (stock.price === "Loading..." || isNaN(parseFloat(stock.price))) {
-            return {
-              ...stock,
-              price: (Math.random() * 200 + 50).toFixed(2),
-              change: (Math.random() * 10 - 5).toFixed(2),
-              changePercent: (Math.random() * 5 - 2.5).toFixed(2),
-              marketCap: stock.marketCap === "Loading..." ? `${(Math.random() * 500 + 10).toFixed(1)}B` : stock.marketCap,
-              volume: stock.volume === "Loading..." ? `${(Math.random() * 50 + 5).toFixed(1)}M` : stock.volume
-            };
-          }
-
-          // Normal price update for existing stocks
-          const priceChange = (Math.random() * 4 - 2).toFixed(2);
-          const newPrice = (parseFloat(stock.price) + parseFloat(priceChange)).toFixed(2);
-          const changePercent = ((priceChange / stock.price) * 100).toFixed(2);
-
-          return {
-            ...stock,
-            price: newPrice,
-            change: priceChange,
-            changePercent: changePercent
-          };
-        });
-
-        setWatchlist(updatedWatchlist);
-        success("Watchlist refreshed (offline mode)");
-        return;
-      }
-
-      // Online mode - call API
-      const response = await axios.get(API_ENDPOINTS.WATCHLIST.STOCKS);
-
-      if (response.data.success) {
-        // If we get data from the API, update the watchlist
-        if (response.data.data && Array.isArray(response.data.data)) {
-          setWatchlist(response.data.data);
-          success("Watchlist refreshed");
-        } else if (response.data.stocks && Array.isArray(response.data.stocks)) {
-          // Alternative data structure
-          setWatchlist(response.data.stocks);
-          success("Watchlist refreshed");
-        } else {
-          // Handle empty or invalid data
-          setError("Invalid watchlist data received");
-          showError("Failed to refresh watchlist: Invalid data format");
-
-          // Update any "Loading..." data with random values
-          const updatedWatchlist = watchlist.map((stock) => {
-            if (stock.price === "Loading..." || stock.marketCap === "Loading..." || stock.volume === "Loading...") {
-              return {
-                ...stock,
-                price: (Math.random() * 200 + 50).toFixed(2),
-                change: (Math.random() * 10 - 5).toFixed(2),
-                changePercent: (Math.random() * 5 - 2.5).toFixed(2),
-                marketCap: stock.marketCap === "Loading..." ? `${(Math.random() * 500 + 10).toFixed(1)}B` : stock.marketCap,
-                volume: stock.volume === "Loading..." ? `${(Math.random() * 50 + 5).toFixed(1)}M` : stock.volume
-              };
-            }
-            return stock;
-          });
-          setWatchlist(updatedWatchlist);
-        }
-      } else {
-        setError("Failed to refresh watchlist");
-        showError("Failed to refresh watchlist");
-
-        // Update any "Loading..." data with random values
-        const updatedWatchlist = watchlist.map((stock) => {
-          if (stock.price === "Loading..." || stock.marketCap === "Loading..." || stock.volume === "Loading...") {
-            return {
-              ...stock,
-              price: (Math.random() * 200 + 50).toFixed(2),
-              change: (Math.random() * 10 - 5).toFixed(2),
-              changePercent: (Math.random() * 5 - 2.5).toFixed(2),
-              marketCap: stock.marketCap === "Loading..." ? `${(Math.random() * 500 + 10).toFixed(1)}B` : stock.marketCap,
-              volume: stock.volume === "Loading..." ? `${(Math.random() * 50 + 5).toFixed(1)}M` : stock.volume
-            };
-          }
-          return stock;
-        });
-        setWatchlist(updatedWatchlist);
-      }
-    } catch (err) {
-      console.error("Error refreshing watchlist:", err);
-      setError("Failed to refresh watchlist");
-      showError("Failed to refresh watchlist");
-
-      // Fallback to local implementation
-      const updatedWatchlist = watchlist.map((stock) => {
-        // Handle "Loading..." values
-        if (stock.price === "Loading..." || isNaN(parseFloat(stock.price))) {
-          return {
-            ...stock,
-            price: (Math.random() * 200 + 50).toFixed(2),
-            change: (Math.random() * 10 - 5).toFixed(2),
-            changePercent: (Math.random() * 5 - 2.5).toFixed(2),
-            marketCap: stock.marketCap === "Loading..." ? `${(Math.random() * 500 + 10).toFixed(1)}B` : stock.marketCap,
-            volume: stock.volume === "Loading..." ? `${(Math.random() * 50 + 5).toFixed(1)}M` : stock.volume
-          };
-        }
-
-        // Normal price update for existing stocks
-        const priceChange = (Math.random() * 4 - 2).toFixed(2);
-        const newPrice = (parseFloat(stock.price) + parseFloat(priceChange)).toFixed(2);
-        const changePercent = ((priceChange / stock.price) * 100).toFixed(2);
-
-        return {
-          ...stock,
-          price: newPrice,
-          change: priceChange,
-          changePercent: changePercent
-        };
-      });
-
-      setWatchlist(updatedWatchlist);
-      info("Watchlist refreshed (local only)");
-    } finally {
-      setRefreshing(false);
-    }
-  };
+  if (loading) {
+    return (
+      <div className="watchlist-page">
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Loading watchlists...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <PageLayout>
-      <style>{additionalStyles}</style>
+    <div className="watchlist-page">
       <div className="watchlist-container">
+        {/* Header Section */}
         <motion.div
-          className="watchlist-header-container"
+          className="watchlist-header"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <h1 className="watchlist-header">My Watchlist</h1>
-          {isFiltered && filteredWatchlist.length > 0 && (
-            <div className="filter-status">
-              Showing {filteredWatchlist.length} of {totalStocks} stocks
-              {searchTerm && <span> matching "{searchTerm}"</span>}
-            </div>
-          )}
-        </motion.div>
-
-        <motion.div
-          className="watchlist-actions"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-        >
-          <div className="search-filter-container">
-            <FiSearch className="search-icon" />
-            <input
-              type="text"
-              placeholder="Filter watchlist..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="search-input"
-            />
-            {searchTerm && (
-              <button
-                className="clear-search-btn"
-                onClick={() => setSearchTerm('')}
-                title="Clear filter"
-              >
-                ×
-              </button>
-            )}
-          </div>
-
-          <div className="watchlist-controls">
-            <StockSearch
-              onStockSelect={(symbol, name) => {
-                // Directly call addToWatchlist with the symbol and name
-                addStockToWatchlist(symbol, name);
-              }}
-              placeholder="Search and add stocks to watchlist..."
-              showWatchlistButton={false}
-              showChartButton={true}
-              variant="default"
-            />
-
-            <button
-              className={`refresh-btn ${refreshing ? 'refreshing' : ''}`}
-              onClick={refreshWatchlist}
-              disabled={refreshing}
-            >
-              <FiRefreshCw className={refreshing ? 'spin' : ''} />
-              {refreshing ? 'Refreshing...' : 'Refresh'}
-            </button>
-          </div>
-        </motion.div>
-
-        {loading ? (
-          <div className="loading-container">
-            <div className="loading-spinner"></div>
-            <p>Loading watchlist...</p>
-          </div>
-        ) : error ? (
-          <div className="error-container">
-            <FiAlertCircle className="error-icon" />
-            <p>{error}</p>
-          </div>
-        ) : !isAuthenticated ? (
-          <div className="empty-watchlist">
-            <p>Please log in to view your watchlist.</p>
-          </div>
-        ) : filteredWatchlist.length === 0 ? (
-          <div className="empty-watchlist">
-            {isFiltered ? (
-              <div>
-                <p>No stocks found matching "{searchTerm}"</p>
-                <p>Try a different search term or clear the filter.</p>
-                {totalStocks > 0 && (
-                  <p className="total-stocks-info">
-                    You have {totalStocks} stock{totalStocks !== 1 ? 's' : ''} in your watchlist.
-                  </p>
-                )}
+          <div className="watchlist-header-top">
+            <div className="header-left">
+              <div className="header-icon">
+                <FiEye />
               </div>
-            ) : (
-              <p>No stocks found in your watchlist. Use the search above to find and add stocks.</p>
-            )}
+              <div className="header-text">
+                <h1>My Watchlists</h1>
+                <p>Track and manage your favorite stocks</p>
+              </div>
+            </div>
+            <div className="header-actions">
+              <button
+                className={`action-btn ${refreshingState ? 'loading' : ''}`}
+                onClick={handleRefresh}
+                disabled={refreshingState}
+              >
+                <FiRefreshCw className={refreshingState ? 'spinning' : ''} />
+                {refreshingState ? 'Refreshing...' : 'Refresh'}
+              </button>
+              <button
+                className="action-btn primary"
+                onClick={() => setShowCreateModal(true)}
+              >
+                <FiPlus />
+                New Watchlist
+              </button>
+            </div>
           </div>
-        ) : (
+
+          {/* Stats Overview */}
+          <div className="stats-overview">
+            <div className="stat-card">
+              <div className="stat-icon">
+                <FiBarChart2 />
+              </div>
+              <div className="stat-content">
+                <div className="stat-value">{getTotalStockCount()}</div>
+                <div className="stat-label">Total Stocks</div>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon positive">
+                <FiTrendingUp />
+              </div>
+              <div className="stat-content">
+                <div className="stat-value">{stats.gainers}</div>
+                <div className="stat-label">Gainers</div>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon negative">
+                <FiTrendingDown />
+              </div>
+              <div className="stat-content">
+                <div className="stat-value">{stats.losers}</div>
+                <div className="stat-label">Losers</div>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon">
+                <FiStar />
+              </div>
+              <div className="stat-content">
+                <div className="stat-value">{watchlists.length}</div>
+                <div className="stat-label">Watchlists</div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Main Content Layout */}
+        <div className="watchlist-content">
+          {/* Sidebar */}
           <motion.div
-            className="watchlist-table-container"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
+            className="watchlist-sidebar"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
           >
-            <table className="watchlist-table">
-              <thead>
-                <tr>
-                  <th>Symbol</th>
-                  <th>Name</th>
-                  <th>Price</th>
-                  <th>Change</th>
-                  <th>Market Cap</th>
-                  <th>Volume</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredWatchlist.map((stock) => (
-                  <motion.tr
-                    key={stock.symbol || stock.id || `${stock.name}-${Math.random()}`}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                    whileHover={{ backgroundColor: "rgba(0,0,0,0.02)" }}
-                    className="stock-row"
-                    onClick={() => handleStockSelectChart(stock.symbol, stock.name)}
+            <StockSearchPanel
+              onStockSelect={handleAddStock}
+              selectedStock={null}
+              className="watchlist-stock-search"
+            />
+
+            <div className="sidebar-section">
+              <h3>My Watchlists</h3>
+              <div className="watchlist-list">
+                <button
+                  className={`watchlist-tab ${selectedWatchlistId === 'all' ? 'active' : ''}`}
+                  onClick={() => setSelectedWatchlistId('all')}
+                >
+                  <FiActivity />
+                  All Watchlists
+                  <span className="tab-count">{getTotalStockCount()}</span>
+                </button>
+                {watchlists.map((watchlist) => (
+                  <button
+                    key={watchlist._id}
+                    className={`watchlist-tab ${selectedWatchlistId === watchlist._id ? 'active' : ''}`}
+                    onClick={() => setSelectedWatchlistId(watchlist._id)}
                   >
-                    <td className="symbol-cell">{stock.symbol}</td>
-                    <td>{stock.name}</td>
-                    <td className="price-cell">${stock.price}</td>
-                    <td className={`change-cell ${parseFloat(stock.change) >= 0 ? 'positive' : 'negative'}`}>
-                      {parseFloat(stock.change) >= 0 ? (
-                        <FiTrendingUp className="trend-icon" />
-                      ) : (
-                        <FiTrendingDown className="trend-icon" />
-                      )}
-                      {parseFloat(stock.change) >= 0 ? '+' : ''}{stock.change} ({stock.changePercent}%)
-                    </td>
-                    <td>{stock.marketCap}</td>
-                    <td>{stock.volume}</td>
-                    <td onClick={(e) => e.stopPropagation()}>
-                      <div className="action-buttons">
-                        <button
-                          className="view-detail-btn"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleStockSelect(stock.symbol);
-                          }}
-                          title="View details"
-                        >
-                          <FiMaximize2 />
-                        </button>
-                        <button
-                          className="remove-btn"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeFromWatchlist(stock.id);
-                          }}
-                          title="Remove from watchlist"
-                        >
-                          <FiTrash2 />
-                        </button>
-                      </div>
-                    </td>
-                  </motion.tr>
+                    <FiBookmark />
+                    <span className="watchlist-name">{watchlist.name}</span>
+                    <span className="tab-count">{watchlist.stocks?.length || 0}</span>
+                    <button
+                      className="delete-watchlist-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteWatchlist(watchlist._id);
+                      }}
+                      title="Delete Watchlist"
+                    >
+                      <FiTrash2 />
+                    </button>
+                  </button>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            </div>
+
+            <div className="sidebar-section">
+              <h3>Quick Actions</h3>
+              <div className="quick-actions">
+                <button
+                  className="action-btn"
+                  onClick={() => setShowCreateModal(true)}
+                >
+                  <FiPlus />
+                  New Watchlist
+                </button>
+                <button
+                  className="action-btn"
+                  onClick={handleRefresh}
+                  disabled={refreshingState}
+                >
+                  <FiRefreshCw className={refreshingState ? 'spinning' : ''} />
+                  Refresh Data
+                </button>
+              </div>
+            </div>
           </motion.div>
-        )}
+
+          {/* Main Content Area */}
+          <motion.div
+            className="watchlist-main"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            <div className="watchlist-tabs">
+              <button
+                className={`watchlist-tab ${selectedWatchlistId === 'all' ? 'active' : ''}`}
+                onClick={() => setSelectedWatchlistId('all')}
+              >
+                <FiActivity />
+                All Watchlists
+                <span className="tab-count">{getTotalStockCount()}</span>
+              </button>
+              {watchlists.map((watchlist) => (
+                <button
+                  key={watchlist._id}
+                  className={`watchlist-tab ${selectedWatchlistId === watchlist._id ? 'active' : ''}`}
+                  onClick={() => setSelectedWatchlistId(watchlist._id)}
+                >
+                  <FiBookmark />
+                  {watchlist.name}
+                  <span className="tab-count">{watchlist.stocks?.length || 0}</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="main-header">
+              <div className="main-title">
+                <h2>
+                  <FiEye />
+                  {currentWatchlist.name}
+                </h2>
+                <div className="main-controls">
+                  <div className="sort-dropdown">
+                    <button className="sort-btn">
+                      <FiFilter />
+                      Sort by {sortBy}
+                      <FiArrowDown />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="search-section">
+                <SearchInput
+                  value={localSearchQuery}
+                  onChange={setLocalSearchQuery}
+                  placeholder="Search stocks in watchlist..."
+                  className="watchlist-search"
+                />
+              </div>
+            </div>
+
+            <div className="stocks-section">
+              {filteredAndSortedStocks.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-icon">
+                    <FiBookmark />
+                  </div>
+                  <h3>No stocks found</h3>
+                  <p>
+                    {localSearchQuery
+                      ? `No stocks found matching "${localSearchQuery}" in this watchlist`
+                      : currentWatchlist.stocks.length === 0
+                        ? 'Start building your watchlist by adding stocks you want to track.'
+                        : 'No stocks available in this list.'
+                    }
+                  </p>
+                  {!localSearchQuery && currentWatchlist.stocks.length === 0 && (
+                    <button
+                      className="action-btn primary"
+                      onClick={() => setShowCreateModal(true)}
+                    >
+                      <FiPlus />
+                      Add Your First Stock
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="stock-list">
+                  {filteredAndSortedStocks.map((stock, index) => (
+                    <motion.div
+                      key={stock.symbol}
+                      className="stock-item"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.03 }}
+                      onClick={() => navigate(`/stock/${stock.symbol}`)}
+                    >
+                      <div className="stock-info">
+                        <div className="stock-basic-info">
+                          <div className="stock-symbol">{stock.symbol}</div>
+                          <div className="stock-name">{stock.name}</div>
+                        </div>
+                      </div>
+                      <div className="stock-price-inline">
+                        <div className="stock-price-value">
+                          ₹{(stock.price || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </div>
+                        <div className={`stock-price-change ${
+                          (stock.change || 0) > 0 ? 'positive' :
+                            (stock.change || 0) < 0 ? 'negative' : 'neutral'
+                        }`}>
+                          {(stock.change || 0) >= 0 ? '+' : ''}{(stock.change || 0).toFixed(2)}
+                          ({(stock.changePercent || 0).toFixed(2)}%)
+                        </div>
+                      </div>
+                      <div className="stock-actions">
+                        <WatchlistButton
+                          stockData={stock}
+                          size="small"
+                          variant="simple"
+                          showText={false}
+                          onSuccess={(result, action) => {
+                            toast.success(`${action === 'removed' ? 'Removed' : 'Added'} ${stock.symbol} ${action === 'removed' ? 'from' : 'to'} watchlist`);
+                            refreshWatchlists();
+                          }}
+                          onError={(message) => {
+                            toast.error(message || 'Failed to update watchlist');
+                          }}
+                        />
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </div>
       </div>
 
-      {/* Stock detail functionality moved to charts page */}
-      {showFullScreenDetail && selectedStock && (
-        <div className="redirect-message">
-          <p>Redirecting to charts page for {selectedStock}...</p>
-          {setTimeout(() => {
-            window.location.href = `/charts?symbol=${selectedStock}`;
-            setShowFullScreenDetail(false);
-          }, 1000)}
-        </div>
-      )}
-    </PageLayout>
+      {/* Create Watchlist Modal */}
+      <AnimatePresence>
+        {showCreateModal && (
+          <motion.div
+            className="modal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowCreateModal(false)}
+          >
+            <motion.div
+              className="modal-content"
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="modal-header">
+                <h3>Create New Watchlist</h3>
+                <button
+                  className="close-btn"
+                  onClick={() => setShowCreateModal(false)}
+                >
+                  <FiX />
+                </button>
+              </div>
+              <div className="modal-body">
+                <div className="form-group">
+                  <label htmlFor="watchlist-name">Watchlist Name</label>
+                  <input
+                    id="watchlist-name"
+                    type="text"
+                    value={newWatchlistName}
+                    onChange={(e) => setNewWatchlistName(e.target.value)}
+                    placeholder="Enter watchlist name..."
+                    className="form-input"
+                    autoFocus
+                  />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button
+                  className="action-btn"
+                  onClick={() => setShowCreateModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="action-btn primary"
+                  onClick={handleCreateWatchlist}
+                  disabled={!newWatchlistName.trim() || creating}
+                >
+                  {creating ? (
+                    <>
+                      <FiRefreshCw className="spinning" />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <FiPlus />
+                      Create Watchlist
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 };
 
