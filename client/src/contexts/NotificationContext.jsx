@@ -2,6 +2,8 @@ import React, { createContext, useContext, useReducer, useEffect, useCallback } 
 import { toast } from 'react-toastify';
 import notificationService from '../services/notificationService';
 import { useAuth } from './AuthContext';
+import Pusher from 'pusher-js';
+import { PUSHER_ENABLED, pusherConfig } from '../utils/pusherConfig';
 
 const initialState = {
   notifications: [],
@@ -265,8 +267,58 @@ export const NotificationProvider = ({ children }) => {
     if (isAuthenticated && user?.id) {
       fetchUnreadCount();
       fetchNotifications();
+      
+      // Setup Pusher connection for real-time notifications
+      if (PUSHER_ENABLED && pusherConfig.key) {
+        const pusher = new Pusher(pusherConfig.key, {
+          cluster: pusherConfig.cluster,
+          encrypted: pusherConfig.encrypted,
+          authEndpoint: `${import.meta.env.VITE_API_URL}/pusher/auth`,
+          auth: {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token')}`
+            }
+          }
+        });
+        
+        const channel = pusher.subscribe(`private-user-${user.id}`);
+        
+        channel.bind('pusher:subscription_succeeded', () => {
+          dispatch({ type: ACTIONS.SET_CONNECTION_STATUS, payload: 'connected' });
+        });
+        
+        channel.bind('pusher:subscription_error', () => {
+          dispatch({ type: ACTIONS.SET_CONNECTION_STATUS, payload: 'error' });
+        });
+        
+        channel.bind('notification', (data) => {
+          handleNotificationEvent('notification', data);
+        });
+        
+        channel.bind('notification-update', (data) => {
+          handleNotificationEvent('notification-update', data);
+        });
+        
+        channel.bind('notifications-read-all', (data) => {
+          handleNotificationEvent('notifications-read-all', data);
+        });
+        
+        pusher.connection.bind('connected', () => {
+          dispatch({ type: ACTIONS.SET_CONNECTION_STATUS, payload: 'connected' });
+        });
+        
+        pusher.connection.bind('disconnected', () => {
+          dispatch({ type: ACTIONS.SET_CONNECTION_STATUS, payload: 'disconnected' });
+        });
+        
+        return () => {
+          channel.unbind_all();
+          pusher.unsubscribe(`private-user-${user.id}`);
+          pusher.disconnect();
+        };
+      }
     }
-  }, [isAuthenticated, user?.id, fetchNotifications, fetchUnreadCount]);
+  }, [isAuthenticated, user?.id, fetchNotifications, fetchUnreadCount, handleNotificationEvent]);
 
   const value = {
     ...state,

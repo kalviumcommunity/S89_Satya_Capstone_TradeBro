@@ -1,5 +1,5 @@
-// Disable Pusher in production to prevent 404 errors
-export const PUSHER_ENABLED = false;
+// Enable Pusher for real-time notifications
+export const PUSHER_ENABLED = true;
 
 export const pusherConfig = {
   key: import.meta.env.VITE_PUSHER_KEY,
