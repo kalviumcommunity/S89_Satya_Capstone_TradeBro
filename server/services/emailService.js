@@ -8,33 +8,17 @@ const { generateEmailHTML, generateEmailText } = require('../utils/emailUtils');
 
 // Strict environment variable validation
 function validateEmailCredentials() {
-  const requiredVars = ['EMAIL_USER'];
-  const missingVars = [];
+  // Use existing environment variables from .env
+  const emailUser = process.env.email_nodemailer || process.env.EMAIL_USER;
+  const emailPass = process.env.password_nodemailer || process.env.EMAIL_PASS;
 
-  requiredVars.forEach(varName => {
-    if (!process.env[varName]) {
-      missingVars.push(varName);
-    }
-  });
-
-  // Check for authentication method
-  const hasAppPassword = !!process.env.EMAIL_PASS;
-  const hasOAuth2 = !!(
-    process.env.GMAIL_CLIENT_ID && 
-    process.env.GMAIL_CLIENT_SECRET && 
-    process.env.GMAIL_REFRESH_TOKEN
-  );
-
-  if (!hasAppPassword && !hasOAuth2) {
-    missingVars.push('EMAIL_PASS or OAuth2 credentials (GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN)');
+  if (!emailUser || !emailPass) {
+    console.warn('⚠️ Email credentials not configured. 2FA emails will not be sent.');
+    return false;
   }
 
-  if (missingVars.length > 0) {
-    throw new Error(`Missing required email environment variables: ${missingVars.join(', ')}`);
-  }
-
-  console.log('✅ Email credentials validated successfully');
-  console.log(`📧 Email service configured with ${hasOAuth2 ? 'OAuth2' : 'App Password'} authentication`);
+  console.log('✅ Email credentials found');
+  return true;
 }
 
 /**
@@ -42,46 +26,25 @@ function validateEmailCredentials() {
  * @returns {Object} Nodemailer transporter
  */
 function createEmailTransporter() {
-  validateEmailCredentials();
+  if (!validateEmailCredentials()) {
+    throw new Error('Email credentials not configured');
+  }
 
-  const baseConfig = {
+  const emailUser = process.env.email_nodemailer || process.env.EMAIL_USER;
+  const emailPass = process.env.password_nodemailer || process.env.EMAIL_PASS;
+
+  console.log('🔑 Using Gmail with app password');
+  
+  return nodemailer.createTransporter({
     service: 'gmail',
     host: 'smtp.gmail.com',
     port: 587,
-    secure: false, // Use TLS
-  };
-
-  // Try OAuth2 first (more secure)
-  if (process.env.GMAIL_CLIENT_ID && process.env.GMAIL_CLIENT_SECRET && process.env.GMAIL_REFRESH_TOKEN) {
-    console.log('🔐 Using OAuth2 authentication for Gmail');
-    
-    return nodemailer.createTransporter({
-      ...baseConfig,
-      auth: {
-        type: 'OAuth2',
-        user: process.env.EMAIL_USER,
-        clientId: process.env.GMAIL_CLIENT_ID,
-        clientSecret: process.env.GMAIL_CLIENT_SECRET,
-        refreshToken: process.env.GMAIL_REFRESH_TOKEN,
-        accessToken: process.env.GMAIL_ACCESS_TOKEN, // Optional, will be generated if not provided
-      }
-    });
-  }
-
-  // Fallback to App Password
-  if (process.env.EMAIL_PASS) {
-    console.log('🔑 Using App Password authentication for Gmail');
-    
-    return nodemailer.createTransporter({
-      ...baseConfig,
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-      }
-    });
-  }
-
-  throw new Error('No valid email authentication method configured');
+    secure: false,
+    auth: {
+      user: emailUser,
+      pass: emailPass
+    }
+  });
 }
 
 /**
@@ -209,6 +172,60 @@ async function sendContactEmail(emailData) {
 }
 
 /**
+ * Send 2FA code email
+ * @param {string} email - User email
+ * @param {string} code - 2FA code
+ * @param {string} userName - User name
+ * @returns {Promise<Object>} Send result
+ */
+async function send2FAEmail(email, code, userName = 'User') {
+  try {
+    const transporter = createEmailTransporter();
+    
+    const mailOptions = {
+      from: {
+        name: 'TradeBro Security',
+        address: process.env.email_nodemailer || process.env.EMAIL_USER
+      },
+      to: email,
+      subject: 'TradeBro - Your 2FA Verification Code',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #10b981;">⚡ TradeBro</h1>
+          </div>
+          
+          <div style="background: #f8f9fa; padding: 30px; border-radius: 10px; text-align: center;">
+            <h2 style="color: #333; margin-bottom: 20px;">🔐 Your Verification Code</h2>
+            <p style="color: #666; margin-bottom: 30px;">Hi ${userName}, here's your 2FA code:</p>
+            
+            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h1 style="font-size: 2.5rem; letter-spacing: 0.5rem; color: #10b981; margin: 0;">${code}</h1>
+            </div>
+            
+            <p style="color: #666; font-size: 14px;">This code expires in 5 minutes.</p>
+            <p style="color: #999; font-size: 12px; margin-top: 20px;">If you didn't request this, please ignore this email.</p>
+          </div>
+          
+          <div style="text-align: center; margin-top: 30px; color: #999; font-size: 12px;">
+            <p>© 2024 TradeBro - Secure Trading Platform</p>
+          </div>
+        </div>
+      `,
+      text: `TradeBro 2FA Code: ${code}\n\nThis code expires in 5 minutes.\nIf you didn't request this, please ignore this email.`
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('✅ 2FA email sent:', info.messageId);
+    
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('❌ 2FA email failed:', error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
  * Test email configuration
  * @returns {Promise<boolean>} Test result
  */
@@ -229,6 +246,7 @@ async function testEmailConfiguration() {
 
 module.exports = {
   sendContactEmail,
+  send2FAEmail,
   testEmailConfiguration,
   validateEmailCredentials
 };

@@ -2,15 +2,18 @@ const Order = require('../models/Order');
 const VirtualMoney = require('../models/VirtualMoney');
 const { validateSymbol } = require('../utils/watchlistUtils');
 
-// Import notification system safely
-let createSystemNotification;
-try {
-  const notificationRoutes = require('../routes/notificationRoutes');
-  createSystemNotification = notificationRoutes.createSystemNotification;
-} catch (error) {
-  console.warn('Notification system not available:', error.message);
-  createSystemNotification = null;
-}
+// Import notification creation function directly
+const Notification = require('../models/Notification');
+const Pusher = require('pusher');
+
+// Pusher config
+const pusher = new Pusher({
+  appId: process.env.PUSHER_APP_ID,
+  key: process.env.PUSHER_KEY,
+  secret: process.env.PUSHER_SECRET,
+  cluster: process.env.PUSHER_CLUSTER,
+  useTLS: true
+});
 
 const calculateOrderTotal = (quantity, price, orderType = 'MARKET') => {
   try {
@@ -143,17 +146,49 @@ const createLimitOrder = async (orderData, user) => {
 };
 
 const sendOrderNotification = async (user, order, status) => {
-  if (createSystemNotification) {
-    try {
-      await createSystemNotification(user._id, {
-        type: 'ORDER_UPDATE',
-        title: `Order ${status}`,
-        message: `Your ${order.type} order for ${order.stockSymbol} has been ${status.toLowerCase()}`,
-        data: { orderId: order._id, status }
-      });
-    } catch (error) {
-      console.warn('Failed to send order notification:', error.message);
+  try {
+    let title, message, type;
+    
+    if (status === 'FILLED') {
+      type = 'success';
+      title = `${order.type} Order Executed`;
+      message = `Your ${order.type.toLowerCase()} order for ${order.quantity} shares of ${order.stockSymbol} has been executed at ₹${order.executionPrice || order.price}`;
+    } else if (status === 'CANCELLED') {
+      type = 'warning';
+      title = `${order.type} Order Cancelled`;
+      message = `Your ${order.type.toLowerCase()} order for ${order.quantity} shares of ${order.stockSymbol} has been cancelled`;
+    } else {
+      type = 'info';
+      title = `${order.type} Order Placed`;
+      message = `Your ${order.type.toLowerCase()} order for ${order.quantity} shares of ${order.stockSymbol} has been placed`;
     }
+
+    const notification = new Notification({
+      userId: user._id,
+      userEmail: user.email,
+      type,
+      title,
+      message,
+      link: '/portfolio',
+      data: {
+        type: order.type,
+        symbol: order.stockSymbol,
+        quantity: order.quantity,
+        price: order.executionPrice || order.price,
+        status,
+        orderId: order._id
+      },
+      read: false
+    });
+    
+    await notification.save();
+    
+    // Send via Pusher
+    if (pusher) {
+      await pusher.trigger(`private-user-${user._id}`, 'notification', notification);
+    }
+  } catch (error) {
+    console.warn('Failed to send order notification:', error.message);
   }
 };
 

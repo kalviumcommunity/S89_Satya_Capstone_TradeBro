@@ -1,14 +1,8 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import notificationService from '../services/notificationService';
-import { useAuth } from './AuthContext'; // Assumes useAuth provides user object
+import { useAuth } from './AuthContext';
 
-/**
- * TradeBro Notification Context
- * Manages notification state, real-time updates, and user interactions
- */
-
-// Initial state
 const initialState = {
   notifications: [],
   unreadCount: 0,
@@ -28,7 +22,6 @@ const initialState = {
   }
 };
 
-// Action types
 const ACTIONS = {
   SET_LOADING: 'SET_LOADING',
   SET_ERROR: 'SET_ERROR',
@@ -45,7 +38,6 @@ const ACTIONS = {
   CLEAR_ALL: 'CLEAR_ALL'
 };
 
-// Reducer function
 function notificationReducer(state, action) {
   switch (action.type) {
     case ACTIONS.SET_LOADING:
@@ -55,9 +47,13 @@ function notificationReducer(state, action) {
       return { ...state, error: action.payload, loading: false };
 
     case ACTIONS.SET_NOTIFICATIONS:
+      const newNotifications = action.payload.page === 1
+        ? action.payload.notifications
+        : [...state.notifications, ...action.payload.notifications];
+
       return {
         ...state,
-        notifications: action.payload.notifications || [],
+        notifications: newNotifications || [],
         pagination: { ...state.pagination, ...action.payload.pagination },
         loading: false,
         error: null
@@ -85,8 +81,8 @@ function notificationReducer(state, action) {
       return {
         ...state,
         notifications: state.notifications.filter(n => (n._id || n.id) !== action.payload),
-        unreadCount: removedNotification && !removedNotification.read 
-          ? Math.max(0, state.unreadCount - 1) 
+        unreadCount: removedNotification && !removedNotification.read
+          ? Math.max(0, state.unreadCount - 1)
           : state.unreadCount
       };
 
@@ -139,10 +135,8 @@ function notificationReducer(state, action) {
   }
 }
 
-// Create context
 const NotificationContext = createContext();
 
-// Provider component
 export const NotificationProvider = ({ children }) => {
   const [state, dispatch] = useReducer(notificationReducer, initialState);
   const { user, isAuthenticated } = useAuth();
@@ -202,7 +196,8 @@ export const NotificationProvider = ({ children }) => {
         dispatch({
           type: ACTIONS.SET_NOTIFICATIONS,
           payload: {
-            notifications: page === 1 ? response.notifications : [...state.notifications, ...response.notifications],
+            page,
+            notifications: response.notifications,
             pagination: {
               page: response.pagination.page,
               total: response.pagination.total,
@@ -216,7 +211,7 @@ export const NotificationProvider = ({ children }) => {
     } finally {
       dispatch({ type: ACTIONS.SET_LOADING, payload: false });
     }
-  }, [state.pagination.limit, state.notifications]);
+  }, [state.pagination.limit]);
 
   const fetchUnreadCount = useCallback(async () => {
     try {
@@ -265,29 +260,14 @@ export const NotificationProvider = ({ children }) => {
       fetchNotifications(state.pagination.page + 1);
     }
   }, [state.pagination.hasMore, state.loading, state.pagination.page, fetchNotifications]);
-  
-  // Initialize and cleanup Pusher connection
+
   useEffect(() => {
-    let removeListener;
     if (isAuthenticated && user?.id) {
-      dispatch({ type: ACTIONS.SET_LOADING, payload: true });
       fetchUnreadCount();
       fetchNotifications();
-      notificationService.startMockLiveNotifications();
-
-      removeListener = notificationService.addEventListener(handleNotificationEvent);
-      notificationService.initializePusher(user.id);
     }
-    return () => {
-      notificationService.stopMockLiveNotifications();
-      notificationService.disconnectPusher();
-      if (removeListener) {
-        removeListener(); // Crucial cleanup to prevent memory leaks
-      }
-    };
-  }, [isAuthenticated, user?.id, fetchNotifications, fetchUnreadCount, handleNotificationEvent]);
+  }, [isAuthenticated, user?.id, fetchNotifications, fetchUnreadCount]);
 
-  // Context value
   const value = {
     ...state,
     fetchNotifications,
@@ -305,7 +285,6 @@ export const NotificationProvider = ({ children }) => {
   );
 };
 
-// Custom hook to use notification context
 export const useNotifications = () => {
   const context = useContext(NotificationContext);
   if (!context) {

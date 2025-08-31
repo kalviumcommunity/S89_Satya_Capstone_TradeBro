@@ -4,6 +4,7 @@ const VirtualMoney = require('../models/VirtualMoney');
 const User = require('../models/User');
 const { provideDefaultUser } = require('../middleware/defaultUser');
 const { verifyToken } = require('../middleware/auth');
+const NotificationService = require('../services/notificationService');
 
 /**
  * Calculate the day streak for a user (consecutive days they've claimed rewards)
@@ -571,6 +572,23 @@ router.post('/buy', provideDefaultUser, async (req, res) => {
     const result = await virtualMoney.buyStock(stockSymbol, quantity, price);
 
     if (result.success) {
+      // Check for low balance and send notification
+      const lowBalanceThreshold = 5000; // ₹5,000
+      if (virtualMoney.balance < lowBalanceThreshold && virtualMoney.balance > 0) {
+        try {
+          await NotificationService.sendBalanceWarning(
+            req.user.id,
+            user.email,
+            {
+              currentBalance: virtualMoney.balance,
+              threshold: lowBalanceThreshold
+            }
+          );
+        } catch (notifError) {
+          console.warn('Failed to send balance warning notification:', notifError.message);
+        }
+      }
+
       res.status(200).json({
         success: true,
         message: result.message,

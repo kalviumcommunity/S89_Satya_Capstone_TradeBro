@@ -85,10 +85,20 @@ app.use(cors({
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin", "X-Socket-ID"],
   exposedHeaders: ["Set-Cookie"],
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
+  preflightContinue: false
 }));
+
+// Handle preflight requests
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', 'https://tradebro.netlify.app');
+  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS,PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, X-Socket-ID');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.sendStatus(200);
+});
 
 
 
@@ -212,9 +222,14 @@ app.use("/api/analytics", analyticsRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/trades", require("./routes/tradesRoutes"));
+app.use("/api/notifications", require("./routes/notificationRoutes"));
 app.use("/api/referral", referralRoutes);
 app.use("/pusher", pusherRoutes);
 app.use("/pusher", require("./routes/pusher-auth-perfect"));
+
+
+
+
 
 
 

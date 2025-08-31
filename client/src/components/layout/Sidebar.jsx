@@ -231,31 +231,24 @@ const SidebarContent = () => {
           sidebarElement.style.right = '0px';
           sidebarElement.style.width = '100%';
 
-          if (isCollapsed) {
-            // Collapsed navbar (just top bar)
-            sidebarElement.style.bottom = 'auto';
-            sidebarElement.style.height = '70px';
-            sidebarElement.style.maxHeight = '70px';
-            sidebarElement.style.minHeight = '70px';
-            sidebarElement.style.padding = '12px 20px';
-            sidebarElement.style.display = 'flex';
-            sidebarElement.style.flexDirection = 'row';
-            sidebarElement.style.alignItems = 'center';
-            sidebarElement.style.justifyContent = 'space-between';
-            sidebarElement.style.overflow = 'hidden';
-          } else {
-            // Expanded navbar (full screen menu)
-            sidebarElement.style.bottom = '0px';
-            sidebarElement.style.height = '100vh';
-            sidebarElement.style.maxHeight = '100vh';
-            sidebarElement.style.minHeight = '100vh';
-            sidebarElement.style.padding = '20px';
-            sidebarElement.style.display = 'flex';
-            sidebarElement.style.flexDirection = 'column';
-            sidebarElement.style.alignItems = 'stretch';
-            sidebarElement.style.justifyContent = 'flex-start';
-            sidebarElement.style.overflowY = 'auto';
-          }
+          // Mobile navbar - always horizontal at bottom
+          sidebarElement.style.top = 'auto';
+          sidebarElement.style.bottom = '0px';
+          sidebarElement.style.left = '0px';
+          sidebarElement.style.right = '0px';
+          sidebarElement.style.width = '100%';
+          sidebarElement.style.height = '70px';
+          sidebarElement.style.maxHeight = '70px';
+          sidebarElement.style.minHeight = '70px';
+          sidebarElement.style.padding = '8px 16px';
+          sidebarElement.style.display = 'flex';
+          sidebarElement.style.flexDirection = 'row';
+          sidebarElement.style.alignItems = 'center';
+          sidebarElement.style.justifyContent = 'space-around';
+          sidebarElement.style.overflow = 'hidden';
+          sidebarElement.style.borderTop = '1px solid var(--border-primary)';
+          sidebarElement.style.backdropFilter = 'blur(10px)';
+          sidebarElement.style.webkitBackdropFilter = 'blur(10px)';
         } else {
           // Desktop sidebar positioning
           sidebarElement.style.top = '0px';
@@ -322,37 +315,64 @@ const SidebarContent = () => {
       role="navigation"
       aria-label="Main navigation"
     >
-      <div className="top-section">
-        <button
-          className="toggle-btn"
-          onClick={handleToggle}
-          type="button"
-          aria-label={isCollapsed ? "Expand sidebar navigation" : "Collapse sidebar navigation"}
-          title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          aria-expanded={!isCollapsed}
-        >
-          <FiMenu />
-        </button>
+      {/* Mobile navbar content */}
+      {isMobile ? (
+        <>
+          <Link to="/dashboard" className={`mobile-nav-item ${location.pathname === "/dashboard" ? "active" : ""}`}>
+            <FiBarChart2 />
+            <span>Home</span>
+          </Link>
+          
+          <Link to="/portfolio" className={`mobile-nav-item ${location.pathname === "/portfolio" ? "active" : ""}`}>
+            <FiPieChart />
+            <span>Portfolio</span>
+          </Link>
+          
+          <Link to="/charts" className={`mobile-nav-item ${location.pathname === "/charts" ? "active" : ""}`}>
+            <FiTrendingUp />
+            <span>Charts</span>
+          </Link>
+          
+          <Link to="/saytrix" className={`mobile-nav-item ${location.pathname === "/saytrix" ? "active" : ""}`}>
+            <FiMessageCircle />
+            <span>AI</span>
+          </Link>
+          
+          <Link to="/settings" className={`mobile-nav-item ${location.pathname === "/settings" ? "active" : ""}`}>
+            <FiSettings />
+            <span>More</span>
+          </Link>
+        </>
+      ) : (
+        <div className="top-section">
+          <button
+            className="toggle-btn"
+            onClick={handleToggle}
+            type="button"
+            aria-label={isCollapsed ? "Expand sidebar navigation" : "Collapse sidebar navigation"}
+            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-expanded={!isCollapsed}
+          >
+            <FiMenu />
+          </button>
 
-        {/* Show logo section based on mobile/desktop state */}
-        {(!isCollapsed || isMobile) && (
-          <div className="logo-section">
-            <h1 className="logo" role="banner">
-              ⚡ TradeBro
-            </h1>
-            {!isCollapsed && (
+          {!isCollapsed && (
+            <div className="logo-section">
+              <h1 className="logo" role="banner">
+                ⚡ TradeBro
+              </h1>
               <SaytrixTriggerButton
                 position="navbar"
                 size="small"
                 showLabel={false}
                 className="sidebar-voice-btn"
               />
-            )}
-          </div>
-        )}
-      </div>
+            </div>
+          )}
+        </div>
+      )}
 
-      {!isCollapsed && (
+      {!isMobile && !isCollapsed && (
         <div className="user-profile">
           <div className="user-avatar">
             {(user.profileImage || user.picture || user.avatar) ? (
@@ -375,109 +395,114 @@ const SidebarContent = () => {
         </div>
       )}
 
-      <nav role="navigation" aria-label="Main menu">
-        <ul className="sidebar-links">
-          <li>
-            <Link
-              to="/dashboard"
-              className={`sidebar-link ${location.pathname === "/dashboard" ? "active" : ""}`}
-              aria-current={location.pathname === "/dashboard" ? "page" : undefined}
-              title="Dashboard"
-            >
-              <FiBarChart2 aria-hidden="true" />
-              {!isCollapsed && <span>Dashboard</span>}
-            </Link>
-          </li>
-        <li>
-          <Link to="/charts" className={`sidebar-link ${location.pathname === "/charts" ? "active" : ""}`}>
-            <FiTrendingUp />
-            {!isCollapsed && <span>Charts</span>}
-          </Link>
-        </li>
-        <li>
-          <Link to="/portfolio" className={`sidebar-link ${location.pathname === "/portfolio" ? "active" : ""}`}>
-            <FiPieChart />
-            {!isCollapsed && <span>Portfolio</span>}
-          </Link>
-        </li>
-        <li>
-          <Link to="/watchlist" className={`sidebar-link ${location.pathname === "/watchlist" ? "active" : ""}`}>
-            <FiBookmark />
-            {!isCollapsed && <span>Watchlist</span>}
-          </Link>
-        </li>
-        <li>
-          <Link to="/orders" className={`sidebar-link ${location.pathname === "/orders" ? "active" : ""}`}>
-            <FiShoppingCart />
-            {!isCollapsed && <span>Orders</span>}
-          </Link>
-        </li>
-        <li>
-          <Link to="/history" className={`sidebar-link ${location.pathname === "/history" ? "active" : ""}`}>
-            <FiClock />
-            {!isCollapsed && <span>History</span>}
-          </Link>
-        </li>
-        <li>
-          <Link to="/news" className={`sidebar-link ${location.pathname === "/news" ? "active" : ""}`}>
-            <FiFileText />
-            {!isCollapsed && <span>News</span>}
-          </Link>
-        </li>
-        <li>
-          <Link to="/notifications" className={`sidebar-link ${location.pathname === "/notifications" ? "active" : ""}`}>
-            <div className="sidebar-link-content">
-              <div className="sidebar-icon-wrapper">
-                <FiBell />
-                {unreadCount > 0 && (
-                  <span className="notification-badge">
-                    {unreadCount > 99 ? '99+' : unreadCount}
-                  </span>
-                )}
-              </div>
-              {!isCollapsed && <span>Notifications</span>}
+      {/* Desktop sidebar navigation */}
+      {!isMobile && (
+        <>
+          <nav role="navigation" aria-label="Main menu">
+            <ul className="sidebar-links">
+              <li>
+                <Link
+                  to="/dashboard"
+                  className={`sidebar-link ${location.pathname === "/dashboard" ? "active" : ""}`}
+                  aria-current={location.pathname === "/dashboard" ? "page" : undefined}
+                  title="Dashboard"
+                >
+                  <FiBarChart2 aria-hidden="true" />
+                  {!isCollapsed && <span>Dashboard</span>}
+                </Link>
+              </li>
+            <li>
+              <Link to="/charts" className={`sidebar-link ${location.pathname === "/charts" ? "active" : ""}`}>
+                <FiTrendingUp />
+                {!isCollapsed && <span>Charts</span>}
+              </Link>
+            </li>
+            <li>
+              <Link to="/portfolio" className={`sidebar-link ${location.pathname === "/portfolio" ? "active" : ""}`}>
+                <FiPieChart />
+                {!isCollapsed && <span>Portfolio</span>}
+              </Link>
+            </li>
+            <li>
+              <Link to="/watchlist" className={`sidebar-link ${location.pathname === "/watchlist" ? "active" : ""}`}>
+                <FiBookmark />
+                {!isCollapsed && <span>Watchlist</span>}
+              </Link>
+            </li>
+            <li>
+              <Link to="/orders" className={`sidebar-link ${location.pathname === "/orders" ? "active" : ""}`}>
+                <FiShoppingCart />
+                {!isCollapsed && <span>Orders</span>}
+              </Link>
+            </li>
+            <li>
+              <Link to="/history" className={`sidebar-link ${location.pathname === "/history" ? "active" : ""}`}>
+                <FiClock />
+                {!isCollapsed && <span>History</span>}
+              </Link>
+            </li>
+            <li>
+              <Link to="/news" className={`sidebar-link ${location.pathname === "/news" ? "active" : ""}`}>
+                <FiFileText />
+                {!isCollapsed && <span>News</span>}
+              </Link>
+            </li>
+            <li>
+              <Link to="/notifications" className={`sidebar-link ${location.pathname === "/notifications" ? "active" : ""}`}>
+                <div className="sidebar-link-content">
+                  <div className="sidebar-icon-wrapper">
+                    <FiBell />
+                    {unreadCount > 0 && (
+                      <span className="notification-badge">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
+                  </div>
+                  {!isCollapsed && <span>Notifications</span>}
+                </div>
+              </Link>
+            </li>
+            <li>
+              <Link to="/saytrix" className={`sidebar-link ${(location.pathname === "/saytrix" || location.pathname === "/chatbot") ? "active" : ""} highlight`}>
+                <FiMessageCircle />
+                {!isCollapsed && <span>Saytrix AI</span>}
+              </Link>
+            </li>
+          </ul>
+          </nav>
+
+          <div className="sidebar-bottom">
+            <div className="sidebar-actions">
+              <Link to="/profile" className={`sidebar-link ${location.pathname === "/profile" ? "active" : ""}`}>
+                <FiUser />
+                {!isCollapsed && <span>Profile</span>}
+              </Link>
+
+              <Link to="/settings" className={`sidebar-link ${location.pathname === "/settings" ? "active" : ""}`}>
+                <FiSettings />
+                {!isCollapsed && <span>Settings</span>}
+              </Link>
+
+              <button
+                onClick={handleLogout}
+                className="sidebar-link logout-btn"
+                aria-label="Logout from TradeBro"
+                title="Logout from TradeBro"
+              >
+                <FiLogOut />
+                {!isCollapsed && <span>Logout</span>}
+              </button>
             </div>
-          </Link>
-        </li>
-        <li>
-          <Link to="/saytrix" className={`sidebar-link ${(location.pathname === "/saytrix" || location.pathname === "/chatbot") ? "active" : ""} highlight`}>
-            <FiMessageCircle />
-            {!isCollapsed && <span>Saytrix AI</span>}
-          </Link>
-        </li>
-      </ul>
-      </nav>
 
-      <div className="sidebar-bottom">
-        <div className="sidebar-actions">
-          <Link to="/profile" className={`sidebar-link ${location.pathname === "/profile" ? "active" : ""}`}>
-            <FiUser />
-            {!isCollapsed && <span>Profile</span>}
-          </Link>
-
-          <Link to="/settings" className={`sidebar-link ${location.pathname === "/settings" ? "active" : ""}`}>
-            <FiSettings />
-            {!isCollapsed && <span>Settings</span>}
-          </Link>
-
-          <button
-            onClick={handleLogout}
-            className="sidebar-link logout-btn"
-            aria-label="Logout from TradeBro"
-            title="Logout from TradeBro"
-          >
-            <FiLogOut />
-            {!isCollapsed && <span>Logout</span>}
-          </button>
-        </div>
-
-        {!isCollapsed && (
-          <div className="sidebar-footer">
-            <p className="copyright">© 2024 TradeBro ⚡</p>
-            <p className="version">v1.0.0 • 🚀</p>
+            {!isCollapsed && (
+              <div className="sidebar-footer">
+                <p className="copyright">© 2024 TradeBro ⚡</p>
+                <p className="version">v1.0.0 • 🚀</p>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 };
