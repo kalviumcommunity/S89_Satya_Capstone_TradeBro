@@ -27,7 +27,8 @@ const SECURITY_CONFIG = {
   JWT_EXPIRES_IN: '7d',
   OAUTH_TOKEN_EXPIRES_IN: '10m',
   RATE_LIMIT_WINDOW_MS: 15 * 60 * 1000, // 15 minutes
-  RATE_LIMIT_MAX_REQUESTS: 5 // Max 5 requests per window
+  RATE_LIMIT_MAX_REQUESTS: 10, // Increased for better UX
+  SESSION_TIMEOUT: 24 * 60 * 60 * 1000 // 24 hours
 };
 
 // Trading experience options
