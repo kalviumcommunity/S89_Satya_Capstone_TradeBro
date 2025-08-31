@@ -117,7 +117,7 @@ router.post('/verify-2fa', authRateLimit, asyncHandler(async (req, res) => {
 }));
 
 // ============================
-// ✅ GOOGLE OAUTH ROUTES
+// ✅ GOOGLE OAUTH ROUTES - Updated 2025
 // ============================
 router.get('/google', passport.authenticate('google', {
     scope: ['profile', 'email']
@@ -140,7 +140,7 @@ router.get('/google/callback',
             const redirectUrl = process.env.CLIENT_URL || 'https://tradebro.netlify.app';
             const callbackUrl = `${redirectUrl}/dashboard?token=${token}&user=${encodeURIComponent(JSON.stringify(userResponse))}`;
             
-            console.log('OAuth successful, redirecting to:', callbackUrl);
+            console.log('OAuth successful, redirecting to dashboard:', callbackUrl);
             res.redirect(callbackUrl);
         } catch (error) {
             console.error('OAuth callback error:', error);
