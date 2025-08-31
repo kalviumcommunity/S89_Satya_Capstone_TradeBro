@@ -127,6 +127,18 @@ app.get("/api/health", (_, res) => {
   return res.success("Server is running", { status: "ok", timestamp: new Date().toISOString() });
 });
 
+// Keep server alive by pinging itself every 14 minutes
+if (process.env.NODE_ENV === "production") {
+  setInterval(async () => {
+    try {
+      await axios.get(`${process.env.API_BASE_URL}/api/health`);
+      console.log("✅ Health check ping successful");
+    } catch (error) {
+      console.log("❌ Health check ping failed:", error.message);
+    }
+  }, 14 * 60 * 1000); // 14 minutes
+}
+
 // -------------------- PUBLIC ROUTES --------------------
 app.get("/api/virtual-money/public-reward-status", (_, res) => {
   return res.success("Next reward in 12h", { canClaim: false, balance: 10000 });
