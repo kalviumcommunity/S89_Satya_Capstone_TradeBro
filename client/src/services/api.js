@@ -49,26 +49,36 @@ api.interceptors.response.use(
     if (error.code === 'ERR_NETWORK' || error.response?.status === 404) {
       backendAvailable = false;
       lastCheckTime = Date.now();
-      // For network errors, we don't throw, but let the specific API call handle the fallback
+      console.warn('🚫 Network error detected, backend marked as unavailable');
     }
 
     if (error.response?.status === 401) {
+      const errorCode = error.response?.data?.code;
+      
+      if (errorCode === 'TOKEN_EXPIRED') {
+        console.log('🕑 Token expired, redirecting to login');
+      } else {
+        console.log('🔒 Authentication failed, redirecting to login');
+      }
+      
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      // In a React app, it's better to use a context and router.navigate for this
+      localStorage.removeItem('redirectAfterLogin');
+      
       if (window.location.pathname !== '/login' && window.location.pathname !== '/signup') {
-        window.location.href = '/login';
+        window.location.href = '/login?reason=session_expired';
       }
     }
 
     // Handle 500 errors gracefully in production
     if (error.response?.status >= 500 && import.meta.env.PROD) {
-      console.error('Server error:', error.response.status);
+      console.error('🚨 Server error:', error.response.status);
       return Promise.resolve({
         data: {
           success: false,
           message: 'Service temporarily unavailable. Please try again later.',
           fallback: true,
+          code: 'SERVICE_UNAVAILABLE'
         },
       });
     }
