@@ -130,23 +130,22 @@ router.get('/google/callback',
             if (!req.user) {
                 console.error('OAuth callback: req.user is undefined');
                 const redirectUrl = process.env.CLIENT_URL || 'https://tradebro.netlify.app';
-                return res.redirect(`${redirectUrl}/login?error=oauth_failed`);
+                return res.redirect(`${redirectUrl}/auth/oauth-callback?error=oauth_failed`);
             }
 
             const token = generateToken(req.user);
             const userResponse = createUserResponse(req.user);
             
-            // Redirect directly to dashboard with token and user data
+            // Store auth data in localStorage via a callback page
             const redirectUrl = process.env.CLIENT_URL || 'https://tradebro.netlify.app';
-            // Encode user object for URL safety
-            const callbackUrl = `${redirectUrl}/dashboard?token=${token}&user=${encodeURIComponent(JSON.stringify(userResponse))}`;
+            const callbackUrl = `${redirectUrl}/auth/oauth-callback?success=true&google=true&token=${token}&user=${encodeURIComponent(JSON.stringify(userResponse))}`;
             
             console.log('OAuth successful, redirecting to:', callbackUrl);
             res.redirect(callbackUrl);
         } catch (error) {
             console.error('OAuth callback error:', error);
             const redirectUrl = process.env.CLIENT_URL || 'https://tradebro.netlify.app';
-            res.redirect(`${redirectUrl}/login?error=oauth_failed&details=${encodeURIComponent(error.message)}`);
+            res.redirect(`${redirectUrl}/auth/oauth-callback?error=oauth_failed&details=${encodeURIComponent(error.message)}`);
         }
     })
 );
