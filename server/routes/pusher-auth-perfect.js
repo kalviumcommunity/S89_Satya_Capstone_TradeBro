@@ -24,7 +24,14 @@ const pusher = new Pusher(pusherConfig);
  * Channel naming convention: `private-user-[userId]`
  */
 router.post('/auth', provideDefaultUser, (req, res) => {
+    console.log('Pusher auth request:', {
+        user: req.user,
+        channel: req.body.channel_name,
+        headers: req.headers.authorization ? 'Token present' : 'No token'
+    });
+    
     if (!req.user || !req.user.id) {
+        console.error('Pusher auth failed: No user found');
         return res.status(401).send('Not authorized');
     }
 
@@ -33,11 +40,16 @@ router.post('/auth', provideDefaultUser, (req, res) => {
     
     // Validate that the user is trying to subscribe to their own private channel
     if (channelName !== `private-user-${req.user.id}`) {
+        console.error('Pusher auth failed: Channel mismatch', {
+            expected: `private-user-${req.user.id}`,
+            received: channelName
+        });
         return res.status(403).send('Forbidden: Not authorized to access this channel.');
     }
 
     try {
         const authResponse = pusher.authorizeChannel(socketId, channelName);
+        console.log('Pusher auth successful for user:', req.user.id);
         res.send(authResponse);
     } catch (error) {
         console.error('Pusher authentication error:', error);
