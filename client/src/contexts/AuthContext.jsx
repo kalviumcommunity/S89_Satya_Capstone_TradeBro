@@ -44,9 +44,11 @@ export const AuthProvider = ({ children }) => {
         const newUserData = result.user || updatedUserData;
         localStorage.setItem('user', JSON.stringify(newUserData));
         setUser(newUserData);
-        return { success: true };
+        console.log('Profile updated successfully:', newUserData.email);
+        return { success: true, user: newUserData };
       } else {
-        throw new Error('Failed to update profile');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update profile');
       }
     } catch (error) {
       console.error('Error updating profile:', error);
