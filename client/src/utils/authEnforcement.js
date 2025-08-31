@@ -86,9 +86,22 @@ export const validateAuthToken = () => {
   try {
     // Basic token format validation
     const parts = token.split('.');
-    return parts.length === 3; // JWT format check
+    if (parts.length !== 3) return false;
+    
+    // Check if token is expired (basic check)
+    const payload = JSON.parse(atob(parts[1]));
+    const currentTime = Math.floor(Date.now() / 1000);
+    
+    if (payload.exp && payload.exp < currentTime) {
+      console.log('Token has expired');
+      clearAuthData();
+      return false;
+    }
+    
+    return true;
   } catch (error) {
     console.error('Token validation error:', error);
+    clearAuthData();
     return false;
   }
 };
@@ -149,7 +162,7 @@ export const enforceAuthentication = (isAuthenticated, currentPath, navigate, sh
     if (redirectInfo.reason === 'authentication_required') {
       setRedirectAfterLogin(currentPath);
       
-      // Show toast notification if function provided
+
       if (showToast) {
         showToast.warning('Please log in to access TradeBro features', {
           position: "top-center",
