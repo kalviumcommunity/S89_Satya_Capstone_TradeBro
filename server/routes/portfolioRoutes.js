@@ -1,31 +1,17 @@
 const express = require('express');
-const { verifyToken } = require('../utils/tokenUtils');
+const { verifyToken } = require('../middleware/auth');
 const VirtualMoney = require('../models/VirtualMoney');
 const asyncHandler = require('../utils/asyncHandler');
 
 const router = express.Router();
 
-// Middleware to verify JWT token
-const authenticateToken = asyncHandler(async (req, res, next) => {
-  const token = req.header('Authorization')?.replace('Bearer ', '');
-  
-  if (!token) {
-    return res.status(401).json({ success: false, message: 'Access denied' });
-  }
+// Apply authentication to all routes
+router.use(verifyToken);
 
+// Get user's portfolio
+router.get('/', asyncHandler(async (req, res) => {
   try {
-    const decoded = verifyToken(token);
-    req.userId = decoded.id;
-    next();
-  } catch (error) {
-    res.status(401).json({ success: false, message: 'Invalid token' });
-  }
-});
-
-// Get portfolio
-router.get('/:userId', authenticateToken, asyncHandler(async (req, res) => {
-  try {
-    const portfolio = await VirtualMoney.findOne({ userId: req.params.userId });
+    const portfolio = await VirtualMoney.findOne({ userId: req.user.id });
     
     if (!portfolio) {
       return res.status(404).json({ success: false, message: 'Portfolio not found' });
@@ -39,16 +25,17 @@ router.get('/:userId', authenticateToken, asyncHandler(async (req, res) => {
 }));
 
 // Create portfolio
-router.post('/create', authenticateToken, asyncHandler(async (req, res) => {
+router.post('/create', asyncHandler(async (req, res) => {
   try {
-    const existingPortfolio = await VirtualMoney.findOne({ userId: req.userId });
+    const existingPortfolio = await VirtualMoney.findOne({ userId: req.user.id });
     
     if (existingPortfolio) {
       return res.json({ success: true, data: existingPortfolio });
     }
 
     const newPortfolio = new VirtualMoney({
-      userId: req.userId,
+      userId: req.user.id,
+      userEmail: req.user.email,
       balance: 10000,
       totalValue: 10000,
       availableCash: 10000,

@@ -21,6 +21,7 @@ import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
 import Saytrix from "./pages/Saytrix";
 import StockDetail from "./pages/StockDetail";
+import Trades from "./pages/Trades";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
@@ -311,6 +312,18 @@ const AppRoutes = ({
                 user={user}
               >
                 <Saytrix user={user} theme={theme} />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/trades"
+            element={
+              <ProtectedRoute
+                isAuthenticated={isAuthenticated}
+                loading={loading}
+                user={user}
+              >
+                <Trades user={user} theme={theme} />
               </ProtectedRoute>
             }
           />

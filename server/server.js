@@ -57,9 +57,7 @@ const contactRoutes = require("./routes/contactRoutes");
 const leaderboardRoutes = require("./routes/leaderboardRoutes");
 const referralRoutes = require("./routes/referralRoutes");
 const pusherRoutes = require("./routes/pusherRoutes");
-const rewardsRoutes = require("./routes/rewards");
-const userRoutes = require("./routes/user");
-const testUserDataRoutes = require("./routes/testUserData");
+
 
 // Passport configuration
 require('./passport.config');
@@ -213,12 +211,11 @@ app.use("/api/live-charts", liveChartRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
+app.use("/api/trades", require("./routes/tradesRoutes"));
 app.use("/api/referral", referralRoutes);
 app.use("/pusher", pusherRoutes);
 app.use("/pusher", require("./routes/pusher-auth-perfect"));
-app.use("/api/rewards", rewardsRoutes);
-app.use("/api/user", userRoutes);
-app.use("/api/test", testUserDataRoutes);
+
 
 
 // 404 handler
