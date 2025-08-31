@@ -28,11 +28,11 @@ optionalEnvVars.forEach(v => {
 // -------------------- ROUTES --------------------
 const responseMiddleware = require("./middleware/responseMiddleware");
 const authRoutes = require("./routes/authRoutes");
-const twoFactorRoutes = require("./routes/twoFactorRoutes");
+
 const portfolioRoutes = require("./routes/portfolioRoutes");
 const dataRoutes = require("./routes/apiRoutes");
-const settingsRoutes = require("./routes/settings");
-const userSettingsRoutes = require("./routes/userSettingsRoutes");
+
+
 const saytrixRoutes = require("./routes/saytrix");
 const saytrixRoutesAdvanced = require("./routes/saytrixRoutes");
 const chatbotRoutes = require("./routes/chatbotRoutes");
@@ -43,7 +43,7 @@ const proxyRoutes = require("./routes/proxyRoutes");
 const stocksRoutes = require("./routes/stocks");
 const stockRoutes = require("./routes/stockRoutes");
 const stockSearchRoutes = require("./routes/stockSearchRoutes");
-const notificationRoutes = require("./routes/notificationRoutes");
+
 const watchlistRoutes = require("./routes/watchlistRoutes");
 const enhancedWatchlistRoutes = require("./routes/enhancedWatchlistRoutes");
 const orderRoutes = require("./routes/orderRoutes");
@@ -57,13 +57,16 @@ const contactRoutes = require("./routes/contactRoutes");
 const leaderboardRoutes = require("./routes/leaderboardRoutes");
 const referralRoutes = require("./routes/referralRoutes");
 const pusherRoutes = require("./routes/pusherRoutes");
+const rewardsRoutes = require("./routes/rewards");
+const userRoutes = require("./routes/user");
+const testUserDataRoutes = require("./routes/testUserData");
 
 // Passport configuration
 require('./passport.config');
 
 // -------------------- EXPRESS APP --------------------
 const app = express();
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5000;
 
 // -------------------- CORS --------------------
 const allowedOrigins = [
@@ -171,11 +174,11 @@ app.get("/api/stocks/search", async (req, res) => {
 
 // -------------------- API ROUTES --------------------
 app.use("/api/auth", authRoutes);
-app.use("/api/auth/2fa", twoFactorRoutes);
+
 app.use("/api/portfolio", portfolioRoutes);
 app.use("/api/data", dataRoutes);
-app.use("/api/settings", settingsRoutes);
-app.use("/api/user-settings", userSettingsRoutes);
+
+
 app.use("/api/saytrix", saytrixRoutes);
 app.use("/api/saytrix/advanced", saytrixRoutesAdvanced);
 app.use("/api/chatbot", chatbotRoutes);
@@ -186,7 +189,7 @@ app.use("/api/proxy", proxyRoutes);
 app.use("/api/stocks", stocksRoutes);
 app.use("/api/stock", stockRoutes);
 app.use("/api/stock-search", stockSearchRoutes);
-app.use("/api/notifications", notificationRoutes);
+
 app.use("/api/watchlist", watchlistRoutes);
 app.use("/api/watchlist/enhanced", enhancedWatchlistRoutes);
 app.use("/api/orders", orderRoutes);
@@ -200,7 +203,10 @@ app.use("/api/contact", contactRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/referral", referralRoutes);
 app.use("/pusher", pusherRoutes);
-
+app.use("/pusher", require("./routes/pusher-auth-perfect"));
+app.use("/api/rewards", rewardsRoutes);
+app.use("/api/user", userRoutes);
+app.use("/api/test", testUserDataRoutes);
 
 
 // 404 handler
@@ -211,8 +217,25 @@ app.use((req, res) => {
 
 // Global error handler
 app.use((err, req, res, next) => {
-  console.error(err);
-  res.status(500).json({ success: false, message: "Internal Server Error", error: err.message });
+  console.error('🚨 Global Error:', {
+    message: err.message,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+    url: req.url,
+    method: req.method,
+    timestamp: new Date().toISOString()
+  });
+  
+  const statusCode = err.statusCode || err.status || 500;
+  const message = process.env.NODE_ENV === 'production' 
+    ? 'Internal Server Error' 
+    : err.message;
+  
+  res.status(statusCode).json({ 
+    success: false, 
+    message,
+    code: err.code || 'INTERNAL_ERROR',
+    ...(process.env.NODE_ENV === 'development' && { error: err.message })
+  });
 });
 
 // -------------------- MONGODB CONNECTION --------------------
