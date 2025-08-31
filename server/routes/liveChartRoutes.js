@@ -388,4 +388,88 @@ router.get('/historical/:symbol', async (req, res) => {
 });
 
 
+// Route: Get latest candle data for a symbol
+router.get('/latest/:symbol', async (req, res) => {
+    try {
+        const { symbol } = req.params;
+        console.log(`🔄 Latest candle request for ${symbol}`);
+
+        // Fetch 1-minute intraday data to get the latest candle
+        const rawData = await fetchIntradayData(symbol);
+        
+        if (!rawData || rawData.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'No data available for symbol',
+                symbol
+            });
+        }
+
+        // Get the most recent candle
+        const latestCandle = rawData[0]; // FMP returns newest first
+        
+        const formattedCandle = {
+            time: Math.floor(new Date(latestCandle.date).getTime() / 1000),
+            open: parseFloat(latestCandle.open),
+            high: parseFloat(latestCandle.high),
+            low: parseFloat(latestCandle.low),
+            close: parseFloat(latestCandle.close),
+            volume: parseInt(latestCandle.volume || 0)
+        };
+
+        res.json({
+            success: true,
+            data: formattedCandle,
+            symbol,
+            timestamp: Date.now()
+        });
+
+    } catch (error) {
+        console.error(`❌ Error fetching latest candle for ${req.params.symbol}:`, error.message);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch latest candle data',
+            error: error.message
+        });
+    }
+});
+
+// Route: Get market status for an exchange
+router.get('/market-status/:exchange', async (req, res) => {
+    try {
+        const { exchange } = req.params;
+        console.log(`🔄 Market status request for ${exchange}`);
+
+        const marketOpen = isMarketOpen(exchange);
+        
+        // Get current time in the exchange's timezone
+        let targetTimeZone = 'America/New_York';
+        if (exchange.toUpperCase() === 'NSE' || exchange.toUpperCase() === 'BSE') {
+            targetTimeZone = 'Asia/Kolkata';
+        }
+
+        const now = new Date();
+        const exchangeTime = now.toLocaleString('en-US', { timeZone: targetTimeZone });
+
+        res.json({
+            success: true,
+            data: {
+                exchange: exchange.toUpperCase(),
+                isOpen: marketOpen,
+                exchangeTime,
+                timezone: targetTimeZone,
+                timestamp: Date.now()
+            }
+        });
+
+    } catch (error) {
+        console.error(`❌ Error fetching market status for ${req.params.exchange}:`, error.message);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch market status',
+            error: error.message
+        });
+    }
+});
+
 module.exports = router;
