@@ -136,9 +136,9 @@ router.get('/google/callback',
             const token = generateToken(req.user);
             const userResponse = createUserResponse(req.user);
             
-            // Store auth data in localStorage via a callback page
+            // Redirect directly to dashboard with auth data
             const redirectUrl = process.env.CLIENT_URL || 'https://tradebro.netlify.app';
-            const callbackUrl = `${redirectUrl}/auth/oauth-callback?success=true&google=true&token=${token}&user=${encodeURIComponent(JSON.stringify(userResponse))}`;
+            const callbackUrl = `${redirectUrl}/dashboard?token=${token}&user=${encodeURIComponent(JSON.stringify(userResponse))}`;
             
             console.log('OAuth successful, redirecting to:', callbackUrl);
             res.redirect(callbackUrl);
