@@ -18,51 +18,6 @@ const useSaytrix = () => {
   const messagesEndRef = useRef(null);
   const synthRef = useRef(null);
 
-  useEffect(() => {
-    const welcomeMessage = {
-      id: 'welcome_' + Date.now(),
-      type: 'assistant',
-      content: '🚀 Hello! I\'m Saytrix, your AI-powered stock market assistant. I can help you with:\n\n📊 Real-time stock prices and data\n📈 Market analysis and trends\n🏢 Company information and fundamentals\n⭐ Top gainers and losers\n📰 Latest market news\n🎓 Stock market education\n\nWhat would you like to know about the stock market today?\n\n💡 Try using voice input by clicking the microphone button!',
-      timestamp: new Date(),
-      suggestions: [
-        'Show me NIFTY performance',
-        "What are today's top gainers?",
-        'Tell me about RELIANCE stock',
-        'Latest market news',
-      ],
-      confidence: 'high',
-      cardType: 'welcome',
-    };
-    setMessages([welcomeMessage]);
-    initializeSpeechSynthesis();
-  }, []);
-
-  // Listen for voice transcript events
-  useEffect(() => {
-    const handleVoiceTranscript = (event) => {
-      const { transcript } = event.detail;
-      setInputText(transcript);
-      setTimeout(() => {
-        processVoiceCommand(transcript);
-      }, 300);
-    };
-
-    window.addEventListener('voiceTranscript', handleVoiceTranscript);
-    return () => {
-      window.removeEventListener('voiceTranscript', handleVoiceTranscript);
-    };
-  }, []);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  const initializeSpeechSynthesis = () => {
-    if ('speechSynthesis' in window) {
-      synthRef.current = window.speechSynthesis;
-    }
-  };
-
   const sendMessage = useCallback(async (messageText = inputText, isVoiceInput = false) => {
     if (!messageText.trim() || isProcessing) return;
 
@@ -95,6 +50,13 @@ const useSaytrix = () => {
         };
         setMessages((prev) => [...prev, assistantMessage]);
 
+        // Handle navigation actions
+        if (response.data.action && response.data.action.type === 'navigate') {
+          setTimeout(() => {
+            navigate(response.data.action.path);
+          }, 1000);
+        }
+
         if (isVoiceInput) {
           speakText(assistantMessage.content);
         }
@@ -125,91 +87,55 @@ const useSaytrix = () => {
     }
   }, [inputText, isProcessing, confidence]);
 
-  const processVoiceCommand = useCallback(async (transcript) => {
-    if (isProcessing) return;
-    
-    const lowerTranscript = transcript.toLowerCase().trim();
-    
-    // Check for navigation commands first
-    const navigationResult = processNavigationCommand(lowerTranscript);
-    if (navigationResult.handled) {
-      // Show navigation message
-      const navMessage = {
-        id: Date.now(),
-        type: 'assistant',
-        content: `🧭 **Navigation Command**\n\n${navigationResult.message}`,
-        timestamp: new Date(),
-        cardType: 'navigation'
-      };
-      setMessages(prev => [...prev, navMessage]);
-      
-      // Speak confirmation
-      speak(navigationResult.message);
-      return;
-    }
-    
-    setConfidence(determineConfidence(transcript));
-    await sendMessage(transcript, true);
-  }, [isProcessing, navigate, speak]);
+  useEffect(() => {
+    const welcomeMessage = {
+      id: 'welcome_' + Date.now(),
+      type: 'assistant',
+      content: `🚀 **Welcome to Saytrix!** 🚀
 
-  const processNavigationCommand = (command) => {
-    // Navigation patterns
-    const navCommands = {
-      // Charts/Trading
-      'charts': { path: '/charts', message: 'Opening charts page' },
-      'chart': { path: '/charts', message: 'Opening charts page' },
-      'trading': { path: '/trading', message: 'Opening trading page' },
-      'trade': { path: '/trading', message: 'Opening trading page' },
-      
-      // Portfolio & Dashboard
-      'dashboard': { path: '/dashboard', message: 'Going to dashboard' },
-      'home': { path: '/dashboard', message: 'Going to home page' },
-      'portfolio': { path: '/portfolio', message: 'Opening portfolio' },
-      
-      // Orders & History
-      'orders': { path: '/orders', message: 'Opening orders page' },
-      'order': { path: '/orders', message: 'Opening orders page' },
-      'history': { path: '/history', message: 'Opening history page' },
-      'trades': { path: '/trades', message: 'Opening trades page' },
-      
-      // Market Data
-      'watchlist': { path: '/watchlist', message: 'Opening watchlist' },
-      'news': { path: '/news', message: 'Opening news page' },
-      'notifications': { path: '/notifications', message: 'Opening notifications' },
-      
-      // Settings & Profile
-      'profile': { path: '/profile', message: 'Opening profile page' },
-      'settings': { path: '/settings', message: 'Opening settings page' },
-      'saytrix': { path: '/saytrix', message: 'Opening Saytrix AI chat' }
+I'm your AI-powered trading assistant here to help you navigate the Indian stock markets with confidence.
+
+Note: Currently displaying demo data for illustration purposes.
+
+Ready to start your trading journey? Ask me anything about the markets!`,
+      timestamp: new Date(),
+      suggestions: [
+        'Market overview',
+        'Top stocks',
+        'Sector analysis',
+        'Trading tips'
+      ],
+      confidence: 'high',
+      cardType: 'welcome',
     };
-    
-    // Check for direct navigation commands
-    for (const [keyword, config] of Object.entries(navCommands)) {
-      if (command.includes(keyword)) {
-        navigate(config.path);
-        return { handled: true, message: config.message };
-      }
+    setMessages([welcomeMessage]);
+    initializeSpeechSynthesis();
+  }, []);
+
+  // Listen for voice transcript events
+  useEffect(() => {
+    const handleVoiceTranscript = (event) => {
+      const { transcript } = event.detail;
+      setInputText(transcript);
+      setTimeout(() => {
+        sendMessage(transcript, true);
+      }, 300);
+    };
+
+    window.addEventListener('voiceTranscript', handleVoiceTranscript);
+    return () => {
+      window.removeEventListener('voiceTranscript', handleVoiceTranscript);
+    };
+  }, [sendMessage]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const initializeSpeechSynthesis = () => {
+    if ('speechSynthesis' in window) {
+      synthRef.current = window.speechSynthesis;
     }
-    
-    // Check for redirect/go/open commands
-    const redirectPatterns = [
-      /(?:redirect|go|open|take|navigate).*?(?:to|me to)?\s*(charts?|trading?|dashboard|home|portfolio|orders?|history|trades?|watchlist|news|notifications?|profile|settings|saytrix)/i,
-      /(charts?|trading?|dashboard|home|portfolio|orders?|history|trades?|watchlist|news|notifications?|profile|settings|saytrix)\s*page/i
-    ];
-    
-    for (const pattern of redirectPatterns) {
-      const match = command.match(pattern);
-      if (match) {
-        const destination = match[1].toLowerCase();
-        const config = navCommands[destination] || navCommands[destination.replace(/s$/, '')];
-        if (config) {
-          navigate(config.path);
-          return { handled: true, message: config.message };
-        }
-      }
-    }
-    
-    return { handled: false };
   };
 
   const speakText = (text) => {
@@ -224,17 +150,13 @@ const useSaytrix = () => {
         .replace(/\n+/g, '. ')
         .substring(0, 200);
 
-      // Use VoiceContext speak function
       speak(cleanText);
       
-      // Set speaking to false after estimated time
       setTimeout(() => {
         setIsSpeaking(false);
-      }, cleanText.length * 50); // Rough estimate
+      }, cleanText.length * 50);
     }
   };
-
-  // Voice functions are now handled by VoiceContext
 
   const determineConfidence = (content) => {
     if (content.includes('₹') || content.includes('stock') || content.includes('market')) {
@@ -265,17 +187,19 @@ const useSaytrix = () => {
   
   const generateFallbackResponse = (input) => {
     const lowerInput = input.toLowerCase();
-    if (lowerInput.includes('reliance') || lowerInput.includes('ril')) {
-      return `**Reliance Industries (RELIANCE)**\n\n**Current Price:** ₹2,465 *(demo data)*\n\n**Company Overview:**\nReliance Industries is one of India's largest conglomerates with diversified business interests across multiple sectors.\n\n**Key Business Segments:**\n• Petrochemicals and Oil Refining\n• Telecommunications (Jio)\n• Retail (Reliance Retail)\n• Digital Services\n\n**Investment Highlights:**\n• Strong market position in each segment\n• Consistent dividend history\n• Blue-chip investment with long-term growth potential\n• Strategic focus on digital transformation\n\nWould you like to explore its **fundamentals** or **recent performance** in detail?`;
+    
+    if (lowerInput.includes('invest') || lowerInput.includes('investment')) {
+      return `💰 **I'd be happy to help you with investing!**\n\n🎯 **Getting Started:**\n• Open a Demat account with a registered broker\n• Start with index funds or blue-chip stocks\n• Begin with small amounts you can afford to lose\n• Learn about SIP (Systematic Investment Plans)\n\n📚 **Key Concepts:**\n• P/E ratio, market cap, dividend yield\n• Risk management and diversification\n• Fundamental vs technical analysis\n\n⚠️ **Important:** This is a virtual platform for learning. Always do your own research for real investments.`;
     }
-    return `**Welcome to Saytrix!** 🚀\n\nI'm your AI-powered trading assistant here to help you navigate the Indian stock markets with confidence.\n\nNote: Currently displaying demo data for illustration purposes.\n\nReady to start your trading journey? Ask me anything about the markets!`;
+    
+    if (lowerInput.includes('price') || lowerInput.includes('quote')) {
+      return `📈 **Stock Price Information**\n\nI can help you with stock prices! However, I'm currently in offline mode with limited data.\n\n**Popular Indian Stocks:**\n• RELIANCE - ₹2,465 *(demo)*\n• TCS - ₹3,245 *(demo)*\n• HDFC Bank - ₹1,678 *(demo)*\n• Infosys - ₹1,456 *(demo)*\n\nWhich specific stock would you like to know about?`;
+    }
+    
+    return `💡 I understand you're asking about: "${input}"\n\nI'm your AI stock market assistant and I can help with:\n\n📈 Stock prices and company information\n📊 Market trends and analysis\n🎓 Investment education and tips\n📰 Market news and updates\n💼 Trading strategies\n\nCould you be more specific about what you'd like to know?`;
   };
 
   const generateSuggestions = (input) => {
-    const lowerInput = input.toLowerCase();
-    if (lowerInput.includes('reliance') || lowerInput.includes('ril')) {
-      return ['Tell me about TCS', 'Show HDFC Bank info', 'Compare IT stocks'];
-    }
     return ['Market overview', 'Top stocks', 'Sector analysis', 'Trading tips'];
   };
 
@@ -285,9 +209,15 @@ const useSaytrix = () => {
     const welcomeMessage = {
       id: 'welcome_' + Date.now(),
       type: 'assistant',
-      content: '🚀 Hello! I\'m Saytrix, your AI-powered stock market assistant. I can help you with...',
+      content: `🚀 **Welcome to Saytrix!** 🚀
+
+I'm your AI-powered trading assistant here to help you navigate the Indian stock markets with confidence.
+
+Note: Currently displaying demo data for illustration purposes.
+
+Ready to start your trading journey? Ask me anything about the markets!`,
       timestamp: new Date(),
-      suggestions: ['Show me NIFTY performance', 'What are today\'s top gainers?'],
+      suggestions: ['Market overview', 'Top stocks', 'Sector analysis', 'Trading tips'],
       confidence: 'high',
       cardType: 'welcome',
     };
@@ -327,8 +257,8 @@ const useSaytrix = () => {
     handleModeChange,
     handleBuyStock: () => navigate('/trading'),
     handleSellStock: () => navigate('/trading'),
-    handleSuggestionClick: (suggestion) => sendMessage(suggestion),
-    handleRecentQuestionClick: (question) => sendMessage(question),
+    handleSuggestionClick: (suggestion) => sendMessage(suggestion, false),
+    handleRecentQuestionClick: (question) => sendMessage(question, false),
     setError,
   };
 };

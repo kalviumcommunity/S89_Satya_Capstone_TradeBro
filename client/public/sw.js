@@ -15,19 +15,26 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
-  
-  // Skip chrome-extension and other unsupported schemes
-  if (!event.request.url.startsWith('http')) return;
+  // Only handle GET requests from http/https
+  if (event.request.method !== 'GET' || 
+      !event.request.url.startsWith('http') ||
+      event.request.url.includes('chrome-extension') ||
+      event.request.url.includes('moz-extension')) {
+    return;
+  }
   
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        if (response.status === 200 && event.request.url.startsWith('http')) {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME)
-            .then(cache => cache.put(event.request, responseClone))
-            .catch(() => {}); // Ignore cache errors
+        if (response && response.status === 200) {
+          try {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME)
+              .then(cache => cache.put(event.request, responseClone))
+              .catch(() => {}); // Ignore cache errors silently
+          } catch (e) {
+            // Ignore any caching errors
+          }
         }
         return response;
       })

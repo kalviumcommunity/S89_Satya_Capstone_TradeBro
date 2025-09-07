@@ -558,56 +558,55 @@
   margin: 2px 0;
 }
 
-/* Saytrix Voice Button */
+
+
+/* === Saytrix Trigger Button === */
 .saytrix-trigger-btn {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #10b981, #059669);
+  background-color: #10b981; /* Emerald base */
   border: none;
-  color: white;
+  color: #fff;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 4px rgba(16, 185, 129, 0.3);
-  position: relative;
-  overflow: hidden;
   flex-shrink: 0;
+  transition: transform 0.2s ease, background-color 0.2s ease;
 }
 
+/* Hover State */
 .saytrix-trigger-btn:hover {
   transform: scale(1.05);
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
-  background: linear-gradient(135deg, #059669, #047857);
+  background-color: #059669; /* Darker emerald */
 }
 
+/* Active State (e.g., recording) */
 .saytrix-trigger-btn.active {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
-  animation: voicePulse 1.5s infinite;
+  background-color: #ef4444; /* Red alert */
+  animation: voicePulse 1s infinite;
 }
 
+/* SVG Icon Styling */
 .saytrix-trigger-btn svg {
-  width: 14px;
-  height: 14px;
-  z-index: 2;
-  stroke-width: 2;
+  width: 16px;
+  height: 16px;
 }
 
+/* Focus Accessibility */
+.saytrix-trigger-btn:focus {
+  outline: 2px solid #059669;
+  outline-offset: 2px;
+}
+
+/* === Voice Pulse Animation === */
 @keyframes voicePulse {
-  0%, 100% { 
-    transform: scale(1);
-    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
-  }
-  50% { 
-    transform: scale(1.02);
-    box-shadow: 0 3px 12px rgba(239, 68, 68, 0.6);
-  }
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
 }
 
-/* Sidebar Notification Badge Styles */
+/* === Sidebar Icon Wrapper (for badges or overlays) === */
 .sidebar-icon-wrapper {
   position: relative;
   display: flex;
@@ -615,6 +614,19 @@
   justify-content: center;
 }
 
+/* Optional: Notification Badge */
+.sidebar-icon-wrapper::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  background-color: #ef4444;
+  border-radius: 50%;
+}
+
+/* Sidebar Notification Badge Styles */
 .notification-badge {
   position: absolute;
   top: -6px;

@@ -1,33 +1,43 @@
-// Simple service worker for caching
-const CACHE_NAME = 'tradebro-v1';
-const urlsToCache = [
-  '/',
-  '/static/js/bundle.js',
-  '/static/css/main.css',
-  '/manifest.json'
-];
+const CACHE_NAME = 'tradebro-v2';
+const OLD_CACHES = ['tradebro-v1'];
 
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(urlsToCache))
+    Promise.all([
+      ...OLD_CACHES.map(cache => caches.delete(cache)),
+      self.clients.claim()
+    ])
   );
 });
 
 self.addEventListener('fetch', (event) => {
+  // Only handle GET requests from http/https
+  if (event.request.method !== 'GET' || 
+      !event.request.url.startsWith('http') ||
+      event.request.url.includes('chrome-extension') ||
+      event.request.url.includes('moz-extension')) {
+    return;
+  }
+  
   event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        if (response) {
-          return response;
+    fetch(event.request)
+      .then(response => {
+        if (response && response.status === 200) {
+          try {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME)
+              .then(cache => cache.put(event.request, responseClone))
+              .catch(() => {}); // Ignore cache errors silently
+          } catch (e) {
+            // Ignore any caching errors
+          }
         }
-        return fetch(event.request).catch(() => {
-          return new Response('Offline', {
-            status: 200,
-            statusText: 'OK',
-            headers: { 'Content-Type': 'text/plain' }
-          });
-        });
+        return response;
       })
+      .catch(() => caches.match(event.request))
   );
 });

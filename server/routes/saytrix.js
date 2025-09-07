@@ -15,211 +15,48 @@ const ChatHistory = require('../models/ChatHistory');
 // Import middleware
 const { asyncHandler, saytrixErrorHandler, notFoundHandler, requestLogger } = require('../middleware/errorHandler');
 
-/**
- * Helper function to parse voice intents (moved outside of the router)
- */
-const parseVoiceIntent = (response, originalMessage) => {
-  const message = originalMessage.toLowerCase();
-  const aiResponse = (response.message || '').toLowerCase();
 
-  // Navigation intents
-  if (message.includes('dashboard') || message.includes('home') || aiResponse.includes('dashboard') || aiResponse.includes('home')) {
-    return { type: 'navigate', data: '/dashboard' };
-  }
-  if (message.includes('portfolio') || aiResponse.includes('portfolio')) {
-    return { type: 'navigate', data: '/portfolio' };
-  }
-  if (message.includes('watchlist') || aiResponse.includes('watchlist')) {
-    return { type: 'navigate', data: '/watchlist' };
-  }
-  if (message.includes('market') || message.includes('stocks') || aiResponse.includes('market') || aiResponse.includes('stocks')) {
-    return { type: 'navigate', data: '/market' };
-  }
-  if (message.includes('news') || aiResponse.includes('news')) {
-    return { type: 'navigate', data: '/news' };
-  }
 
-  // Stock data intents
-  if (response.stockData) {
-    return { type: 'stock_data', data: response.stockData };
-  }
-
-  // Action intents
-  if (message.includes('buy') || message.includes('purchase')) {
-    return { type: 'action', data: 'buy_stock' };
-  }
-  if (message.includes('sell')) {
-    return { type: 'action', data: 'sell_stock' };
-  }
-
-  // Default to answer intent
-  return { type: 'answer', data: response.message };
-};
-
-/**
- * POST /chat - Main chat endpoint with Gemini integration and MongoDB storage.
- * - Handles both text and voice input.
- * - Saves chat history to MongoDB atomically.
- */
 router.post('/chat', asyncHandler(async (req, res) => {
-  const { message, sessionId, userId, userEmail, isVoiceInput = false, voiceConfidence = null } = req.body;
+  const { message } = req.body;
 
   if (!message || typeof message !== 'string') {
     return res.status(400).json({
       success: false,
-      error: 'Message is required and must be a string',
+      error: 'Message is required'
     });
   }
 
-  const currentSessionId = sessionId || uuidv4();
-
-  // Process message with Enhanced Gemini Service
-  const response = await geminiService.processMessage(message, userId);
-
-  // Prepare messages for MongoDB storage
-  const userMessage = {
-    text: message,
-    sender: 'user',
-    messageType: isVoiceInput ? 'voice_input' : 'text',
-    voiceMetadata: {
-      isVoiceInput: isVoiceInput,
-      confidence: voiceConfidence,
-      language: 'en-US',
-    },
-    timestamp: new Date(),
-    messageId: uuidv4(),
-  };
-
-  const assistantMessage = {
-    text: response.message,
-    sender: 'assistant',
-    messageType: response.stockData ? 'stock_query' : 'text',
-    stockData: response.stockData || null,
-    additionalData: response.additionalData || null,
-    timestamp: new Date(),
-    messageId: uuidv4(),
-  };
-
-  // Save to MongoDB if user information is available
-  if (userId && userEmail) {
-    try {
-      // Use findOneAndUpdate with upsert to create or update atomically
-      const chatSession = await ChatHistory.findOneAndUpdate(
-        { userId, sessionId: currentSessionId },
-        {
-          $push: { messages: { $each: [userMessage, assistantMessage] } },
-          $set: { userEmail, 'metadata.lastActiveAt': new Date(), 'metadata.userAgent': req.headers['user-agent'] || 'Unknown' },
-          $inc: { 'metadata.totalMessages': 2 },
-          $setOnInsert: {
-            'metadata.startedAt': new Date(),
-            'metadata.platform': 'web',
-          },
-        },
-        { new: true, upsert: true, runValidators: true }
-      );
-      console.log('✅ Chat history saved/updated to MongoDB');
-    } catch (dbError) {
-      console.error('❌ Error saving chat history to MongoDB:', dbError);
-      // The request should still succeed even if history fails to save
-    }
-  }
+  const response = await geminiService.processMessage(message);
 
   res.json({
     success: true,
     data: {
       response: response.message,
-      stockData: response.data,
-      additionalData: response.additionalData,
-      timestamp: new Date().toISOString(),
-      suggestions: response.suggestions || geminiService.getQuickSuggestions(message),
-      sessionId: currentSessionId,
-    },
+      suggestions: response.suggestions || ['Market overview', 'Top stocks', 'Investment tips', 'Latest news'],
+      action: response.action || null
+    }
   });
 }));
 
-/**
- * POST /voice - Voice command processing endpoint.
- * - Leverages the same processing logic as the /chat endpoint.
- */
 router.post('/voice', asyncHandler(async (req, res) => {
-  const { message, sessionId, userId, userEmail } = req.body;
+  const { message } = req.body;
 
   if (!message || typeof message !== 'string') {
     return res.status(400).json({
       success: false,
-      error: 'Message is required and must be a string',
+      error: 'Message is required'
     });
   }
 
-  const currentSessionId = sessionId || uuidv4();
-  const isVoiceInput = true;
-  const voiceConfidence = req.body.voiceConfidence || null;
-
-  // Re-use the main chat processing logic
-  const response = await geminiService.processMessage(message, userId);
-
-  // Parse intent for voice commands
-  const intent = parseVoiceIntent(response, message);
-
-  // Prepare messages for MongoDB storage
-  const userMessage = {
-    text: message,
-    sender: 'user',
-    messageType: isVoiceInput ? 'voice_input' : 'text',
-    voiceMetadata: {
-      isVoiceInput: isVoiceInput,
-      confidence: voiceConfidence,
-      language: 'en-US',
-    },
-    timestamp: new Date(),
-    messageId: uuidv4(),
-  };
-
-  const assistantMessage = {
-    text: response.message,
-    sender: 'assistant',
-    messageType: response.stockData ? 'stock_query' : 'text',
-    stockData: response.stockData || null,
-    additionalData: response.additionalData || null,
-    timestamp: new Date(),
-    messageId: uuidv4(),
-  };
-
-  // Save to MongoDB if user information is available
-  if (userId && userEmail) {
-    try {
-      const chatSession = await ChatHistory.findOneAndUpdate(
-        { userId, sessionId: currentSessionId },
-        {
-          $push: { messages: { $each: [userMessage, assistantMessage] } },
-          $set: { userEmail, 'metadata.lastActiveAt': new Date(), 'metadata.userAgent': req.headers['user-agent'] || 'Unknown' },
-          $inc: { 'metadata.totalMessages': 2 },
-          $setOnInsert: {
-            'metadata.startedAt': new Date(),
-            'metadata.platform': 'web',
-          },
-        },
-        { new: true, upsert: true, runValidators: true }
-      );
-      console.log('✅ Voice chat history saved/updated to MongoDB');
-    } catch (dbError) {
-      console.error('❌ Error saving voice chat history to MongoDB:', dbError);
-    }
-  }
+  const response = await geminiService.processMessage(message);
 
   res.json({
     success: true,
     data: {
       response: response.message,
-      intent: intent.type,
-      intentData: intent.data,
-      stockData: response.data,
-      additionalData: response.additionalData,
-      timestamp: new Date().toISOString(),
-      suggestions: response.suggestions || geminiService.getQuickSuggestions(message),
-      sessionId: currentSessionId,
-      isVoiceResponse: true,
-    },
+      isVoiceResponse: true
+    }
   });
 }));
 
