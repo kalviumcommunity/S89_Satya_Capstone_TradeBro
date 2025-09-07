@@ -29,10 +29,12 @@ const generateToken = (user, expiresIn = '7d') => {
       id: user._id,
       email: user.email,
       username: user.username,
-      fullName: user.fullName
+      fullName: user.fullName,
+      authProvider: user.authProvider || 'local',
+      iat: Math.floor(Date.now() / 1000)
     },
     process.env.JWT_SECRET,
-    { expiresIn }
+    { expiresIn, issuer: 'tradebro-api' }
   );
 };
 

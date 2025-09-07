@@ -1,0 +1,27 @@
+.typewriter-container {
+  display: inline-block;
+  min-height: 1.5em;
+}
+
+.typewriter-text {
+  font-family: var(--font-display);
+  font-weight: var(--font-weight-bold);
+  color: var(--accent-primary);
+  position: relative;
+}
+
+.cursor {
+  display: inline-block;
+  margin-left: 2px;
+  color: var(--accent-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+/* Dark mode adjustments */
+[data-theme="dark"] .typewriter-text {
+  color: var(--accent-primary);
+}
+
+[data-theme="dark"] .cursor {
+  color: var(--accent-primary);
+}

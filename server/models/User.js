@@ -62,6 +62,18 @@ const userSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    isEmailVerified: {
+        type: Boolean,
+        default: false
+    },
+    profilePicture: {
+        type: String,
+        default: null
+    },
+    lastLogin: {
+        type: Date,
+        default: Date.now
+    },
     createdAt: {
         type: Date,
         default: Date.now
@@ -73,6 +85,44 @@ const userSchema = new mongoose.Schema({
     },
     referredBy: {
         type: String,
+        default: null
+    },
+    
+    // Two-Factor Authentication
+    twoFactorEnabled: {
+        type: Boolean,
+        default: false
+    },
+    twoFactorSecret: {
+        type: String,
+        default: null
+    },
+    twoFactorTempSecret: {
+        type: String,
+        default: null
+    },
+    loginAlerts: {
+        type: Boolean,
+        default: true
+    },
+    
+    // Password Reset
+    resetPasswordToken: {
+        type: String,
+        default: null
+    },
+    resetPasswordExpires: {
+        type: Date,
+        default: null
+    },
+    
+    // Two-Factor Authentication Code
+    twoFactorCode: {
+        type: String,
+        default: null
+    },
+    twoFactorExpires: {
+        type: Date,
         default: null
     }
 });

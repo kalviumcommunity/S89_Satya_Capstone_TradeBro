@@ -1,0 +1,158 @@
+/* ========================================
+   🎤 VOICE STATUS INDICATOR
+   ======================================== */
+
+.voice-status-indicator {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.9), rgba(5, 150, 105, 0.8));
+  color: white;
+  padding: 12px 16px;
+  border-radius: 50px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+  backdrop-filter: blur(10px);
+  z-index: 9998;
+  transition: all 0.3s ease;
+  opacity: 0.8;
+  transform: translateY(0);
+}
+
+.voice-status-indicator:hover {
+  opacity: 1;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(16, 185, 129, 0.4);
+}
+
+.voice-status-indicator.listening {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.9), rgba(29, 78, 216, 0.8));
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+  animation: listeningPulse 2s infinite;
+}
+
+.voice-status-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  position: relative;
+}
+
+.voice-status-text {
+  white-space: nowrap;
+}
+
+.voice-pulse-rings {
+  position: absolute;
+  top: 50%;
+  left: 24px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.pulse-ring {
+  position: absolute;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  top: -10px;
+  left: -10px;
+  opacity: 0;
+  animation: pulseRing 2s infinite;
+}
+
+.pulse-ring.delay-1 {
+  animation-delay: 0.5s;
+}
+
+.pulse-ring.delay-2 {
+  animation-delay: 1s;
+}
+
+/* ========================================
+   🎨 ANIMATIONS
+   ======================================== */
+
+@keyframes listeningPulse {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-2px) scale(1.02);
+  }
+}
+
+@keyframes pulseRing {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+/* ========================================
+   🌙 DARK MODE STYLES
+   ======================================== */
+
+[data-theme="dark"] .voice-status-indicator {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.8), rgba(5, 150, 105, 0.7));
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+}
+
+[data-theme="dark"] .voice-status-indicator.listening {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.8), rgba(79, 70, 229, 0.7));
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+}
+
+/* ========================================
+   📱 MOBILE RESPONSIVE
+   ======================================== */
+
+@media (max-width: 768px) {
+  .voice-status-indicator {
+    bottom: 80px;
+    right: 16px;
+    padding: 10px 14px;
+    font-size: 0.8rem;
+  }
+
+  .voice-status-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .pulse-ring {
+    width: 18px;
+    height: 18px;
+    top: -9px;
+    left: -9px;
+  }
+}
+
+@media (max-width: 480px) {
+  .voice-status-indicator {
+    bottom: 70px;
+    right: 12px;
+    padding: 8px 12px;
+    font-size: 0.75rem;
+  }
+
+  .voice-status-text span {
+    display: none;
+  }
+
+  .voice-status-indicator::after {
+    content: "Say Saytrix";
+    font-size: 0.75rem;
+  }
+}

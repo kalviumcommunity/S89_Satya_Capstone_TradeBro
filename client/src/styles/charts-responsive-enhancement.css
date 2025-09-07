@@ -1,0 +1,483 @@
+/* ========================================
+   🚀 CHARTS RESPONSIVE ENHANCEMENT
+   ======================================== */
+
+/* ========================================
+   📱 MOBILE-FIRST APPROACH
+   ======================================== */
+
+/* Base Mobile Styles (320px+) */
+.charts-page {
+  --chart-padding: clamp(12px, 3vw, 24px);
+  --chart-gap: clamp(16px, 4vw, 32px);
+  --chart-border-radius: clamp(12px, 2vw, 20px);
+  --sidebar-width: clamp(280px, 25vw, 380px);
+}
+
+.charts-container {
+  padding: 0 var(--chart-padding);
+}
+
+.charts-header {
+  padding: var(--chart-padding);
+  border-radius: var(--chart-border-radius);
+  margin-bottom: var(--chart-gap);
+}
+
+.charts-content {
+  gap: var(--chart-gap);
+}
+
+.charts-sidebar,
+.chart-main {
+  border-radius: var(--chart-border-radius);
+  padding: var(--chart-padding);
+}
+
+/* ========================================
+   📊 ENHANCED GRID LAYOUTS
+   ======================================== */
+
+/* Mobile Portrait (320px - 480px) */
+@media (max-width: 480px) {
+  .charts-page {
+    padding: 8px;
+  }
+  
+  .charts-content {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    gap: 16px;
+  }
+  
+  .charts-sidebar {
+    order: 2;
+    position: static;
+    max-height: none;
+    overflow-y: visible;
+    padding: 12px;
+  }
+  
+  .chart-main {
+    order: 1;
+    min-height: 400px;
+  }
+  
+  .chart-control-btn {
+    width: 44px !important;
+    height: 44px !important;
+  }
+  
+  .chart-control-btn svg {
+    width: 22px !important;
+    height: 22px !important;
+  }
+  
+  /* Compact sidebar sections */
+  .sidebar-section {
+    margin-bottom: 16px;
+  }
+  
+  .sidebar-section h3 {
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+  
+  /* Horizontal timeframe buttons */
+  .timeframe-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  
+  .timeframe-btn {
+    flex: 1;
+    min-width: 40px;
+    padding: 8px 4px;
+    font-size: 11px;
+  }
+  
+  /* Compact chart type buttons */
+  .chart-type-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+  }
+  
+  .chart-type-btn {
+    padding: 10px 8px;
+    font-size: 12px;
+  }
+  
+  /* Compact indicators */
+  .indicators-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  
+  .indicator-item {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+}
+
+/* Mobile Landscape (481px - 767px) */
+@media (min-width: 481px) and (max-width: 767px) {
+  .charts-content {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    gap: 20px;
+  }
+  
+  .charts-sidebar {
+    order: 2;
+    position: static;
+    max-height: none;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    align-items: start;
+    padding: 16px;
+  }
+  
+  .chart-main {
+    order: 1;
+    min-height: 500px;
+  }
+  
+  .chart-control-btn {
+    width: 46px !important;
+    height: 46px !important;
+  }
+  
+  .timeframe-buttons {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+  
+  .chart-type-buttons {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+}
+
+/* Tablet Portrait (768px - 1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .charts-content {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+  }
+  
+  .charts-sidebar {
+    order: 2;
+    position: static;
+    max-height: none;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    align-items: start;
+  }
+  
+  .chart-main {
+    order: 1;
+    min-height: 500px;
+  }
+  
+  .timeframe-buttons {
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+  }
+  
+  .sidebar-section {
+    background: rgba(255, 255, 255, 0.5);
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(229, 231, 235, 0.5);
+  }
+}
+
+/* Desktop Small (1024px - 1199px) */
+@media (min-width: 1024px) and (max-width: 1199px) {
+  .charts-content {
+    grid-template-columns: 350px 1fr;
+    gap: 32px;
+  }
+  
+  .charts-sidebar {
+    position: sticky;
+    top: 24px;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    order: 1;
+  }
+  
+  .chart-main {
+    min-height: 650px;
+    order: 2;
+  }
+}
+
+/* Desktop Medium (1200px - 1439px) */
+@media (min-width: 1200px) and (max-width: 1439px) {
+  .charts-content {
+    grid-template-columns: 350px 1fr;
+    gap: 32px;
+  }
+  
+  .chart-main {
+    min-height: 650px;
+  }
+}
+
+/* Desktop Large (1440px+) */
+@media (min-width: 1440px) {
+  .charts-container {
+    max-width: 1900px;
+  }
+  
+  .charts-content {
+    grid-template-columns: 420px 1fr;
+    gap: 48px;
+  }
+  
+  .chart-main {
+    min-height: 750px;
+  }
+  
+  .charts-sidebar {
+    padding: 32px;
+    order: 1;
+  }
+  
+  .chart-control-btn {
+    width: 52px !important;
+    height: 52px !important;
+  }
+  
+  .chart-control-btn svg {
+    width: 26px !important;
+    height: 26px !important;
+  }
+}
+
+/* ========================================
+   🎯 ENHANCED INTERACTIVE ELEMENTS
+   ======================================== */
+
+/* Better button interactions */
+.timeframe-btn,
+.chart-type-btn,
+.indicator-item {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.timeframe-btn::before,
+.chart-type-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.1), transparent);
+  transition: left 0.5s;
+}
+
+.timeframe-btn:hover::before,
+.chart-type-btn:hover::before {
+  left: 100%;
+}
+
+/* Active state enhancements */
+.timeframe-btn.active,
+.chart-type-btn.active {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.indicator-item.active {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(16, 185, 129, 0.1));
+  border-color: #3b82f6;
+  transform: translateX(4px);
+}
+
+/* ========================================
+   🌟 VISUAL ENHANCEMENTS
+   ======================================== */
+
+/* Glassmorphism effects */
+.charts-header,
+.charts-sidebar,
+.chart-main {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* Subtle animations */
+.charts-sidebar,
+.chart-main {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.charts-sidebar:hover,
+.chart-main:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* ========================================
+   🎨 DARK MODE ENHANCEMENTS
+   ======================================== */
+
+[data-theme="dark"] .charts-page {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+}
+
+[data-theme="dark"] .charts-header,
+[data-theme="dark"] .charts-sidebar,
+[data-theme="dark"] .chart-main {
+  background: rgba(30, 41, 59, 0.8);
+  border-color: rgba(51, 65, 85, 0.5);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .sidebar-section {
+  background: rgba(51, 65, 85, 0.3);
+  border-color: rgba(71, 85, 105, 0.5);
+}
+
+[data-theme="dark"] .timeframe-btn.active,
+[data-theme="dark"] .chart-type-btn.active {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+/* ========================================
+   ⚡ PERFORMANCE OPTIMIZATIONS
+   ======================================== */
+
+.charts-page,
+.charts-container,
+.charts-content {
+  contain: layout style paint;
+}
+
+.charts-sidebar,
+.chart-main {
+  will-change: transform;
+}
+
+/* GPU acceleration for smooth animations */
+.timeframe-btn,
+.chart-type-btn,
+.indicator-item {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* ========================================
+   ♿ ACCESSIBILITY IMPROVEMENTS
+   ======================================== */
+
+/* Focus indicators */
+.timeframe-btn:focus,
+.chart-type-btn:focus,
+.indicator-item:focus {
+  outline: 3px solid rgba(59, 130, 246, 0.5);
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .charts-header,
+  .charts-sidebar,
+  .chart-main {
+    border-width: 2px;
+    border-color: currentColor;
+  }
+  
+  .timeframe-btn,
+  .chart-type-btn {
+    border-width: 2px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ========================================
+   🔧 UTILITY CLASSES
+   ======================================== */
+
+.charts-fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.charts-slide-up {
+  animation: slideUp 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { 
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ========================================
+   🎯 PRINT STYLES
+   ======================================== */
+
+@media print {
+  .charts-page {
+    background: white !important;
+    color: black !important;
+  }
+  
+  .charts-sidebar {
+    display: none;
+  }
+  
+  .charts-content {
+    grid-template-columns: 1fr;
+  }
+  
+  .chart-main {
+    box-shadow: none;
+    border: 2px solid black;
+  }
+  
+  .charts-header {
+    border-bottom: 2px solid black;
+  }
+}

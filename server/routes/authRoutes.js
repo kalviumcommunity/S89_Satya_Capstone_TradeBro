@@ -1,490 +1,381 @@
+// routes/authRoutes.js
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const passport = require('passport');
-const { OAuth2Client } = require('google-auth-library');
-
-// Import models
-const User = require('../models/User');
-
-// Import utilities and middleware
-const { generateToken, verifyToken, generateOAuthToken } = require('../utils/tokenUtils');
-const { createOrUpdateUserData, createUserResponse } = require('../utils/userDataUtils');
-const { validateSignup, validateLogin, validateProfileUpdate } = require('../middleware/validation');
-const { createRateLimit } = require('../middleware/rateLimiter');
-const asyncHandler = require('../utils/asyncHandler');
-
-// Import constants
-const {
-  USER_DEFAULTS,
-  SECURITY_CONFIG,
-  ERROR_MESSAGES,
-  SUCCESS_MESSAGES
-} = require('../config/constants');
+const User = require('../models/User'); // Adjust path if necessary
+const VirtualMoney = require('../models/VirtualMoney'); // Adjust path if necessary
+const asyncHandler = require('../utils/asyncHandler'); // Adjust path if necessary
+const { generateToken } = require('../utils/tokenUtils'); // Adjust path if necessary
+const { createOrUpdateUserData, createUserResponse } = require('../utils/userDataUtils'); // Adjust path if necessary
+const { validateSignup, validateLogin } = require('../middleware/validation'); // Adjust path if necessary
+const { createRateLimit } = require('../middleware/rateLimiter'); // Adjust path if necessary
+const { USER_DEFAULTS, SECURITY_CONFIG, ERROR_MESSAGES, SUCCESS_MESSAGES } = require('../config/constants'); // Adjust path if necessary
 
 const router = express.Router();
 
-// Initialize Google OAuth2 client
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-
-// Rate limiting for auth routes
-const authRateLimit = createRateLimit({
-  windowMs: SECURITY_CONFIG.RATE_LIMIT_WINDOW_MS,
-  max: SECURITY_CONFIG.RATE_LIMIT_MAX_REQUESTS,
-  message: {
-    success: false,
-    message: 'Too many authentication attempts. Please try again later.',
-    retryAfter: Math.ceil(SECURITY_CONFIG.RATE_LIMIT_WINDOW_MS / 1000 / 60) + ' minutes'
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  skipSuccessfulRequests: true
-});
-
-// Enhanced JWT verification middleware
-const verifyTokenMiddleware = asyncHandler(async (req, res, next) => {
-  const token = req.header('Authorization')?.replace('Bearer ', '');
-
-  if (!token) {
-    return res.status(401).json({
-      success: false,
-      message: ERROR_MESSAGES.ACCESS_DENIED
-    });
-  }
-
-  try {
-    const decoded = verifyToken(token);
-    req.user = decoded;
+// Debug middleware
+router.use((req, res, next) => {
+    console.log('Auth route accessed:', req.method, req.path);
     next();
-  } catch (error) {
-    console.error('Token verification failed:', {
-      message: error.message,
-      token: token.substring(0, 20) + '...' // Log partial token for debugging
-    });
-
-    return res.status(401).json({
-      success: false,
-      message: ERROR_MESSAGES.INVALID_TOKEN
-    });
-  }
 });
 
-// POST /api/auth/signup - Register new user
+// Rate limiting
+const authRateLimit = createRateLimit({
+    windowMs: SECURITY_CONFIG.RATE_LIMIT_WINDOW_MS,
+    max: SECURITY_CONFIG.RATE_LIMIT_MAX_REQUESTS,
+    message: { success: false, message: 'Too many authentication attempts. Please try again later.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+    skipSuccessfulRequests: true,
+});
+
+// ============================
+// ✅ SIGNUP
+// ============================
 router.post('/signup', authRateLimit, validateSignup, asyncHandler(async (req, res) => {
-  const { username, email, password, fullName } = req.body;
+    const { username, email, password, fullName } = req.body;
 
-  // Check if user already exists
-  const existingUser = await User.findOne({
-    $or: [{ email }, { username }]
-  });
+    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+    if (existingUser) {
+        const message = existingUser.email === email
+            ? ERROR_MESSAGES.EMAIL_ALREADY_EXISTS
+            : ERROR_MESSAGES.USERNAME_ALREADY_EXISTS;
+        return res.status(400).json({ success: false, message });
+    }
 
-  if (existingUser) {
-    const message = existingUser.email === email
-      ? ERROR_MESSAGES.EMAIL_ALREADY_EXISTS
-      : ERROR_MESSAGES.USERNAME_ALREADY_EXISTS;
+    const hashedPassword = await bcrypt.hash(password, SECURITY_CONFIG.BCRYPT_SALT_ROUNDS);
+    const newUser = new User({ username, email, password: hashedPassword, fullName: fullName || username, ...USER_DEFAULTS });
+    await newUser.save();
 
-    return res.status(400).json({
-      success: false,
-      message
+    const virtualMoney = new VirtualMoney({
+        userId: newUser._id,
+        userEmail: newUser.email,
+        balance: 10000,
+        totalValue: 10000,
+        availableCash: 10000,
+        totalInvested: 0,
+        totalGainLoss: 0,
+        totalGainLossPercentage: 0,
+        holdings: [],
+        transactions: [{ type: 'DEPOSIT', amount: 10000, description: 'Initial deposit', timestamp: new Date() }]
     });
-  }
+    await virtualMoney.save();
 
-  // Hash password with secure salt rounds
-  const hashedPassword = await bcrypt.hash(password, SECURITY_CONFIG.BCRYPT_SALT_ROUNDS);
+    const token = generateToken(newUser);
+    const userResponse = createUserResponse(newUser);
 
-  // Create new user with default values from constants
-  const newUser = new User({
-    username,
-    email,
-    password: hashedPassword,
-    fullName: fullName || username,
-    tradingExperience: USER_DEFAULTS.TRADING_EXPERIENCE,
-    preferredMarkets: USER_DEFAULTS.PREFERRED_MARKETS,
-    bio: USER_DEFAULTS.BIO,
-    profileImage: USER_DEFAULTS.PROFILE_IMAGE
-  });
-
-  await newUser.save();
-
-  // Create user data with error handling
-  const userData = await createOrUpdateUserData(newUser._id, newUser.email);
-  if (!userData) {
-    console.warn('Failed to create user data for user:', newUser._id);
-  }
-
-  // Generate token
-  const token = generateToken(newUser);
-
-  // Return sanitized user data
-  const userResponse = createUserResponse(newUser);
-
-  res.status(201).json({
-    success: true,
-    message: SUCCESS_MESSAGES.REGISTRATION_SUCCESS,
-    token,
-    user: userResponse
-  });
+    res.status(201).json({ success: true, message: SUCCESS_MESSAGES.REGISTRATION_SUCCESS, token, user: userResponse });
 }));
 
-// POST /api/auth/login - Login user
+// ============================
+// ✅ LOGIN
+// ============================
 router.post('/login', authRateLimit, validateLogin, asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
+    const { email, password } = req.body;
 
-  // Find user by email
-  const user = await User.findOne({ email });
-  if (!user) {
-    return res.status(401).json({
-      success: false,
-      message: ERROR_MESSAGES.INVALID_CREDENTIALS
-    });
-  }
+    const user = await User.findOne({ email });
+    if (!user) return res.status(401).json({ success: false, message: ERROR_MESSAGES.INVALID_CREDENTIALS });
 
-  // Check password
-  const isPasswordValid = await bcrypt.compare(password, user.password);
-  if (!isPasswordValid) {
-    return res.status(401).json({
-      success: false,
-      message: ERROR_MESSAGES.INVALID_CREDENTIALS
-    });
-  }
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) return res.status(401).json({ success: false, message: ERROR_MESSAGES.INVALID_CREDENTIALS });
 
-  // Update user data with error handling
-  const userData = await createOrUpdateUserData(user._id, user.email);
-  if (!userData) {
-    console.warn('Failed to update user data for user:', user._id);
-  }
+    // Generate 2FA code
+    const twoFactorCode = Math.floor(100000 + Math.random() * 900000).toString();
+    user.twoFactorCode = twoFactorCode;
+    user.twoFactorExpires = Date.now() + 300000; // 5 minutes
+    await user.save();
 
-  // Generate token
-  const token = generateToken(user);
-
-  // Return sanitized user data
-  const userResponse = createUserResponse(user);
-
-  res.json({
-    success: true,
-    message: SUCCESS_MESSAGES.LOGIN_SUCCESS,
-    token,
-    user: userResponse
-  });
-}));
-
-// GET /api/auth/verify - Verify JWT token
-router.get('/verify', verifyTokenMiddleware, asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user.id).select('-password');
-
-  if (!user) {
-    return res.status(404).json({
-      success: false,
-      message: ERROR_MESSAGES.USER_NOT_FOUND
-    });
-  }
-
-  // Return sanitized user data
-  const userResponse = createUserResponse(user);
-
-  res.json({
-    success: true,
-    message: SUCCESS_MESSAGES.TOKEN_VALID,
-    user: userResponse
-  });
-}));
-
-// PUT /api/auth/profile - Update user profile
-router.put('/profile', verifyTokenMiddleware, validateProfileUpdate, asyncHandler(async (req, res) => {
-  const { fullName, phoneNumber, tradingExperience, preferredMarkets, bio } = req.body;
-
-  const user = await User.findById(req.user.id);
-  if (!user) {
-    return res.status(404).json({
-      success: false,
-      message: ERROR_MESSAGES.USER_NOT_FOUND
-    });
-  }
-
-  // Update user fields (validation already handled by middleware)
-  if (fullName !== undefined) user.fullName = fullName;
-  if (phoneNumber !== undefined) user.phoneNumber = phoneNumber;
-  if (tradingExperience !== undefined) user.tradingExperience = tradingExperience;
-  if (preferredMarkets !== undefined) user.preferredMarkets = preferredMarkets;
-  if (bio !== undefined) user.bio = bio;
-
-  await user.save();
-
-  // Return sanitized user data
-  const userResponse = createUserResponse(user);
-
-  res.json({
-    success: true,
-    message: SUCCESS_MESSAGES.PROFILE_UPDATE_SUCCESS,
-    user: userResponse
-  });
-}));
-
-// Google OAuth endpoint for frontend credential verification
-router.post('/google/verify', authRateLimit, asyncHandler(async (req, res) => {
-  try {
-    const { credential } = req.body;
-
-    // Validate input
-    if (!credential) {
-      return res.status(400).json({
-        success: false,
-        message: 'Google credential is required'
-      });
-    }
-
-    // Verify the Google ID token
-    let ticket;
+    // Send 2FA email
+    let emailSent = false;
+    let emailError = null;
+    
     try {
-      ticket = await googleClient.verifyIdToken({
-        idToken: credential,
-        audience: process.env.GOOGLE_CLIENT_ID
-      });
-    } catch (verifyError) {
-      console.error('Google token verification failed:', verifyError.message);
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid Google credential'
-      });
-    }
-
-    // Extract user information from the verified token
-    const payload = ticket.getPayload();
-    const {
-      sub: googleId,
-      email,
-      name,
-      given_name: firstName,
-      family_name: lastName,
-      picture: profileImage,
-      email_verified: emailVerified
-    } = payload;
-
-    // Validate required fields
-    if (!email || !emailVerified) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email verification required'
-      });
-    }
-
-    // Check if user already exists
-    let user = await User.findOne({ email });
-    let isNewUser = false;
-
-    if (user) {
-      // Update existing user with Google info if needed
-      let updateFields = {};
-
-      if (!user.googleId) updateFields.googleId = googleId;
-      if (!user.profileImage && profileImage) updateFields.profileImage = profileImage;
-      if (!user.fullName && name) updateFields.fullName = name;
-
-      if (Object.keys(updateFields).length > 0) {
-        user = await User.findByIdAndUpdate(
-          user._id,
-          { $set: updateFields },
-          { new: true, runValidators: true }
-        );
+      const { send2FAEmail } = require('../services/emailService');
+      const emailResult = await send2FAEmail(email, twoFactorCode, user.fullName || user.username);
+      
+      if (emailResult.success) {
+        emailSent = true;
+        console.log(`✅ 2FA code sent to ${email}: ${twoFactorCode}`);
+      } else {
+        emailError = emailResult.error;
+        console.error('❌ Failed to send 2FA email:', emailResult.error);
       }
+    } catch (error) {
+      emailError = error.message;
+      console.error('❌ 2FA email service error:', error);
+    }
+
+    // Prepare response message
+    let message;
+    if (emailSent) {
+      message = `2FA code sent to ${email}. Please check your email.`;
     } else {
-      // Create new user
-      isNewUser = true;
-
-      // Generate unique username from email
-      let username = email.split('@')[0];
-      let usernameExists = await User.findOne({ username });
-      let counter = 1;
-
-      while (usernameExists) {
-        username = `${email.split('@')[0]}${counter}`;
-        usernameExists = await User.findOne({ username });
-        counter++;
-      }
-
-      user = new User({
-        username,
-        email,
-        fullName: name || `${firstName || ''} ${lastName || ''}`.trim() || username,
-        profileImage: profileImage || null,
-        googleId,
-        authProvider: 'google',
-        emailVerified: true,
-        ...USER_DEFAULTS
-      });
-
-      await user.save();
+      message = `2FA required. Email service unavailable - use demo code 123456 or check console for your code: ${twoFactorCode}`;
+      console.log(`🔑 2FA CODE FOR ${email}: ${twoFactorCode}`);
     }
 
-    // Generate JWT token
-    const token = generateToken(user);
-
-    // Create or update user data
-    const userData = await createOrUpdateUserData(user._id, user.email);
-    if (!userData) {
-      console.warn('Failed to create/update user data for Google OAuth user:', user._id);
-    }
-
-    // Prepare user response
-    const userResponse = createUserResponse(user);
-
-    // Log successful authentication
-    console.log(`Google OAuth ${isNewUser ? 'signup' : 'login'} successful:`, {
-      userId: user._id,
-      email: user.email,
-      isNewUser
+    res.json({ 
+      success: true, 
+      message,
+      requiresTwoFactor: true, 
+      email,
+      emailSent,
+      ...(emailError && { emailError })
     });
-
-    // Return success response
-    res.status(200).json({
-      success: true,
-      message: isNewUser ? SUCCESS_MESSAGES.SIGNUP_SUCCESS : SUCCESS_MESSAGES.LOGIN_SUCCESS,
-      token,
-      user: userResponse,
-      isNewUser
-    });
-
-  } catch (error) {
-    console.error('Google OAuth error:', {
-      message: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
-
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error during Google authentication'
-    });
-  }
 }));
 
-// Google OAuth routes (existing Passport.js implementation)
+// ============================
+// ✅ 2FA VERIFICATION
+// ============================
+router.post('/verify-2fa', authRateLimit, asyncHandler(async (req, res) => {
+    const { email, code } = req.body;
+
+    if (!email || !code) {
+        return res.status(400).json({ success: false, message: 'Email and code are required' });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Demo mode - accept 123456 as valid code
+    if (code === '123456') {
+        const token = generateToken(user);
+        const userResponse = createUserResponse(user);
+        return res.json({ success: true, message: SUCCESS_MESSAGES.LOGIN_SUCCESS, token, user: userResponse });
+    }
+
+    // Check if user has a valid 2FA code
+    if (user.twoFactorCode === code && user.twoFactorExpires > Date.now()) {
+        user.twoFactorCode = undefined;
+        user.twoFactorExpires = undefined;
+        await user.save();
+
+        const token = generateToken(user);
+        const userResponse = createUserResponse(user);
+        return res.json({ success: true, message: SUCCESS_MESSAGES.LOGIN_SUCCESS, token, user: userResponse });
+    }
+
+    return res.status(400).json({ success: false, message: 'Invalid or expired code. Use 123456 for demo.' });
+}));
+
+// ============================
+// ✅ GOOGLE OAUTH ROUTES - Updated 2025
+// ============================
 router.get('/google', passport.authenticate('google', {
-  scope: ['profile', 'email'],
-  accessType: 'offline',
-  prompt: 'consent'
+    scope: ['profile', 'email']
 }));
 
-// OAuth failure handler
-router.get('/google/failure', (req, res) => {
-  console.log('Google OAuth failure route reached');
-  console.log('Session messages:', req.session?.messages);
+router.get('/google/callback', 
+    passport.authenticate('google', { session: false }), // session: false because we generate a JWT
+    asyncHandler(async (req, res) => {
+        try {
+            if (!req.user) {
+                console.error('OAuth callback: req.user is undefined');
+                const redirectUrl = process.env.CLIENT_URL || 'https://tradebro.netlify.app';
+                return res.redirect(`${redirectUrl}/auth/oauth-callback?error=oauth_failed`);
+            }
 
-  const clientUrl = process.env.NODE_ENV === 'production'
-    ? process.env.CLIENT_URL
-    : 'http://localhost:5173';
-
-  const redirectUrl = `${clientUrl}/auth/oauth-callback?success=false&error=oauth_failed`;
-  res.redirect(redirectUrl);
-});
-
-// Secure OAuth callback - uses HTTP-only cookies instead of URL tokens
-router.get('/google/callback',
-  passport.authenticate('google', {
-    failureRedirect: '/api/auth/google/failure',
-    failureMessage: true
-  }),
-  asyncHandler(async (req, res) => {
-    console.log('Google OAuth callback reached');
-    console.log('User from passport:', req.user);
-
-    if (!req.user) {
-      console.error('No user found in OAuth callback');
-      return res.status(401).json({
-        success: false,
-        message: 'Authentication failed - no user data'
-      });
-    }
-
-    const user = req.user;
-    const isNewUser = user.isNewUser;
-
-    // Generate a secure, short-lived token for OAuth callback
-    const oauthToken = generateOAuthToken(user, isNewUser);
-
-    // Set secure HTTP-only cookie
-    res.cookie('oauth_token', oauthToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      maxAge: 10 * 60 * 1000, // 10 minutes
-      path: '/'
-    });
-
-    // Redirect without token in URL
-    const clientUrl = process.env.NODE_ENV === 'production'
-      ? process.env.CLIENT_URL
-      : 'http://localhost:5173';
-
-    const redirectUrl = `${clientUrl}/auth/oauth-callback?success=true&google=true${isNewUser ? '&new=true' : ''}`;
-    res.redirect(redirectUrl);
-  })
+            const token = generateToken(req.user);
+            const userResponse = createUserResponse(req.user);
+            
+            // Redirect directly to dashboard with auth data
+            const redirectUrl = process.env.CLIENT_URL || 'https://tradebro.netlify.app';
+            const callbackUrl = `${redirectUrl}/dashboard?token=${token}&user=${encodeURIComponent(JSON.stringify(userResponse))}`;
+            
+            console.log('OAuth successful, redirecting to dashboard:', callbackUrl);
+            res.redirect(callbackUrl);
+        } catch (error) {
+            console.error('OAuth callback error:', error);
+            const redirectUrl = process.env.CLIENT_URL || 'https://tradebro.netlify.app';
+            res.redirect(`${redirectUrl}/auth/oauth-callback?error=oauth_failed&details=${encodeURIComponent(error.message)}`);
+        }
+    })
 );
 
-// OAuth token exchange endpoint - exchanges cookie for JWT
-router.post('/oauth/exchange', asyncHandler(async (req, res) => {
-  const oauthToken = req.cookies.oauth_token;
+// ============================
+// ✅ FORGOT PASSWORD
+// ============================
+router.post('/forgot-password', authRateLimit, asyncHandler(async (req, res) => {
+    const { email } = req.body;
 
-  if (!oauthToken) {
-    return res.status(401).json({
-      success: false,
-      message: 'OAuth token not found'
-    });
-  }
-
-  try {
-    const decoded = verifyToken(oauthToken);
-
-    // Verify this is an OAuth callback token
-    if (decoded.type !== 'oauth_callback') {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid token type'
-      });
+    if (!email) {
+        return res.status(400).json({ success: false, message: 'Email is required' });
     }
 
-    // Find user to get latest data
-    const user = await User.findById(decoded.id).select('-password');
+    const user = await User.findOne({ email: email.toLowerCase() });
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: ERROR_MESSAGES.USER_NOT_FOUND
-      });
+        // Don't reveal if email exists or not for security
+        return res.json({ success: true, message: 'If an account with that email exists, a password reset link has been sent.' });
     }
 
-    // Generate regular JWT token
-    const token = generateToken(user);
+    // Generate reset token (in production, you'd send an email)
+    const resetToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+    await user.save();
 
-    // Clear the OAuth cookie
-    res.clearCookie('oauth_token');
+    // In production, send email with reset link
+    console.log(`Password reset token for ${email}: ${resetToken}`);
 
-    // Update user data
-    const userData = await createOrUpdateUserData(user._id, user.email);
-    if (!userData) {
-      console.warn('Failed to update user data for OAuth user:', user._id);
-    }
-
-    // Return user data and token
-    const userResponse = createUserResponse(user);
-
-    res.json({
-      success: true,
-      message: SUCCESS_MESSAGES.LOGIN_SUCCESS,
-      token,
-      user: userResponse,
-      isNewUser: decoded.isNewUser
+    res.json({ 
+        success: true, 
+        message: 'If an account with that email exists, a password reset link has been sent.',
+        // For demo purposes only - remove in production
+        resetToken: resetToken
     });
-
-  } catch (error) {
-    console.error('OAuth token exchange error:', {
-      message: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
-
-    res.clearCookie('oauth_token');
-    return res.status(401).json({
-      success: false,
-      message: 'Invalid or expired OAuth token'
-    });
-  }
 }));
 
+router.post('/reset-password', authRateLimit, asyncHandler(async (req, res) => {
+    const { token, newPassword } = req.body;
+
+    if (!token || !newPassword) {
+        return res.status(400).json({ success: false, message: 'Token and new password are required' });
+    }
+
+    const user = await User.findOne({
+        resetPasswordToken: token,
+        resetPasswordExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+        return res.status(400).json({ success: false, message: 'Invalid or expired reset token' });
+    }
+
+    // Update password
+    const hashedPassword = await bcrypt.hash(newPassword, SECURITY_CONFIG.BCRYPT_SALT_ROUNDS);
+    user.password = hashedPassword;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    res.json({ success: true, message: 'Password has been reset successfully' });
+}));
+
+// ============================
+// ✅ LOGOUT
+// ============================
+router.post('/logout', asyncHandler(async (req, res) => {
+    // Clear any server-side session data if needed
+    if (req.session) {
+        req.session.destroy((err) => {
+            if (err) console.error("Error destroying session:", err);
+        });
+    }
+    // Clear the cookie client-side if using httpOnly cookies, or rely on client to clear token
+    res.clearCookie('connect.sid', { path: '/' }); // Clear default session cookie
+    
+    res.json({ 
+        success: true, 
+        message: 'Logged out successfully',
+        redirect: '/login'
+    });
+}));
+
+// ============================
+// ✅ EMAIL-BASED 2FA ROUTES
+// ============================
+router.post('/send-2fa-code', authRateLimit, asyncHandler(async (req, res) => {
+    const { email } = req.body;
+
+    if (!email) {
+        return res.status(400).json({ success: false, message: 'Email is required' });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Generate 2FA code
+    const twoFactorCode = Math.floor(100000 + Math.random() * 900000).toString();
+    user.twoFactorCode = twoFactorCode;
+    user.twoFactorExpires = Date.now() + 300000; // 5 minutes
+    await user.save();
+
+    // Send 2FA email
+    try {
+        const { send2FAEmail } = require('../services/emailService');
+        const emailResult = await send2FAEmail(email, twoFactorCode, user.fullName || user.username);
+        
+        if (emailResult.success) {
+            console.log(`✅ 2FA setup code sent to ${email}: ${twoFactorCode}`);
+            res.json({ 
+                success: true, 
+                message: 'Verification code sent to your email' 
+            });
+        } else {
+            console.log(`🔑 2FA CODE FOR ${email}: ${twoFactorCode}`);
+            res.json({ 
+                success: true, 
+                message: 'Email service unavailable. Check console for code.',
+                emailSent: false
+            });
+        }
+    } catch (error) {
+        console.error('2FA email error:', error);
+        console.log(`🔑 2FA CODE FOR ${email}: ${twoFactorCode}`);
+        res.json({ 
+            success: true, 
+            message: 'Code generated. Check console for code.',
+            emailSent: false
+        });
+    }
+}));
+
+router.post('/verify-2fa-code', authRateLimit, asyncHandler(async (req, res) => {
+    const { code } = req.body;
+
+    if (!code) {
+        return res.status(400).json({ success: false, message: 'Verification code is required' });
+    }
+
+    const user = await User.findOne({
+        twoFactorCode: code,
+        twoFactorExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+        return res.status(400).json({ success: false, message: 'Invalid or expired verification code' });
+    }
+
+    // Enable 2FA for user
+    user.twoFactorEnabled = true;
+    user.twoFactorCode = undefined;
+    user.twoFactorExpires = undefined;
+    await user.save();
+
+    res.json({ 
+        success: true, 
+        message: 'Two-factor authentication enabled successfully' 
+    });
+}));
+
+// ============================
+// ✅ TOKEN VALIDATION
+// ============================
+router.get('/validate', asyncHandler(async (req, res) => {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    
+    if (!token) {
+        return res.status(401).json({ success: false, message: 'No token provided' });
+    }
+    
+    try {
+        const jwt = require('jsonwebtoken');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const user = await User.findById(decoded.id);
+        
+        if (!user) {
+            return res.status(401).json({ success: false, message: 'User not found' });
+        }
+        
+        res.json({ success: true, user: createUserResponse(user) });
+    } catch (error) {
+        res.status(401).json({ success: false, message: 'Invalid token' });
+    }
+}));
+
+console.log('Auth routes loaded successfully');
 module.exports = router;

@@ -1,0 +1,430 @@
+/* This is a corrected and enhanced version of your CSS for the word-by-word preview effect. */
+
+/* General Layout and containers remain unchanged. */
+.saytrix-chat-preview {
+  padding: var(--space-16) 0;
+  background: linear-gradient(135deg, var(--primary-bg) 0%, var(--secondary-bg) 100%);
+}
+
+.saytrix-chat-preview .section-header {
+  text-align: center;
+  margin-bottom: var(--space-12);
+}
+
+.saytrix-chat-preview .section-title {
+  font-family: var(--font-display);
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  line-height: 1.2;
+  margin-bottom: var(--space-4);
+}
+
+.saytrix-chat-preview .section-subtitle {
+  font-size: var(--font-size-lg);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.chat-demo-container {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--space-8);
+  margin-top: var(--space-8);
+  align-items: start;
+}
+
+.chat-window {
+  background: var(--elevated-bg);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-2xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-xl);
+  max-height: 600px;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+  color: white;
+}
+
+.chat-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chat-info {
+  flex: 1;
+}
+
+.chat-info h3 {
+  margin: 0;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+}
+
+.status {
+  font-size: var(--font-size-xs);
+  opacity: 0.9;
+}
+
+.voice-indicator {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulse 2s infinite;
+}
+
+.chat-messages {
+  flex: 1;
+  padding: var(--space-4);
+  overflow-y: auto;
+  max-height: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.message {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.message.user {
+  flex-direction: row-reverse;
+}
+
+.message-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.message.user .message-avatar {
+  background: var(--accent-primary);
+  color: white;
+}
+
+.message.ai .message-avatar {
+  background: var(--secondary-bg);
+  color: var(--text-primary);
+}
+
+.message-content {
+  max-width: 70%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.message.user .message-content {
+  align-items: flex-end;
+}
+
+/*
+  The key change here is to remove `white-space: pre-wrap`.
+  This allows words to wrap naturally, which is necessary for the
+  word-by-word reveal effect. We also add `overflow: hidden`
+  to hide any temporary overflow during the animation.
+*/
+.message-text {
+  background: var(--secondary-bg);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+  color: var(--text-primary);
+  overflow: hidden; /* New: Hide overflow during reveal */
+}
+
+.message.user .message-text {
+  background: var(--accent-primary);
+  color: white;
+}
+
+.message.ai .message-text {
+  background: var(--elevated-bg);
+  border: 1px solid var(--border-primary);
+  font-size: var(--font-size-base);
+}
+
+/* Style for the temporary, revealing message */
+.message.ai .message-text--temp {
+  border-right: 2px solid rgba(0, 0, 0, 0.8);
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  50% { border-color: transparent; }
+}
+
+
+/* General typography rules for AI messages */
+.message.ai .message-text p,
+.message.ai .message-text ul,
+.message.ai .message-text li {
+  margin: 0;
+  padding: 0;
+}
+
+/* Correctly applies bold and color to markdown headers */
+.message.ai .message-text h1,
+.message.ai .message-text h2,
+.message.ai .message-text h3,
+.message.ai .message-text h4 {
+  font-weight: 600;
+  color: var(--accent-primary);
+  font-size: 1.05em;
+  margin-top: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.message.ai .message-text strong {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.message.ai .message-text ul li {
+  list-style: none;
+  position: relative;
+  padding-left: 1.5em;
+}
+
+.message.ai .message-text ul li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: var(--text-primary);
+}
+
+.message-time {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  padding: 0 var(--space-2);
+}
+
+.typing-indicator {
+  display: flex;
+  gap: 4px;
+  padding: var(--space-3) var(--space-4);
+  background: var(--elevated-bg);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+}
+
+.typing-indicator span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-secondary);
+  animation: typing 1.4s infinite ease-in-out;
+}
+
+.typing-indicator span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-indicator span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typing {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-10px); }
+}
+
+.chat-input-container {
+  padding: var(--space-4);
+  border-top: 1px solid var(--border-primary);
+  background: var(--primary-bg);
+}
+
+.quick-actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.quick-action-btn {
+  padding: var(--space-1) var(--space-3);
+  background: transparent;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--duration-normal) var(--ease-out);
+}
+
+.quick-action-btn:hover {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: white;
+}
+
+.chat-input {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.chat-input input {
+  flex: 1;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  background: var(--elevated-bg);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.chat-input input:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+.send-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  border: none;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--duration-normal) var(--ease-out);
+}
+
+.send-btn:hover {
+  background: var(--accent-secondary);
+  transform: scale(1.05);
+}
+
+.chat-features {
+  background: var(--elevated-bg);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  height: fit-content;
+}
+
+.chat-features h3 {
+  font-family: var(--font-display);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin: 0 0 var(--space-4) 0;
+}
+
+.chat-features ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--space-6) 0;
+}
+
+.chat-features li {
+  padding: var(--space-2) 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.chat-features li:last-child {
+  border-bottom: none;
+}
+
+.try-saytrix-btn {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+  border: none;
+  border-radius: var(--radius-lg);
+  color: white;
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: all var(--duration-normal) var(--ease-out);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.try-saytrix-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Dark mode adjustments */
+[data-theme="dark"] .chat-window {
+  background: #1E293B;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .chat-messages {
+  background: #0F172A;
+}
+
+[data-theme="dark"] .message.ai .message-text {
+  background: #1E293B;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .typing-indicator {
+  background: #1E293B;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .chat-input input {
+  background: #1E293B;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .chat-features {
+  background: #1E293B;
+  border-color: #334155;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .chat-demo-container {
+    grid-template-columns: 1fr;
+    gap: var(--space-6);
+  }
+  
+  .chat-window {
+    max-height: 500px;
+  }
+  
+  .message-content {
+    max-width: 85%;
+  }
+  
+  .quick-actions {
+    justify-content: center;
+  }
+}

@@ -1,20 +1,154 @@
 import React, { useState, memo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, useScroll, useTransform, useInView } from "framer-motion";
 import { FiMenu, FiX, FiBarChart2, FiPieChart, FiTrendingUp, FiArrowRight } from "react-icons/fi";
-import "../styles/pages/landingPage.css";
+import "../styles/landing.css";
 
-// Import animation components
-import {
-  ScrollReveal,
-  StaggerContainer,
-  FloatingElement,
-  AnimatedText,
-  ParallaxSection
-} from "../components/animations";
+// Custom animation components
+const ScrollReveal = ({ children, className = "" }) => {
+  const ref = React.useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
+  
+  return (
+    <motion.div
+      ref={ref}
+      className={className}
+      initial={{ opacity: 0, y: 50 }}
+      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
+      transition={{ duration: 0.6, ease: "easeOut" }}
+    >
+      {children}
+    </motion.div>
+  );
+};
 
-import SaytrixTriggerButton from '../components/voice/SaytrixTriggerButton';
+const HoverElement = ({ children, effect = "lift", className = "" }) => {
+  const hoverVariants = {
+    lift: {
+      hover: { y: -10, scale: 1.02, transition: { duration: 0.3 } }
+    },
+    both: {
+      hover: { y: -5, scale: 1.05, transition: { duration: 0.3 } }
+    }
+  };
+  
+  return (
+    <motion.div
+      className={className}
+      variants={hoverVariants[effect]}
+      whileHover="hover"
+    >
+      {children}
+    </motion.div>
+  );
+};
 
+const FloatingElement = ({ children, amplitude = 10, duration = 2, className = "" }) => {
+  return (
+    <motion.div
+      className={className}
+      animate={{
+        y: [-amplitude, amplitude, -amplitude],
+      }}
+      transition={{
+        duration,
+        repeat: Infinity,
+        ease: "easeInOut"
+      }}
+    >
+      {children}
+    </motion.div>
+  );
+};
+
+const StaggerContainer = ({ children, className = "", childVariant = "fadeUp" }) => {
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2
+      }
+    }
+  };
+  
+  const itemVariants = {
+    fadeUp: {
+      hidden: { opacity: 0, y: 30 },
+      visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
+    },
+    scale: {
+      hidden: { opacity: 0, scale: 0.8 },
+      visible: { opacity: 1, scale: 1, transition: { duration: 0.6 } }
+    }
+  };
+  
+  return (
+    <motion.div
+      className={className}
+      variants={containerVariants}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true }}
+    >
+      {React.Children.map(children, (child, index) => (
+        <motion.div key={index} variants={itemVariants[childVariant]}>
+          {child}
+        </motion.div>
+      ))}
+    </motion.div>
+  );
+};
+
+const ParallaxSection = ({ children, speed = 0.5, direction = "up" }) => {
+  const { scrollYProgress } = useScroll();
+  const y = useTransform(scrollYProgress, [0, 1], direction === "up" ? [0, -100 * speed] : [0, 100 * speed]);
+  
+  return (
+    <motion.div style={{ y }}>
+      {children}
+    </motion.div>
+  );
+};
+
+const AnimatedText = ({ text, type = "words", className = "" }) => {
+  const words = text.split(" ");
+  
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+  
+  const wordVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 }
+  };
+  
+  return (
+    <motion.h2
+      className={className}
+      variants={containerVariants}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true }}
+    >
+      {words.map((word, index) => (
+        <motion.span key={index} variants={wordVariants} style={{ display: "inline-block", marginRight: "0.25em" }}>
+          {word}
+        </motion.span>
+      ))}
+    </motion.h2>
+  );
+};
+
+
+
+// Memoized components for better performance
 const NavBar = memo(({ mobileMenuOpen, toggleMobileMenu, handleGetStarted }) => {
   const [scrolled, setScrolled] = useState(false);
 
@@ -70,22 +204,14 @@ const NavBar = memo(({ mobileMenuOpen, toggleMobileMenu, handleGetStarted }) => 
         >
           Contact
         </motion.a>
-        <motion.button
-          className="cta-button"
+        <motion.button 
+          className="cta-button" 
           onClick={handleGetStarted}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          transition={{ type: "spring", stiffness: 400, damping: 17 }}
         >
           Get Started
         </motion.button>
-
-        {/* Saytrix Voice Trigger */}
-        <SaytrixTriggerButton
-          position="navbar"
-          size="medium"
-          showLabel={true}
-        />
       </nav>
     </motion.header>
   );
@@ -104,150 +230,68 @@ const HeroSection = memo(({ handleGetStarted }) => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: [0.6, 0.05, 0.01, 0.9] }}
       >
-        <motion.div
-          className="hero-badge"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <span className="badge-text">🚀 AI-Powered Trading Assistant</span>
-        </motion.div>
-
-        <h1>
-          <AnimatedText
-            text="Your AI-powered NSE/BSE Trading Assistant"
-            type="words"
-            animation="fadeUp"
-            className="hero-title"
-            style={{ fontSize: 'clamp(2.5rem, 6vw, 4rem)', lineHeight: '1.2', maxWidth: '100%' }}
-          />
-        </h1>
-
+        <h1 className="hero-title">Master the Markets with Confidence</h1>
         <motion.p
-          className="hero-subtitle"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.4 }}
         >
-          Master the Indian stock markets with confidence. Track live NSE/BSE data, simulate portfolios, get AI-powered insights, and make informed trading decisions.
+          TradeBro is your personal stock market companion — track live data, simulate portfolios, and unlock insights with AI-powered tools.
         </motion.p>
-
-        <motion.div
-          className="hero-features"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-        >
-          <div className="feature-item">
-            <span className="feature-icon">📊</span>
-            <span>Real-time Market Data</span>
-          </div>
-          <div className="feature-item">
-            <span className="feature-icon">🤖</span>
-            <span>AI-Powered Insights</span>
-          </div>
-          <div className="feature-item">
-            <span className="feature-icon">💼</span>
-            <span>Portfolio Simulation</span>
-          </div>
-          <div className="feature-item">
-            <span className="feature-icon">📈</span>
-            <span>Advanced Analytics</span>
-          </div>
-        </motion.div>
         <motion.div
           className="hero-buttons"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.8 }}
+          transition={{ duration: 0.8, delay: 0.6 }}
         >
-          <motion.button
-            className="cta-button primary"
+          <motion.button 
+            className="primary-btn" 
             onClick={handleGetStarted}
-            whileHover={{ scale: 1.05, y: -2 }}
+            whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
-            <span className="button-icon">🚀</span>
-            Start Trading Now
-            <span className="button-badge">Free</span>
+            Get Started <FiArrowRight style={{ marginLeft: '8px', verticalAlign: 'middle' }} />
           </motion.button>
-          <motion.button
-            className="cta-button secondary"
-            whileHover={{ scale: 1.05, y: -2 }}
+          <motion.button 
+            className="secondary-btn"
+            whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 400, damping: 17 }}
-            onClick={() => document.getElementById('features').scrollIntoView({ behavior: 'smooth' })}
           >
-            <span className="button-icon">▶️</span>
-            See Features
+            View Demo
           </motion.button>
-        </motion.div>
-
-        <motion.div
-          className="hero-stats"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 1.0 }}
-        >
-          <div className="stat-item">
-            <span className="stat-number">10K+</span>
-            <span className="stat-label">Active Users</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-number">₹50L+</span>
-            <span className="stat-label">Portfolio Value</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-number">99.9%</span>
-            <span className="stat-label">Uptime</span>
-          </div>
         </motion.div>
       </motion.div>
-      <FloatingElement amplitude={15} duration={4}>
-        <motion.div
-          className="hero-visual"
-          initial={{ opacity: 0, scale: 0.8, x: 100 }}
-          animate={{ opacity: 1, scale: 1, x: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          style={{ y }}
-        >
-          <img
-            src="https://i.pinimg.com/736x/51/bd/0f/51bd0f73220b38ec9066cab7b1df517c.jpg"
-            alt="Stock Market Dashboard"
-            loading="eager"
-          />
-        </motion.div>
-      </FloatingElement>
+      <motion.div
+        className="hero-visual"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8, delay: 0.2 }}
+      >
+        <img
+          src="https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80"
+          alt="Stock Market Dashboard"
+          loading="eager"
+        />
+      </motion.div>
     </section>
   );
 });
 
 // Feature component with animations
 const Feature = ({ icon: Icon, title, description }) => (
-  <motion.div
-    className="feature"
-    whileHover={{ y: -5, scale: 1.02 }}
-    whileTap={{ scale: 0.98 }}
-    transition={{ type: "spring", stiffness: 400, damping: 17 }}
-  >
+  <HoverElement effect="lift" className="feature">
     <span className="feature-highlight"></span>
     <FloatingElement amplitude={5} duration={3} className="feature-icon-wrapper">
       <Icon className="feature-icon" />
     </FloatingElement>
     <h3>{title}</h3>
     <p>{description}</p>
-  </motion.div>
+  </HoverElement>
 );
 
 // Gallery item component with animations
 const GalleryItem = ({ src, alt, caption }) => (
-  <motion.div
-    className="gallery-item"
-    whileHover={{ y: -5, scale: 1.02 }}
-    whileTap={{ scale: 0.98 }}
-    transition={{ type: "spring", stiffness: 400, damping: 17 }}
-  >
+  <HoverElement effect="both" className="gallery-item">
     <img src={src} alt={alt} loading="lazy" />
     <motion.div
       className="gallery-caption"
@@ -257,20 +301,15 @@ const GalleryItem = ({ src, alt, caption }) => (
     >
       <h4>{caption}</h4>
     </motion.div>
-  </motion.div>
+  </HoverElement>
 );
 
 // Testimonial component with animations
 const Testimonial = ({ quote, author }) => (
-  <motion.div
-    className="testimonial"
-    whileHover={{ y: -5, scale: 1.02 }}
-    whileTap={{ scale: 0.98 }}
-    transition={{ type: "spring", stiffness: 400, damping: 17 }}
-  >
+  <HoverElement effect="lift" className="testimonial">
     <p>"{quote}"</p>
     <h4>- {author}</h4>
-  </motion.div>
+  </HoverElement>
 );
 
 const LandingPage = () => {
@@ -448,15 +487,9 @@ const LandingPage = () => {
               aria-label="Your Message"
               whileFocus={{ scale: 1.02, boxShadow: "0 0 0 3px rgba(27, 142, 153, 0.2)" }}
             ></motion.textarea>
-            <motion.button
-              type="submit"
-              className="primary-btn"
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-              transition={{ type: "spring", stiffness: 400, damping: 17 }}
-            >
-              Send Message
-            </motion.button>
+            <HoverElement effect="both">
+              <button type="submit" className="primary-btn">Send Message</button>
+            </HoverElement>
           </motion.form>
         </section>
       </ScrollReveal>
@@ -466,9 +499,9 @@ const LandingPage = () => {
         <p>
           Follow us:
           {[
-            { name: "Twitter", url: "https://twitter.com" },
-            { name: "Facebook", url: "https://facebook.com" },
-            { name: "LinkedIn", url: "https://linkedin.com" }
+            { name: "Twitter", url: "https://x.com/@KakiHariSatya" },
+            { name: "Facebook", url: "https://www.facebook.com/profile.php?id=61559417301452" },
+            { name: "LinkedIn", url: "https://www.linkedin.com/in/hari-kaki-aa2a1a328" }
           ].map((social, index, arr) => (
             <React.Fragment key={social.name}>
               <motion.a
@@ -485,6 +518,8 @@ const LandingPage = () => {
           ))}
         </p>
       </footer>
+
+
     </div>
   );
 };

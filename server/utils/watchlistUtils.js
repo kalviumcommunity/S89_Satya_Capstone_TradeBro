@@ -1,4 +1,6 @@
 const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
 
 const FMP_API = process.env.FMP_API_KEY;
@@ -15,7 +17,10 @@ const FMP_API = process.env.FMP_API_KEY;
 const fetchStockData = async (symbols) => {
   try {
     const symbolString = Array.isArray(symbols) ? symbols.join(',') : symbols;
-    
+    if (!symbolString) {
+      return { success: true, data: [], source: 'empty' };
+    }
+
     const response = await axios.get(
       `https://financialmodelingprep.com/api/v3/quote/${symbolString}?apikey=${FMP_API}`,
       { timeout: 10000 } // 10 second timeout
@@ -27,8 +32,8 @@ const fetchStockData = async (symbols) => {
       source: 'api'
     };
   } catch (error) {
-    console.error('Error fetching stock data:', error.message);
-    
+    console.error('Error fetching stock data from FMP:', error.message);
+
     // Return fallback structure
     const symbolArray = Array.isArray(symbols) ? symbols : [symbols];
     const fallbackData = symbolArray.map(symbol => ({
@@ -60,16 +65,14 @@ const validateSymbol = (symbol) => {
     return { valid: false, message: 'Symbol must be a non-empty string' };
   }
 
-  // Remove whitespace and convert to uppercase
   const cleanSymbol = symbol.trim().toUpperCase();
 
-  // Basic symbol validation (1-10 characters, alphanumeric with dots and hyphens)
   const symbolRegex = /^[A-Z0-9.-]{1,10}$/;
-  
+
   if (!symbolRegex.test(cleanSymbol)) {
-    return { 
-      valid: false, 
-      message: 'Symbol must be 1-10 characters long and contain only letters, numbers, dots, and hyphens' 
+    return {
+      valid: false,
+      message: 'Symbol must be 1-10 characters long and contain only letters, numbers, dots, and hyphens'
     };
   }
 
@@ -82,13 +85,13 @@ const validateSymbol = (symbol) => {
  * @returns {Object} - Validation result
  */
 const validateTargetPrice = (targetPrice) => {
-  if (targetPrice === null || targetPrice === undefined) {
+  if (targetPrice === null || targetPrice === undefined || targetPrice === '') {
     return { valid: true, targetPrice: null };
   }
 
   const price = parseFloat(targetPrice);
-  
-  if (isNaN(price)) {
+
+  if (isNaN(price) || !isFinite(price)) {
     return { valid: false, message: 'Target price must be a valid number' };
   }
 
@@ -125,119 +128,6 @@ const validateNotes = (notes) => {
 };
 
 /**
- * Sort watchlist data by specified field and order
- * @param {Array} data - Array of watchlist items
- * @param {string} sortBy - Field to sort by
- * @param {string} order - Sort order ('asc' or 'desc')
- * @returns {Array} - Sorted array
- */
-const sortWatchlistData = (data, sortBy = 'addedAt', order = 'desc') => {
-  const validSortFields = ['symbol', 'name', 'addedAt', 'price', 'change', 'changePercent', 'marketCap', 'volume', 'targetPrice'];
-  const validOrders = ['asc', 'desc'];
-
-  if (!validSortFields.includes(sortBy)) {
-    throw new Error(`Invalid sort field: ${sortBy}`);
-  }
-
-  if (!validOrders.includes(order)) {
-    throw new Error(`Invalid sort order: ${order}`);
-  }
-
-  return [...data].sort((a, b) => {
-    let aValue = a[sortBy];
-    let bValue = b[sortBy];
-    
-    // Handle null/undefined values
-    if (aValue === null || aValue === undefined) {
-      aValue = order === 'asc' ? Number.MAX_VALUE : Number.MIN_VALUE;
-    }
-    if (bValue === null || bValue === undefined) {
-      bValue = order === 'asc' ? Number.MAX_VALUE : Number.MIN_VALUE;
-    }
-    
-    // Handle different data types
-    if (typeof aValue === 'string' && typeof bValue === 'string') {
-      aValue = aValue.toLowerCase();
-      bValue = bValue.toLowerCase();
-    }
-    
-    if (aValue < bValue) return order === 'asc' ? -1 : 1;
-    if (aValue > bValue) return order === 'asc' ? 1 : -1;
-    return 0;
-  });
-};
-
-/**
- * Filter watchlist data by search query
- * @param {Array} data - Array of watchlist items
- * @param {string} searchQuery - Search query
- * @returns {Array} - Filtered array
- */
-const filterWatchlistData = (data, searchQuery) => {
-  if (!searchQuery || typeof searchQuery !== 'string') {
-    return data;
-  }
-
-  const searchTermLower = searchQuery.toLowerCase().trim();
-  
-  if (!searchTermLower) {
-    return data;
-  }
-
-  return data.filter(item => {
-    return (
-      (item.symbol && item.symbol.toLowerCase().includes(searchTermLower)) ||
-      (item.name && item.name.toLowerCase().includes(searchTermLower)) ||
-      (item.notes && item.notes.toLowerCase().includes(searchTermLower))
-    );
-  });
-};
-
-/**
- * Generate CSV content from watchlist data
- * @param {Array} watchlistData - Array of watchlist items with market data
- * @returns {string} - CSV content
- */
-const generateCSV = (watchlistData) => {
-  // CSV headers
-  const headers = [
-    'Symbol',
-    'Name', 
-    'Current Price',
-    'Change',
-    'Change %',
-    'Market Cap',
-    'Volume',
-    'Added Date',
-    'Notes',
-    'Target Price',
-    'Alert Enabled'
-  ];
-
-  let csvContent = headers.join(',') + '\n';
-
-  watchlistData.forEach(stock => {
-    const row = [
-      stock.symbol || '',
-      stock.name || stock.symbol || '',
-      stock.price || 'N/A',
-      stock.change || 'N/A',
-      stock.changePercent || 'N/A',
-      stock.marketCap || 'N/A',
-      stock.volume || 'N/A',
-      stock.addedAt ? new Date(stock.addedAt).toISOString().split('T')[0] : '',
-      stock.notes ? `"${stock.notes.replace(/"/g, '""')}"` : '', // Escape quotes for CSV
-      stock.targetPrice || '',
-      stock.alertEnabled || false
-    ];
-
-    csvContent += row.join(',') + '\n';
-  });
-
-  return csvContent;
-};
-
-/**
  * Check if target price alert should be triggered
  * @param {number} currentPrice - Current stock price
  * @param {number} targetPrice - Target price
@@ -245,14 +135,13 @@ const generateCSV = (watchlistData) => {
  * @returns {Object} - Alert status
  */
 const checkPriceAlert = (currentPrice, targetPrice, alertEnabled) => {
-  if (!alertEnabled || !targetPrice || !currentPrice) {
+  if (!alertEnabled || targetPrice === null || currentPrice === null) {
     return { shouldAlert: false };
   }
 
   const priceDifference = Math.abs(currentPrice - targetPrice);
   const percentageDifference = (priceDifference / targetPrice) * 100;
 
-  // Trigger alert if price is within 2% of target price
   const shouldAlert = percentageDifference <= 2;
 
   return {
@@ -269,8 +158,5 @@ module.exports = {
   validateSymbol,
   validateTargetPrice,
   validateNotes,
-  sortWatchlistData,
-  filterWatchlistData,
-  generateCSV,
   checkPriceAlert
 };

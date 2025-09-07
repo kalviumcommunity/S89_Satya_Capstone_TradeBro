@@ -6,10 +6,16 @@ const axios = require('axios');
  */
 class StockDataProvider {
   constructor() {
-    this.fmpApiKey = process.env.FMP_API_KEY;
+    this.fmpApiKeys = [
+      process.env.FMP_API_KEY,
+      process.env.FMP_API_KEY_2,
+      process.env.FMP_API_KEY_3,
+      process.env.FMP_API_KEY_4
+    ].filter(Boolean);
     this.twelveDataApiKey = process.env.TWELVE_DATA_API_KEY;
     this.requestTimeout = 10000; // 10 seconds
     this.retryAttempts = 2;
+    this.currentFmpKeyIndex = 0;
     
     this.initializeApiEndpoints();
   }
@@ -115,19 +121,19 @@ class StockDataProvider {
   }
 
   /**
-   * Fetch stock data from FMP API
+   * Fetch stock data from FMP API with multiple keys
    */
   async fetchFromFMP(symbol) {
-    if (!this.fmpApiKey) return null;
+    if (this.fmpApiKeys.length === 0) return null;
 
-    try {
-      const symbolVariants = this.generateSymbolVariants(symbol);
-      
+    const symbolVariants = this.generateSymbolVariants(symbol);
+    
+    for (const apiKey of this.fmpApiKeys) {
       for (const variant of symbolVariants) {
         try {
           const [priceResponse, profileResponse] = await Promise.allSettled([
-            this.makeRequest(`${this.apis.fmp.baseUrl}/quote/${variant}?apikey=${this.fmpApiKey}`),
-            this.makeRequest(`${this.apis.fmp.baseUrl}/profile/${variant}?apikey=${this.fmpApiKey}`)
+            this.makeRequest(`${this.apis.fmp.baseUrl}/quote/${variant}?apikey=${apiKey}`),
+            this.makeRequest(`${this.apis.fmp.baseUrl}/profile/${variant}?apikey=${apiKey}`)
           ]);
 
           const priceData = priceResponse.status === 'fulfilled' ? priceResponse.value.data[0] : null;
@@ -137,14 +143,11 @@ class StockDataProvider {
             return this.formatFMPResponse(priceData, profileData);
           }
         } catch (error) {
-          continue; // Try next variant
+          continue; // Try next variant/key
         }
       }
-      return null;
-    } catch (error) {
-      console.error('FMP API error:', error.message);
-      return null;
     }
+    return null;
   }
 
   /**
@@ -178,45 +181,53 @@ class StockDataProvider {
   }
 
   /**
-   * Get top movers (gainers/losers)
+   * Get top movers (gainers/losers) with multiple API keys
    */
   async getTopMovers(type = 'gainers') {
-    try {
-      if (!this.fmpApiKey) {
-        return this.getMockTopMovers(type);
-      }
-
-      const endpoint = type === 'gainers' ? 'gainers' : 'losers';
-      const response = await this.makeRequest(
-        `${this.apis.fmp.baseUrl}/stock_market/${endpoint}?apikey=${this.fmpApiKey}`
-      );
-
-      return response.data.slice(0, 10);
-    } catch (error) {
-      console.error(`Error fetching ${type}:`, error.message);
+    if (this.fmpApiKeys.length === 0) {
       return this.getMockTopMovers(type);
     }
+
+    const endpoint = type === 'gainers' ? 'gainers' : 'losers';
+    
+    for (const apiKey of this.fmpApiKeys) {
+      try {
+        const response = await this.makeRequest(
+          `${this.apis.fmp.baseUrl}/stock_market/${endpoint}?apikey=${apiKey}`
+        );
+        return response.data.slice(0, 10);
+      } catch (error) {
+        console.log(`FMP API key failed for ${type}: ${apiKey.substring(0, 8)}...`);
+        continue;
+      }
+    }
+    
+    return this.getMockTopMovers(type);
   }
 
   /**
-   * Get market news
+   * Get market news with multiple API keys
    */
   async getMarketNews(symbol = null, limit = 5) {
-    try {
-      if (!this.fmpApiKey) {
-        return this.getMockNews(symbol, limit);
-      }
-
-      const url = symbol 
-        ? `${this.apis.fmp.baseUrl}/stock_news?tickers=${symbol}&limit=${limit}&apikey=${this.fmpApiKey}`
-        : `${this.apis.fmp.baseUrl}/stock_news?limit=${limit}&apikey=${this.fmpApiKey}`;
-      
-      const response = await this.makeRequest(url);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching news:', error.message);
+    if (this.fmpApiKeys.length === 0) {
       return this.getMockNews(symbol, limit);
     }
+
+    for (const apiKey of this.fmpApiKeys) {
+      try {
+        const url = symbol 
+          ? `${this.apis.fmp.baseUrl}/stock_news?tickers=${symbol}&limit=${limit}&apikey=${apiKey}`
+          : `${this.apis.fmp.baseUrl}/stock_news?limit=${limit}&apikey=${apiKey}`;
+        
+        const response = await this.makeRequest(url);
+        return response.data;
+      } catch (error) {
+        console.log(`FMP API key failed for news: ${apiKey.substring(0, 8)}...`);
+        continue;
+      }
+    }
+    
+    return this.getMockNews(symbol, limit);
   }
 
   /**

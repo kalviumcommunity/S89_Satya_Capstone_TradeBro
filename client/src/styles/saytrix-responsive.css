@@ -1,0 +1,280 @@
+/* Perfect Responsive Spacing for Saytrix AI Page */
+
+/* Base Container Improvements */
+.saytrix-container {
+  padding: 0 1rem;
+}
+
+.saytrix-layout {
+  gap: 2rem;
+  padding: 2rem 1rem;
+}
+
+.saytrix-main {
+  gap: 2rem;
+  padding-bottom: 140px;
+}
+
+.messages-container {
+  gap: 1.5rem;
+  padding: 1rem 0;
+}
+
+/* Floating Input Positioning */
+.floating-input {
+  position: fixed !important;
+  bottom: 1.5rem !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: calc(100% - 3rem) !important;
+  max-width: 1000px !important;
+  z-index: 1000 !important;
+}
+
+.voice-indicator {
+  bottom: 7rem !important;
+  padding: 0.75rem 1.25rem;
+  max-width: 280px;
+}
+
+/* Tablet Responsive */
+@media (max-width: 1024px) {
+  .saytrix-layout {
+    padding: 1.5rem 0.75rem;
+    gap: 1.5rem;
+  }
+  
+  .floating-input {
+    width: calc(100% - 2rem) !important;
+  }
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .saytrix-container {
+    padding: 0 0.5rem;
+  }
+
+  .saytrix-navbar {
+    padding: 1rem 0.5rem;
+  }
+
+  .saytrix-layout {
+    padding: 1rem 0.5rem;
+    gap: 1rem;
+  }
+
+  .saytrix-main {
+    gap: 1.5rem;
+    padding-bottom: 120px;
+  }
+
+  .recent-questions {
+    padding: 1.5rem 1rem;
+    margin: 1rem 0;
+  }
+
+  .question-chips {
+    gap: 0.75rem;
+  }
+
+  .messages-container {
+    gap: 1rem;
+    padding: 0.5rem 0;
+  }
+
+  .floating-input {
+    width: calc(100% - 1rem) !important;
+    bottom: 1rem !important;
+  }
+
+  .input-container {
+    padding: 0.75rem 1rem;
+    min-height: 52px;
+    gap: 0.75rem;
+  }
+
+  .voice-btn,
+  .send-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .voice-indicator {
+    bottom: 5.5rem !important;
+    padding: 0.75rem 1rem;
+    font-size: 0.8rem;
+  }
+
+  .user-message,
+  .saytrix-card {
+    max-width: 90%;
+  }
+}
+
+/* Message Output Structure */
+.saytrix-card {
+  padding: 2rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.text-content {
+  line-height: 1.7;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.text-paragraph {
+  margin: 0;
+}
+
+.text-header {
+  margin: 1.5rem 0 0.75rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--saytrix-border);
+}
+
+.text-header:first-child {
+  margin-top: 0;
+}
+
+.text-bullet,
+.text-step {
+  margin: 0.75rem 0;
+}
+
+.text-line {
+  margin: 0.5rem 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.text-line:first-child {
+  margin-top: 0;
+}
+
+.text-line:last-child {
+  margin-bottom: 0;
+}
+
+.text-suggestions {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--saytrix-border);
+}
+
+.suggestion-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: 0.5rem 0;
+}
+
+.suggestion-chip {
+  margin: 0.25rem;
+  padding: 0.75rem 1.25rem;
+  display: inline-block;
+}
+
+/* Small Mobile */
+@media (max-width: 480px) {
+  .saytrix-container {
+    padding: 0 0.25rem;
+  }
+
+  .saytrix-navbar {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .saytrix-layout {
+    padding: 0.75rem 0.25rem;
+    gap: 0.75rem;
+  }
+
+  .saytrix-main {
+    gap: 1rem;
+    padding-bottom: 100px;
+  }
+
+  .recent-questions {
+    padding: 1rem 0.75rem;
+    margin: 0.5rem 0;
+  }
+
+  .messages-container {
+    gap: 0.75rem;
+  }
+
+  .saytrix-card {
+    padding: 1.5rem 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .text-content {
+    margin-bottom: 1rem;
+  }
+
+  .text-paragraph {
+    margin-bottom: 1rem;
+  }
+
+  .text-header {
+    margin: 1.5rem 0 0.75rem 0;
+  }
+
+  .text-suggestions {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+  }
+
+  .suggestion-chips {
+    gap: 0.75rem;
+    margin-top: 1rem;
+    padding: 0.25rem 0;
+  }
+
+  .suggestion-chip {
+    margin: 0.125rem;
+    padding: 0.5rem 1rem;
+  }
+
+  .text-line {
+    margin: 0.375rem 0;
+    gap: 0.375rem;
+  }
+
+  .floating-input {
+    width: calc(100% - 0.5rem) !important;
+    bottom: 0.5rem !important;
+  }
+
+  .input-container {
+    padding: 0.5rem 0.75rem;
+    min-height: 48px;
+    gap: 0.5rem;
+  }
+
+  .voice-btn,
+  .send-btn {
+    width: 40px;
+    height: 40px;
+  }
+
+  .voice-indicator {
+    bottom: 4.5rem !important;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+  }
+}

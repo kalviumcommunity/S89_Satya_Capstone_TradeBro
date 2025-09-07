@@ -1,1266 +1,463 @@
-import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { useSelector } from 'react-redux';
 import {
-  FiRefreshCw, FiTrendingUp, FiTrendingDown,
-  FiDollarSign, FiBarChart2, FiCreditCard, FiGift,
-  FiMaximize2, FiTrash2
-} from "react-icons/fi";
-import { useToast } from "../context/ToastContext";
-import { useAuth } from "../context/AuthContext";
-import { useVirtualMoney } from "../context/VirtualMoneyContext";
-import { safeApiCall, createDummyData } from "../utils/apiUtils";
-import { getCachedStockSymbols, cacheStockSymbols } from "../utils/stockCache";
-import { addToSearchHistory } from "../utils/searchUtils";
-import PageLayout from "../components/PageLayout";
-import Loading from "../components/common/Loading";
-import StockSearch from "../components/StockSearch";
-import PortfolioDashboard from "../components/portfolio/PortfolioDashboard";
-import TradingIntegration from "../components/trading/TradingIntegration";
-import axios from "axios";
-import API_ENDPOINTS from "../config/apiConfig";
-import "../styles/pages/portfolio.css";
+  FiPieChart,
+  FiTrendingUp,
+  FiTrendingDown,
+  FiDollarSign,
+  FiRefreshCw,
+  FiDownload,
+  FiPlus,
+  FiBarChart2,
+  FiArrowUpRight,
+  FiArrowDownRight,
+  FiMoreHorizontal,
+  FiEdit,
+  FiTrash2
+} from 'react-icons/fi';
+import { toast } from 'react-toastify';
+import CountUp from 'react-countup';
+import StockPrice from '../components/StockPrice';
+import { PortfolioActionButtons } from '../components/trading/StockActionButtons';
+import PageHeader from '../components/layout/PageHeader';
+import { usePortfolio } from '../contexts/PortfolioContext';
+import SlideToBuy from '../components/trading/SlideToBuy';
+import WatchlistButton from '../components/trading/WatchlistButton';
+import { useSlideToBuy } from '../hooks/useSlideToBuy';
+import { formatCurrency, formatPercentage } from '../utils/formatters';
+import '../styles/portfolio.css';
+import '../styles/trading-buttons.css';
 
-// Add some additional styles for the clickable rows
-const additionalStyles = `
-  .stock-row {
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  .stock-row:hover {
-    background-color: rgba(34, 184, 176, 0.05) !important;
-  }
-
-  .view-detail-btn {
-    background-color: rgba(34, 184, 176, 0.1);
-    color: #22b8b0;
-    border: none;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    margin-left: 8px;
-  }
-
-  .view-detail-btn:hover {
-    background-color: rgba(34, 184, 176, 0.2);
-    transform: scale(1.1);
-  }
-
-  .pl-container {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 8px;
-  }
-
-  .portfolio-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-  }
-
-  .portfolio-toggle {
-    display: flex;
-    gap: 0.5rem;
-    background: rgba(255, 255, 255, 0.1);
-    padding: 0.25rem;
-    border-radius: 12px;
-    backdrop-filter: blur(10px);
-  }
-
-  .toggle-btn {
-    padding: 0.5rem 1rem;
-    border: none;
-    border-radius: 8px;
-    background: transparent;
-    color: var(--text-secondary);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-size: 0.875rem;
-  }
-
-  .toggle-btn.active {
-    background: var(--primary-color);
-    color: white;
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-  }
-
-  .toggle-btn:hover:not(.active) {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--text-primary);
-  }
-`;
-
-const mockPortfolio = [
-  {
-    symbol: "TCS",
-    company: "Tata Consultancy Services",
-    quantity: 10,
-    buyPrice: 3300,
-    currentPrice: 3450,
-  },
-  {
-    symbol: "INFY",
-    company: "Infosys Ltd",
-    quantity: 15,
-    buyPrice: 1400,
-    currentPrice: 1350,
-  },
-];
-
-const PortfolioPage = () => {
-  const { success, error, info, warning } = useToast();
-  const { isAuthenticated, user } = useAuth();
-  const { virtualMoney, fetchVirtualMoney, updateVirtualMoney } = useVirtualMoney();
-  const [portfolio, setPortfolio] = useState(mockPortfolio);
-  const [showModal, setShowModal] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [showRewardAnimation, setShowRewardAnimation] = useState(false);
-  const [newStock, setNewStock] = useState({
-    symbol: "",
-    company: "",
-    quantity: "",
-    buyPrice: "",
-    currentPrice: "",
-  });
-  const [errors, setErrors] = useState({});
-  const [selectedStock, setSelectedStock] = useState(null);
-  const [showFullScreenDetail, setShowFullScreenDetail] = useState(false);
-  const [useNewPortfolio, setUseNewPortfolio] = useState(true); // Toggle for new portfolio system
-
-  // Handle stock selection for chart view (redirect to charts page)
-  const handleStockSelectChart = (symbol) => {
-    // Navigate to charts page with the selected symbol
-    window.location.href = `/charts?symbol=${symbol}`;
-  };
-
-  // Handle stock selection from StockSearch
-  const handleStockSelectFromSearch = (symbol, name) => {
-    console.log(`Selected stock: ${symbol} - ${name}`);
-    addToSearchHistory({ symbol, name });
-    setSelectedStock(symbol);
-    setShowFullScreenDetail(true);
-  };
-
-  // Handle stock selection for full-screen detail view
-  const handleStockSelect = (symbol) => {
-    setSelectedStock(symbol);
-    setShowFullScreenDetail(true);
-  };
-
-  // Handle closing the full-screen detail view
-  const handleCloseFullScreenDetail = () => {
-    setShowFullScreenDetail(false);
-    setSelectedStock(null);
-  };
-
-  // Handle transaction success
-  const handleTransactionSuccess = () => {
-    // Show loading indicator
-    setIsLoading(true);
-
-    // Fetch updated portfolio data
-    fetchVirtualMoneyData();
-
-    // Show success toast
-    success("Portfolio updated successfully!");
-
-    // Hide loading after a short delay
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
-  };
-
-  // Update portfolio with current prices
-  const updatePortfolioWithCurrentPrices = React.useCallback(async (portfolioData) => {
+const Portfolio = ({ user, theme }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [refreshing, setRefreshing] = useState(false);
+  const [highlightedStock, setHighlightedStock] = useState(null);
+  const { isOpen, currentStock, defaultQuantity, openSlideToBuy, closeSlideToBuy } = useSlideToBuy();
+  const [filter, setFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('value');
+  const { portfolioData, loading, updatePortfolioValues, refreshPortfolio, sellStock } = usePortfolio();
+  
+  const handleSellStock = async (holding) => {
+    const quantity = prompt(`How many shares of ${holding.symbol} do you want to sell? (Available: ${holding.quantity})`);
+    
+    if (!quantity || isNaN(quantity) || quantity <= 0) {
+      return;
+    }
+    
+    const sellQuantity = parseInt(quantity);
+    
+    if (sellQuantity > holding.quantity) {
+      toast.error(`You only have ${holding.quantity} shares available`);
+      return;
+    }
+    
     try {
-      // Check if the portfolio data already has currentPrice (from server)
-      const hasCurrentPrices = portfolioData.some(item => item.currentPrice !== undefined);
-
-      if (hasCurrentPrices) {
-        // Use the server-provided prices and profit/loss calculations
-        const updatedPortfolio = portfolioData.map(item => ({
-          symbol: item.stockSymbol,
-          company: item.stockSymbol, // Will be updated with real name if available
-          quantity: item.quantity,
-          buyPrice: item.averageBuyPrice,
-          currentPrice: item.currentPrice,
-          change: item.profitLoss / item.quantity, // Per-share change
-          changePercent: item.profitLossPercentage,
-          totalValue: item.totalValue,
-          profitLoss: item.profitLoss
-        }));
-
-        setPortfolio(updatedPortfolio);
-        return;
-      }
-
-      // Get symbols from portfolio
-      const symbols = portfolioData.map(item => item.stockSymbol).join(',');
-
-      if (!symbols) {
-        setPortfolio([]);
-        return;
-      }
-
-      // Create fallback data for stock prices
-      const fallbackData = createDummyData(() => {
-        // Use fallback with just the buy prices if API fails
-        if (portfolioData && portfolioData.length > 0) {
-          const mockStockData = portfolioData.map(item => {
-            // Generate a random price fluctuation that favors losses (more realistic)
-            // 60% chance of loss, 40% chance of gain
-            const lossChance = Math.random() < 0.6;
-            let randomFactor;
-
-            if (lossChance) {
-              // Loss: 0.85 to 0.98 (2-15% loss)
-              randomFactor = 0.85 + (Math.random() * 0.13);
-            } else {
-              // Gain: 1.01 to 1.08 (1-8% gain)
-              randomFactor = 1.01 + (Math.random() * 0.07);
-            }
-
-            const mockPrice = item.averageBuyPrice * randomFactor;
-
-            return {
-              symbol: item.stockSymbol,
-              name: item.stockSymbol,
-              price: mockPrice,
-              change: mockPrice - item.averageBuyPrice,
-              changePercent: ((mockPrice - item.averageBuyPrice) / item.averageBuyPrice) * 100
-            };
-          });
-
-          return mockStockData;
-        }
-        return [];
-      });
-
-      // Get auth token from localStorage
-      const token = localStorage.getItem('authToken');
-
-      // Set headers with auth token if available
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
-      // Get user ID for personalized data if authenticated
-      const userId = user?.id || localStorage.getItem('userId') || token;
-
-      // Use safe API call with fallback data
-      const result = await safeApiCall({
-        method: 'get',
-        url: userId
-          ? `${API_ENDPOINTS.PROXY.STOCK_BATCH(symbols)}&userId=${userId}`
-          : API_ENDPOINTS.PROXY.STOCK_BATCH(symbols),
-        headers,
-        fallbackData,
-        timeout: 5000 // Increase timeout to 5 seconds
-      });
-
-      if (result && result.data && result.data.length > 0) {
-        // Map portfolio data with current prices
-        const updatedPortfolio = portfolioData.map(item => {
-          const stockData = result.data.find(stock => stock.symbol === item.stockSymbol);
-
-          // Calculate profit/loss
-          const currentPrice = stockData?.price || item.averageBuyPrice;
-          const totalValue = currentPrice * item.quantity;
-          const investedValue = item.averageBuyPrice * item.quantity;
-          const profitLoss = totalValue - investedValue;
-          const profitLossPercentage = (profitLoss / investedValue) * 100;
-
-          return {
-            symbol: item.stockSymbol,
-            company: stockData?.name || item.stockSymbol,
-            quantity: item.quantity,
-            buyPrice: item.averageBuyPrice,
-            currentPrice: currentPrice,
-            change: stockData ? (stockData.price - item.averageBuyPrice) : 0,
-            changePercent: stockData ? ((stockData.price - item.averageBuyPrice) / item.averageBuyPrice * 100) : 0,
-            totalValue: parseFloat(totalValue.toFixed(2)),
-            profitLoss: parseFloat(profitLoss.toFixed(2)),
-            profitLossPercentage: parseFloat(profitLossPercentage.toFixed(2))
-          };
-        });
-
-        setPortfolio(updatedPortfolio);
+      const result = await sellStock(holding.symbol, sellQuantity, holding.currentPrice || holding.avgPrice);
+      
+      if (result && result.success) {
+        toast.success(`Successfully sold ${sellQuantity} shares of ${holding.symbol}!`);
       } else {
-        // Use fallback with just the buy prices if no data, but with some losses
-        const fallbackPortfolio = portfolioData.map(item => {
-          // Generate a random price fluctuation that favors losses (more realistic)
-          // 60% chance of loss, 40% chance of gain
-          const lossChance = Math.random() < 0.6;
-          let randomFactor;
-
-          if (lossChance) {
-            // Loss: 0.85 to 0.98 (2-15% loss)
-            randomFactor = 0.85 + (Math.random() * 0.13);
-          } else {
-            // Gain: 1.01 to 1.08 (1-8% gain)
-            randomFactor = 1.01 + (Math.random() * 0.07);
-          }
-
-          const currentPrice = item.averageBuyPrice * randomFactor;
-          const totalValue = currentPrice * item.quantity;
-          const investedValue = item.averageBuyPrice * item.quantity;
-          const profitLoss = totalValue - investedValue;
-          const profitLossPercentage = (profitLoss / investedValue) * 100;
-
-          return {
-            symbol: item.stockSymbol,
-            company: item.stockSymbol, // Use symbol as company name fallback
-            quantity: item.quantity,
-            buyPrice: item.averageBuyPrice,
-            currentPrice: currentPrice,
-            change: currentPrice - item.averageBuyPrice,
-            changePercent: ((currentPrice - item.averageBuyPrice) / item.averageBuyPrice * 100),
-            totalValue: parseFloat(totalValue.toFixed(2)),
-            profitLoss: parseFloat(profitLoss.toFixed(2)),
-            profitLossPercentage: parseFloat(profitLossPercentage.toFixed(2))
-          };
-        });
-
-        setPortfolio(fallbackPortfolio);
+        toast.error(result?.error || 'Failed to sell stock');
       }
     } catch (error) {
-      console.error("Error updating portfolio with current prices:", error);
-
-      // Use fallback with just the buy prices if API fails, but with some losses
-      if (portfolioData && portfolioData.length > 0) {
-        const fallbackPortfolio = portfolioData.map(item => {
-          // Generate a random price fluctuation that favors losses (more realistic)
-          // 60% chance of loss, 40% chance of gain
-          const lossChance = Math.random() < 0.6;
-          let randomFactor;
-
-          if (lossChance) {
-            // Loss: 0.85 to 0.98 (2-15% loss)
-            randomFactor = 0.85 + (Math.random() * 0.13);
-          } else {
-            // Gain: 1.01 to 1.08 (1-8% gain)
-            randomFactor = 1.01 + (Math.random() * 0.07);
-          }
-
-          const currentPrice = item.averageBuyPrice * randomFactor;
-          const totalValue = currentPrice * item.quantity;
-          const investedValue = item.averageBuyPrice * item.quantity;
-          const profitLoss = totalValue - investedValue;
-          const profitLossPercentage = (profitLoss / investedValue) * 100;
-
-          return {
-            symbol: item.stockSymbol,
-            company: item.stockSymbol, // Use symbol as company name fallback
-            quantity: item.quantity,
-            buyPrice: item.averageBuyPrice,
-            currentPrice: currentPrice,
-            change: currentPrice - item.averageBuyPrice,
-            changePercent: ((currentPrice - item.averageBuyPrice) / item.averageBuyPrice * 100),
-            totalValue: parseFloat(totalValue.toFixed(2)),
-            profitLoss: parseFloat(profitLoss.toFixed(2)),
-            profitLossPercentage: parseFloat(profitLossPercentage.toFixed(2))
-          };
-        });
-
-        setPortfolio(fallbackPortfolio);
-      }
+      console.error('Error selling stock:', error);
+      toast.error(error.message || 'Failed to sell stock');
     }
-  }, [user, safeApiCall]);
+  };
 
-  // Fetch virtual money data using context
-  const fetchVirtualMoneyData = React.useCallback(() => {
-    if (!isAuthenticated) return Promise.resolve();
+  // Portfolio data is automatically loaded by PortfolioContext
+  // No need to manually refresh on mount
 
-    // Use the fetchVirtualMoney function from context
-    // Wrap in a Promise to ensure we can use .then() and .catch()
-    return Promise.resolve(fetchVirtualMoney(true)); // Force refresh
-  }, [isAuthenticated, fetchVirtualMoney]);
-
-  // Update portfolio when virtual money changes
-  React.useEffect(() => {
-    if (virtualMoney.portfolio && virtualMoney.portfolio.length > 0) {
-      updatePortfolioWithCurrentPrices(virtualMoney.portfolio);
-    } else {
-      setPortfolio([]);
-    }
-  }, [updatePortfolioWithCurrentPrices, virtualMoney]);
-
-  // Handle Google OAuth callback with token in URL
-  const { login } = useAuth();
-
+  // Handle purchase success from navigation state
   useEffect(() => {
-    // Check for token in URL (from Google OAuth callback)
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
-    const success = urlParams.get('success');
-    const google = urlParams.get('google');
-
-    if (token && success === 'true' && google === 'true') {
-      console.log('Google OAuth token found in URL');
-
-      // Remove token from URL to prevent issues on refresh
-      window.history.replaceState({}, document.title, '/dashboard');
+    if (location.state?.showPurchaseSuccess && location.state?.purchasedStock) {
+      const purchasedStock = location.state.purchasedStock;
 
       // Show success message
-      success('Successfully logged in with Google!');
+      toast.success(
+        `🎉 Successfully purchased ${purchasedStock.quantity} shares of ${purchasedStock.symbol} for ${formatCurrency(purchasedStock.totalCost)}!`,
+        { duration: 5000 }
+      );
 
-      // Fetch user data
-      const fetchUserData = async () => {
-        try {
-          const response = await axios.get(API_ENDPOINTS.AUTH.USER, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
+      // Highlight the purchased stock
+      setHighlightedStock(purchasedStock.symbol);
 
-          if (response.data && response.data.user) {
-            console.log('User data fetched successfully:', response.data.user);
-
-            // Call login function with token and user data
-            login(token, response.data.user, true);
-
-            // Force a refresh of virtual money data
-            setTimeout(() => {
-              fetchVirtualMoney();
-            }, 500);
-          } else {
-            console.warn('User data response is empty or invalid');
-            // Even if we can't fetch user data, still call login with the token
-            login(token, null, true);
-          }
-        } catch (error) {
-          console.error('Error fetching user data after Google login:', error);
-
-          // Create a basic user object from the token
-          try {
-            // Decode the JWT token to get basic user info
-            const base64Url = token.split('.')[1];
-            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-              return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join(''));
-
-            const payload = JSON.parse(jsonPayload);
-            console.log('Decoded token payload:', payload);
-
-            // Create a basic user object from the token payload
-            const basicUserData = {
-              id: payload.id,
-              email: payload.email,
-              username: payload.username || payload.email.split('@')[0],
-              fullName: payload.fullName || payload.username || payload.email.split('@')[0]
-            };
-
-            // Call login with the basic user data
-            login(token, basicUserData, true);
-          } catch (decodeError) {
-            console.error('Error decoding token:', decodeError);
-            // If all else fails, just call login with the token
-            login(token, null, true);
-          }
-        }
-      };
-
-      fetchUserData();
-    }
-  }, [login, success, fetchVirtualMoneyData]);
-
-  useEffect(() => {
-    // Show loading indicator
-    setIsLoading(true);
-
-    // Initial fetch - don't use Promise chaining since fetchVirtualMoneyData may not return a Promise
-    fetchVirtualMoneyData();
-
-    // Hide loading indicator after a short delay
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
-
-    // Check URL parameters for transaction success
-    const urlParams = new URLSearchParams(window.location.search);
-    const transactionSuccess = urlParams.get('transactionSuccess');
-
-    if (transactionSuccess === 'true') {
-      // Clear URL parameters
-      window.history.replaceState({}, document.title, '/portfolio');
-
-      // Show success toast
-      success("Transaction completed successfully!");
-
-      // Force refresh portfolio data
+      // Remove highlight after 5 seconds
       setTimeout(() => {
-        fetchVirtualMoneyData();
-      }, 1000);
+        setHighlightedStock(null);
+      }, 5000);
+
+      // Clear the navigation state
+      navigate(location.pathname, { replace: true });
     }
+  }, [location.state, navigate, location.pathname]);
 
-    // Set up interval to refresh portfolio prices every 30 seconds
-    // This is less frequent to prevent rendering loops
-    const intervalId = setInterval(() => {
-      // Only fetch if the document is visible (user is active)
-      if (document.visibilityState === 'visible') {
-        fetchVirtualMoneyData();
-      }
-    }, 30000); // 30 seconds
+  // Show loading state if portfolio data is not ready
+  if (loading || !portfolioData) {
+    return (
+      <div className="portfolio-page">
+        <div className="portfolio-container">
+          <div className="loading-container">
+            <div className="loading-spinner" />
+            <p>Loading portfolio...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-    // Set up visibility change listener to fetch when user returns to the app
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        fetchVirtualMoneyData();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    // Clean up
-    return () => {
-      clearInterval(intervalId);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [fetchVirtualMoneyData, success]);
-
-  // Function to claim daily login reward
-  const claimDailyReward = async () => {
-    try {
-      let rewardClaimed = false;
-      let rewardAmount = 1; // Default reward amount
-
-      // Set loading state
-      setIsLoading(true);
-
-      // Try to call the API to claim daily reward
-      try {
-        console.log("Attempting to claim daily reward from API");
-
-        // Get auth token from localStorage
-        const token = localStorage.getItem('authToken');
-
-        // Set headers with auth token if available
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
-        // Add user info to request body if available
-        const requestBody = user ? {
-          userId: user.id,
-          userEmail: user.email
-        } : {};
-
-        // Add a timeout to the request
-        const response = await axios.post(API_ENDPOINTS.VIRTUAL_MONEY.CLAIM_REWARD, requestBody, {
-          headers,
-          timeout: 10000 // 10 second timeout
-        });
-
-        console.log("API response:", response.data);
-
-        if (response.data.success) {
-          rewardAmount = response.data.data.rewardAmount || 1;
-          rewardClaimed = true;
-
-          // Get personalized data from response
-          const userName = response.data.data.userName || '';
-          const userFullName = response.data.data.userFullName || '';
-          const dayStreak = response.data.data.dayStreak || 1;
-
-          // Update virtual money with the new balance and user info
-          updateVirtualMoney({
-            ...virtualMoney,
-            balance: response.data.data.balance,
-            lastLoginReward: new Date(),
-            userName: userName,
-            userFullName: userFullName,
-            dayStreak: dayStreak
-          });
-
-          console.log("Successfully claimed reward from API");
-
-          // Show personalized success message
-          success(response.data.message || `Daily reward claimed: +₹${rewardAmount}`);
-        } else {
-          // Handle unsuccessful response
-          error(response.data.message || "Failed to claim reward");
-          setIsLoading(false);
-          return false;
-        }
-      } catch (apiError) {
-        console.error("Error claiming daily reward:", apiError);
-
-        // Safely check if we have a response object
-        if (apiError && apiError.response) {
-          // Check if we got a 400 response (already claimed)
-          if (apiError.response.status === 400) {
-            try {
-              // Show personalized message if available
-              const message = apiError.response.data?.message || "You've already claimed your daily reward today";
-              info(message);
-
-              // If there's time remaining info, show it
-              if (apiError.response.data?.timeRemaining) {
-                const { hours, minutes } = apiError.response.data.timeRemaining;
-                const timeMessage = `Next reward available in ${hours}h ${minutes}m`;
-                info(timeMessage);
-              }
-            } catch (parseError) {
-              // If there's an error parsing the response data
-              console.error("Error parsing response data:", parseError);
-              info("You've already claimed your daily reward today");
-            }
-
-            setIsLoading(false);
-            return false;
-          } else {
-            // Handle other HTTP error statuses
-            error(`Server error (${apiError.response.status}): ${apiError.response.data?.message || apiError.message || 'Unknown error'}`);
-          }
-        } else if (apiError.code === 'ECONNABORTED') {
-          // Handle timeout specifically
-          warning("Connection to server timed out. Using local implementation.");
-        } else {
-          // Handle other errors (network issues, etc.)
-          error(`Error: ${apiError.message || 'Unknown error'}`);
-        }
-
-        // Local implementation for claiming reward
-        console.log("Using local implementation for daily reward");
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        if (!virtualMoney.lastLoginReward || new Date(virtualMoney.lastLoginReward) < today) {
-          rewardClaimed = true;
-        } else {
-          info("You've already claimed your daily reward today");
-          setIsLoading(false);
-          return false;
-        }
-      } finally {
-        setIsLoading(false);
-      }
-
-      if (rewardClaimed) {
-        // Update virtual money state
-        const updatedVirtualMoney = {
-          ...virtualMoney,
-          balance: virtualMoney.balance + rewardAmount,
-          lastLoginReward: new Date()
-        };
-
-        updateVirtualMoney(updatedVirtualMoney);
-
-        // Save to local storage for offline use
-        localStorage.setItem('virtualMoney', JSON.stringify(updatedVirtualMoney));
-
-        // Show animation and toast
-        setShowRewardAnimation(true);
-        setTimeout(() => {
-          setShowRewardAnimation(false);
-        }, 3000);
-
-        success(`Daily reward claimed: +₹${rewardAmount}`);
-        return true;
-      }
-
-      return false;
-    } catch (err) {
-      console.error("Unexpected error claiming daily reward:", err);
-
-      // Make sure loading state is reset
-      setIsLoading(false);
-
-      // Show a user-friendly error message
-      error("Something went wrong while claiming your reward. Please try again later.");
-
-      // Log detailed error for debugging
-      if (err instanceof Error) {
-        console.error("Error details:", {
-          name: err.name,
-          message: err.message,
-          stack: err.stack
-        });
-      } else {
-        console.error("Unknown error type:", err);
-      }
-
-      return false;
+  // Portfolio overview stats from real data
+  const portfolioStats = [
+    {
+      title: 'Total Value',
+      value: portfolioData.totalValue || 0,
+      changePercent: portfolioData.totalGainLossPercentage || 0,
+      changeAmount: portfolioData.totalGainLoss || 0,
+      icon: FiDollarSign,
+      color: 'primary'
+    },
+    {
+      title: 'Available Cash',
+      value: portfolioData.availableCash || 0,
+      changePercent: 0,
+      changeAmount: 0,
+      icon: FiDollarSign,
+      color: 'info'
+    },
+    {
+      title: 'Total Invested',
+      value: portfolioData.totalInvested || 0,
+      changePercent: portfolioData.totalGainLossPercentage || 0,
+      changeAmount: portfolioData.totalGainLoss || 0,
+      icon: FiBarChart2,
+      color: (portfolioData.totalGainLoss || 0) >= 0 ? 'success' : 'danger'
+    },
+    {
+      title: 'Holdings',
+      value: portfolioData.holdings?.length || 0,
+      changePercent: 0,
+      changeAmount: 0,
+      icon: FiPieChart,
+      color: 'info'
     }
+  ];
+
+  // Use real holdings data
+  const holdings = portfolioData.holdings || [];
+
+  // Filter holdings based on selected filter
+  const filteredHoldings = holdings.filter(holding => {
+    if (filter === 'gainers') {
+      return (holding.totalGain || 0) > 0;
+    } else if (filter === 'losers') {
+      return (holding.totalGain || 0) < 0;
+    }
+    return true; // 'all' - show all holdings
+  });
+
+  // Sort holdings by total value (descending)
+  const sortedHoldings = [...filteredHoldings].sort((a, b) => {
+    return (b.value || 0) - (a.value || 0);
+  });
+
+
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    setRefreshing(false);
   };
 
-  const totalInvestment = portfolio.reduce(
-    (acc, stock) => acc + stock.buyPrice * stock.quantity,
-    0
-  );
-  const totalValue = portfolio.reduce(
-    (acc, stock) => acc + stock.currentPrice * stock.quantity,
-    0
-  );
-  const profitLoss = totalValue - totalInvestment;
-
-  const validateForm = () => {
-    const newErrors = {};
-    const { symbol, company, quantity, buyPrice, currentPrice } = newStock;
-
-    if (!symbol) {
-      newErrors.symbol = "Symbol is required";
-    }
-
-    if (!company) {
-      newErrors.company = "Company name is required";
-    }
-
-    if (!quantity) {
-      newErrors.quantity = "Quantity is required";
-    } else if (isNaN(quantity) || parseInt(quantity) <= 0) {
-      newErrors.quantity = "Quantity must be a positive number";
-    }
-
-    if (!buyPrice) {
-      newErrors.buyPrice = "Buy price is required";
-    } else if (isNaN(buyPrice) || parseFloat(buyPrice) <= 0) {
-      newErrors.buyPrice = "Buy price must be a positive number";
-    }
-
-    if (!currentPrice) {
-      newErrors.currentPrice = "Current price is required";
-    } else if (isNaN(currentPrice) || parseFloat(currentPrice) <= 0) {
-      newErrors.currentPrice = "Current price must be a positive number";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(amount);
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewStock({ ...newStock, [name]: value });
-
-    // Clear error when user types
-    if (errors[name]) {
-      setErrors({
-        ...errors,
-        [name]: null
-      });
-    }
-  };
-
-  const addStock = async (e) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
-
-    const { symbol, company, quantity, buyPrice, currentPrice } = newStock;
-
-    // Calculate total cost
-    const totalCost = parseInt(quantity) * parseFloat(buyPrice);
-
-    // Check if user has enough virtual money
-    if (totalCost > virtualMoney.balance) {
-      error(`Insufficient funds. You need ₹${totalCost.toLocaleString('en-IN')} but have ₹${virtualMoney.balance.toLocaleString('en-IN')}.`);
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      // Call API to buy stock
-      try {
-        const response = await axios.post(API_ENDPOINTS.VIRTUAL_MONEY.BUY, {
-          stockSymbol: symbol.toUpperCase(),
-          quantity: parseInt(quantity),
-          price: parseFloat(buyPrice)
-        });
-
-        if (response.data.success) {
-          // Update virtual money and portfolio
-          updateVirtualMoney(response.data.data);
-
-          // Fetch updated portfolio data
-          fetchVirtualMoneyData();
-
-          success(`Successfully purchased ${quantity} shares of ${symbol.toUpperCase()}`);
-        }
-      } catch (apiError) {
-        console.log("Backend API not available, using local implementation");
-
-        // Local implementation
-        // Add stock to portfolio
-        const updatedPortfolio = [
-          ...portfolio,
-          {
-            symbol: symbol.toUpperCase(),
-            company,
-            quantity: parseInt(quantity),
-            buyPrice: parseFloat(buyPrice),
-            currentPrice: parseFloat(currentPrice),
-          },
-        ];
-        setPortfolio(updatedPortfolio);
-
-        // Update virtual money in local storage
-        const updatedVirtualMoney = {
-          ...virtualMoney,
-          balance: virtualMoney.balance - totalCost,
-          portfolio: [
-            ...(virtualMoney.portfolio || []),
-            {
-              stockSymbol: symbol.toUpperCase(),
-              quantity: parseInt(quantity),
-              averageBuyPrice: parseFloat(buyPrice),
-              lastUpdated: new Date()
-            }
-          ]
-        };
-
-        updateVirtualMoney(updatedVirtualMoney);
-        localStorage.setItem('virtualMoney', JSON.stringify(updatedVirtualMoney));
-
-        success(`${symbol.toUpperCase()} added to portfolio! Spent ₹${totalCost.toLocaleString('en-IN')}.`);
-      }
-
-      // Reset form
-      setNewStock({
-        symbol: "",
-        company: "",
-        quantity: "",
-        buyPrice: "",
-        currentPrice: "",
-      });
-
-      setShowModal(false);
-    } catch (err) {
-      console.error("Error buying stock:", err);
-      error("Failed to buy stock. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const resetPortfolio = async () => {
-    if (portfolio.length === 0) {
-      info("Portfolio is already empty");
-      return;
-    }
-
-    if (confirm("Are you sure you want to reset your portfolio?")) {
-      try {
-        // Call API to reset portfolio
-        try {
-          const response = await axios.delete(API_ENDPOINTS.VIRTUAL_MONEY.PORTFOLIO);
-
-          if (response.data.success) {
-            // Update virtual money and portfolio
-            fetchVirtualMoneyData();
-            success("Portfolio has been reset successfully");
-          }
-        } catch (apiError) {
-          console.log("Backend API not available, using local implementation", apiError);
-
-          // Local implementation
-          const updatedVirtualMoney = {
-            ...virtualMoney,
-            portfolio: []
-          };
-
-          updateVirtualMoney(updatedVirtualMoney);
-          setPortfolio([]);
-          localStorage.setItem('virtualMoney', JSON.stringify(updatedVirtualMoney));
-
-          info("Portfolio has been reset");
-        }
-      } catch (err) {
-        console.error("Error resetting portfolio:", err);
-        error("Failed to reset portfolio. Please try again.");
-      }
-    }
+  const formatNumber = (num) => {
+    return new Intl.NumberFormat('en-IN').format(num);
   };
 
   return (
-    <PageLayout>
-      <style>{additionalStyles}</style>
-      <motion.div
-        className="portfolio-container"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-      >
-        <div className="portfolio-header">
-          <motion.h1
-            className="portfolio-title"
-            initial={{ y: -20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.1 }}
-          >
-            <FiBarChart2 className="title-icon" /> Portfolio Dashboard
-          </motion.h1>
+    <div className="portfolio-page">
+      {/* Page Header */}
+      <PageHeader
+        icon={FiPieChart}
+        title="Portfolio"
+        subtitle="Track your investments and portfolio performance"
+        borderColor="success"
+        actions={[
+          {
+            label: "Refresh",
+            icon: FiRefreshCw,
+            onClick: handleRefresh,
+            variant: "secondary",
+            disabled: refreshing
+          }
+        ]}
+      />
 
-          {/* Toggle between old and new portfolio */}
-          <motion.div
-            className="portfolio-toggle"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-          >
-            <button
-              className={`toggle-btn ${!useNewPortfolio ? 'active' : ''}`}
-              onClick={() => setUseNewPortfolio(false)}
-            >
-              Classic View
-            </button>
-            <button
-              className={`toggle-btn ${useNewPortfolio ? 'active' : ''}`}
-              onClick={() => setUseNewPortfolio(true)}
-            >
-              Trading Dashboard
-            </button>
-          </motion.div>
-        </div>
+      <div className="portfolio-container">
 
-        {/* Conditional rendering based on toggle */}
-        {useNewPortfolio ? (
-          <PortfolioDashboard />
-        ) : (
-          <>
-            <motion.div
-              className="portfolio-summary"
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.2 }}
-            >
-          <motion.div
-            className="summary-card virtual-money-card"
-            whileHover={{ y: -5, scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <FiCreditCard className="card-icon" />
-            <p>Virtual Money {virtualMoney.userFullName ? `- ${virtualMoney.userFullName}` : ''}</p>
-            <motion.h2
-              key={virtualMoney.balance}
-              initial={{ scale: 1 }}
-              animate={{ scale: [1, 1.1, 1] }}
-              transition={{ duration: 0.5 }}
-            >
-              ₹{virtualMoney.balance.toLocaleString()}
-            </motion.h2>
-
-            {virtualMoney.dayStreak > 1 && (
-              <div className="day-streak">
-                <span className="streak-badge">{virtualMoney.dayStreak}</span>
-                <span className="streak-text">Day Streak!</span>
-              </div>
-            )}
-
-            <div className="reward-button-container">
-              <button
-                className={`claim-reward-btn ${virtualMoney.lastLoginReward && new Date(virtualMoney.lastLoginReward).setHours(0,0,0,0) === new Date().setHours(0,0,0,0) ? 'claimed' : ''}`}
-                onClick={claimDailyReward}
-                disabled={virtualMoney.lastLoginReward && new Date(virtualMoney.lastLoginReward).setHours(0,0,0,0) === new Date().setHours(0,0,0,0)}
+        {/* Portfolio Stats */}
+        <motion.div
+          className="portfolio-stats"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+        >
+          {portfolioStats.map((stat, index) => {
+            const Icon = stat.icon;
+            const isPositive = stat.changePercent >= 0;
+            
+            return (
+              <motion.div
+                key={stat.title}
+                className={`stat-card stat-${stat.color}`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: index * 0.1 }}
               >
-                <FiGift /> {virtualMoney.lastLoginReward && new Date(virtualMoney.lastLoginReward).setHours(0,0,0,0) === new Date().setHours(0,0,0,0) ? 'Reward Claimed' : 'Claim Daily Reward'}
-              </button>
-            </div>
-          </motion.div>
-          <motion.div
-            className="summary-card"
-            whileHover={{ y: -5, scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <FiDollarSign className="card-icon" />
-            <p>Total Investment</p>
-            <h2>₹{totalInvestment.toLocaleString()}</h2>
-          </motion.div>
-          <motion.div
-            className="summary-card"
-            whileHover={{ y: -5, scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <FiBarChart2 className="card-icon" />
-            <p>Current Value</p>
-            <h2>₹{totalValue.toLocaleString()}</h2>
-          </motion.div>
-          <motion.div
-            className={`summary-card ${
-              profitLoss >= 0 ? "profit" : "loss"
-            }`}
-            whileHover={{ y: -5, scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            {profitLoss >= 0 ? (
-              <FiTrendingUp className="card-icon" />
-            ) : (
-              <FiTrendingDown className="card-icon" />
-            )}
-            <p>Profit / Loss</p>
-            <h2>₹{profitLoss.toLocaleString()}</h2>
-            <p className="percentage">
-              {totalInvestment > 0
-                ? `(${((profitLoss / totalInvestment) * 100).toFixed(2)}%)`
-                : "(0.00%)"}
-            </p>
-          </motion.div>
+                <div className="stat-header">
+                  <div className="stat-icon">
+                    <Icon />
+                  </div>
+                  <div className={`stat-change ${isPositive ? 'positive' : 'negative'}`}>
+                    {isPositive ? <FiArrowUpRight size={14} /> : <FiArrowDownRight size={14} />}
+                    {Math.abs(stat.changePercent)}%
+                  </div>
+                </div>
+                <div className="stat-content">
+                  <h3 className="stat-value">
+                    {typeof stat.value === 'number' && stat.value > 1000 ? (
+                      <CountUp
+                        end={stat.value}
+                        duration={2}
+                        separator=","
+                        prefix={stat.title.includes('Value') || stat.title.includes('P&L') ? '₹' : ''}
+                      />
+                    ) : (
+                      stat.value
+                    )}
+                  </h3>
+                  <p className="stat-title">{stat.title}</p>
+                  {stat.changeAmount !== 0 && (
+                    <p className={`stat-change-amount ${isPositive ? 'positive' : 'negative'}`}>
+                      {isPositive ? '+' : ''}{formatCurrency(stat.changeAmount)}
+                    </p>
+                  )}
+                </div>
+              </motion.div>
+            );
+          })}
         </motion.div>
 
-        <AnimatePresence>
-          {showRewardAnimation && (
-            <motion.div
-              className="reward-animation"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-            >
-              <FiGift className="reward-icon" />
-              <span>+₹1</span>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <motion.div
-          className="portfolio-section"
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.3 }}
-        >
-          <h3 className="section-title">Portfolio Holdings</h3>
-          <div className="table-container">
-          <div className="portfolio-actions">
-            <motion.button
-              className="refresh-btn"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={fetchVirtualMoneyData}
-              title="Refresh portfolio data"
-            >
-              <FiRefreshCw /> Refresh
-            </motion.button>
-            <motion.button
-              className="reset-btn"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={resetPortfolio}
-              title="Reset portfolio"
-            >
-              <FiTrash2 /> Reset Portfolio
-            </motion.button>
-          </div>
-
-          {portfolio.length > 0 ? (
-            <table className="portfolio-table">
-              <thead>
-                <tr>
-                  <th>Stock</th>
-                  <th>Quantity</th>
-                  <th>Buy Price</th>
-                  <th>Current Price</th>
-                  <th>P/L</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {portfolio.map((stock, idx) => {
-                  const stockPL =
-                    (stock.currentPrice - stock.buyPrice) * stock.quantity;
-                  const percentChange = ((stock.currentPrice - stock.buyPrice) / stock.buyPrice * 100).toFixed(2);
-
-                  return (
-                    <motion.tr
-                      key={idx}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.1 * idx }}
-                      whileHover={{ backgroundColor: "rgba(255, 255, 255, 0.9)" }}
-                      className="stock-row"
-                      onClick={() => handleStockSelectChart(stock.symbol, stock.company)}
+        {/* Portfolio Content Grid */}
+        <div className="portfolio-grid">
+          {/* Holdings Table */}
+          <motion.div
+            className="portfolio-card holdings-table"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+          >
+            <div className="card-header">
+              <div className="header-left">
+                <h3 className="card-title">
+                  <FiBarChart2 className="card-icon" />
+                  My Holdings
+                  <span className="holdings-count">({filteredHoldings.length} of {holdings.length} stocks)</span>
+                </h3>
+                <div className="holdings-summary">
+                  <span className="total-invested">
+                    Total Invested: {formatCurrency(portfolioData.totalInvested || 0)}
+                  </span>
+                  <span className="current-value">
+                    Current Value: {formatCurrency(portfolioData.totalValue || 0)}
+                  </span>
+                </div>
+              </div>
+              <div className="card-actions">
+                <div className="filter-group">
+                  <select
+                    className="filter-select"
+                    value={filter}
+                    onChange={(e) => setFilter(e.target.value)}
+                  >
+                    <option value="all">All Holdings</option>
+                    <option value="gainers">Gainers Only</option>
+                    <option value="losers">Losers Only</option>
+                  </select>
+                </div>
+                <button
+                  className="btn-refresh"
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  title="Refresh Holdings"
+                >
+                  <FiRefreshCw className={refreshing ? 'spinning' : ''} />
+                </button>
+              </div>
+            </div>
+            <div className="card-content">
+              <div className="holdings-table">
+                <div className="table-header">
+                  <div className="col-stock">Stock</div>
+                  <div className="col-quantity">Quantity</div>
+                  <div className="col-avg-price">Avg Price</div>
+                  <div className="col-current-price">Current Price</div>
+                  <div className="col-value">Value</div>
+                  <div className="col-gains">Total P&L</div>
+                  <div className="col-day-change">Day Change</div>
+                  <div className="col-actions">Actions</div>
+                </div>
+                <div className="table-body">
+                  {sortedHoldings.length > 0 ? sortedHoldings.map((holding, index) => (
+                    <motion.div
+                      key={holding.symbol}
+                      className={`table-row clickable ${highlightedStock === holding.symbol ? 'highlighted-purchase' : ''}`}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{
+                        opacity: 1,
+                        y: 0,
+                        scale: highlightedStock === holding.symbol ? 1.02 : 1
+                      }}
+                      style={{
+                        backgroundColor: highlightedStock === holding.symbol ? 'var(--success-bg, rgba(16, 185, 129, 0.1))' : 'transparent'
+                      }}
+                      transition={{ duration: 0.3, delay: index * 0.05 }}
+                      onClick={() => navigate(`/stock/${holding.symbol}`)}
                     >
-                      <td>
-                        <div className="stock-symbol">{stock.symbol}</div>
-                        <div className="company-name">{stock.company}</div>
-                      </td>
-                      <td>{stock.quantity}</td>
-                      <td className="price-cell">₹{stock.buyPrice.toLocaleString()}</td>
-                      <td className="price-cell">₹{stock.currentPrice.toLocaleString()}</td>
-                      <td className={`change-cell ${stockPL >= 0 ? "positive" : "negative"}`}>
-                        <div className="price-cell">₹{stockPL.toLocaleString()}</div>
-                        <div className="percentage">({percentChange}%)</div>
-                      </td>
-                      <td>
+                      <div className="col-stock">
+                        <div className="stock-info">
+                          <div className="stock-symbol">{holding.symbol}</div>
+                          <div className="stock-name">{holding.name}</div>
+                          <div className="stock-sector">{holding.sector}</div>
+                        </div>
+                      </div>
+                      <div className="col-quantity">{formatNumber(holding.quantity || 0)}</div>
+                      <div className="col-avg-price">{formatCurrency(holding.avgPrice || 0)}</div>
+                      <div className="col-current-price">
+                        <StockPrice
+                          price={holding.currentPrice || 0}
+                          change={holding.dayChange || 0}
+                          changePercent={holding.dayChangePercent || 0}
+                          size="small"
+                        />
+                      </div>
+                      <div className="col-value">{formatCurrency(holding.value || 0)}</div>
+                      <div className="col-gains">
+                        <div className={`gain-amount ${(holding.totalGain || 0) >= 0 ? 'positive' : 'negative'}`}>
+                          {(holding.totalGain || 0) >= 0 ? '+' : ''}{formatCurrency(holding.totalGain || 0)}
+                        </div>
+                        <div className={`gain-percent ${(holding.totalGainPercent || 0) >= 0 ? 'positive' : 'negative'}`}>
+                          ({(holding.totalGainPercent || 0) >= 0 ? '+' : ''}{(holding.totalGainPercent || 0).toFixed(2)}%)
+                        </div>
+                      </div>
+                      <div className="col-day-change">
+                        <div className={`day-change ${(holding.dayChange || 0) >= 0 ? 'positive' : 'negative'}`}>
+                          {(holding.dayChange || 0) >= 0 ? '+' : ''}{(holding.dayChange || 0).toFixed(2)}
+                        </div>
+                        <div className={`day-change-percent ${(holding.dayChangePercent || 0) >= 0 ? 'positive' : 'negative'}`}>
+                          ({(holding.dayChangePercent || 0) >= 0 ? '+' : ''}{(holding.dayChangePercent || 0).toFixed(2)}%)
+                        </div>
+                      </div>
+                      <div className="col-actions">
                         <div className="action-buttons">
+                          <WatchlistButton
+                            stockData={{
+                              symbol: holding.symbol,
+                              name: holding.name,
+                              price: holding.currentPrice,
+                              change: holding.dayChange,
+                              changePercent: holding.dayChangePercent
+                            }}
+                            size="small"
+                            variant="simple"
+                            showText={false}
+                          />
                           <button
-                            className="action-btn"
+                            className="buy-btn-small"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleStockSelectChart(stock.symbol, stock.company);
+                              openSlideToBuy({
+                                symbol: holding.symbol,
+                                name: holding.name,
+                                price: holding.currentPrice,
+                                change: holding.dayChange,
+                                changePercent: holding.dayChangePercent
+                              });
                             }}
-                            title="View chart"
+                            title="Buy More"
                           >
-                            <FiBarChart2 />
+                            Buy
                           </button>
                           <button
-                            className="action-btn"
+                            className="sell-btn-small"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleStockSelect(stock.symbol);
+                              handleSellStock(holding);
                             }}
-                            title="View details"
+                            title="Sell Stock"
                           >
-                            <FiMaximize2 />
+                            Sell
                           </button>
                         </div>
-                      </td>
-                    </motion.tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          ) : (
-            <div className="empty-portfolio">
-              <p>Your portfolio is empty</p>
-              <p>Add stocks to start tracking your investments</p>
+                      </div>
+                    </motion.div>
+                  )) : (
+                    <div className="empty-holdings">
+                      <div className="empty-icon">
+                        <FiBarChart2 size={48} />
+                      </div>
+                      <h3 className="empty-title">
+                        {filter === 'gainers' ? 'No Gainers Found' :
+                         filter === 'losers' ? 'No Losers Found' :
+                         'No Holdings Yet'}
+                      </h3>
+                      <p className="empty-description">
+                        {filter === 'gainers' ? 'None of your holdings are currently in profit.' :
+                         filter === 'losers' ? 'None of your holdings are currently in loss.' :
+                         'Start building your portfolio by adding your first stock.'}
+                      </p>
+                      {filter !== 'all' && (
+                        <button
+                          className="btn-secondary"
+                          onClick={() => setFilter('all')}
+                        >
+                          View All Holdings
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-          )}
-          </div>
-        </motion.div>
+          </motion.div>
 
-        <motion.div
-          className="search-section"
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.4 }}
-        >
-          <h3 className="section-title">Search Stocks</h3>
-          <div className="search-container">
-            <StockSearch
-              onStockSelect={handleStockSelectFromSearch}
-              placeholder="Search for stocks to view details..."
-              showWatchlistButton={false}
-              showChartButton={true}
-              variant="default"
-            />
-          </div>
-        </motion.div>
 
-        {/* Modal */}
-        <AnimatePresence>
-          {showModal && (
-            <motion.div
-              className="modal"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <motion.div
-                className="modal-content glass"
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.8, opacity: 0 }}
-                transition={{ type: "spring", stiffness: 300, damping: 25 }}
-              >
-                <h2>Buy Stock with Virtual Money</h2>
-                <p className="modal-subtitle">Available Balance: ₹{virtualMoney.balance.toLocaleString('en-IN')}</p>
-                <form onSubmit={addStock}>
-                  <div className="form-group">
-                    <input
-                      type="text"
-                      name="symbol"
-                      placeholder="Symbol (e.g., INFY)"
-                      value={newStock.symbol}
-                      onChange={handleInputChange}
-                      className={errors.symbol ? "error" : ""}
-                    />
-                    {errors.symbol && <div className="error-message">{errors.symbol}</div>}
-                  </div>
-
-                  <div className="form-group">
-                    <input
-                      type="text"
-                      name="company"
-                      placeholder="Company Name"
-                      value={newStock.company}
-                      onChange={handleInputChange}
-                      className={errors.company ? "error" : ""}
-                    />
-                    {errors.company && <div className="error-message">{errors.company}</div>}
-                  </div>
-
-                  <div className="form-group">
-                    <input
-                      type="number"
-                      name="quantity"
-                      placeholder="Quantity"
-                      value={newStock.quantity}
-                      onChange={handleInputChange}
-                      className={errors.quantity ? "error" : ""}
-                    />
-                    {errors.quantity && <div className="error-message">{errors.quantity}</div>}
-                  </div>
-
-                  <div className="form-group">
-                    <input
-                      type="number"
-                      name="buyPrice"
-                      placeholder="Buy Price"
-                      value={newStock.buyPrice}
-                      onChange={handleInputChange}
-                      className={errors.buyPrice ? "error" : ""}
-                    />
-                    {errors.buyPrice && <div className="error-message">{errors.buyPrice}</div>}
-                  </div>
-
-                  <div className="form-group">
-                    <input
-                      type="number"
-                      name="currentPrice"
-                      placeholder="Current Price"
-                      value={newStock.currentPrice}
-                      onChange={handleInputChange}
-                      className={errors.currentPrice ? "error" : ""}
-                    />
-                    {errors.currentPrice && <div className="error-message">{errors.currentPrice}</div>}
-                  </div>
-
-                  <div className="modal-buttons">
-                    <motion.button
-                      type="submit"
-                      className="auth-btn"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      disabled={isLoading}
-                    >
-                      {isLoading ? <Loading size="small" text="" /> : "Buy Stock"}
-                    </motion.button>
-                    <motion.button
-                      type="button"
-                      className="cancel-btn"
-                      onClick={() => setShowModal(false)}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      disabled={isLoading}
-                    >
-                      Cancel
-                    </motion.button>
-                  </div>
-                </form>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-          </>
-        )}
-      </motion.div>
-
-      {/* Full-screen stock detail - Redirects to charts page */}
-      {showFullScreenDetail && selectedStock && (
-        <div className="redirect-message">
-          <p>Redirecting to charts page for {selectedStock}...</p>
-          {setTimeout(() => {
-            window.location.href = `/charts?symbol=${selectedStock}`;
-            setShowFullScreenDetail(false);
-          }, 1000)}
         </div>
-      )}
-    </PageLayout>
+
+        {/* Slide to Buy Modal */}
+        <SlideToBuy
+          stockData={currentStock}
+          isOpen={isOpen}
+          onClose={closeSlideToBuy}
+          defaultQuantity={defaultQuantity}
+          onSuccess={() => {
+            // Refresh portfolio data after successful purchase
+            // portfolioData will be updated automatically by the context
+          }}
+        />
+      </div>
+    </div>
   );
 };
 
-export default PortfolioPage;
+export default Portfolio;
