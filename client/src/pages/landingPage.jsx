@@ -499,9 +499,9 @@ const LandingPage = () => {
         <p>
           Follow us:
           {[
-            { name: "Twitter", url: "https://twitter.com" },
-            { name: "Facebook", url: "https://facebook.com" },
-            { name: "LinkedIn", url: "https://linkedin.com" }
+            { name: "Twitter", url: "https://x.com/@KakiHariSatya" },
+            { name: "Facebook", url: "https://www.facebook.com/profile.php?id=61559417301452" },
+            { name: "LinkedIn", url: "https://www.linkedin.com/in/hari-kaki-aa2a1a328" }
           ].map((social, index, arr) => (
             <React.Fragment key={social.name}>
               <motion.a

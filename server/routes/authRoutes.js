@@ -86,20 +86,41 @@ router.post('/login', authRateLimit, validateLogin, asyncHandler(async (req, res
     await user.save();
 
     // Send 2FA email
+    let emailSent = false;
+    let emailError = null;
+    
     try {
       const { send2FAEmail } = require('../services/emailService');
-      await send2FAEmail(email, twoFactorCode, user.fullName || user.username);
-      console.log(`2FA code sent to ${email}: ${twoFactorCode}`);
-    } catch (emailError) {
-      console.error('Failed to send 2FA email:', emailError);
-      // Continue anyway - user can still use the code from console
+      const emailResult = await send2FAEmail(email, twoFactorCode, user.fullName || user.username);
+      
+      if (emailResult.success) {
+        emailSent = true;
+        console.log(`✅ 2FA code sent to ${email}: ${twoFactorCode}`);
+      } else {
+        emailError = emailResult.error;
+        console.error('❌ Failed to send 2FA email:', emailResult.error);
+      }
+    } catch (error) {
+      emailError = error.message;
+      console.error('❌ 2FA email service error:', error);
+    }
+
+    // Prepare response message
+    let message;
+    if (emailSent) {
+      message = `2FA code sent to ${email}. Please check your email.`;
+    } else {
+      message = `2FA required. Email service unavailable - use demo code 123456 or check console for your code: ${twoFactorCode}`;
+      console.log(`🔑 2FA CODE FOR ${email}: ${twoFactorCode}`);
     }
 
     res.json({ 
       success: true, 
-      message: `2FA code sent to ${email}. Check your email or use demo code 123456.`, 
+      message,
       requiresTwoFactor: true, 
-      email 
+      email,
+      emailSent,
+      ...(emailError && { emailError })
     });
 }));
 
