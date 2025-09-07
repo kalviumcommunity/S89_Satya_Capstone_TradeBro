@@ -43,46 +43,52 @@ if (FMP_API_KEYS.length === 0) {
     console.error('Please set FMP_API_KEY, FMP_API_KEY_2, etc., in your .env file.');
 }
 
-// Market hours checker for different exchanges (More robust timezone handling)
+// Market hours checker for different exchanges (Simplified and more reliable)
 const isMarketOpen = (exchange = 'NSE') => {
-    const now = new Date();
-    let targetTimeZone = 'America/New_York'; // Default for US markets
-    let marketOpenTime = { hour: 9, minute: 30 };
-    let marketCloseTime = { hour: 16, minute: 0 }; // 4 PM
+    try {
+        const now = new Date();
+        let targetTimeZone = 'America/New_York'; // Default for US markets
+        let marketOpenTime = { hour: 9, minute: 30 };
+        let marketCloseTime = { hour: 16, minute: 0 }; // 4 PM
 
-    if (exchange.toUpperCase() === 'NSE' || exchange.toUpperCase() === 'BSE') {
-        targetTimeZone = 'Asia/Kolkata';
-        marketOpenTime = { hour: 9, minute: 15 };
-        marketCloseTime = { hour: 15, minute: 30 }; // 3:30 PM
+        if (exchange.toUpperCase() === 'NSE' || exchange.toUpperCase() === 'BSE') {
+            targetTimeZone = 'Asia/Kolkata';
+            marketOpenTime = { hour: 9, minute: 15 };
+            marketCloseTime = { hour: 15, minute: 30 }; // 3:30 PM
+        }
+
+        // Get current time in target timezone
+        const options = { 
+            timeZone: targetTimeZone, 
+            hour12: false, 
+            hour: '2-digit', 
+            minute: '2-digit',
+            weekday: 'short'
+        };
+        
+        const formatter = new Intl.DateTimeFormat('en-US', options);
+        const timeString = formatter.format(now);
+        
+        // Extract day and time
+        const parts = timeString.split(', ');
+        const dayOfWeek = parts[0];
+        const time = parts[1];
+        
+        // Market closed on weekends
+        if (dayOfWeek === 'Sat' || dayOfWeek === 'Sun') {
+            return false;
+        }
+
+        const [currentHour, currentMinute] = time.split(':').map(Number);
+        const currentTotalMinutes = currentHour * 60 + currentMinute;
+        const marketOpenTotalMinutes = marketOpenTime.hour * 60 + marketOpenTime.minute;
+        const marketCloseTotalMinutes = marketCloseTime.hour * 60 + marketCloseTime.minute;
+
+        return currentTotalMinutes >= marketOpenTotalMinutes && currentTotalMinutes <= marketCloseTotalMinutes;
+    } catch (error) {
+        console.error('Error checking market status:', error);
+        return false; // Default to closed on error
     }
-
-    const options = { timeZone: targetTimeZone, hour: 'numeric', minute: 'numeric', weekday: 'numeric' };
-    const formatter = new Intl.DateTimeFormat('en-US', options);
-    const parts = formatter.formatToParts(now);
-
-    let currentHour = 0, currentMinute = 0, currentDay = 0;
-
-    for (const part of parts) {
-        if (part.type === 'hour') currentHour = parseInt(part.value, 10);
-        if (part.type === 'minute') currentMinute = parseInt(part.value, 10);
-        if (part.type === 'weekday') currentDay = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'].indexOf(part.value.toLowerCase());
-    }
-
-    // Adjust for 12-hour format if necessary (Intl.DateTimeFormat can return 12-hour)
-    const isPM = formatter.format(now).includes('PM');
-    if (isPM && currentHour !== 12) currentHour += 12;
-    if (!isPM && currentHour === 12) currentHour = 0; // Midnight case
-
-    // Market closed on weekends
-    if (currentDay === 0 || currentDay === 6) {
-        return false;
-    }
-
-    const currentTotalMinutes = currentHour * 60 + currentMinute;
-    const marketOpenTotalMinutes = marketOpenTime.hour * 60 + marketOpenTime.minute;
-    const marketCloseTotalMinutes = marketCloseTime.hour * 60 + marketCloseTime.minute;
-
-    return currentTotalMinutes >= marketOpenTotalMinutes && currentTotalMinutes <= marketCloseTotalMinutes;
 };
 
 
