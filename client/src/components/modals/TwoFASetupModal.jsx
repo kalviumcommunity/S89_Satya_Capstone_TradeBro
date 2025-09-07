@@ -1,21 +1,34 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiX, FiShield, FiCopy, FiCheck } from 'react-icons/fi';
+import { FiX, FiShield, FiMail, FiCheck, FiRefreshCw } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import settingsService from '../../services/settingsService';
 import './TwoFASetupModal.css';
 
-const TwoFASetupModal = ({ isOpen, onClose, qrCodeUrl, onVerifySuccess }) => {
+const TwoFASetupModal = ({ isOpen, onClose, userEmail, onVerifySuccess }) => {
   const [verificationCode, setVerificationCode] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
-  const [secretKey, setSecretKey] = useState('');
-  const [copied, setCopied] = useState(false);
+  const [isSendingCode, setIsSendingCode] = useState(false);
+  const [step, setStep] = useState(1);
+  const [codeSent, setCodeSent] = useState(false);
 
-  const handleCopySecret = () => {
-    navigator.clipboard.writeText(secretKey);
-    setCopied(true);
-    toast.success('Secret key copied to clipboard');
-    setTimeout(() => setCopied(false), 2000);
+  const sendVerificationCode = async () => {
+    setIsSendingCode(true);
+    try {
+      const response = await settingsService.send2FACode(userEmail);
+      if (response.success) {
+        setCodeSent(true);
+        setStep(2);
+        toast.success('Verification code sent to your email!');
+      } else {
+        toast.error(response.message || 'Failed to send verification code');
+      }
+    } catch (error) {
+      console.error('Error sending 2FA code:', error);
+      toast.error('Failed to send verification code');
+    } finally {
+      setIsSendingCode(false);
+    }
   };
 
   const handleVerify = async () => {
@@ -26,10 +39,10 @@ const TwoFASetupModal = ({ isOpen, onClose, qrCodeUrl, onVerifySuccess }) => {
 
     setIsVerifying(true);
     try {
-      const response = await settingsService.verify2FA(verificationCode);
+      const response = await settingsService.verify2FACode(verificationCode);
       if (response.success) {
         onVerifySuccess();
-        setVerificationCode('');
+        handleClose();
       } else {
         toast.error(response.message || 'Invalid verification code');
       }
@@ -43,7 +56,8 @@ const TwoFASetupModal = ({ isOpen, onClose, qrCodeUrl, onVerifySuccess }) => {
 
   const handleClose = () => {
     setVerificationCode('');
-    setCopied(false);
+    setStep(1);
+    setCodeSent(false);
     onClose();
   };
 
@@ -75,35 +89,46 @@ const TwoFASetupModal = ({ isOpen, onClose, qrCodeUrl, onVerifySuccess }) => {
             </div>
 
             <div className="modal-body">
-              <div className="two-fa-steps">
-                <div className="step">
-                  <h3>Step 1: Install an Authenticator App</h3>
-                  <p>Download and install an authenticator app like Google Authenticator, Authy, or Microsoft Authenticator on your mobile device.</p>
-                </div>
-
-                <div className="step">
-                  <h3>Step 2: Scan QR Code</h3>
-                  <div className="qr-code-container">
-                    {qrCodeUrl ? (
-                      <img src={qrCodeUrl} alt="2FA QR Code" className="qr-code" />
-                    ) : (
-                      <div className="qr-placeholder">QR Code will appear here</div>
-                    )}
-                  </div>
-                  <p>Scan this QR code with your authenticator app, or manually enter the secret key:</p>
-                  {secretKey && (
-                    <div className="secret-key">
-                      <code>{secretKey}</code>
-                      <button className="copy-button" onClick={handleCopySecret}>
-                        {copied ? <FiCheck /> : <FiCopy />}
-                      </button>
+              {step === 1 && (
+                <div className="setup-step">
+                  <h3>Email-Based Two-Factor Authentication</h3>
+                  <p>We'll send a verification code to your email address each time you log in.</p>
+                  
+                  <div className="email-info">
+                    <div className="email-display">
+                      <FiMail className="email-icon" />
+                      <span>{userEmail}</span>
                     </div>
-                  )}
-                </div>
+                  </div>
 
-                <div className="step">
-                  <h3>Step 3: Enter Verification Code</h3>
-                  <p>Enter the 6-digit code from your authenticator app:</p>
+                  <div className="info-box">
+                    <h4>How it works:</h4>
+                    <ul>
+                      <li>Each time you log in, we'll send a 6-digit code to your email</li>
+                      <li>Enter the code to complete your login</li>
+                      <li>This adds an extra layer of security to your account</li>
+                    </ul>
+                  </div>
+
+                  <button 
+                    className="btn btn-primary"
+                    onClick={sendVerificationCode}
+                    disabled={isSendingCode}
+                  >
+                    {isSendingCode ? (
+                      <><FiRefreshCw className="spinning" /> Sending Code...</>
+                    ) : (
+                      <><FiMail /> Send Verification Code</>
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {step === 2 && (
+                <div className="setup-step">
+                  <h3>Enter Verification Code</h3>
+                  <p>We've sent a 6-digit code to <strong>{userEmail}</strong></p>
+                  
                   <div className="verification-input">
                     <input
                       type="text"
@@ -112,23 +137,49 @@ const TwoFASetupModal = ({ isOpen, onClose, qrCodeUrl, onVerifySuccess }) => {
                       placeholder="000000"
                       className="code-input"
                       maxLength="6"
+                      autoFocus
                     />
                   </div>
+
+                  <div className="resend-section">
+                    <p>Didn't receive the code?</p>
+                    <button 
+                      className="btn-link"
+                      onClick={sendVerificationCode}
+                      disabled={isSendingCode}
+                    >
+                      {isSendingCode ? 'Sending...' : 'Resend Code'}
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={handleClose}>
                 Cancel
               </button>
-              <button
-                className="btn btn-primary"
-                onClick={handleVerify}
-                disabled={isVerifying || verificationCode.length !== 6}
-              >
-                {isVerifying ? 'Verifying...' : 'Verify & Enable'}
-              </button>
+              {step === 2 && (
+                <>
+                  <button 
+                    className="btn btn-secondary"
+                    onClick={() => setStep(1)}
+                  >
+                    Back
+                  </button>
+                  <button
+                    className="btn btn-primary"
+                    onClick={handleVerify}
+                    disabled={isVerifying || verificationCode.length !== 6}
+                  >
+                    {isVerifying ? (
+                      <><FiRefreshCw className="spinning" /> Verifying...</>
+                    ) : (
+                      <><FiCheck /> Enable 2FA</>
+                    )}
+                  </button>
+                </>
+              )}
             </div>
           </motion.div>
         </motion.div>

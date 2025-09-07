@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import {
   FiUser,
   FiEdit,
@@ -15,7 +16,8 @@ import {
   FiShield,
   FiSettings,
   FiLogOut,
-  FiActivity
+  FiActivity,
+  FiLock
 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import PageHeader from '../components/layout/PageHeader';
@@ -27,8 +29,10 @@ import '../styles/profile.css';
 const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showSecurityModal, setShowSecurityModal] = useState(false);
   const { portfolioData } = usePortfolio();
   const { user, updateProfile, logout } = useAuth();
+  const navigate = useNavigate();
 
   const [profileData, setProfileData] = useState({
     firstName: '',
@@ -174,6 +178,24 @@ const Profile = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setProfileData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSettingsClick = () => {
+    navigate('/settings');
+  };
+
+  const handleSecurityClick = () => {
+    setShowSecurityModal(true);
+  };
+
+  const handleLogoutClick = async () => {
+    try {
+      await logout();
+      toast.success('Logged out successfully!');
+      navigate('/login');
+    } catch (error) {
+      toast.error('Error logging out');
+    }
   };
 
   return (
@@ -394,14 +416,88 @@ const Profile = () => {
             </div>
             <div className="card-content">
               <div className="action-buttons">
-                <button className="action-btn"><FiSettings size={20} /><span>Settings</span></button>
-                <button className="action-btn"><FiShield size={20} /><span>Security</span></button>
-                <button className="action-btn logout" onClick={logout}><FiLogOut size={20} /><span>Logout</span></button>
+                <button className="action-btn" onClick={handleSettingsClick}>
+                  <FiSettings size={20} />
+                  <span>Settings</span>
+                </button>
+                <button className="action-btn" onClick={handleSecurityClick}>
+                  <FiLock size={20} />
+                  <span>Security</span>
+                </button>
+                <button className="action-btn logout" onClick={handleLogoutClick}>
+                  <FiLogOut size={20} />
+                  <span>Logout</span>
+                </button>
               </div>
             </div>
           </motion.div>
         </div>
       </div>
+
+      {/* Security Modal */}
+      {showSecurityModal && (
+        <div className="modal-overlay" onClick={() => setShowSecurityModal(false)}>
+          <motion.div 
+            className="modal-content security-modal"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header">
+              <h3><FiLock size={20} /> Security Settings</h3>
+              <button className="modal-close" onClick={() => setShowSecurityModal(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="security-options">
+                <div className="security-item">
+                  <div className="security-info">
+                    <FiLock size={18} />
+                    <div>
+                      <h4>Change Password</h4>
+                      <p>Update your account password</p>
+                    </div>
+                  </div>
+                  <button className="btn-secondary" onClick={() => {
+                    setShowSecurityModal(false);
+                    toast.info('Password change feature coming soon!');
+                  }}>Change</button>
+                </div>
+                <div className="security-item">
+                  <div className="security-info">
+                    <FiShield size={18} />
+                    <div>
+                      <h4>Two-Factor Authentication</h4>
+                      <p>Add an extra layer of security</p>
+                    </div>
+                  </div>
+                  <button className="btn-secondary" onClick={() => {
+                    setShowSecurityModal(false);
+                    navigate('/settings');
+                    setTimeout(() => {
+                      const settingsTab = document.querySelector('[data-tab="security"]');
+                      if (settingsTab) settingsTab.click();
+                    }, 100);
+                  }}>Setup</button>
+                </div>
+                <div className="security-item">
+                  <div className="security-info">
+                    <FiActivity size={18} />
+                    <div>
+                      <h4>Login Activity</h4>
+                      <p>View recent login sessions</p>
+                    </div>
+                  </div>
+                  <button className="btn-secondary" onClick={() => {
+                    setShowSecurityModal(false);
+                    toast.info('Login activity tracking coming soon!');
+                  }}>View</button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };

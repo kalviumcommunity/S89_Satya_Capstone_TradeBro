@@ -66,7 +66,6 @@ const Settings = ({ theme, toggleTheme }) => {
   });
 
   const [show2FAModal, setShow2FAModal] = useState(false);
-  const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [isEnabling2FA, setIsEnabling2FA] = useState(false);
 
   useEffect(() => {
@@ -169,22 +168,8 @@ const Settings = ({ theme, toggleTheme }) => {
     }
   };
 
-  const handleEnable2FA = async () => {
-    setIsEnabling2FA(true);
-    try {
-      const response = await settingsService.enable2FA();
-      if (response.success) {
-        setQrCodeUrl(response.qrCodeUrl);
-        setShow2FAModal(true);
-      } else {
-        toast.error(response.message);
-      }
-    } catch (error) {
-      console.error('Error enabling 2FA:', error);
-      toast.error('Failed to initiate 2FA setup.');
-    } finally {
-      setIsEnabling2FA(false);
-    }
+  const handleEnable2FA = () => {
+    setShow2FAModal(true);
   };
 
   const handleDisable2FA = async () => {
@@ -310,11 +295,10 @@ const Settings = ({ theme, toggleTheme }) => {
       <TwoFASetupModal
         isOpen={show2FAModal}
         onClose={() => setShow2FAModal(false)}
-        qrCodeUrl={qrCodeUrl}
+        userEmail={user?.email}
         onVerifySuccess={() => {
           setSecuritySettings(prev => ({ ...prev, twoFactorAuth: true }));
           toast.success('Two-factor authentication enabled successfully!');
-          setShow2FAModal(false);
         }}
       />
     </div>

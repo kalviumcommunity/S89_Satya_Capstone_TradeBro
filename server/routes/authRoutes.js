@@ -274,6 +274,85 @@ router.post('/logout', asyncHandler(async (req, res) => {
 }));
 
 // ============================
+// ✅ EMAIL-BASED 2FA ROUTES
+// ============================
+router.post('/send-2fa-code', authRateLimit, asyncHandler(async (req, res) => {
+    const { email } = req.body;
+
+    if (!email) {
+        return res.status(400).json({ success: false, message: 'Email is required' });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Generate 2FA code
+    const twoFactorCode = Math.floor(100000 + Math.random() * 900000).toString();
+    user.twoFactorCode = twoFactorCode;
+    user.twoFactorExpires = Date.now() + 300000; // 5 minutes
+    await user.save();
+
+    // Send 2FA email
+    try {
+        const { send2FAEmail } = require('../services/emailService');
+        const emailResult = await send2FAEmail(email, twoFactorCode, user.fullName || user.username);
+        
+        if (emailResult.success) {
+            console.log(`✅ 2FA setup code sent to ${email}: ${twoFactorCode}`);
+            res.json({ 
+                success: true, 
+                message: 'Verification code sent to your email' 
+            });
+        } else {
+            console.log(`🔑 2FA CODE FOR ${email}: ${twoFactorCode}`);
+            res.json({ 
+                success: true, 
+                message: 'Email service unavailable. Check console for code.',
+                emailSent: false
+            });
+        }
+    } catch (error) {
+        console.error('2FA email error:', error);
+        console.log(`🔑 2FA CODE FOR ${email}: ${twoFactorCode}`);
+        res.json({ 
+            success: true, 
+            message: 'Code generated. Check console for code.',
+            emailSent: false
+        });
+    }
+}));
+
+router.post('/verify-2fa-code', authRateLimit, asyncHandler(async (req, res) => {
+    const { code } = req.body;
+
+    if (!code) {
+        return res.status(400).json({ success: false, message: 'Verification code is required' });
+    }
+
+    const user = await User.findOne({
+        twoFactorCode: code,
+        twoFactorExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+        return res.status(400).json({ success: false, message: 'Invalid or expired verification code' });
+    }
+
+    // Enable 2FA for user
+    user.twoFactorEnabled = true;
+    user.twoFactorCode = undefined;
+    user.twoFactorExpires = undefined;
+    await user.save();
+
+    res.json({ 
+        success: true, 
+        message: 'Two-factor authentication enabled successfully' 
+    });
+}));
+
+// ============================
 // ✅ TOKEN VALIDATION
 // ============================
 router.get('/validate', asyncHandler(async (req, res) => {

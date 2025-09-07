@@ -630,3 +630,135 @@
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* ========================================
+    🔒 SECURITY MODAL
+   ======================================== */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  background: white;
+  border-radius: var(--profile-radius-2xl);
+  box-shadow: var(--profile-shadow-2xl);
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--profile-space-6);
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--profile-text-dark);
+  display: flex;
+  align-items: center;
+  gap: var(--profile-space-3);
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--profile-secondary);
+  cursor: pointer;
+  padding: var(--profile-space-2);
+  border-radius: var(--profile-radius-md);
+  transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+  background: #F3F4F6;
+  color: var(--profile-text-dark);
+}
+
+.modal-body {
+  padding: var(--profile-space-6);
+}
+
+.security-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--profile-space-4);
+}
+
+.security-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--profile-space-4);
+  border: 1px solid #E5E7EB;
+  border-radius: var(--profile-radius-lg);
+  background: #F9FAFB;
+  transition: all 0.2s ease;
+}
+
+.security-item:hover {
+  background: #F3F4F6;
+  border-color: var(--profile-primary);
+}
+
+.security-info {
+  display: flex;
+  align-items: center;
+  gap: var(--profile-space-3);
+  flex: 1;
+}
+
+.security-info svg {
+  color: var(--profile-primary);
+  flex-shrink: 0;
+}
+
+.security-info h4 {
+  margin: 0 0 var(--profile-space-1) 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--profile-text-dark);
+}
+
+.security-info p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--profile-secondary);
+}
+
+.btn-secondary {
+  padding: var(--profile-space-2) var(--profile-space-4);
+  border: 1px solid var(--profile-primary);
+  border-radius: var(--profile-radius-md);
+  background: white;
+  color: var(--profile-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background: var(--profile-primary);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: var(--profile-shadow-sm);
+}

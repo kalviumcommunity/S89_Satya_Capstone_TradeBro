@@ -29,31 +29,27 @@ const settingsService = {
     }
   },
 
-  // Enable 2FA
-  enable2FA: async () => {
+  // Send 2FA code via email
+  send2FACode: async (email) => {
     try {
-      const response = await api.post('/auth/2fa/enable');
-      return { 
-        success: true, 
-        qrCodeUrl: response.data.qrCodeUrl,
-        secretKey: response.data.secretKey 
-      };
+      const response = await api.post('/auth/send-2fa-code', { email });
+      return { success: true, data: response.data };
     } catch (error) {
-      console.error('Error enabling 2FA:', error);
+      console.error('Error sending 2FA code:', error);
       return { 
         success: false, 
-        message: error.response?.data?.message || 'Failed to enable 2FA' 
+        message: error.response?.data?.message || 'Failed to send verification code' 
       };
     }
   },
 
-  // Verify 2FA setup
-  verify2FA: async (code) => {
+  // Verify 2FA code from email
+  verify2FACode: async (code) => {
     try {
-      const response = await api.post('/auth/2fa/verify', { code });
+      const response = await api.post('/auth/verify-2fa-code', { code });
       return { success: true, data: response.data };
     } catch (error) {
-      console.error('Error verifying 2FA:', error);
+      console.error('Error verifying 2FA code:', error);
       return { 
         success: false, 
         message: error.response?.data?.message || 'Invalid verification code' 
