@@ -31,8 +31,11 @@ router.post('/auth', provideDefaultUser, (req, res) => {
     });
     
     if (!req.user || !req.user.id) {
-        console.error('Pusher auth failed: No user found');
-        return res.status(401).send('Not authorized');
+        console.log('Pusher auth: No authenticated user, using guest mode');
+        return res.status(200).json({ 
+            success: false, 
+            message: 'Guest mode - real-time features disabled' 
+        });
     }
 
     const socketId = req.body.socket_id;
