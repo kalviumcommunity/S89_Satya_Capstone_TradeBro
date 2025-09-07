@@ -379,7 +379,7 @@ export const saytrixAPI = {
   },
   sendMessage: async (message, sessionId = null) => {
     try {
-      const response = await api.post('/saytrix/chat', { message, sessionId });
+      const response = await api.post('/chatbot/chat', { message, sessionId });
       return response.data;
     } catch (error) {
       console.error('Saytrix API error:', error);

@@ -53,11 +53,11 @@ class AIVoiceProcessor {
   localProcess(transcript) {
     const lower = transcript.toLowerCase().trim();
     
-    // Navigation commands
+    // Enhanced navigation commands
     const navCommands = {
       'chart': '/charts',
-      'charge': '/charts', 
       'charts': '/charts',
+      'charge': '/charts',
       'dashboard': '/dashboard',
       'home': '/dashboard',
       'portfolio': '/portfolio',
@@ -66,30 +66,62 @@ class AIVoiceProcessor {
       'orders': '/orders',
       'order': '/orders',
       'history': '/history',
+      'trades': '/trades',
       'news': '/news',
       'watchlist': '/watchlist',
+      'watch list': '/watchlist',
       'notifications': '/notifications',
+      'notification': '/notifications',
       'profile': '/profile',
       'settings': '/settings',
-      'saytrix': '/saytrix'
+      'setting': '/settings',
+      'saytrix': '/saytrix',
+      'chat': '/saytrix'
     };
     
-    // Check for exact matches or contains
+    // Enhanced navigation patterns
+    const navigationPatterns = [
+      /(?:redirect|go|open|take|navigate).*?(?:to|me to)?\s*(charts?|trading?|dashboard|home|portfolio|orders?|history|trades?|watchlist|news|notifications?|profile|settings|saytrix|chat)/i,
+      /(charts?|trading?|dashboard|home|portfolio|orders?|history|trades?|watchlist|news|notifications?|profile|settings|saytrix|chat)\s*page/i,
+      /show\s*me\s*(charts?|trading?|dashboard|home|portfolio|orders?|history|trades?|watchlist|news|notifications?|profile|settings|saytrix)/i
+    ];
+    
+    // Check navigation patterns first
+    for (const pattern of navigationPatterns) {
+      const match = lower.match(pattern);
+      if (match) {
+        const destination = match[1].toLowerCase().replace(/s$/, ''); // Remove trailing 's'
+        const path = navCommands[destination] || navCommands[destination + 's'];
+        if (path) {
+          console.log(`Pattern navigation to ${path}`);
+          this.navigate(path);
+          return { success: true, message: `Opening ${destination} page` };
+        }
+      }
+    }
+    
+    // Direct keyword matching
     for (const [keyword, path] of Object.entries(navCommands)) {
       if (lower === keyword || lower.includes(keyword)) {
-        console.log(`Navigating to ${path}`);
+        console.log(`Direct navigation to ${path}`);
         this.navigate(path);
         return { success: true, message: `Opening ${keyword}` };
       }
     }
     
     // Stock price queries
-    if (lower.includes('price') || lower.includes('stock')) {
-      const stockMatch = lower.match(/(?:price of|stock|show me)\s+([a-z]+)/i);
-      if (stockMatch) {
-        const symbol = stockMatch[1].toUpperCase();
+    const stockPatterns = [
+      /(?:price of|show price|get price)\s+([a-z]+)/i,
+      /([a-z]+)\s+(?:stock|price|quote)/i,
+      /show\s+me\s+([a-z]+)\s+stock/i
+    ];
+    
+    for (const pattern of stockPatterns) {
+      const match = lower.match(pattern);
+      if (match) {
+        const symbol = match[1].toUpperCase();
         this.navigate(`/stock/${symbol}`);
-        return { success: true, message: `Showing ${symbol} price` };
+        return { success: true, message: `Showing ${symbol} stock details` };
       }
     }
     

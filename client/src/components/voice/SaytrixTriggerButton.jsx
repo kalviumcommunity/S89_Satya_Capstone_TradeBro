@@ -9,18 +9,38 @@ const SaytrixTriggerButton = ({
   showLabel = false,
   className = '',
 }) => {
-  // Use isListening directly from the useVoice hook for consistency.
-  // The triggerVoiceMode function is not present in the current useVoice hook.
-  // It's simpler to directly use startListening and stopListening.
-  const { isListening, isSupported, startListening, stopListening } = useVoice();
+  const { isListening, isSupported, startListening, stopListening, triggerVoiceMode } = useVoice();
 
   const handleClick = useCallback(() => {
-    if (isListening) {
-      stopListening();
-    } else {
-      startListening();
+    if (!isSupported) {
+      alert('Voice commands are not supported in this browser. Please use Chrome, Edge, or Safari.');
+      return;
     }
-  }, [isListening, startListening, stopListening]);
+
+    // Request microphone permission first
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      alert('Voice input is not supported in this browser.');
+      return;
+    }
+
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(() => {
+        if (isListening) {
+          stopListening();
+        } else {
+          // Use triggerVoiceMode for better voice command handling
+          if (triggerVoiceMode) {
+            triggerVoiceMode();
+          } else {
+            startListening();
+          }
+        }
+      })
+      .catch((err) => {
+        console.error('Microphone access denied:', err);
+        alert('Microphone access is required for voice commands. Please allow it in your browser settings.');
+      });
+  }, [isListening, startListening, stopListening, triggerVoiceMode, isSupported]);
 
   if (!isSupported) {
     return null; // Don't show the button if voice is not supported.

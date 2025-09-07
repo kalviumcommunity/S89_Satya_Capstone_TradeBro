@@ -1,27 +1,28 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { saytrixAPI } from '../services/api';
+import { useVoice } from '../contexts/VoiceContext';
 
 const useSaytrix = () => {
   const navigate = useNavigate();
+  const { isListening, startListening, stopListening, speak, transcript } = useVoice();
+  
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
   const [confidence, setConfidence] = useState('high');
   const [aiMode, setAiMode] = useState('casual');
-  const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
 
   const messagesEndRef = useRef(null);
-  const recognitionRef = useRef(null);
   const synthRef = useRef(null);
 
   useEffect(() => {
     const welcomeMessage = {
       id: 'welcome_' + Date.now(),
       type: 'assistant',
-      content: '🚀 Hello! I\'m Saytrix, your AI-powered stock market assistant. I can help you with:\n\n📊 Real-time stock prices and data\n📈 Market analysis and trends\n🏢 Company information and fundamentals\n⭐ Top gainers and losers\n📰 Latest market news\n🎓 Stock market education\n\nWhat would you like to know about the stock market today?\n\n💡 Currently running in demo mode with sample data for showcase',
+      content: '🚀 Hello! I\'m Saytrix, your AI-powered stock market assistant. I can help you with:\n\n📊 Real-time stock prices and data\n📈 Market analysis and trends\n🏢 Company information and fundamentals\n⭐ Top gainers and losers\n📰 Latest market news\n🎓 Stock market education\n\nWhat would you like to know about the stock market today?\n\n💡 Try using voice input by clicking the microphone button!',
       timestamp: new Date(),
       suggestions: [
         'Show me NIFTY performance',
@@ -33,51 +34,28 @@ const useSaytrix = () => {
       cardType: 'welcome',
     };
     setMessages([welcomeMessage]);
-    initializeSpeechRecognition();
     initializeSpeechSynthesis();
+  }, []);
+
+  // Listen for voice transcript events
+  useEffect(() => {
+    const handleVoiceTranscript = (event) => {
+      const { transcript } = event.detail;
+      setInputText(transcript);
+      setTimeout(() => {
+        processVoiceCommand(transcript);
+      }, 300);
+    };
+
+    window.addEventListener('voiceTranscript', handleVoiceTranscript);
+    return () => {
+      window.removeEventListener('voiceTranscript', handleVoiceTranscript);
+    };
   }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
-  const initializeSpeechRecognition = () => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.interimResults = false;
-      recognitionRef.current.lang = 'en-US';
-
-      recognitionRef.current.onstart = () => {
-        setIsListening(true);
-        setError(null);
-      };
-
-      recognitionRef.current.onend = () => {
-        setIsListening(false);
-      };
-
-      recognitionRef.current.onresult = async (event) => {
-        const transcript = event.results[0][0].transcript;
-        const confidenceScore = event.results[0][0].confidence;
-        setInputText(transcript);
-        setConfidence(confidenceScore > 0.8 ? 'high' : confidenceScore > 0.6 ? 'medium' : 'low');
-        setIsListening(false);
-        
-        setTimeout(async () => {
-          if (transcript.trim()) {
-            await processVoiceCommand(transcript);
-          }
-        }, 300);
-      };
-
-      recognitionRef.current.onerror = (event) => {
-        setIsListening(false);
-        setError('Voice recognition failed. Please try again.');
-      };
-    }
-  };
 
   const initializeSpeechSynthesis = () => {
     if ('speechSynthesis' in window) {
@@ -150,14 +128,92 @@ const useSaytrix = () => {
   const processVoiceCommand = useCallback(async (transcript) => {
     if (isProcessing) return;
     
-    setInputText(transcript);
-    setConfidence(determineConfidence(transcript));
+    const lowerTranscript = transcript.toLowerCase().trim();
     
-    sendMessage(transcript, true);
-  }, [sendMessage, isProcessing]);
+    // Check for navigation commands first
+    const navigationResult = processNavigationCommand(lowerTranscript);
+    if (navigationResult.handled) {
+      // Show navigation message
+      const navMessage = {
+        id: Date.now(),
+        type: 'assistant',
+        content: `🧭 **Navigation Command**\n\n${navigationResult.message}`,
+        timestamp: new Date(),
+        cardType: 'navigation'
+      };
+      setMessages(prev => [...prev, navMessage]);
+      
+      // Speak confirmation
+      speak(navigationResult.message);
+      return;
+    }
+    
+    setConfidence(determineConfidence(transcript));
+    await sendMessage(transcript, true);
+  }, [isProcessing, navigate, speak]);
+
+  const processNavigationCommand = (command) => {
+    // Navigation patterns
+    const navCommands = {
+      // Charts/Trading
+      'charts': { path: '/charts', message: 'Opening charts page' },
+      'chart': { path: '/charts', message: 'Opening charts page' },
+      'trading': { path: '/trading', message: 'Opening trading page' },
+      'trade': { path: '/trading', message: 'Opening trading page' },
+      
+      // Portfolio & Dashboard
+      'dashboard': { path: '/dashboard', message: 'Going to dashboard' },
+      'home': { path: '/dashboard', message: 'Going to home page' },
+      'portfolio': { path: '/portfolio', message: 'Opening portfolio' },
+      
+      // Orders & History
+      'orders': { path: '/orders', message: 'Opening orders page' },
+      'order': { path: '/orders', message: 'Opening orders page' },
+      'history': { path: '/history', message: 'Opening history page' },
+      'trades': { path: '/trades', message: 'Opening trades page' },
+      
+      // Market Data
+      'watchlist': { path: '/watchlist', message: 'Opening watchlist' },
+      'news': { path: '/news', message: 'Opening news page' },
+      'notifications': { path: '/notifications', message: 'Opening notifications' },
+      
+      // Settings & Profile
+      'profile': { path: '/profile', message: 'Opening profile page' },
+      'settings': { path: '/settings', message: 'Opening settings page' },
+      'saytrix': { path: '/saytrix', message: 'Opening Saytrix AI chat' }
+    };
+    
+    // Check for direct navigation commands
+    for (const [keyword, config] of Object.entries(navCommands)) {
+      if (command.includes(keyword)) {
+        navigate(config.path);
+        return { handled: true, message: config.message };
+      }
+    }
+    
+    // Check for redirect/go/open commands
+    const redirectPatterns = [
+      /(?:redirect|go|open|take|navigate).*?(?:to|me to)?\s*(charts?|trading?|dashboard|home|portfolio|orders?|history|trades?|watchlist|news|notifications?|profile|settings|saytrix)/i,
+      /(charts?|trading?|dashboard|home|portfolio|orders?|history|trades?|watchlist|news|notifications?|profile|settings|saytrix)\s*page/i
+    ];
+    
+    for (const pattern of redirectPatterns) {
+      const match = command.match(pattern);
+      if (match) {
+        const destination = match[1].toLowerCase();
+        const config = navCommands[destination] || navCommands[destination.replace(/s$/, '')];
+        if (config) {
+          navigate(config.path);
+          return { handled: true, message: config.message };
+        }
+      }
+    }
+    
+    return { handled: false };
+  };
 
   const speakText = (text) => {
-    if (synthRef.current && text) {
+    if (text) {
       setIsSpeaking(true);
 
       const cleanText = text
@@ -168,55 +224,17 @@ const useSaytrix = () => {
         .replace(/\n+/g, '. ')
         .substring(0, 200);
 
-      const utterance = new SpeechSynthesisUtterance(cleanText);
-      utterance.rate = 0.9;
-      utterance.pitch = 1;
-      utterance.volume = 0.8;
-
-      utterance.onend = () => {
+      // Use VoiceContext speak function
+      speak(cleanText);
+      
+      // Set speaking to false after estimated time
+      setTimeout(() => {
         setIsSpeaking(false);
-      };
-
-      utterance.onerror = () => {
-        setIsSpeaking(false);
-      };
-
-      synthRef.current.cancel();
-      synthRef.current.speak(utterance);
+      }, cleanText.length * 50); // Rough estimate
     }
   };
 
-  const startListening = useCallback(() => {
-    if (recognitionRef.current && !isListening) {
-      try {
-        recognitionRef.current.start();
-        
-        setTimeout(() => {
-          if (recognitionRef.current && isListening) {
-            try {
-              recognitionRef.current.stop();
-            } catch (error) {
-              console.log('Auto-stop recognition');
-            }
-          }
-        }, 10000);
-      } catch (error) {
-        setError('Voice recognition failed. Please try again.');
-        setIsListening(false);
-      }
-    }
-  }, [isListening]);
-
-  const stopListening = useCallback(() => {
-    if (recognitionRef.current && isListening) {
-      try {
-        recognitionRef.current.stop();
-      } catch (error) {
-        console.log('Stop recognition');
-      }
-      setIsListening(false);
-    }
-  }, [isListening]);
+  // Voice functions are now handled by VoiceContext
 
   const determineConfidence = (content) => {
     if (content.includes('₹') || content.includes('stock') || content.includes('market')) {
@@ -306,7 +324,11 @@ const useSaytrix = () => {
     startListening,
     stopListening,
     clearChat,
-    setAiMode: handleModeChange,
+    handleModeChange,
+    handleBuyStock: () => navigate('/trading'),
+    handleSellStock: () => navigate('/trading'),
+    handleSuggestionClick: (suggestion) => sendMessage(suggestion),
+    handleRecentQuestionClick: (question) => sendMessage(question),
     setError,
   };
 };

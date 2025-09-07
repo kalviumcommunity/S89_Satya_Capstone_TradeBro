@@ -90,11 +90,11 @@ const Saytrix = ({ user, theme }) => {
     aiMode,
     setAiMode,
     setError,
-    handleModeChange: saytrixHandleModeChange, // Renamed to avoid collision
-    handleBuyStock: saytrixHandleBuyStock, // Renamed
-    handleSellStock: saytrixHandleSellStock, // Renamed
-    handleSuggestionClick: saytrixHandleSuggestionClick, // Renamed
-    handleRecentQuestionClick: saytrixHandleRecentQuestionClick, // Renamed
+    handleModeChange,
+    handleBuyStock,
+    handleSellStock,
+    handleSuggestionClick,
+    handleRecentQuestionClick
   } = useSaytrix();
 
   // Unified voice toggle handler
@@ -143,13 +143,13 @@ const Saytrix = ({ user, theme }) => {
           <div className="ai-mode-toggle">
             <button
               className={`mode-btn ${aiMode === 'casual' ? 'active' : ''}`}
-              onClick={() => saytrixHandleModeChange('casual')}
+              onClick={() => handleModeChange('casual')}
             >
               Casual
             </button>
             <button
               className={`mode-btn ${aiMode === 'expert' ? 'active' : ''}`}
-              onClick={() => saytrixHandleModeChange('expert')}
+              onClick={() => handleModeChange('expert')}
             >
               Expert
             </button>
@@ -192,7 +192,7 @@ const Saytrix = ({ user, theme }) => {
                     <motion.button
                       key={index}
                       className="question-chip"
-                      onClick={() => saytrixHandleRecentQuestionClick(question)}
+                      onClick={() => handleRecentQuestionClick(question)}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
@@ -221,9 +221,9 @@ const Saytrix = ({ user, theme }) => {
                     <div className="message-content">
                       <SaytrixCardRenderer
                         message={message}
-                        onSuggestionClick={saytrixHandleSuggestionClick}
-                        onBuyClick={saytrixHandleBuyStock}
-                        onSellClick={saytrixHandleSellStock}
+                        onSuggestionClick={handleSuggestionClick}
+                        onBuyClick={handleBuyStock}
+                        onSellClick={handleSellStock}
                       />
                     </div>
                   </motion.div>

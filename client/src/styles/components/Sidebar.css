@@ -558,10 +558,10 @@
   margin: 2px 0;
 }
 
-/* Saytrix Button */
-.sidebar-voice-btn {
-  width: 32px;
-  height: 32px;
+/* Saytrix Voice Button */
+.saytrix-trigger-btn {
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: linear-gradient(135deg, #10b981, #059669);
   border: none;
@@ -570,21 +570,41 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
   position: relative;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
-.sidebar-voice-btn:hover {
-  transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+.saytrix-trigger-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.5);
+  background: linear-gradient(135deg, #059669, #047857);
 }
 
-.sidebar-voice-btn svg {
-  width: 16px;
-  height: 16px;
+.saytrix-trigger-btn.active {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.5);
+  animation: voicePulse 1.5s infinite;
+}
+
+.saytrix-trigger-btn svg {
+  width: 18px;
+  height: 18px;
   z-index: 2;
+  stroke-width: 2.5;
+}
+
+@keyframes voicePulse {
+  0%, 100% { 
+    transform: scale(1);
+    box-shadow: 0 4px 16px rgba(239, 68, 68, 0.5);
+  }
+  50% { 
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.7);
+  }
 }
 
 /* Sidebar Notification Badge Styles */

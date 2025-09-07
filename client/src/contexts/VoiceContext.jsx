@@ -52,46 +52,87 @@ export const VoiceProvider = ({ children }) => {
     
     console.log('Processing voice command:', lowerCommand);
     
-    // Navigation commands
-    if (lowerCommand.includes('dashboard') || lowerCommand.includes('home')) {
-      navigate('/dashboard');
-    } else if (lowerCommand.includes('chart') || lowerCommand.includes('charge')) {
-      navigate('/charts');
-    } else if (lowerCommand.includes('portfolio')) {
-      navigate('/portfolio');
-    } else if (lowerCommand.includes('watchlist') || lowerCommand.includes('watch list')) {
-      navigate('/watchlist');
-    } else if (lowerCommand.includes('orders') || lowerCommand.includes('order')) {
-      navigate('/orders');
-    } else if (lowerCommand.includes('history')) {
-      navigate('/history');
-    } else if (lowerCommand.includes('news')) {
-      navigate('/news');
-    } else if (lowerCommand.includes('notifications') || lowerCommand.includes('notification')) {
-      navigate('/notifications');
-    } else if (lowerCommand.includes('saytrix') || lowerCommand.includes('chat')) {
-      navigate('/saytrix');
-    } else if (lowerCommand.includes('profile')) {
-      navigate('/profile');
-    } else if (lowerCommand.includes('settings') || lowerCommand.includes('setting')) {
-      navigate('/settings');
-    } else if (lowerCommand.includes('trading') || lowerCommand.includes('trade')) {
-      navigate('/trading');
+    // Enhanced navigation patterns
+    const navigationCommands = {
+      // Charts/Trading
+      'charts': '/charts',
+      'chart': '/charts', 
+      'charge': '/charts',
+      'trading': '/trading',
+      'trade': '/trading',
+      
+      // Dashboard/Home
+      'dashboard': '/dashboard',
+      'home': '/dashboard',
+      
+      // Portfolio
+      'portfolio': '/portfolio',
+      
+      // Orders & History
+      'orders': '/orders',
+      'order': '/orders',
+      'history': '/history',
+      'trades': '/trades',
+      
+      // Market Data
+      'watchlist': '/watchlist',
+      'watch list': '/watchlist',
+      'news': '/news',
+      'notifications': '/notifications',
+      'notification': '/notifications',
+      
+      // AI & Settings
+      'saytrix': '/saytrix',
+      'chat': '/saytrix',
+      'profile': '/profile',
+      'settings': '/settings',
+      'setting': '/settings'
+    };
+    
+    // Check for redirect/navigation commands
+    const redirectPatterns = [
+      /(?:redirect|go|open|take|navigate).*?(?:to|me to)?\s*(\w+)/i,
+      /(\w+)\s*page/i,
+      /show\s*me\s*(\w+)/i
+    ];
+    
+    // Direct keyword matching
+    for (const [keyword, path] of Object.entries(navigationCommands)) {
+      if (lowerCommand.includes(keyword)) {
+        navigate(path);
+        return;
+      }
     }
     
-    // Market data commands
+    // Pattern-based matching
+    for (const pattern of redirectPatterns) {
+      const match = lowerCommand.match(pattern);
+      if (match) {
+        const destination = match[1].toLowerCase();
+        if (navigationCommands[destination]) {
+          navigate(navigationCommands[destination]);
+          return;
+        }
+      }
+    }
+    
+    // Stock-specific commands
     if (lowerCommand.includes('price of') || lowerCommand.includes('show price')) {
       const stock = extractStock(lowerCommand);
       if (stock) {
         navigate(`/stock/${stock}`);
+        return;
       }
-    } else if (lowerCommand.includes('top gainers') || lowerCommand.includes('gainers')) {
+    }
+    
+    // Market data shortcuts
+    if (lowerCommand.includes('top gainers') || lowerCommand.includes('gainers')) {
       navigate('/dashboard');
     } else if (lowerCommand.includes('top losers') || lowerCommand.includes('losers')) {
       navigate('/dashboard');
     }
     
-    // Trading commands
+    // Trading shortcuts
     if (lowerCommand.includes('buy') && (lowerCommand.includes('stock') || lowerCommand.includes('share'))) {
       navigate('/trading');
     } else if (lowerCommand.includes('sell') && (lowerCommand.includes('stock') || lowerCommand.includes('share'))) {
@@ -295,12 +336,63 @@ export const VoiceProvider = ({ children }) => {
     };
   }, [isSupported, startWakeWordDetection, location.pathname]);
 
+  // Add startListening function for manual voice input
+  const startListening = useCallback(() => {
+    if (!recognition || !isSupported) {
+      console.warn('Speech recognition not available');
+      return;
+    }
+
+    if (isListening) {
+      stopListening();
+      return;
+    }
+
+    setIsListening(true);
+    
+    recognition.onresult = (event) => {
+      let finalTranscript = '';
+      
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript;
+        }
+      }
+      
+      if (finalTranscript.trim()) {
+        setTranscript(finalTranscript);
+        // Trigger custom event for Saytrix to handle
+        window.dispatchEvent(new CustomEvent('voiceTranscript', { 
+          detail: { transcript: finalTranscript } 
+        }));
+      }
+    };
+
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error:', event.error);
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    try {
+      recognition.start();
+    } catch (error) {
+      console.error('Failed to start recognition:', error);
+      setIsListening(false);
+    }
+  }, [recognition, isSupported, isListening, stopListening]);
+
   const value = {
     isListening,
     isVoiceModeActive,
     transcript,
     isSupported,
     triggerVoiceMode,
+    startListening,
     stopListening,
     speak,
     activateVoiceMode,
