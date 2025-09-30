@@ -1,0 +1,350 @@
+/* ========================================
+    🔐 TWO-FACTOR AUTHENTICATION MODAL
+   ======================================== */
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+}
+
+.modal-content {
+    background: var(--bg-card);
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-2xl);
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+}
+
+.two-fa-modal {
+    max-width: 600px;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-6);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.modal-title h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.modal-icon {
+    color: var(--primary-color);
+    font-size: 1.5rem;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: var(--text-color-secondary);
+    cursor: pointer;
+    padding: var(--space-2);
+    border-radius: var(--radius-md);
+    transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+    background: var(--bg-card-hover);
+    color: var(--text-color);
+}
+
+.modal-body {
+    padding: var(--space-6);
+}
+
+.two-fa-steps {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-8);
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.step h3 {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.step h3::before {
+    content: counter(step-counter);
+    counter-increment: step-counter;
+    background: var(--primary-color);
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.two-fa-steps {
+    counter-reset: step-counter;
+}
+
+.step p {
+    margin: 0;
+    color: var(--text-color-secondary);
+    line-height: 1.6;
+}
+
+.qr-code-container {
+    display: flex;
+    justify-content: center;
+    padding: var(--space-6);
+    background: var(--bg-page);
+    border-radius: var(--radius-xl);
+    border: 2px dashed var(--border-color);
+}
+
+.qr-code {
+    max-width: 200px;
+    height: auto;
+    border-radius: var(--radius-lg);
+}
+
+.qr-placeholder {
+    width: 200px;
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-color-secondary);
+    font-style: italic;
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+}
+
+.secret-key {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    background: var(--bg-page);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+}
+
+.secret-key code {
+    flex: 1;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.875rem;
+    color: var(--text-color);
+    background: none;
+    padding: 0;
+    word-break: break-all;
+}
+
+.copy-button {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: var(--space-2);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.copy-button:hover {
+    background: var(--primary-color-hover);
+    transform: translateY(-1px);
+}
+
+.verification-input {
+    display: flex;
+    justify-content: center;
+}
+
+.code-input {
+    width: 200px;
+    padding: var(--space-4);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: 0.5em;
+    background: var(--bg-card);
+    color: var(--text-color);
+    transition: all 0.3s ease;
+}
+
+.code-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-3);
+    padding: var(--space-6);
+    border-top: 1px solid var(--border-color);
+}
+
+.btn {
+    padding: var(--space-3) var(--space-6);
+    border-radius: var(--radius-lg);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    font-size: 0.875rem;
+}
+
+.btn-secondary {
+    background: var(--bg-card-hover);
+    color: var(--text-color-secondary);
+    border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+    background: var(--border-color);
+    color: var(--text-color);
+}
+
+.btn-primary {
+    background: var(--primary-color);
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: var(--primary-color-hover);
+    transform: translateY(-1px);
+}
+
+.btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ========================================
+    🌙 DARK MODE SUPPORT
+   ======================================== */
+
+[data-theme="dark"] .modal-content {
+    background: #1E293B;
+    border-color: #334155;
+}
+
+[data-theme="dark"] .modal-header {
+    border-color: #334155;
+}
+
+[data-theme="dark"] .modal-footer {
+    border-color: #334155;
+}
+
+[data-theme="dark"] .qr-code-container {
+    background: #0F172A;
+    border-color: #334155;
+}
+
+[data-theme="dark"] .qr-placeholder {
+    background: #1E293B;
+    border-color: #334155;
+}
+
+[data-theme="dark"] .secret-key {
+    background: #0F172A;
+    border-color: #334155;
+}
+
+[data-theme="dark"] .code-input {
+    background: #1E293B;
+    border-color: #334155;
+}
+
+[data-theme="dark"] .btn-secondary {
+    background: #334155;
+    border-color: #475569;
+    color: #9CA3AF;
+}
+
+[data-theme="dark"] .btn-secondary:hover {
+    background: #475569;
+    color: #F1F5F9;
+}
+
+/* ========================================
+    📱 RESPONSIVE DESIGN
+   ======================================== */
+
+@media (max-width: 768px) {
+    .modal-content {
+        width: 95%;
+        margin: var(--space-4);
+    }
+    
+    .modal-header,
+    .modal-body,
+    .modal-footer {
+        padding: var(--space-4);
+    }
+    
+    .two-fa-steps {
+        gap: var(--space-6);
+    }
+    
+    .qr-code {
+        max-width: 150px;
+    }
+    
+    .qr-placeholder {
+        width: 150px;
+        height: 150px;
+    }
+    
+    .code-input {
+        width: 150px;
+        font-size: 1.25rem;
+    }
+    
+    .modal-footer {
+        flex-direction: column;
+    }
+    
+    .btn {
+        width: 100%;
+    }
+}

@@ -1,0 +1,84 @@
+/* Watchlist Button - Simple Star Icon */
+.watchlist-btn {
+  background: transparent;
+  border: none;
+  color: #9CA3AF;
+  min-width: 32px;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 4px;
+}
+
+.watchlist-btn:hover {
+  color: #F59E0B;
+  transform: scale(1.1);
+}
+
+.watchlist-btn.active {
+  color: #F59E0B;
+}
+
+.watchlist-btn svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2;
+  stroke: currentColor;
+  fill: none;
+  transition: all 0.3s ease;
+}
+
+.watchlist-btn.active svg {
+  fill: #F59E0B;
+  stroke: #F59E0B;
+}
+
+/* Size Variants */
+.watchlist-btn-small {
+  min-width: 28px;
+  min-height: 28px;
+  padding: 2px;
+}
+
+.watchlist-btn-small svg {
+  width: 16px;
+  height: 16px;
+}
+
+.watchlist-btn-medium {
+  min-width: 32px;
+  min-height: 32px;
+  padding: 4px;
+}
+
+.watchlist-btn-large {
+  min-width: 36px;
+  min-height: 36px;
+  padding: 6px;
+}
+
+.watchlist-btn-large svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* Dark Theme */
+[data-theme="dark"] .watchlist-btn {
+  color: #6B7280;
+}
+
+[data-theme="dark"] .watchlist-btn:hover {
+  color: #F59E0B;
+}
+
+[data-theme="dark"] .watchlist-btn.active {
+  color: #F59E0B;
+}
+
+[data-theme="dark"] .watchlist-btn.active svg {
+  fill: #F59E0B;
+  stroke: #F59E0B;
+}

@@ -1,0 +1,16 @@
+{
+  "name": "TradeBro - Stock Trading Platform",
+  "short_name": "TradeBro",
+  "description": "Virtual stock trading platform with AI assistance",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}

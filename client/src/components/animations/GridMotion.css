@@ -1,0 +1,24 @@
+.grid-motion-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.grid-motion-background {
+  position: absolute;
+  top: -100px;
+  left: -100px;
+  width: calc(100% + 200px);
+  height: calc(100% + 200px);
+  opacity: 0.3;
+}
+
+/* Dark mode adjustments */
+[data-theme="dark"] .grid-motion-background {
+  opacity: 0.2;
+}

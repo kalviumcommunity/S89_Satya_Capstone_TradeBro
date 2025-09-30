@@ -1,0 +1,57 @@
+.orb-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(1px);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.orb-small {
+  width: 150px;
+  height: 150px;
+}
+
+.orb-medium {
+  width: 250px;
+  height: 250px;
+}
+
+.orb-large {
+  width: 400px;
+  height: 400px;
+}
+
+/* Dark mode adjustments */
+[data-theme="dark"] .orb {
+  opacity: 0.4;
+  filter: blur(2px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .orb-large {
+    width: 200px;
+    height: 200px;
+  }
+  
+  .orb-medium {
+    width: 150px;
+    height: 150px;
+  }
+  
+  .orb-small {
+    width: 100px;
+    height: 100px;
+  }
+}

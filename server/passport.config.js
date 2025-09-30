@@ -1,140 +1,92 @@
-const passport = require("passport");
-const GoogleStrategy = require("passport-google-oauth20").Strategy;
-const jwt = require("jsonwebtoken");
-const User = require("./models/User");
-require('dotenv').config();
+const passport = require('passport');
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const User = require('./models/User'); // Adjust path if necessary
+const VirtualMoney = require('./models/VirtualMoney'); // Adjust path if necessary
+// Removed the unused 'generateToken' import, as JWT creation belongs in authRoutes.js
+const { USER_DEFAULTS } = require('./config/constants'); // Adjust path if necessary
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-const JWT_SECRET = process.env.JWT_SECRET;
+passport.use(new GoogleStrategy({
+    // Use an environment variable for the callback URL to avoid hardcoding
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: process.env.GOOGLE_CALLBACK_URL
+}, async (accessToken, refreshToken, profile, done) => {
+    try {
+        const { id: googleId, emails, displayName, name, photos } = profile;
+        const email = emails[0].value;
 
-if (!JWT_SECRET) {
-  console.error('FATAL ERROR: JWT_SECRET environment variable is not set');
-  process.exit(1);
-}
+        // Log profile data for debugging
+        console.log("Google Profile:", profile);
 
-const isDevelopment = process.env.NODE_ENV !== 'production' || process.env.API_BASE_URL?.includes('localhost');
-const BASE_URL = isDevelopment ? "http://localhost:5001" : (process.env.API_BASE_URL || "https://s89-satya-capstone-tradebro.onrender.com");
-const CALLBACK_URL = BASE_URL + "/api/auth/google/callback";
+        // Find an existing user by email or Google ID
+        let user = await User.findOne({ $or: [{ email }, { googleId }] });
 
-console.log('Google OAuth Configuration:');
-console.log('- GOOGLE_CLIENT_ID:', GOOGLE_CLIENT_ID ? 'Set' : 'Not set');
-console.log('- GOOGLE_CLIENT_SECRET:', GOOGLE_CLIENT_SECRET ? 'Set' : 'Not set');
-console.log('- JWT_SECRET:', JWT_SECRET ? 'Set' : 'Not set');
-console.log('- CALLBACK_URL:', CALLBACK_URL);
-
-if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
-  passport.use(
-    new GoogleStrategy(
-      {
-        clientID: GOOGLE_CLIENT_ID,
-        clientSecret: GOOGLE_CLIENT_SECRET,
-        callbackURL: CALLBACK_URL,
-        scope: ['profile', 'email'],
-        accessType: 'offline',
-        prompt: 'consent'
-      },
-      async (_accessToken, _refreshToken, profile, done) => {
-        try {
-          console.log("Google Profile:", profile);
-
-          // Safely access profile.emails with proper validation
-          if (!profile.emails || !Array.isArray(profile.emails) || profile.emails.length === 0) {
-            console.error("Google profile missing email information");
-            return done(new Error("Email not provided by Google"), null);
-          }
-
-          const email = profile.emails[0].value;
-          if (!email) {
-            console.error("Google profile email is empty");
-            return done(new Error("Invalid email from Google"), null);
-          }
-
-          let user = await User.findOne({ email });
-          let isNewUser = false;
-
-          if (!user) {
-            isNewUser = true;
+        if (!user) {
+            // Generate a more robust username to prevent multiple database queries
+            const username = `${email.split('@')[0]}_${Math.random().toString(36).substring(2, 8)}`;
+            
+            // Create a new user with secure placeholder data
             user = new User({
-              username: profile.displayName || email.split('@')[0],
-              email: email,
-              fullName: profile.displayName ||
-                ((profile.name?.givenName || "") + " " + (profile.name?.familyName || "")).trim() ||
-                email.split('@')[0],
-              authProvider: "google",
-              profileImage: profile.photos?.[0]?.value || null,
+                username,
+                email,
+                fullName: displayName || `${name.givenName || ''} ${name.familyName || ''}`.trim(),
+                firstName: name.givenName,
+                lastName: name.familyName,
+                // Use a secure, non-guessable placeholder for OAuth users
+                password: 'oauth_user_' + googleId,
+                authProvider: 'google',
+                googleId,
+                profileImage: photos[0]?.value,
+                emailVerified: true,
+                ...USER_DEFAULTS
             });
             await user.save();
-          } else {
-            let needsUpdate = false;
-            if (!user.fullName && profile.displayName) {
-              user.fullName = profile.displayName;
-              needsUpdate = true;
+
+            // Create initial virtual money for the new user
+            const virtualMoney = new VirtualMoney({
+                userId: user._id,
+                userEmail: email,
+                balance: 10000,
+                totalValue: 10000,
+                availableCash: 10000,
+                totalInvested: 0,
+                totalGainLoss: 0,
+                totalGainLossPercentage: 0,
+                holdings: [],
+                transactions: [{ type: 'DEPOSIT', amount: 10000, description: 'Initial deposit', timestamp: new Date() }]
+            });
+            await virtualMoney.save();
+            console.log("New Google user created:", user.email);
+        } else {
+            console.log("Existing Google user logged in:", user.email);
+            // Optional: Update existing user's profile image or other details if they change on Google
+            if (user.profileImage !== photos[0]?.value) {
+                user.profileImage = photos[0]?.value;
+                await user.save();
             }
-            if (profile.photos?.[0]?.value && (!user.profileImage || user.profileImage !== profile.photos[0].value)) {
-              user.profileImage = profile.photos[0].value;
-              needsUpdate = true;
-            }
-            if (needsUpdate) {
-              await user.save();
-            }
-          }
-
-          if (!JWT_SECRET) {
-            console.error("JWT_SECRET is not defined when trying to sign token");
-            return done(new Error("Server configuration error"), null);
-          }
-
-          const token = jwt.sign(
-            {
-              id: user._id,
-              email: user.email,
-              username: user.username,
-              fullName: user.fullName
-            },
-            JWT_SECRET,
-            { expiresIn: "7d" }
-          );
-
-          
-          const userResponse = {
-            _id: user._id,
-            id: user._id,
-            email: user.email,
-            username: user.username,
-            fullName: user.fullName,
-            profileImage: user.profileImage,
-            authProvider: user.authProvider || "google",
-            isNewUser: isNewUser,
-            token: token
-          };
-
-          return done(null, userResponse);
-        } catch (err) {
-          console.error("Error during Google authentication:", err);
-          return done(err, null);
         }
-      }
-    )
-  );
-} else {
-  console.warn("Google OAuth credentials not found. Google authentication will not be available.");
-}
 
-// Passport session serialization (required for OAuth flow)
+        return done(null, user);
+    } catch (error) {
+        console.error('Passport Google Strategy Error:', error);
+        return done(error, null);
+    }
+}));
+
+// Passport session serialization (used by app.use(passport.session()))
+// We only need to store the user's ID
 passport.serializeUser((user, done) => {
-  // Store minimal user data in session
-  done(null, {
-    id: user._id || user.id,
-    email: user.email,
-    isNewUser: user.isNewUser,
-    token: user.token
-  });
+    done(null, user._id);
 });
 
-passport.deserializeUser((sessionUser, done) => {
-  // Return the user data from session
-  done(null, sessionUser);
+// We retrieve the full user document from the ID
+passport.deserializeUser(async (id, done) => {
+    try {
+        const user = await User.findById(id);
+        done(null, user);
+    } catch (error) {
+        done(error, null);
+    }
 });
 
 module.exports = passport;

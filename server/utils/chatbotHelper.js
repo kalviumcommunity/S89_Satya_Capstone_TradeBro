@@ -72,11 +72,11 @@ const formatStockData = (stockData, options = {}) => {
 
     // Basic format (compact)
     if (options.compact) {
-      return `${changeEmoji} **${name}** (${symbol}): ${formatPrice(price)} ${changeSymbol}${change.toFixed(2)} (${changeSymbol}${changesPercentage.toFixed(2)}%) - trending ${changeDirection}`;
+      return `${changeEmoji} ${name} (${symbol}): ${formatPrice(price)} ${changeSymbol}${change.toFixed(2)} (${changeSymbol}${changesPercentage.toFixed(2)}%) - trending ${changeDirection}`;
     }
 
     // Detailed format (default)
-    let formatted = `${changeEmoji} **${name} (${symbol})**\n`;
+    let formatted = `${changeEmoji} ${name} (${symbol})\n`;
     formatted += `💰 Current Price: ${formatPrice(price)}\n`;
     formatted += `📊 Change: ${changeSymbol}${change.toFixed(2)} (${changeSymbol}${changesPercentage.toFixed(2)}%) - ${changeDirection}\n`;
 

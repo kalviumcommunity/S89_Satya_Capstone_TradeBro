@@ -1,388 +1,286 @@
-import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { FiFilter, FiRefreshCw, FiCheck, FiX, FiClock, FiAlertCircle } from "react-icons/fi";
-import PageLayout from "../components/PageLayout";
-import { useToast } from "../context/ToastContext";
-import { useAuth } from "../context/AuthContext";
-import axios from "axios";
-import { API_ENDPOINTS } from "../config/apiConfig";
-import "../styles/pages/Orders.css";
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  FiShoppingCart,
+  FiClock,
+  FiCheckCircle,
+  FiXCircle,
+  FiRefreshCw,
+  FiFilter,
+  FiDownload,
+  FiSearch,
+  FiTrendingUp,
+  FiTrendingDown,
+  FiMoreHorizontal,
+  FiEdit,
+  FiTrash2,
+  FiActivity
+} from 'react-icons/fi';
+import PageHeader from '../components/layout/PageHeader';
+import SearchInput from '../components/common/SearchInput';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchOrders, setFilters } from '../store/slices/ordersSlice';
+import { formatCurrency, formatDateTime } from '../utils/orderUtils';
+import '../styles/orders.css';
 
-const Orders = () => {
-  const { success, error: showError } = useToast();
-  const { isAuthenticated } = useAuth();
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all");
+const Orders = ({ user, theme }) => {
+  const dispatch = useDispatch();
+  const { orders, isLoading, error, filters, summary } = useSelector((state) => state.orders);
+
+  const [searchQuery, setSearchQuery] = useState(filters.symbol || '');
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState(null);
+  const [showHistory, setShowHistory] = useState(false);
+  const recentSearches = useMemo(() => [], []); // This would be populated from user storage
 
-  // Mock data for demonstration
-  const mockOrders = [
-    {
-      id: 1,
-      type: "buy",
-      symbol: "AAPL",
-      name: "Apple Inc.",
-      quantity: 5,
-      price: 178.25,
-      total: 891.25,
-      orderType: "market",
-      status: "open",
-      createdAt: "2023-10-16T09:30:00Z"
-    },
-    {
-      id: 2,
-      type: "sell",
-      symbol: "MSFT",
-      name: "Microsoft Corporation",
-      quantity: 3,
-      price: 340.00,
-      total: 1020.00,
-      orderType: "limit",
-      status: "open",
-      createdAt: "2023-10-16T10:15:00Z"
-    },
-    {
-      id: 3,
-      type: "buy",
-      symbol: "GOOGL",
-      name: "Alphabet Inc.",
-      quantity: 2,
-      price: 132.50,
-      total: 265.00,
-      orderType: "market",
-      status: "filled",
-      createdAt: "2023-10-15T14:20:00Z",
-      filledAt: "2023-10-15T14:22:00Z"
-    },
-    {
-      id: 4,
-      type: "sell",
-      symbol: "AMZN",
-      name: "Amazon.com Inc.",
-      quantity: 4,
-      price: 127.75,
-      total: 511.00,
-      orderType: "limit",
-      status: "cancelled",
-      createdAt: "2023-10-15T11:05:00Z",
-      cancelledAt: "2023-10-15T13:30:00Z"
-    },
-    {
-      id: 5,
-      type: "buy",
-      symbol: "TSLA",
-      name: "Tesla, Inc.",
-      quantity: 10,
-      price: 240.00,
-      total: 2400.00,
-      orderType: "limit",
-      status: "filled",
-      createdAt: "2023-10-14T09:45:00Z",
-      filledAt: "2023-10-14T10:30:00Z"
-    }
-  ];
-
-  // Load orders data
+  // Fetch orders on component mount and when filters change
   useEffect(() => {
-    const fetchOrders = async () => {
-      if (!isAuthenticated) {
-        setLoading(false);
-        return;
-      }
+    dispatch(fetchOrders(filters));
+  }, [dispatch, filters]);
 
-      setLoading(true);
-      setError(null);
-
-      try {
-        const response = await axios.get(API_ENDPOINTS.ORDERS.ALL);
-
-        if (response.data.success) {
-          // Transform the data to match our frontend format
-          const formattedOrders = response.data.data.map(order => ({
-            id: order._id,
-            type: order.type.toLowerCase(),
-            symbol: order.stockSymbol,
-            name: order.stockName,
-            quantity: order.quantity,
-            price: order.price,
-            total: order.total,
-            orderType: order.orderType.toLowerCase(),
-            status: order.status.toLowerCase(),
-            createdAt: order.createdAt,
-            filledAt: order.filledAt,
-            cancelledAt: order.cancelledAt
-          }));
-
-          setOrders(formattedOrders);
-        } else {
-          setError("Failed to load orders");
-          // Use mock data as fallback
-          setOrders(mockOrders);
-        }
-      } catch (err) {
-        console.error("Error fetching orders:", err);
-        setError("Failed to load orders. Using sample data instead.");
-        // Use mock data as fallback
-        setOrders(mockOrders);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchOrders();
-  }, [isAuthenticated]);
-
-  // Filter orders based on status
-  const filteredOrders = orders.filter((order) => {
-    if (filter === "all") return true;
-    return order.status === filter;
-  });
-
-  // Format date
-  const formatDate = (dateString) => {
-    const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-    return new Date(dateString).toLocaleDateString(undefined, options);
-  };
-
-  // Refresh orders
-  const refreshOrders = async () => {
-    if (!isAuthenticated) {
-      showToast("Please log in to refresh orders", "error");
-      return;
-    }
-
+  // Handle refreshing data
+  const handleRefresh = async () => {
     setRefreshing(true);
-    setError(null);
-
-    try {
-      const response = await axios.get(API_ENDPOINTS.ORDERS.ALL);
-
-      if (response.data.success) {
-        // Transform the data to match our frontend format
-        const formattedOrders = response.data.data.map(order => ({
-          id: order._id,
-          type: order.type.toLowerCase(),
-          symbol: order.stockSymbol,
-          name: order.stockName,
-          quantity: order.quantity,
-          price: order.price,
-          total: order.total,
-          orderType: order.orderType.toLowerCase(),
-          status: order.status.toLowerCase(),
-          createdAt: order.createdAt,
-          filledAt: order.filledAt,
-          cancelledAt: order.cancelledAt
-        }));
-
-        setOrders(formattedOrders);
-        showToast("Orders refreshed", "success");
-      } else {
-        setError("Failed to refresh orders");
-        showToast("Failed to refresh orders", "error");
-      }
-    } catch (err) {
-      console.error("Error refreshing orders:", err);
-      setError("Failed to refresh orders");
-      showToast("Failed to refresh orders", "error");
-    } finally {
-      setRefreshing(false);
-    }
+    await dispatch(fetchOrders(filters));
+    setRefreshing(false);
   };
 
-  // Cancel order
-  const cancelOrder = async (id) => {
-    if (!isAuthenticated) {
-      showToast("Please log in to cancel orders", "error");
-      return;
-    }
-
-    try {
-      const response = await axios.post(API_ENDPOINTS.ORDERS.CANCEL(id));
-
-      if (response.data.success) {
-        // Update the order in the local state
-        const updatedOrders = orders.map(order => {
-          if (order.id === id) {
-            return {
-              ...order,
-              status: "cancelled",
-              cancelledAt: new Date().toISOString()
-            };
-          }
-          return order;
-        });
-
-        setOrders(updatedOrders);
-        showToast("Order cancelled successfully", "success");
-      } else {
-        showToast(response.data.message || "Failed to cancel order", "error");
-      }
-    } catch (err) {
-      console.error("Error cancelling order:", err);
-      showToast("Failed to cancel order", "error");
-
-      // Fallback to local implementation if API fails
-      const updatedOrders = orders.map(order => {
-        if (order.id === id) {
-          return {
-            ...order,
-            status: "cancelled",
-            cancelledAt: new Date().toISOString()
-          };
-        }
-        return order;
-      });
-
-      setOrders(updatedOrders);
-      showToast("Order cancelled (local only)", "warning");
-    }
-  };
-
-  // Get status icon
-  const getStatusIcon = (status) => {
+  // Helper function to get status-based icons
+  const getStatusIcon = useCallback((status) => {
     switch (status) {
-      case "open":
-        return <FiClock />;
-      case "filled":
-        return <FiCheck />;
-      case "cancelled":
-        return <FiX />;
+      case 'FILLED':
+        return <FiCheckCircle className="status-icon completed" />;
+      case 'PENDING':
+      case 'OPEN':
+        return <FiClock className="status-icon pending" />;
+      case 'CANCELLED':
+      case 'REJECTED':
+        return <FiXCircle className="status-icon cancelled" />;
       default:
-        return <FiAlertCircle />;
+        return <FiClock className="status-icon" />;
     }
-  };
+  }, []);
+
+  // Filter orders on the frontend based on search query
+  const filteredOrders = useMemo(() => {
+    const queryLower = searchQuery.toLowerCase();
+    const statusLower = filters.status.toLowerCase();
+    const typeLower = filters.type.toLowerCase();
+
+    return orders.filter(order => {
+      const matchesSearch = (order.stockSymbol || '').toLowerCase().includes(queryLower) ||
+        (order.stockName || '').toLowerCase().includes(queryLower) ||
+        (order._id || '').toLowerCase().includes(queryLower);
+      const matchesStatus = statusLower === 'all' || (order.status || 'PENDING').toLowerCase() === statusLower;
+      const matchesType = typeLower === 'all' || (order.type || '').toLowerCase() === typeLower;
+      return matchesSearch && matchesStatus && matchesType;
+    });
+  }, [orders, searchQuery, filters.status, filters.type]);
+
+
+  if (isLoading) {
+    return <div className="loading-container">
+      <div className="loading-spinner"></div>
+      <p>Loading orders...</p>
+    </div>;
+  }
 
   return (
-    <PageLayout>
-      <div className="orders-container">
-        <motion.h1
-          className="orders-header"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          Active Orders
-        </motion.h1>
+    <div className="orders-page">
+      <PageHeader
+        icon={FiShoppingCart}
+        title="Orders"
+        subtitle="Track and manage your trading orders"
+        borderColor="warning"
+        actions={[
+          {
+            label: "Refresh",
+            icon: FiRefreshCw,
+            onClick: handleRefresh,
+            variant: "secondary",
+            disabled: refreshing
+          },
+          {
+            label: "Export",
+            icon: FiDownload,
+            onClick: () => { /* Implement export logic here */ },
+            variant: "outline"
+          }
+        ]}
+      />
 
+      <div className="orders-container">
+
+        {/* Orders Controls */}
         <motion.div
-          className="orders-actions"
+          className="orders-controls"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
         >
-          <div className="filter-container">
-            <FiFilter className="filter-icon" />
-            <select
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              className="filter-select"
-            >
-              <option value="all">All Orders</option>
-              <option value="open">Open Orders</option>
-              <option value="filled">Filled Orders</option>
-              <option value="cancelled">Cancelled Orders</option>
-            </select>
+          <div className="controls-left">
+            <div className="search-container">
+              <SearchInput
+                placeholder="Search orders by symbol..."
+                value={searchQuery}
+                onChange={setSearchQuery}
+                onClear={() => setSearchQuery('')}
+                recentSearches={recentSearches}
+                showHistory={showHistory}
+                onHistoryClick={(item) => setSearchQuery(item.query)}
+                size="md"
+                showSuggestions={false}
+                enableHistory={false}
+                className="orders-search-input"
+              />
+            </div>
+            <div className="filter-group">
+              <select
+                value={filters.status}
+                onChange={(e) => dispatch(setFilters({ status: e.target.value }))}
+                className="filter-select"
+              >
+                <option value="all">All Statuses ({summary?.totalOrders || 0})</option>
+                <option value="OPEN">Open ({summary?.openOrders || 0})</option>
+                <option value="FILLED">Filled ({summary?.filledOrders || 0})</option>
+                <option value="CANCELLED">Cancelled ({summary?.cancelledOrders || 0})</option>
+                <option value="REJECTED">Rejected ({summary?.rejectedOrders || 0})</option>
+              </select>
+              <select
+                value={filters.type}
+                onChange={(e) => dispatch(setFilters({ type: e.target.value }))}
+                className="filter-select"
+              >
+                <option value="all">All Types</option>
+                <option value="BUY">Buy</option>
+                <option value="SELL">Sell</option>
+              </select>
+            </div>
           </div>
-
-          <button
-            className={`refresh-btn ${refreshing ? 'refreshing' : ''}`}
-            onClick={refreshOrders}
-            disabled={refreshing}
-          >
-            <FiRefreshCw className={refreshing ? 'spin' : ''} />
-            {refreshing ? 'Refreshing...' : 'Refresh'}
-          </button>
+          <div className="controls-right">
+            <button className="btn-premium btn-ghost">
+              <FiFilter size={16} />
+              More Filters
+            </button>
+          </div>
         </motion.div>
 
-        {loading ? (
-          <div className="loading-container">
-            <div className="loading-spinner"></div>
-            <p>Loading orders...</p>
+        {/* Orders Table */}
+        <motion.div
+          className="orders-card"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+        >
+          <div className="card-header">
+            <h3 className="card-title">
+              <FiShoppingCart className="card-icon" />
+              Order History ({filteredOrders.length})
+            </h3>
           </div>
-        ) : error ? (
-          <div className="error-container">
-            <FiAlertCircle className="error-icon" />
-            <p>{error}</p>
+          <div className="card-content">
+            <div className="orders-table">
+              <div className="table-header">
+                <div className="col-order">Order Details</div>
+                <div className="col-type">Type</div>
+                <div className="col-quantity">Quantity</div>
+                <div className="col-price">Price</div>
+                <div className="col-total">Total</div>
+                <div className="col-status">Status</div>
+                <div className="col-time">Time</div>
+                <div className="col-actions">Actions</div>
+              </div>
+              <div className="table-body">
+                {filteredOrders.length === 0 ? (
+                  <div className="empty-state">
+                    <FiActivity size={48} />
+                    <h3>No Orders Found</h3>
+                    <p>There are no orders that match your current filters.</p>
+                  </div>
+                ) : (
+                  filteredOrders.map((order, index) => {
+                    const dateTime = formatDateTime(order.createdAt);
+                    const isPending = order.status === 'PENDING' || order.status === 'OPEN';
+                    const totalPrice = (order.executionPrice || order.price) * order.quantity + (order.fees || 0);
+
+                    return (
+                      <motion.div
+                        key={order._id}
+                        className="table-row"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.05 }}
+                      >
+                        <div className="col-order">
+                          <div className="order-info">
+                            <div className="order-id">#{order._id.slice(-6)}</div>
+                            <div className="stock-symbol">{order.stockSymbol}</div>
+                          </div>
+                        </div>
+                        <div className="col-type">
+                          <div className={`order-type ${order.type?.toLowerCase()}`}>
+                            {order.type === 'BUY' ? <FiTrendingUp size={14} /> : <FiTrendingDown size={14} />}
+                            {order.type}
+                          </div>
+                          <div className="order-subtype">{order.orderType}</div>
+                        </div>
+                        <div className="col-quantity">{order.quantity}</div>
+                        <div className="col-price">
+                          <div className="price-info">
+                            <div className="order-price">{formatCurrency(order.price)}</div>
+                            {order.executionPrice && order.executionPrice !== order.price && (
+                              <div className="executed-price">
+                                Exec: {formatCurrency(order.executionPrice)}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="col-total">
+                          <div className="total-amount">{formatCurrency(totalPrice)}</div>
+                          {order.fees > 0 && (
+                            <div className="fees">Fees: {formatCurrency(order.fees)}</div>
+                          )}
+                        </div>
+                        <div className="col-status">
+                          <div className="status-container">
+                            {getStatusIcon(order.status)}
+                            <span className={`status-text ${order.status?.toLowerCase()}`}>
+                              {(order.status || 'PENDING').charAt(0).toUpperCase() + (order.status || 'PENDING').slice(1)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="col-time">
+                          <div className="time-info">
+                            <div className="order-date">{dateTime.date}</div>
+                            <div className="order-time">{dateTime.time}</div>
+                          </div>
+                        </div>
+                        <div className="col-actions">
+                          <div className="action-buttons">
+                            {isPending && (
+                              <button className="action-btn" title="Edit Order">
+                                <FiEdit size={14} />
+                              </button>
+                            )}
+                            {isPending && (
+                              <button className="action-btn cancel" title="Cancel Order">
+                                <FiXCircle size={14} />
+                              </button>
+                            )}
+                            <button className="action-btn" title="More Options">
+                              <FiMoreHorizontal size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
           </div>
-        ) : !isAuthenticated ? (
-          <div className="empty-orders">
-            <p>Please log in to view your orders.</p>
-          </div>
-        ) : filteredOrders.length === 0 ? (
-          <div className="empty-orders">
-            <p>No orders found for the selected filter.</p>
-            <p>Try changing your filter or place a new order.</p>
-          </div>
-        ) : (
-          <motion.div
-            className="orders-table-container"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <table className="orders-table">
-              <thead>
-                <tr>
-                  <th>Date & Time</th>
-                  <th>Type</th>
-                  <th>Symbol</th>
-                  <th>Quantity</th>
-                  <th>Price</th>
-                  <th>Total</th>
-                  <th>Order Type</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredOrders.map((order) => (
-                  <motion.tr
-                    key={order.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                    whileHover={{ backgroundColor: "rgba(0,0,0,0.02)" }}
-                  >
-                    <td>{formatDate(order.createdAt)}</td>
-                    <td className={`type-cell ${order.type}`}>
-                      {order.type.charAt(0).toUpperCase() + order.type.slice(1)}
-                    </td>
-                    <td className="symbol-cell">{order.symbol}</td>
-                    <td>{order.quantity}</td>
-                    <td className="price-cell">${order.price.toFixed(2)}</td>
-                    <td className="total-cell">${order.total.toFixed(2)}</td>
-                    <td className="order-type-cell">
-                      {order.orderType.charAt(0).toUpperCase() + order.orderType.slice(1)}
-                    </td>
-                    <td className="status-cell">
-                      <span className={`status-badge ${order.status}`}>
-                        {getStatusIcon(order.status)}
-                        {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                      </span>
-                    </td>
-                    <td>
-                      {order.status === "open" ? (
-                        <button
-                          className="cancel-btn"
-                          onClick={() => cancelOrder(order.id)}
-                          title="Cancel order"
-                        >
-                          Cancel
-                        </button>
-                      ) : (
-                        <span className="no-action">-</span>
-                      )}
-                    </td>
-                  </motion.tr>
-                ))}
-              </tbody>
-            </table>
-          </motion.div>
-        )}
+        </motion.div>
       </div>
-    </PageLayout>
+    </div>
   );
 };
 

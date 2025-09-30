@@ -53,12 +53,17 @@ const createUserResponse = (user) => {
     username: user.username,
     email: user.email,
     fullName: user.fullName,
+    firstName: user.firstName,
+    lastName: user.lastName,
     phoneNumber: user.phoneNumber,
     profileImage: user.profileImage,
-    tradingExperience: user.tradingExperience,
-    preferredMarkets: user.preferredMarkets,
+    tradingExperience: user.tradingExperience || 'Beginner',
+    preferredMarkets: user.preferredMarkets || ['Stocks'],
     bio: user.bio,
-    createdAt: user.createdAt
+    authProvider: user.authProvider || 'local',
+    emailVerified: user.emailVerified || false,
+    createdAt: user.createdAt,
+    lastLogin: user.lastLogin
   };
 };
 

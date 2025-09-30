@@ -1,0 +1,34 @@
+.scroll-velocity-container {
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+  height: auto;
+}
+
+.scroll-velocity-content {
+  display: flex;
+  white-space: nowrap;
+  will-change: transform;
+  position: relative;
+}
+
+.scroll-velocity-item {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Ensure smooth performance */
+.scroll-velocity-content * {
+  will-change: transform;
+}
+
+/* Hide scrollbars */
+.scroll-velocity-container::-webkit-scrollbar {
+  display: none;
+}
+
+.scroll-velocity-container {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
